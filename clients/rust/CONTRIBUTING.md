@@ -1,6 +1,6 @@
 # Contributing to the Rust client
 
-This is a quick guide to help you contribute to the Rust client of Project Name.
+This is a quick guide to help you contribute to the Rust client of Amm.
 
 ## Getting started
 

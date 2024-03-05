@@ -1,6 +1,6 @@
 # Contributing to the JavaScript client
 
-This is a quick guide to help you contribute to the JavaScript client of Project Name.
+This is a quick guide to help you contribute to the JavaScript client of Amm.
 
 ## Getting started
 
@@ -44,12 +44,12 @@ To publish JavaScript clients using GitHub actions, we first need the following 
 
 - `NPM_TOKEN` — An access token that can publish your packages to NPM.
 - `VERCEL_TOKEN` — An access token that can deploy to Vercel.
-- `VERCEL_ORG_ID` — The ID of the Vercel organization you want to deploy to.
+- `VERCEL_ORG_ID` — The ID of the Vercel tensor-foundation you want to deploy to.
 
 Then, we'll need to create a new GitHub environment called `js-client-documentation` for the generated documentation of the JavaScript client. We can then select the `main` branch only and add the following secret variable to this specific environment.
 
 - `VERCEL_PROJECT_ID` — The ID of the Vercel project you want to deploy to.
-  The convention is to create a new Vercel project named `project-name-js-docs` with the following deployment settings:
+  The convention is to create a new Vercel project named `amm-js-docs` with the following deployment settings:
 
   - Build Command: `pnpm run build:docs`
   - Output Directory: `docs`

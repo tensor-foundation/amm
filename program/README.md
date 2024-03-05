@@ -1,6 +1,6 @@
-# Project Name
+# Amm
 
-My project description
+Version 2 of the Tensor AMM program.
 
 ## Building
 

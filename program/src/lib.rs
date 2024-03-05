@@ -5,10 +5,10 @@ pub mod state;
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("MyProgram1111111111111111111111111111111111");
+declare_id!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");
 
 #[program]
-pub mod project_name_program {
+pub mod amm_program {
 
     use super::*;
 

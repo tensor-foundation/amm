@@ -1,7 +1,7 @@
 {
-  "name": "@organization/project-name",
+  "name": "@tensor-foundation/amm",
   "version": "0.0.0",
-  "description": "My project description",
+  "description": "Version 2 of the Tensor AMM program.",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
@@ -20,9 +20,9 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
-  "homepage": "https://github.com/organization",
-  "repository": "https://github.com/organization/project-name.git",
-  "author": "author <author@email.com>",
+  "homepage": "https://github.com/tensor-foundation",
+  "repository": "https://github.com/tensor-foundation/amm.git",
+  "author": "Tensor Protocol Foundation <maintainers.foundation>",
   "license": "Apache-2.0",
   "dependencies": {
     "@solana/accounts": "2.0.0-experimental.dbe6a73",

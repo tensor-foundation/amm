@@ -1,7 +1,7 @@
-import { getProjectNameProgram } from './generated';
+import { getAmmProgram } from './generated';
 
-export const projectName = () => ({
+export const amm = () => ({
   install() {
-    getProjectNameProgram();
+    getAmmProgram();
   },
 });

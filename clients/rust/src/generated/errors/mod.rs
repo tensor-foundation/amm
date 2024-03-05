@@ -5,6 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod project_name;
+pub(crate) mod amm;
 
-pub use self::project_name::ProjectNameError;
+pub use self::amm::AmmError;

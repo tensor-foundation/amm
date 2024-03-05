@@ -1,6 +1,6 @@
-# Contributing to Project Name
+# Contributing to Amm
 
-This is a quick guide to help you contribute to Project Name.
+This is a quick guide to help you contribute to Amm.
 
 ## Getting started
 

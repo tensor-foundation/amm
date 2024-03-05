@@ -45,7 +45,7 @@ import {
 } from '../shared';
 
 export type CreateInstruction<
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111',
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountAddress extends string | IAccountMeta<string> = string,
   TAccountAuthority extends string | IAccountMeta<string> = string,
   TAccountPayer extends string | IAccountMeta<string> = string,
@@ -74,7 +74,7 @@ export type CreateInstruction<
   >;
 
 export type CreateInstructionWithSigners<
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111',
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountAddress extends string | IAccountMeta<string> = string,
   TAccountAuthority extends string | IAccountMeta<string> = string,
   TAccountPayer extends string | IAccountMeta<string> = string,
@@ -178,7 +178,7 @@ export function getCreateInstruction<
   TAccountAuthority extends string,
   TAccountPayer extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111'
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: CreateInputWithSigners<
     TAccountAddress,
@@ -198,7 +198,7 @@ export function getCreateInstruction<
   TAccountAuthority extends string,
   TAccountPayer extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111'
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: CreateInput<
     TAccountAddress,
@@ -218,7 +218,7 @@ export function getCreateInstruction<
   TAccountAuthority extends string,
   TAccountPayer extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111'
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: CreateInput<
     TAccountAddress,
@@ -229,7 +229,7 @@ export function getCreateInstruction<
 ): IInstruction {
   // Program address.
   const programAddress =
-    'MyProgram1111111111111111111111111111111111' as Address<'MyProgram1111111111111111111111111111111111'>;
+    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
 
   // Original accounts.
   type AccountMetas = Parameters<
@@ -274,7 +274,7 @@ export function getCreateInstruction<
 }
 
 export function getCreateInstructionRaw<
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111',
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountAddress extends string | IAccountMeta<string> = string,
   TAccountAuthority extends string | IAccountMeta<string> = string,
   TAccountPayer extends string | IAccountMeta<string> = string,
@@ -298,7 +298,7 @@ export function getCreateInstructionRaw<
       : TAccountSystemProgram;
   },
   args: CreateInstructionDataArgs,
-  programAddress: Address<TProgram> = 'MyProgram1111111111111111111111111111111111' as Address<TProgram>,
+  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
   remainingAccounts?: TRemainingAccounts
 ) {
   return {
@@ -326,7 +326,7 @@ export function getCreateInstructionRaw<
 }
 
 export type ParsedCreateInstruction<
-  TProgram extends string = 'MyProgram1111111111111111111111111111111111',
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
 > = {
   programAddress: Address<TProgram>;

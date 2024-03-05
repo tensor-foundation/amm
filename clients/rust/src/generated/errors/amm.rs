@@ -9,13 +9,13 @@ use num_derive::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
-pub enum ProjectNameError {
+pub enum AmmError {
     /// 6000 (0x1770) - Invalid authority for account
     #[error("Invalid authority for account")]
     InvalidAuthority,
 }
 
-impl solana_program::program_error::PrintProgramError for ProjectNameError {
+impl solana_program::program_error::PrintProgramError for AmmError {
     fn print<E>(&self) {
         solana_program::msg!(&self.to_string());
     }

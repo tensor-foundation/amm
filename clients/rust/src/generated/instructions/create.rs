@@ -54,7 +54,7 @@ impl Create {
         data.append(&mut args);
 
         solana_program::instruction::Instruction {
-            program_id: crate::PROJECT_NAME_ID,
+            program_id: crate::AMM_ID,
             accounts,
             data,
         }
@@ -276,7 +276,7 @@ impl<'a, 'b> CreateCpi<'a, 'b> {
         data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
-            program_id: crate::PROJECT_NAME_ID,
+            program_id: crate::AMM_ID,
             accounts,
             data,
         };

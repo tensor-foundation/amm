@@ -7,13 +7,13 @@ const idlDir = path.join(__dirname, "..", "program", "idl");
 
 // Instanciate Kinobi.
 const kinobi = k.createFromIdls([
-  path.join(idlDir, "project_name_program.json"),
+  path.join(idlDir, "amm_program.json"),
 ]);
 
 // Update programs.
 kinobi.update(
   new k.updateProgramsVisitor({
-    projectNameProgram: { name: "projectName" },
+    ammProgram: { name: "amm" },
   })
 );
 

@@ -6,20 +6,20 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export const enum ProjectNameProgramErrorCode {
+export const enum TammProgramProgramErrorCode {
   /** InvalidAuthority: Invalid authority for account */
   INVALID_AUTHORITY = 0x1770, // 6000
 }
 
-export class ProjectNameProgramError extends Error {
-  override readonly name = 'ProjectNameProgramError';
+export class TammProgramProgramError extends Error {
+  override readonly name = 'TammProgramProgramError';
 
-  readonly code: ProjectNameProgramErrorCode;
+  readonly code: TammProgramProgramErrorCode;
 
   readonly cause: Error | undefined;
 
   constructor(
-    code: ProjectNameProgramErrorCode,
+    code: TammProgramProgramErrorCode,
     name: string,
     message: string,
     cause?: Error
@@ -30,28 +30,28 @@ export class ProjectNameProgramError extends Error {
   }
 }
 
-let projectNameProgramErrorCodeMap:
-  | Record<ProjectNameProgramErrorCode, [string, string]>
+let tammProgramProgramErrorCodeMap:
+  | Record<TammProgramProgramErrorCode, [string, string]>
   | undefined;
 if (__DEV__) {
-  projectNameProgramErrorCodeMap = {
-    [ProjectNameProgramErrorCode.INVALID_AUTHORITY]: [
+  tammProgramProgramErrorCodeMap = {
+    [TammProgramProgramErrorCode.INVALID_AUTHORITY]: [
       'InvalidAuthority',
       `Invalid authority for account`,
     ],
   };
 }
 
-export function getProjectNameProgramErrorFromCode(
-  code: ProjectNameProgramErrorCode,
+export function getTammProgramProgramErrorFromCode(
+  code: TammProgramProgramErrorCode,
   cause?: Error
-): ProjectNameProgramError {
+): TammProgramProgramError {
   if (__DEV__) {
-    return new ProjectNameProgramError(
+    return new TammProgramProgramError(
       code,
       ...(
-        projectNameProgramErrorCodeMap as Record<
-          ProjectNameProgramErrorCode,
+        tammProgramProgramErrorCodeMap as Record<
+          TammProgramProgramErrorCode,
           [string, string]
         >
       )[code],
@@ -59,7 +59,7 @@ export function getProjectNameProgramErrorFromCode(
     );
   }
 
-  return new ProjectNameProgramError(
+  return new TammProgramProgramError(
     code,
     'Unknown',
     'Error message not available in production bundles. Compile with __DEV__ set to true to see more information.',

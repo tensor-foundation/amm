@@ -1,6 +1,6 @@
 {
   "version": "0.0.0",
-  "name": "project_name_program",
+  "name": "amm_program",
   "constants": [
     {
       "name": "MY_ACCOUNT_SIZE",
@@ -112,7 +112,7 @@
     }
   ],
   "metadata": {
-    "address": "MyProgram1111111111111111111111111111111111",
+    "address": "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA",
     "origin": "anchor",
     "binaryVersion": "0.29.0",
     "libVersion": "0.29.0"
