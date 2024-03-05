@@ -1,0 +1,13 @@
+[package]
+name = "project-name-program"
+version = "0.0.0"
+edition = "2021"
+readme = "./README.md"
+license-file = "../LICENSE"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+anchor-lang = { version="0.29.0", features=["init-if-needed"] }
