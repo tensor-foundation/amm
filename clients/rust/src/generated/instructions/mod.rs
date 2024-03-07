@@ -5,6 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod r#create;
+pub(crate) mod r#create_pool;
 
-pub use self::r#create::*;
+pub use self::r#create_pool::*;

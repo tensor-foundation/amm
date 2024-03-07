@@ -9,51 +9,38 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
+/// Need dummy Anchor account so we can use `close` constraint.
+
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MyPdaAccount {
+pub struct SolEscrow {
     pub discriminator: [u8; 8],
-    pub bump: u8,
 }
 
-impl MyPdaAccount {
-    pub const LEN: usize = 9;
+impl SolEscrow {
+    pub const LEN: usize = 8;
 
     /// Prefix values used to generate a PDA for this account.
     ///
     /// Values are positional and appear in the following order:
     ///
-    ///   0. `MyPdaAccount::PREFIX`
-    ///   1. `crate::AMM_ID`
-    ///   2. authority (`Pubkey`)
-    ///   3. name (`String`)
-    pub const PREFIX: &'static [u8] = "myPdaAccount".as_bytes();
+    ///   0. `SolEscrow::PREFIX`
+    ///   1. pool (`Pubkey`)
+    pub const PREFIX: &'static [u8] = "sol_escrow".as_bytes();
 
     pub fn create_pda(
-        authority: Pubkey,
-        name: String,
+        pool: Pubkey,
         bump: u8,
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
-            &[
-                "myPdaAccount".as_bytes(),
-                crate::AMM_ID.as_ref(),
-                authority.as_ref(),
-                name.to_string().as_ref(),
-                &[bump],
-            ],
+            &["sol_escrow".as_bytes(), pool.as_ref(), &[bump]],
             &crate::AMM_ID,
         )
     }
 
-    pub fn find_pda(authority: &Pubkey, name: String) -> (solana_program::pubkey::Pubkey, u8) {
+    pub fn find_pda(pool: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
-            &[
-                "myPdaAccount".as_bytes(),
-                crate::AMM_ID.as_ref(),
-                authority.as_ref(),
-                name.to_string().as_ref(),
-            ],
+            &["sol_escrow".as_bytes(), pool.as_ref()],
             &crate::AMM_ID,
         )
     }
@@ -65,7 +52,7 @@ impl MyPdaAccount {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for MyPdaAccount {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for SolEscrow {
     type Error = std::io::Error;
 
     fn try_from(

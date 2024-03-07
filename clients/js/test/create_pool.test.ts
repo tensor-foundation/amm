@@ -1,5 +1,5 @@
 import test from 'ava';
-import { MyAccount, fetchMyAccount, getCreateInstruction } from '../src';
+import { Pool, fetchMyAccount, getCreatePoolInstruction } from '../src';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -13,16 +13,20 @@ import { generateKeyPairSigner } from '@solana/signers';
 test('it can create new accounts', async (t) => {
   // Given a client and a new signer.
   const client = createDefaultSolanaClient();
-  const account = await generateKeyPairSigner();
+  const owner = await generateKeyPairSigner();
+  const cosigner = await generateKeyPairSigner();
   const payer = await generateKeyPairSignerWithSol(client);
 
   // When we create a new account.
-  const createIx = getCreateInstruction({
-    address: account,
-    authority: payer.address,
-    payer,
-    arg1: 1,
-    arg2: 2,
+  const createPoolIx = getCreatePoolInstruction({
+    owner,
+    pool: account,
+    solEscrow: solEscrow,
+    whitelist,
+    identifier,
+    config,
+    isCosigned: false,
+    orderType: 0,
   });
 
   await pipe(
@@ -32,7 +36,7 @@ test('it can create new accounts', async (t) => {
   );
 
   // Then an account was created with the correct data.
-  t.like(await fetchMyAccount(client.rpc, account.address), <MyAccount>{
+  t.like(await fetchMyAccount(client.rpc, account.address), <Pool>{
     address: account.address,
     data: {
       authority: payer.address,

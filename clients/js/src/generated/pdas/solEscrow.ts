@@ -14,15 +14,13 @@ import {
 } from '@solana/addresses';
 import { getStringEncoder } from '@solana/codecs-strings';
 
-export type MyPdaAccountSeeds = {
-  /** The address of the authority */
-  authority: Address;
-  /** The name of the account */
-  name: string;
+export type SolEscrowSeeds = {
+  /** The address of the pool */
+  pool: Address;
 };
 
-export async function findMyPdaAccountPda(
-  seeds: MyPdaAccountSeeds,
+export async function findSolEscrowPda(
+  seeds: SolEscrowSeeds,
   config: { programAddress?: Address | undefined } = {}
 ): Promise<ProgramDerivedAddress> {
   const {
@@ -31,10 +29,8 @@ export async function findMyPdaAccountPda(
   return getProgramDerivedAddress({
     programAddress,
     seeds: [
-      getStringEncoder({ size: 'variable' }).encode('myPdaAccount'),
-      getAddressEncoder().encode(programAddress),
-      getAddressEncoder().encode(seeds.authority),
-      getStringEncoder().encode(seeds.name),
+      getStringEncoder({ size: 'variable' }).encode('sol_escrow'),
+      getAddressEncoder().encode(seeds.pool),
     ],
   });
 }

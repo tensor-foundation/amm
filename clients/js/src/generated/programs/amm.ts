@@ -33,19 +33,19 @@ export function getAmmProgram(): AmmProgram {
 }
 
 export enum AmmAccount {
-  MyAccount,
-  MyPdaAccount,
+  Pool,
+  SolEscrow,
 }
 
 export function identifyAmmAccount(
   account: { data: Uint8Array } | Uint8Array
 ): AmmAccount {
   const data = account instanceof Uint8Array ? account : account.data;
-  if (memcmp(data, new Uint8Array([246, 28, 6, 87, 251, 45, 50, 42]), 0)) {
-    return AmmAccount.MyAccount;
+  if (memcmp(data, new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]), 0)) {
+    return AmmAccount.Pool;
   }
-  if (memcmp(data, new Uint8Array([134, 161, 6, 144, 105, 236, 234, 48]), 0)) {
-    return AmmAccount.MyPdaAccount;
+  if (memcmp(data, new Uint8Array([75, 199, 250, 63, 244, 209, 235, 120]), 0)) {
+    return AmmAccount.SolEscrow;
   }
   throw new Error(
     'The provided account could not be identified as a amm account.'
@@ -53,7 +53,7 @@ export function identifyAmmAccount(
 }
 
 export enum AmmInstruction {
-  Create,
+  CreatePool,
 }
 
 export function identifyAmmInstruction(
@@ -61,8 +61,10 @@ export function identifyAmmInstruction(
 ): AmmInstruction {
   const data =
     instruction instanceof Uint8Array ? instruction : instruction.data;
-  if (memcmp(data, new Uint8Array([24, 30, 200, 40, 5, 28, 7, 119]), 0)) {
-    return AmmInstruction.Create;
+  if (
+    memcmp(data, new Uint8Array([233, 146, 209, 142, 207, 104, 64, 188]), 0)
+  ) {
+    return AmmInstruction.CreatePool;
   }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'

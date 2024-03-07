@@ -16,6 +16,7 @@ num-traits = "^0.2"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.0", optional = true }
 solana-program = "< 1.18"
+tensor_whitelist = { package = "tensor-whitelist", git = "ssh://git@github.com/tensor-foundation/whitelist.git" }
 thiserror = "^1.0"
 
 [dev-dependencies]

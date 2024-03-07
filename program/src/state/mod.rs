@@ -1,5 +1,8 @@
-pub mod my_account;
-pub mod my_pda_account;
+use anchor_lang::prelude::*;
 
-pub use my_account::*;
-pub use my_pda_account::*;
+pub mod pool;
+pub use pool::*;
+
+/// Need dummy Anchor account so we can use `close` constraint.
+#[account]
+pub struct SolEscrow {}

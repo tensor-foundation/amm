@@ -5,6 +5,14 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod r#my_data;
+pub(crate) mod r#curve_type;
+pub(crate) mod r#frozen;
+pub(crate) mod r#pool_config;
+pub(crate) mod r#pool_stats;
+pub(crate) mod r#pool_type;
 
-pub use self::r#my_data::*;
+pub use self::r#curve_type::*;
+pub use self::r#frozen::*;
+pub use self::r#pool_config::*;
+pub use self::r#pool_stats::*;
+pub use self::r#pool_type::*;
