@@ -22,10 +22,51 @@
       "type": {
         "defined": "usize"
       },
-      "value": "8 + (3 * 1) + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (5 * 32) + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 1 + 1 + 8 + 8 + 1 + 8 + 4"
+      "value": "8 + (3 * 1) + 32 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4"
     }
   ],
   "instructions": [
+    {
+      "name": "reallocPool",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Needed for pool seeds derivation / will be stored inside pool"
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "cosigner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
+          "type": {
+            "defined": "PoolConfig"
+          }
+        }
+      ]
+    },
     {
       "name": "createPool",
       "accounts": [
@@ -63,6 +104,47 @@
           "name": "args",
           "type": {
             "defined": "CreatePoolArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "closePool",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "solEscrow",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "(!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed"
+          ]
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
+          "type": {
+            "defined": "PoolConfig"
           }
         }
       ]

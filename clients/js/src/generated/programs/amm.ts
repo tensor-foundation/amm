@@ -53,7 +53,9 @@ export function identifyAmmAccount(
 }
 
 export enum AmmInstruction {
+  ReallocPool,
   CreatePool,
+  ClosePool,
 }
 
 export function identifyAmmInstruction(
@@ -61,10 +63,16 @@ export function identifyAmmInstruction(
 ): AmmInstruction {
   const data =
     instruction instanceof Uint8Array ? instruction : instruction.data;
+  if (memcmp(data, new Uint8Array([114, 128, 37, 167, 71, 227, 40, 178]), 0)) {
+    return AmmInstruction.ReallocPool;
+  }
   if (
     memcmp(data, new Uint8Array([233, 146, 209, 142, 207, 104, 64, 188]), 0)
   ) {
     return AmmInstruction.CreatePool;
+  }
+  if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
+    return AmmInstruction.ClosePool;
   }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'

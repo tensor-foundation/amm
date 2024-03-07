@@ -4,17 +4,16 @@ use anchor_lang::prelude::*;
 #[constant]
 #[allow(clippy::identity_op)]
 pub const POOL_SIZE: usize = 8 + (3 * 1)
-        + 8
+        + 32 // identifier
+        + 8  // created_at
+        + 8  // updated_at
         + (2 * 1) + (2 * 8) + 1 + 3 //pool config
-        + (5 * 32)
-        + (3 * 4)
+        + (3 * 32) // owner, whitelist, sol_escrow
+        + (3 * 4)  // taker_sell_count, taker_buy_count, nfts_held
         + (2 * 4) + 8 //pool stats
-        + 32 + 1 //(!) option takes up 1 extra byte
-        + 1
-        + 1
-        + 8 + 8 + 1 //frozen (!) option takes up 1 extra byte
-        + 8
-        + 4;
+        + 32 + 1   // shared escrow Option
+        + 32 + 1   // cosigner Option
+        + 4; // max_taker_sell_count
 
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]

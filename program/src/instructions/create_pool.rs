@@ -114,6 +114,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.sol_escrow = ctx.accounts.sol_escrow.key();
+    pool.identifier = args.identifier;
 
     pool.taker_buy_count = 0;
     pool.taker_sell_count = 0;

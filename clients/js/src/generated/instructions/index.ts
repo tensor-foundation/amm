@@ -6,4 +6,6 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './closePool';
 export * from './createPool';
+export * from './reallocPool';
