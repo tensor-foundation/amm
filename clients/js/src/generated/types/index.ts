@@ -6,8 +6,15 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './authorizationDataLocal';
 export * from './curveType';
+export * from './direction';
 export * from './frozen';
+export * from './payloadTypeLocal';
 export * from './poolConfig';
 export * from './poolStats';
 export * from './poolType';
+export * from './proofInfoLocal';
+export * from './seedsVecLocal';
+export * from './taggedPayload';
+export * from './takerSide';

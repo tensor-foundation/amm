@@ -5,12 +5,24 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
+pub(crate) mod r#attach_pool_to_margin;
+pub(crate) mod r#close_margin_account;
 pub(crate) mod r#close_pool;
 pub(crate) mod r#create_pool;
+pub(crate) mod r#deposit_margin_account;
+pub(crate) mod r#detach_pool_from_margin;
 pub(crate) mod r#edit_pool;
+pub(crate) mod r#init_margin_account;
 pub(crate) mod r#realloc_pool;
+pub(crate) mod r#withdraw_margin_account;
 
+pub use self::r#attach_pool_to_margin::*;
+pub use self::r#close_margin_account::*;
 pub use self::r#close_pool::*;
 pub use self::r#create_pool::*;
+pub use self::r#deposit_margin_account::*;
+pub use self::r#detach_pool_from_margin::*;
 pub use self::r#edit_pool::*;
+pub use self::r#init_margin_account::*;
 pub use self::r#realloc_pool::*;
+pub use self::r#withdraw_margin_account::*;

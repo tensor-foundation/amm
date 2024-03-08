@@ -14,10 +14,16 @@ import {
   getAmmProgramErrorFromCode,
 } from '../errors';
 import {
+  ParsedAttachPoolToMarginInstruction,
+  ParsedCloseMarginAccountInstruction,
   ParsedClosePoolInstruction,
   ParsedCreatePoolInstruction,
+  ParsedDepositMarginAccountInstruction,
+  ParsedDetachPoolFromMarginInstruction,
   ParsedEditPoolInstruction,
+  ParsedInitMarginAccountInstruction,
   ParsedReallocPoolInstruction,
+  ParsedWithdrawMarginAccountInstruction,
 } from '../instructions';
 import { memcmp } from '../shared';
 
@@ -40,6 +46,8 @@ export function getAmmProgram(): AmmProgram {
 
 export enum AmmAccount {
   Pool,
+  SharedEscrow,
+  SingleListing,
   SolEscrow,
 }
 
@@ -49,6 +57,12 @@ export function identifyAmmAccount(
   const data = account instanceof Uint8Array ? account : account.data;
   if (memcmp(data, new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]), 0)) {
     return AmmAccount.Pool;
+  }
+  if (memcmp(data, new Uint8Array([224, 55, 20, 31, 220, 116, 183, 194]), 0)) {
+    return AmmAccount.SharedEscrow;
+  }
+  if (memcmp(data, new Uint8Array([14, 114, 212, 140, 24, 134, 31, 24]), 0)) {
+    return AmmAccount.SingleListing;
   }
   if (memcmp(data, new Uint8Array([75, 199, 250, 63, 244, 209, 235, 120]), 0)) {
     return AmmAccount.SolEscrow;
@@ -63,6 +77,12 @@ export enum AmmInstruction {
   CreatePool,
   EditPool,
   ClosePool,
+  InitMarginAccount,
+  CloseMarginAccount,
+  DepositMarginAccount,
+  WithdrawMarginAccount,
+  AttachPoolToMargin,
+  DetachPoolFromMargin,
 }
 
 export function identifyAmmInstruction(
@@ -84,6 +104,24 @@ export function identifyAmmInstruction(
   if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
     return AmmInstruction.ClosePool;
   }
+  if (memcmp(data, new Uint8Array([10, 54, 68, 252, 130, 97, 39, 52]), 0)) {
+    return AmmInstruction.InitMarginAccount;
+  }
+  if (memcmp(data, new Uint8Array([105, 215, 41, 239, 166, 207, 1, 103]), 0)) {
+    return AmmInstruction.CloseMarginAccount;
+  }
+  if (memcmp(data, new Uint8Array([190, 85, 242, 60, 119, 81, 33, 192]), 0)) {
+    return AmmInstruction.DepositMarginAccount;
+  }
+  if (memcmp(data, new Uint8Array([54, 73, 150, 208, 207, 5, 18, 17]), 0)) {
+    return AmmInstruction.WithdrawMarginAccount;
+  }
+  if (memcmp(data, new Uint8Array([187, 105, 211, 137, 224, 59, 29, 227]), 0)) {
+    return AmmInstruction.AttachPoolToMargin;
+  }
+  if (memcmp(data, new Uint8Array([182, 54, 73, 38, 188, 87, 185, 101]), 0)) {
+    return AmmInstruction.DetachPoolFromMargin;
+  }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'
   );
@@ -103,4 +141,22 @@ export type ParsedAmmInstruction<
     } & ParsedEditPoolInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.ClosePool;
-    } & ParsedClosePoolInstruction<TProgram>);
+    } & ParsedClosePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.InitMarginAccount;
+    } & ParsedInitMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.CloseMarginAccount;
+    } & ParsedCloseMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DepositMarginAccount;
+    } & ParsedDepositMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawMarginAccount;
+    } & ParsedWithdrawMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.AttachPoolToMargin;
+    } & ParsedAttachPoolToMarginInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DetachPoolFromMargin;
+    } & ParsedDetachPoolFromMarginInstruction<TProgram>);

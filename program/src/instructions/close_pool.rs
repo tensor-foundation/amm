@@ -55,7 +55,7 @@ impl<'info> Validate<'info> for ClosePool<'info> {
         //can't close a marginated pool, need to detach first
         //this is needed because we need to reduce the counter on the margin acc to be able to close it later
         if self.pool.shared_escrow.is_some() {
-            throw_err!(ErrorCode::PoolMarginated);
+            throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())
     }

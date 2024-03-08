@@ -61,12 +61,12 @@ export const enum AmmProgramErrorCode {
   BAD_COSIGNER = 0x2ef9, // 12025
   /** PoolFrozen: pool is frozen and cannot execute normal operations */
   POOL_FROZEN = 0x2efa, // 12026
-  /** BadMargin: bad margin account passed */
-  BAD_MARGIN = 0x2efb, // 12027
-  /** PoolNotMarginated: expected a marginated pool to be passed in */
-  POOL_NOT_MARGINATED = 0x2efc, // 12028
-  /** PoolMarginated: expected a non-marginated pool to be passed in */
-  POOL_MARGINATED = 0x2efd, // 12029
+  /** BadSharedEscrow: bad shared escrow account passed */
+  BAD_SHARED_ESCROW = 0x2efb, // 12027
+  /** PoolNotOnSharedEscrow: expected a shared escrow pool to be passed in */
+  POOL_NOT_ON_SHARED_ESCROW = 0x2efc, // 12028
+  /** PoolOnSharedEscrow: expected a non-shared escrow pool to be passed in */
+  POOL_ON_SHARED_ESCROW = 0x2efd, // 12029
   /** WrongOrderType: wrong order type */
   WRONG_ORDER_TYPE = 0x2efe, // 12030
   /** WrongFrozenStatus: wrong frozen status */
@@ -213,17 +213,17 @@ if (__DEV__) {
       'PoolFrozen',
       `pool is frozen and cannot execute normal operations`,
     ],
-    [AmmProgramErrorCode.BAD_MARGIN]: [
-      'BadMargin',
-      `bad margin account passed`,
+    [AmmProgramErrorCode.BAD_SHARED_ESCROW]: [
+      'BadSharedEscrow',
+      `bad shared escrow account passed`,
     ],
-    [AmmProgramErrorCode.POOL_NOT_MARGINATED]: [
-      'PoolNotMarginated',
-      `expected a marginated pool to be passed in`,
+    [AmmProgramErrorCode.POOL_NOT_ON_SHARED_ESCROW]: [
+      'PoolNotOnSharedEscrow',
+      `expected a shared escrow pool to be passed in`,
     ],
-    [AmmProgramErrorCode.POOL_MARGINATED]: [
-      'PoolMarginated',
-      `expected a non-marginated pool to be passed in`,
+    [AmmProgramErrorCode.POOL_ON_SHARED_ESCROW]: [
+      'PoolOnSharedEscrow',
+      `expected a non-shared escrow pool to be passed in`,
     ],
     [AmmProgramErrorCode.WRONG_ORDER_TYPE]: [
       'WrongOrderType',

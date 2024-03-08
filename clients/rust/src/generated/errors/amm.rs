@@ -91,15 +91,15 @@ pub enum AmmError {
     /// 12026 (0x2EFA) - pool is frozen and cannot execute normal operations
     #[error("pool is frozen and cannot execute normal operations")]
     PoolFrozen,
-    /// 12027 (0x2EFB) - bad margin account passed
-    #[error("bad margin account passed")]
-    BadMargin,
-    /// 12028 (0x2EFC) - expected a marginated pool to be passed in
-    #[error("expected a marginated pool to be passed in")]
-    PoolNotMarginated,
-    /// 12029 (0x2EFD) - expected a non-marginated pool to be passed in
-    #[error("expected a non-marginated pool to be passed in")]
-    PoolMarginated,
+    /// 12027 (0x2EFB) - bad shared escrow account passed
+    #[error("bad shared escrow account passed")]
+    BadSharedEscrow,
+    /// 12028 (0x2EFC) - expected a shared escrow pool to be passed in
+    #[error("expected a shared escrow pool to be passed in")]
+    PoolNotOnSharedEscrow,
+    /// 12029 (0x2EFD) - expected a non-shared escrow pool to be passed in
+    #[error("expected a non-shared escrow pool to be passed in")]
+    PoolOnSharedEscrow,
     /// 12030 (0x2EFE) - wrong order type
     #[error("wrong order type")]
     WrongOrderType,

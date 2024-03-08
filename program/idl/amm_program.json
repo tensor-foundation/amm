@@ -3,9 +3,14 @@
   "name": "amm_program",
   "constants": [
     {
-      "name": "CURRENT_POOL_VERSION",
+      "name": "CURRENT_TSWAP_VERSION",
       "type": "u8",
       "value": "0"
+    },
+    {
+      "name": "CURRENT_POOL_VERSION",
+      "type": "u8",
+      "value": "2"
     },
     {
       "name": "MAX_MM_FEES_BPS",
@@ -13,9 +18,49 @@
       "value": "9999"
     },
     {
+      "name": "HUNDRED_PCT_BPS",
+      "type": "u16",
+      "value": "10000"
+    },
+    {
       "name": "MAX_DELTA_BPS",
       "type": "u16",
       "value": "9999"
+    },
+    {
+      "name": "SPREAD_TICKS",
+      "type": "u8",
+      "value": "1"
+    },
+    {
+      "name": "TSWAP_TAKER_FEE_BPS",
+      "type": "u16",
+      "value": "150"
+    },
+    {
+      "name": "MAKER_REBATE_BPS",
+      "type": "u16",
+      "value": "25"
+    },
+    {
+      "name": "SNIPE_FEE_BPS",
+      "type": "u16",
+      "value": "150"
+    },
+    {
+      "name": "SNIPE_MIN_FEE",
+      "type": "u64",
+      "value": "10000000"
+    },
+    {
+      "name": "SNIPE_PROFIT_SHARE_BPS",
+      "type": "u16",
+      "value": "2000"
+    },
+    {
+      "name": "TAKER_BROKER_PCT",
+      "type": "u64",
+      "value": "0"
     },
     {
       "name": "POOL_SIZE",
@@ -23,6 +68,20 @@
         "defined": "usize"
       },
       "value": "8 + (3 * 1) + 32 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4"
+    },
+    {
+      "name": "SHARED_ESCROW_SIZE",
+      "type": {
+        "defined": "usize"
+      },
+      "value": "8 + 32 + 32 + 2 + 1 + 4 + 64"
+    },
+    {
+      "name": "SINGLE_LISTING_SIZE",
+      "type": {
+        "defined": "usize"
+      },
+      "value": "8 + (32 * 2) + 8 + 1 + 64"
     }
   ],
   "instructions": [
@@ -182,6 +241,210 @@
           }
         }
       ]
+    },
+    {
+      "name": "initMarginAccount",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marginNr",
+          "type": "u16"
+        },
+        {
+          "name": "name",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "closeMarginAccount",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "depositMarginAccount",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdrawMarginAccount",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "attachPoolToMargin",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Needed for pool seeds derivation / will be stored inside pool"
+          ]
+        },
+        {
+          "name": "solEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
+          "type": {
+            "defined": "PoolConfig"
+          }
+        }
+      ]
+    },
+    {
+      "name": "detachPoolFromMargin",
+      "accounts": [
+        {
+          "name": "sharedEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Needed for pool seeds derivation / will be stored inside pool"
+          ]
+        },
+        {
+          "name": "solEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "config",
+          "type": {
+            "defined": "PoolConfig"
+          }
+        },
+        {
+          "name": "lamports",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -318,6 +581,91 @@
       }
     },
     {
+      "name": "SharedEscrow",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "nr",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "poolsAttached",
+            "type": "u32"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SingleListing",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "nftMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": {
+              "array": [
+                "u8",
+                1
+              ]
+            }
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "SolEscrow",
       "docs": [
         "Need dummy Anchor account so we can use `close` constraint."
@@ -446,6 +794,79 @@
       }
     },
     {
+      "name": "AuthorizationDataLocal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payload",
+            "type": {
+              "vec": {
+                "defined": "TaggedPayload"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaggedPayload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "payload",
+            "type": {
+              "defined": "PayloadTypeLocal"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SeedsVecLocal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seeds",
+            "docs": [
+              "The vector of derivation seeds."
+            ],
+            "type": {
+              "vec": "bytes"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProofInfoLocal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "proof",
+            "docs": [
+              "The merkle proof."
+            ],
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolType",
       "type": {
         "kind": "enum",
@@ -475,6 +896,107 @@
           }
         ]
       }
+    },
+    {
+      "name": "Direction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Up"
+          },
+          {
+            "name": "Down"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TakerSide",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Buy"
+          },
+          {
+            "name": "Sell"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayloadTypeLocal",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pubkey",
+            "fields": [
+              "publicKey"
+            ]
+          },
+          {
+            "name": "Seeds",
+            "fields": [
+              {
+                "defined": "SeedsVecLocal"
+              }
+            ]
+          },
+          {
+            "name": "MerkleProof",
+            "fields": [
+              {
+                "defined": "ProofInfoLocal"
+              }
+            ]
+          },
+          {
+            "name": "Number",
+            "fields": [
+              "u64"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "BuySellEvent",
+      "fields": [
+        {
+          "name": "currentPrice",
+          "type": "u64",
+          "index": true
+        },
+        {
+          "name": "tswapFee",
+          "type": "u64",
+          "index": true
+        },
+        {
+          "name": "mmFee",
+          "type": "u64",
+          "index": true
+        },
+        {
+          "name": "creatorsFee",
+          "type": "u64",
+          "index": true
+        }
+      ]
+    },
+    {
+      "name": "DelistEvent",
+      "fields": [
+        {
+          "name": "currentPrice",
+          "type": "u64",
+          "index": true
+        }
+      ]
     }
   ],
   "errors": [
@@ -615,18 +1137,18 @@
     },
     {
       "code": 12027,
-      "name": "BadMargin",
-      "msg": "bad margin account passed"
+      "name": "BadSharedEscrow",
+      "msg": "bad shared escrow account passed"
     },
     {
       "code": 12028,
-      "name": "PoolNotMarginated",
-      "msg": "expected a marginated pool to be passed in"
+      "name": "PoolNotOnSharedEscrow",
+      "msg": "expected a shared escrow pool to be passed in"
     },
     {
       "code": 12029,
-      "name": "PoolMarginated",
-      "msg": "expected a non-marginated pool to be passed in"
+      "name": "PoolOnSharedEscrow",
+      "msg": "expected a non-shared escrow pool to be passed in"
     },
     {
       "code": 12030,

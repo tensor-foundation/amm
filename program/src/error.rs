@@ -113,16 +113,16 @@ pub enum ErrorCode {
     PoolFrozen = 6026,
 
     // 6027 | 0x178b
-    #[msg("bad margin account passed")]
-    BadMargin = 6027,
+    #[msg("bad shared escrow account passed")]
+    BadSharedEscrow = 6027,
 
     // 6028 | 0x178c
-    #[msg("expected a marginated pool to be passed in")]
-    PoolNotMarginated = 6028,
+    #[msg("expected a shared escrow pool to be passed in")]
+    PoolNotOnSharedEscrow = 6028,
 
     // 6029 | 0x178d
-    #[msg("expected a non-marginated pool to be passed in")]
-    PoolMarginated = 6029,
+    #[msg("expected a non-shared escrow pool to be passed in")]
+    PoolOnSharedEscrow = 6029,
 
     //note this is different to pool type - order type = standard/sniping/etc
     // 6030 | 0x178e

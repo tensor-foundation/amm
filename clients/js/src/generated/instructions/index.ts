@@ -6,7 +6,13 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './attachPoolToMargin';
+export * from './closeMarginAccount';
 export * from './closePool';
 export * from './createPool';
+export * from './depositMarginAccount';
+export * from './detachPoolFromMargin';
 export * from './editPool';
+export * from './initMarginAccount';
 export * from './reallocPool';
+export * from './withdrawMarginAccount';

@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
-use vipers::throw_err;
+use spl_math::precise_number::PreciseNumber;
+use vipers::{throw_err, unwrap_checked, unwrap_int};
 
-use crate::error::ErrorCode;
+use crate::{constants::*, error::ErrorCode};
 
 // (!) INCLUSIVE of discriminator (8 bytes)
 #[constant]
@@ -97,6 +98,16 @@ pub struct Pool {
     // pub _reserved: [u8; 0],
 }
 
+pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
+    let fee = unwrap_checked!({
+        (fee_bps as u64)
+            .checked_mul(current_price)?
+            .checked_div(HUNDRED_PCT_BPS as u64)
+    });
+
+    Ok(fee)
+}
+
 impl Pool {
     //used when editing pools to prevent setting a new cap that's too low
     pub fn valid_max_sell_count(&self, new_count: u32) -> Result<()> {
@@ -117,4 +128,135 @@ impl Pool {
 
         Ok(())
     }
+
+    pub fn calc_mm_fee(&self, current_price: u64) -> Result<u64> {
+        if self.config.pool_type != PoolType::Trade {
+            throw_err!(ErrorCode::WrongPoolType);
+        }
+
+        let fee = unwrap_checked!({
+            // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
+            (self.config.mm_fee_bps.unwrap_or(0) as u64)
+                .checked_mul(current_price)?
+                .checked_div(HUNDRED_PCT_BPS as u64)
+        });
+
+        Ok(fee)
+    }
+
+    pub fn calc_tswap_fee(&self, current_price: u64) -> Result<u64> {
+        calc_tswap_fee(TSWAP_TAKER_FEE_BPS, current_price)
+    }
+
+    pub fn current_price(&self, side: TakerSide) -> Result<u64> {
+        match (self.config.pool_type, side) {
+            //Token pool = buys nfts = each sell into the pool LOWERS the price
+            (PoolType::Token, TakerSide::Sell) => {
+                self.shift_price_by_delta(Direction::Down, self.taker_sell_count)
+            }
+            //NFT pool = sells nfts = each buy from the pool INCREASES the price
+            (PoolType::NFT, TakerSide::Buy) => {
+                self.shift_price_by_delta(Direction::Up, self.taker_buy_count)
+            }
+            //if sales > purchases, Trade pool acts as an NFT pool
+            (PoolType::Trade, side) => {
+                // The price of selling into a trade pool is 1 tick lower.
+                // We simulate this by increasing the purchase count by 1.
+                let offset = match side {
+                    TakerSide::Buy => 0,
+                    TakerSide::Sell => SPREAD_TICKS,
+                };
+                let modified_taker_sell_count =
+                    unwrap_int!(self.taker_sell_count.checked_add(offset as u32));
+
+                if self.taker_buy_count > modified_taker_sell_count {
+                    self.shift_price_by_delta(
+                        Direction::Up,
+                        unwrap_int!(self.taker_buy_count.checked_sub(modified_taker_sell_count)),
+                    )
+                } else {
+                    //else, Trade pool acts as a Token pool
+                    self.shift_price_by_delta(
+                        Direction::Down,
+                        unwrap_int!(modified_taker_sell_count.checked_sub(self.taker_buy_count)),
+                    )
+                }
+            }
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
+    }
+
+    pub fn shift_price_by_delta(&self, direction: Direction, times: u32) -> Result<u64> {
+        let current_price = match self.config.curve_type {
+            CurveType::Exponential => {
+                let hundred_pct = unwrap_int!(PreciseNumber::new(HUNDRED_PCT_BPS.into()));
+
+                let base = unwrap_int!(PreciseNumber::new(self.config.starting_price.into()));
+                let factor = unwrap_checked!({
+                    PreciseNumber::new(
+                        (HUNDRED_PCT_BPS as u64)
+                            .checked_add(self.config.delta)?
+                            .into(),
+                    )?
+                    .checked_div(&hundred_pct)?
+                    .checked_pow(times.into())
+                });
+
+                let result = match direction {
+                    // price * (1 + delta)^trade_count
+                    Direction::Up => base.checked_mul(&factor),
+                    //same but / instead of *
+                    Direction::Down => base.checked_div(&factor),
+                };
+
+                unwrap_int!(u64::try_from(unwrap_checked!({ result?.to_imprecise() })).ok())
+            }
+            CurveType::Linear => match direction {
+                Direction::Up => {
+                    unwrap_checked!({
+                        self.config
+                            .starting_price
+                            .checked_add((self.config.delta).checked_mul(times as u64)?)
+                    })
+                }
+                Direction::Down => {
+                    unwrap_checked!({
+                        self.config
+                            .starting_price
+                            .checked_sub((self.config.delta).checked_mul(times as u64)?)
+                    })
+                }
+            },
+        };
+        Ok(current_price)
+    }
+
+    /// This check is against the following scenario:
+    /// 1. user sets cap to 1 and reaches it (so 1/1)
+    /// 2. user detaches margin
+    /// 3. user sells more into the pool (so 2/1)
+    /// 4. user attaches margin again, but 2/1 is theoretically invalid
+    pub fn adjust_pool_max_taker_sell_count(&mut self) -> Result<()> {
+        if self
+            .valid_max_sell_count(self.max_taker_sell_count)
+            .is_err()
+        {
+            self.max_taker_sell_count = self.stats.taker_sell_count - self.stats.taker_buy_count;
+        }
+
+        Ok(())
+    }
+}
+
+pub enum Direction {
+    Up,
+    Down,
+}
+
+#[derive(PartialEq, Eq)]
+pub enum TakerSide {
+    Buy,  // Buying from the pool.
+    Sell, // Selling into the pool.
 }
