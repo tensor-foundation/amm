@@ -8,4 +8,5 @@
 
 export * from './closePool';
 export * from './createPool';
+export * from './editPool';
 export * from './reallocPool';

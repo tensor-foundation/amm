@@ -118,9 +118,9 @@ export type ClosePoolInstructionData = {
 
 export type ClosePoolInstructionDataArgs = { config: PoolConfigArgs };
 
-export function getClosePoolInstructionDataEncoder() {
+export function getClosePoolInstructionDataEncoder(): Encoder<ClosePoolInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{ discriminator: Array<number>; config: PoolConfigArgs }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['config', getPoolConfigEncoder()],
     ]),
@@ -128,14 +128,14 @@ export function getClosePoolInstructionDataEncoder() {
       ...value,
       discriminator: [140, 189, 209, 23, 239, 62, 239, 11],
     })
-  ) satisfies Encoder<ClosePoolInstructionDataArgs>;
+  );
 }
 
-export function getClosePoolInstructionDataDecoder() {
-  return getStructDecoder<ClosePoolInstructionData>([
+export function getClosePoolInstructionDataDecoder(): Decoder<ClosePoolInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['config', getPoolConfigDecoder()],
-  ]) satisfies Decoder<ClosePoolInstructionData>;
+  ]);
 }
 
 export function getClosePoolInstructionDataCodec(): Codec<

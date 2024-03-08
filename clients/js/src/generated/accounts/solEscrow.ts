@@ -50,22 +50,22 @@ export type SolEscrowAccountData = { discriminator: Array<number> };
 
 export type SolEscrowAccountDataArgs = {};
 
-export function getSolEscrowAccountDataEncoder() {
+export function getSolEscrowAccountDataEncoder(): Encoder<SolEscrowAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{ discriminator: Array<number> }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [75, 199, 250, 63, 244, 209, 235, 120],
     })
-  ) satisfies Encoder<SolEscrowAccountDataArgs>;
+  );
 }
 
-export function getSolEscrowAccountDataDecoder() {
-  return getStructDecoder<SolEscrowAccountData>([
+export function getSolEscrowAccountDataDecoder(): Decoder<SolEscrowAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]) satisfies Decoder<SolEscrowAccountData>;
+  ]);
 }
 
 export function getSolEscrowAccountDataCodec(): Codec<

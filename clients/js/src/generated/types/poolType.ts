@@ -20,12 +20,12 @@ export enum PoolType {
 
 export type PoolTypeArgs = PoolType;
 
-export function getPoolTypeEncoder() {
-  return getScalarEnumEncoder(PoolType) satisfies Encoder<PoolTypeArgs>;
+export function getPoolTypeEncoder(): Encoder<PoolTypeArgs> {
+  return getScalarEnumEncoder(PoolType);
 }
 
-export function getPoolTypeDecoder() {
-  return getScalarEnumDecoder(PoolType) satisfies Decoder<PoolType>;
+export function getPoolTypeDecoder(): Decoder<PoolType> {
+  return getScalarEnumDecoder(PoolType);
 }
 
 export function getPoolTypeCodec(): Codec<PoolTypeArgs, PoolType> {

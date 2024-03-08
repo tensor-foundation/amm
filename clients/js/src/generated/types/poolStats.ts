@@ -30,20 +30,20 @@ export type PoolStatsArgs = {
   accumulatedMmProfit: number | bigint;
 };
 
-export function getPoolStatsEncoder() {
-  return getStructEncoder<PoolStatsArgs>([
+export function getPoolStatsEncoder(): Encoder<PoolStatsArgs> {
+  return getStructEncoder([
     ['takerSellCount', getU32Encoder()],
     ['takerBuyCount', getU32Encoder()],
     ['accumulatedMmProfit', getU64Encoder()],
-  ]) satisfies Encoder<PoolStatsArgs>;
+  ]);
 }
 
-export function getPoolStatsDecoder() {
-  return getStructDecoder<PoolStats>([
+export function getPoolStatsDecoder(): Decoder<PoolStats> {
+  return getStructDecoder([
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['accumulatedMmProfit', getU64Decoder()],
-  ]) satisfies Decoder<PoolStats>;
+  ]);
 }
 
 export function getPoolStatsCodec(): Codec<PoolStatsArgs, PoolStats> {

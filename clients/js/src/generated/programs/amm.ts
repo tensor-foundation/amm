@@ -13,6 +13,12 @@ import {
   AmmProgramErrorCode,
   getAmmProgramErrorFromCode,
 } from '../errors';
+import {
+  ParsedClosePoolInstruction,
+  ParsedCreatePoolInstruction,
+  ParsedEditPoolInstruction,
+  ParsedReallocPoolInstruction,
+} from '../instructions';
 import { memcmp } from '../shared';
 
 export const AMM_PROGRAM_ADDRESS =
@@ -55,6 +61,7 @@ export function identifyAmmAccount(
 export enum AmmInstruction {
   ReallocPool,
   CreatePool,
+  EditPool,
   ClosePool,
 }
 
@@ -71,6 +78,9 @@ export function identifyAmmInstruction(
   ) {
     return AmmInstruction.CreatePool;
   }
+  if (memcmp(data, new Uint8Array([50, 174, 34, 36, 3, 166, 29, 204]), 0)) {
+    return AmmInstruction.EditPool;
+  }
   if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
     return AmmInstruction.ClosePool;
   }
@@ -78,3 +88,19 @@ export function identifyAmmInstruction(
     'The provided instruction could not be identified as a amm instruction.'
   );
 }
+
+export type ParsedAmmInstruction<
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
+> =
+  | ({
+      instructionType: AmmInstruction.ReallocPool;
+    } & ParsedReallocPoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.CreatePool;
+    } & ParsedCreatePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.EditPool;
+    } & ParsedEditPoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.ClosePool;
+    } & ParsedClosePoolInstruction<TProgram>);

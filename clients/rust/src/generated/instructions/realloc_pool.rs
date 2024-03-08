@@ -12,8 +12,6 @@ use borsh::BorshSerialize;
 /// Accounts.
 pub struct ReallocPool {
     pub pool: solana_program::pubkey::Pubkey,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
 
@@ -35,13 +33,9 @@ impl ReallocPool {
         args: ReallocPoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.whitelist,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
@@ -91,14 +85,12 @@ pub struct ReallocPoolInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[]` owner
-///   3. `[writable, signer]` cosigner
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   1. `[]` owner
+///   2. `[writable, signer]` cosigner
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct ReallocPoolBuilder {
     pool: Option<solana_program::pubkey::Pubkey>,
-    whitelist: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
@@ -113,12 +105,6 @@ impl ReallocPoolBuilder {
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
-        self
-    }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.whitelist = Some(whitelist);
         self
     }
     #[inline(always)]
@@ -164,7 +150,6 @@ impl ReallocPoolBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = ReallocPool {
             pool: self.pool.expect("pool is not set"),
-            whitelist: self.whitelist.expect("whitelist is not set"),
             owner: self.owner.expect("owner is not set"),
             cosigner: self.cosigner.expect("cosigner is not set"),
             system_program: self
@@ -182,8 +167,6 @@ impl ReallocPoolBuilder {
 /// `realloc_pool` CPI accounts.
 pub struct ReallocPoolCpiAccounts<'a, 'b> {
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -198,8 +181,6 @@ pub struct ReallocPoolCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -219,7 +200,6 @@ impl<'a, 'b> ReallocPoolCpi<'a, 'b> {
         Self {
             __program: program,
             pool: accounts.pool,
-            whitelist: accounts.whitelist,
             owner: accounts.owner,
             cosigner: accounts.cosigner,
             system_program: accounts.system_program,
@@ -259,13 +239,9 @@ impl<'a, 'b> ReallocPoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.whitelist.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -296,10 +272,9 @@ impl<'a, 'b> ReallocPoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.pool.clone());
-        account_infos.push(self.whitelist.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.cosigner.clone());
         account_infos.push(self.system_program.clone());
@@ -320,10 +295,9 @@ impl<'a, 'b> ReallocPoolCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[]` owner
-///   3. `[writable, signer]` cosigner
-///   4. `[]` system_program
+///   1. `[]` owner
+///   2. `[writable, signer]` cosigner
+///   3. `[]` system_program
 pub struct ReallocPoolCpiBuilder<'a, 'b> {
     instruction: Box<ReallocPoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -333,7 +307,6 @@ impl<'a, 'b> ReallocPoolCpiBuilder<'a, 'b> {
         let instruction = Box::new(ReallocPoolCpiBuilderInstruction {
             __program: program,
             pool: None,
-            whitelist: None,
             owner: None,
             cosigner: None,
             system_program: None,
@@ -345,15 +318,6 @@ impl<'a, 'b> ReallocPoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
-        self
-    }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(
-        &mut self,
-        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.whitelist = Some(whitelist);
         self
     }
     #[inline(always)]
@@ -431,8 +395,6 @@ impl<'a, 'b> ReallocPoolCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
-            whitelist: self.instruction.whitelist.expect("whitelist is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             cosigner: self.instruction.cosigner.expect("cosigner is not set"),
@@ -453,7 +415,6 @@ impl<'a, 'b> ReallocPoolCpiBuilder<'a, 'b> {
 struct ReallocPoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

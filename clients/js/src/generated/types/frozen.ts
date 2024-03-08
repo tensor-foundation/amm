@@ -22,18 +22,18 @@ export type Frozen = { amount: bigint; time: bigint };
 
 export type FrozenArgs = { amount: number | bigint; time: number | bigint };
 
-export function getFrozenEncoder() {
-  return getStructEncoder<FrozenArgs>([
+export function getFrozenEncoder(): Encoder<FrozenArgs> {
+  return getStructEncoder([
     ['amount', getU64Encoder()],
     ['time', getI64Encoder()],
-  ]) satisfies Encoder<FrozenArgs>;
+  ]);
 }
 
-export function getFrozenDecoder() {
-  return getStructDecoder<Frozen>([
+export function getFrozenDecoder(): Decoder<Frozen> {
+  return getStructDecoder([
     ['amount', getU64Decoder()],
     ['time', getI64Decoder()],
-  ]) satisfies Decoder<Frozen>;
+  ]);
 }
 
 export function getFrozenCodec(): Codec<FrozenArgs, Frozen> {
