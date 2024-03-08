@@ -24,16 +24,16 @@ export type SeedsVecLocal = {
 
 export type SeedsVecLocalArgs = SeedsVecLocal;
 
-export function getSeedsVecLocalEncoder(): Encoder<SeedsVecLocalArgs> {
-  return getStructEncoder([
+export function getSeedsVecLocalEncoder() {
+  return getStructEncoder<SeedsVecLocalArgs>([
     ['seeds', getArrayEncoder(getBytesEncoder({ size: getU32Encoder() }))],
-  ]);
+  ]) satisfies Encoder<SeedsVecLocalArgs>;
 }
 
-export function getSeedsVecLocalDecoder(): Decoder<SeedsVecLocal> {
-  return getStructDecoder([
+export function getSeedsVecLocalDecoder() {
+  return getStructDecoder<SeedsVecLocal>([
     ['seeds', getArrayDecoder(getBytesDecoder({ size: getU32Decoder() }))],
-  ]);
+  ]) satisfies Decoder<SeedsVecLocal>;
 }
 
 export function getSeedsVecLocalCodec(): Codec<

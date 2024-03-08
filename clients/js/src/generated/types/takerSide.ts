@@ -19,12 +19,12 @@ export enum TakerSide {
 
 export type TakerSideArgs = TakerSide;
 
-export function getTakerSideEncoder(): Encoder<TakerSideArgs> {
-  return getScalarEnumEncoder(TakerSide);
+export function getTakerSideEncoder() {
+  return getScalarEnumEncoder(TakerSide) satisfies Encoder<TakerSideArgs>;
 }
 
-export function getTakerSideDecoder(): Decoder<TakerSide> {
-  return getScalarEnumDecoder(TakerSide);
+export function getTakerSideDecoder() {
+  return getScalarEnumDecoder(TakerSide) satisfies Decoder<TakerSide>;
 }
 
 export function getTakerSideCodec(): Codec<TakerSideArgs, TakerSide> {

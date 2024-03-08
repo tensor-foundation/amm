@@ -206,22 +206,22 @@ export type WnsDelistInstructionData = { discriminator: Array<number> };
 
 export type WnsDelistInstructionDataArgs = {};
 
-export function getWnsDelistInstructionDataEncoder(): Encoder<WnsDelistInstructionDataArgs> {
+export function getWnsDelistInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number> }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [131, 226, 161, 134, 233, 132, 243, 159],
     })
-  );
+  ) satisfies Encoder<WnsDelistInstructionDataArgs>;
 }
 
-export function getWnsDelistInstructionDataDecoder(): Decoder<WnsDelistInstructionData> {
-  return getStructDecoder([
+export function getWnsDelistInstructionDataDecoder() {
+  return getStructDecoder<WnsDelistInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]);
+  ]) satisfies Decoder<WnsDelistInstructionData>;
 }
 
 export function getWnsDelistInstructionDataCodec(): Codec<

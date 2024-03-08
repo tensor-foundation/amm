@@ -110,9 +110,9 @@ export type ReallocPoolInstructionData = {
 
 export type ReallocPoolInstructionDataArgs = { config: PoolConfigArgs };
 
-export function getReallocPoolInstructionDataEncoder(): Encoder<ReallocPoolInstructionDataArgs> {
+export function getReallocPoolInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number>; config: PoolConfigArgs }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['config', getPoolConfigEncoder()],
     ]),
@@ -120,14 +120,14 @@ export function getReallocPoolInstructionDataEncoder(): Encoder<ReallocPoolInstr
       ...value,
       discriminator: [114, 128, 37, 167, 71, 227, 40, 178],
     })
-  );
+  ) satisfies Encoder<ReallocPoolInstructionDataArgs>;
 }
 
-export function getReallocPoolInstructionDataDecoder(): Decoder<ReallocPoolInstructionData> {
-  return getStructDecoder([
+export function getReallocPoolInstructionDataDecoder() {
+  return getStructDecoder<ReallocPoolInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['config', getPoolConfigDecoder()],
-  ]);
+  ]) satisfies Decoder<ReallocPoolInstructionData>;
 }
 
 export function getReallocPoolInstructionDataCodec(): Codec<

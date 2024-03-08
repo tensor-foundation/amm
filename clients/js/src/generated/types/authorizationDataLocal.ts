@@ -24,16 +24,16 @@ export type AuthorizationDataLocal = { payload: Array<TaggedPayload> };
 
 export type AuthorizationDataLocalArgs = { payload: Array<TaggedPayloadArgs> };
 
-export function getAuthorizationDataLocalEncoder(): Encoder<AuthorizationDataLocalArgs> {
-  return getStructEncoder([
+export function getAuthorizationDataLocalEncoder() {
+  return getStructEncoder<AuthorizationDataLocalArgs>([
     ['payload', getArrayEncoder(getTaggedPayloadEncoder())],
-  ]);
+  ]) satisfies Encoder<AuthorizationDataLocalArgs>;
 }
 
-export function getAuthorizationDataLocalDecoder(): Decoder<AuthorizationDataLocal> {
-  return getStructDecoder([
+export function getAuthorizationDataLocalDecoder() {
+  return getStructDecoder<AuthorizationDataLocal>([
     ['payload', getArrayDecoder(getTaggedPayloadDecoder())],
-  ]);
+  ]) satisfies Decoder<AuthorizationDataLocal>;
 }
 
 export function getAuthorizationDataLocalCodec(): Codec<

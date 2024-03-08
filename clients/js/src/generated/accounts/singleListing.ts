@@ -73,9 +73,16 @@ export type SingleListingAccountDataArgs = {
   reserved: Uint8Array;
 };
 
-export function getSingleListingAccountDataEncoder(): Encoder<SingleListingAccountDataArgs> {
+export function getSingleListingAccountDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      owner: Address;
+      nftMint: Address;
+      price: number | bigint;
+      bump: Array<number>;
+      reserved: Uint8Array;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['owner', getAddressEncoder()],
       ['nftMint', getAddressEncoder()],
@@ -87,18 +94,18 @@ export function getSingleListingAccountDataEncoder(): Encoder<SingleListingAccou
       ...value,
       discriminator: [14, 114, 212, 140, 24, 134, 31, 24],
     })
-  );
+  ) satisfies Encoder<SingleListingAccountDataArgs>;
 }
 
-export function getSingleListingAccountDataDecoder(): Decoder<SingleListingAccountData> {
-  return getStructDecoder([
+export function getSingleListingAccountDataDecoder() {
+  return getStructDecoder<SingleListingAccountData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['owner', getAddressDecoder()],
     ['nftMint', getAddressDecoder()],
     ['price', getU64Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
     ['reserved', getBytesDecoder({ size: 64 })],
-  ]);
+  ]) satisfies Decoder<SingleListingAccountData>;
 }
 
 export function getSingleListingAccountDataCodec(): Codec<

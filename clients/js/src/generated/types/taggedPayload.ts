@@ -23,18 +23,18 @@ export type TaggedPayload = { name: string; payload: PayloadTypeLocal };
 
 export type TaggedPayloadArgs = { name: string; payload: PayloadTypeLocalArgs };
 
-export function getTaggedPayloadEncoder(): Encoder<TaggedPayloadArgs> {
-  return getStructEncoder([
+export function getTaggedPayloadEncoder() {
+  return getStructEncoder<TaggedPayloadArgs>([
     ['name', getStringEncoder()],
     ['payload', getPayloadTypeLocalEncoder()],
-  ]);
+  ]) satisfies Encoder<TaggedPayloadArgs>;
 }
 
-export function getTaggedPayloadDecoder(): Decoder<TaggedPayload> {
-  return getStructDecoder([
+export function getTaggedPayloadDecoder() {
+  return getStructDecoder<TaggedPayload>([
     ['name', getStringDecoder()],
     ['payload', getPayloadTypeLocalDecoder()],
-  ]);
+  ]) satisfies Decoder<TaggedPayload>;
 }
 
 export function getTaggedPayloadCodec(): Codec<

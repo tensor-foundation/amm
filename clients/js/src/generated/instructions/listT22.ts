@@ -154,9 +154,9 @@ export type ListT22InstructionData = {
 
 export type ListT22InstructionDataArgs = { price: number | bigint };
 
-export function getListT22InstructionDataEncoder(): Encoder<ListT22InstructionDataArgs> {
+export function getListT22InstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number>; price: number | bigint }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['price', getU64Encoder()],
     ]),
@@ -164,14 +164,14 @@ export function getListT22InstructionDataEncoder(): Encoder<ListT22InstructionDa
       ...value,
       discriminator: [9, 117, 93, 230, 221, 4, 199, 212],
     })
-  );
+  ) satisfies Encoder<ListT22InstructionDataArgs>;
 }
 
-export function getListT22InstructionDataDecoder(): Decoder<ListT22InstructionData> {
-  return getStructDecoder([
+export function getListT22InstructionDataDecoder() {
+  return getStructDecoder<ListT22InstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['price', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<ListT22InstructionData>;
 }
 
 export function getListT22InstructionDataCodec(): Codec<

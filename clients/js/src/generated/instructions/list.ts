@@ -242,9 +242,14 @@ export type ListInstructionDataArgs = {
   rulesAccPresent: boolean;
 };
 
-export function getListInstructionDataEncoder(): Encoder<ListInstructionDataArgs> {
+export function getListInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      price: number | bigint;
+      authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
+      rulesAccPresent: boolean;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['price', getU64Encoder()],
       [
@@ -257,16 +262,16 @@ export function getListInstructionDataEncoder(): Encoder<ListInstructionDataArgs
       ...value,
       discriminator: [54, 174, 193, 67, 17, 41, 132, 38],
     })
-  );
+  ) satisfies Encoder<ListInstructionDataArgs>;
 }
 
-export function getListInstructionDataDecoder(): Decoder<ListInstructionData> {
-  return getStructDecoder([
+export function getListInstructionDataDecoder() {
+  return getStructDecoder<ListInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['price', getU64Decoder()],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['rulesAccPresent', getBooleanDecoder()],
-  ]);
+  ]) satisfies Decoder<ListInstructionData>;
 }
 
 export function getListInstructionDataCodec(): Codec<

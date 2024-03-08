@@ -103,9 +103,12 @@ export type DepositMarginAccountInstructionDataArgs = {
   lamports: number | bigint;
 };
 
-export function getDepositMarginAccountInstructionDataEncoder(): Encoder<DepositMarginAccountInstructionDataArgs> {
+export function getDepositMarginAccountInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      lamports: number | bigint;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['lamports', getU64Encoder()],
     ]),
@@ -113,14 +116,14 @@ export function getDepositMarginAccountInstructionDataEncoder(): Encoder<Deposit
       ...value,
       discriminator: [190, 85, 242, 60, 119, 81, 33, 192],
     })
-  );
+  ) satisfies Encoder<DepositMarginAccountInstructionDataArgs>;
 }
 
-export function getDepositMarginAccountInstructionDataDecoder(): Decoder<DepositMarginAccountInstructionData> {
-  return getStructDecoder([
+export function getDepositMarginAccountInstructionDataDecoder() {
+  return getStructDecoder<DepositMarginAccountInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['lamports', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<DepositMarginAccountInstructionData>;
 }
 
 export function getDepositMarginAccountInstructionDataCodec(): Codec<

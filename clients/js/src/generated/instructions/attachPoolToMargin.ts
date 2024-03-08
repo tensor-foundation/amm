@@ -126,9 +126,9 @@ export type AttachPoolToMarginInstructionData = {
 
 export type AttachPoolToMarginInstructionDataArgs = { config: PoolConfigArgs };
 
-export function getAttachPoolToMarginInstructionDataEncoder(): Encoder<AttachPoolToMarginInstructionDataArgs> {
+export function getAttachPoolToMarginInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number>; config: PoolConfigArgs }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['config', getPoolConfigEncoder()],
     ]),
@@ -136,14 +136,14 @@ export function getAttachPoolToMarginInstructionDataEncoder(): Encoder<AttachPoo
       ...value,
       discriminator: [187, 105, 211, 137, 224, 59, 29, 227],
     })
-  );
+  ) satisfies Encoder<AttachPoolToMarginInstructionDataArgs>;
 }
 
-export function getAttachPoolToMarginInstructionDataDecoder(): Decoder<AttachPoolToMarginInstructionData> {
-  return getStructDecoder([
+export function getAttachPoolToMarginInstructionDataDecoder() {
+  return getStructDecoder<AttachPoolToMarginInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['config', getPoolConfigDecoder()],
-  ]);
+  ]) satisfies Decoder<AttachPoolToMarginInstructionData>;
 }
 
 export function getAttachPoolToMarginInstructionDataCodec(): Codec<

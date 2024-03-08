@@ -95,22 +95,22 @@ export type CloseMarginAccountInstructionData = {
 
 export type CloseMarginAccountInstructionDataArgs = {};
 
-export function getCloseMarginAccountInstructionDataEncoder(): Encoder<CloseMarginAccountInstructionDataArgs> {
+export function getCloseMarginAccountInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number> }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [105, 215, 41, 239, 166, 207, 1, 103],
     })
-  );
+  ) satisfies Encoder<CloseMarginAccountInstructionDataArgs>;
 }
 
-export function getCloseMarginAccountInstructionDataDecoder(): Decoder<CloseMarginAccountInstructionData> {
-  return getStructDecoder([
+export function getCloseMarginAccountInstructionDataDecoder() {
+  return getStructDecoder<CloseMarginAccountInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]);
+  ]) satisfies Decoder<CloseMarginAccountInstructionData>;
 }
 
 export function getCloseMarginAccountInstructionDataCodec(): Codec<

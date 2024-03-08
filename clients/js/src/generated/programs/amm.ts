@@ -13,28 +13,6 @@ import {
   AmmProgramErrorCode,
   getAmmProgramErrorFromCode,
 } from '../errors';
-import {
-  ParsedAttachPoolToMarginInstruction,
-  ParsedBuySingleListingInstruction,
-  ParsedBuySingleListingT22Instruction,
-  ParsedCloseMarginAccountInstruction,
-  ParsedClosePoolInstruction,
-  ParsedCreatePoolInstruction,
-  ParsedDelistInstruction,
-  ParsedDelistT22Instruction,
-  ParsedDepositMarginAccountInstruction,
-  ParsedDetachPoolFromMarginInstruction,
-  ParsedEditPoolInstruction,
-  ParsedEditSingleListingInstruction,
-  ParsedInitMarginAccountInstruction,
-  ParsedListInstruction,
-  ParsedListT22Instruction,
-  ParsedReallocPoolInstruction,
-  ParsedWithdrawMarginAccountInstruction,
-  ParsedWnsBuySingleListingInstruction,
-  ParsedWnsDelistInstruction,
-  ParsedWnsListInstruction,
-} from '../instructions';
 import { memcmp } from '../shared';
 
 export const AMM_PROGRAM_ADDRESS =
@@ -180,65 +158,3 @@ export function identifyAmmInstruction(
     'The provided instruction could not be identified as a amm instruction.'
   );
 }
-
-export type ParsedAmmInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
-> =
-  | ({
-      instructionType: AmmInstruction.ReallocPool;
-    } & ParsedReallocPoolInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.CreatePool;
-    } & ParsedCreatePoolInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.EditPool;
-    } & ParsedEditPoolInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.ClosePool;
-    } & ParsedClosePoolInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.InitMarginAccount;
-    } & ParsedInitMarginAccountInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.CloseMarginAccount;
-    } & ParsedCloseMarginAccountInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.DepositMarginAccount;
-    } & ParsedDepositMarginAccountInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.WithdrawMarginAccount;
-    } & ParsedWithdrawMarginAccountInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.AttachPoolToMargin;
-    } & ParsedAttachPoolToMarginInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.DetachPoolFromMargin;
-    } & ParsedDetachPoolFromMarginInstruction<TProgram>)
-  | ({ instructionType: AmmInstruction.List } & ParsedListInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.Delist;
-    } & ParsedDelistInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.BuySingleListing;
-    } & ParsedBuySingleListingInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.EditSingleListing;
-    } & ParsedEditSingleListingInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.BuySingleListingT22;
-    } & ParsedBuySingleListingT22Instruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.ListT22;
-    } & ParsedListT22Instruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.DelistT22;
-    } & ParsedDelistT22Instruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.WnsBuySingleListing;
-    } & ParsedWnsBuySingleListingInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.WnsList;
-    } & ParsedWnsListInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.WnsDelist;
-    } & ParsedWnsDelistInstruction<TProgram>);

@@ -145,9 +145,16 @@ export type CreatePoolInstructionDataArgs = {
   maxTakerSellCount: OptionOrNullable<number>;
 };
 
-export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstructionDataArgs> {
+export function getCreatePoolInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      identifier: Uint8Array;
+      config: PoolConfigArgs;
+      cosigner: OptionOrNullable<Address>;
+      orderType: number;
+      maxTakerSellCount: OptionOrNullable<number>;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['identifier', getBytesEncoder({ size: 32 })],
       ['config', getPoolConfigEncoder()],
@@ -159,18 +166,18 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ...value,
       discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
     })
-  );
+  ) satisfies Encoder<CreatePoolInstructionDataArgs>;
 }
 
-export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstructionData> {
-  return getStructDecoder([
+export function getCreatePoolInstructionDataDecoder() {
+  return getStructDecoder<CreatePoolInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['identifier', getBytesDecoder({ size: 32 })],
     ['config', getPoolConfigDecoder()],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
-  ]);
+  ]) satisfies Decoder<CreatePoolInstructionData>;
 }
 
 export function getCreatePoolInstructionDataCodec(): Codec<

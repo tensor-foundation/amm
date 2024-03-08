@@ -202,9 +202,9 @@ export type WnsListInstructionData = {
 
 export type WnsListInstructionDataArgs = { price: number | bigint };
 
-export function getWnsListInstructionDataEncoder(): Encoder<WnsListInstructionDataArgs> {
+export function getWnsListInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number>; price: number | bigint }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['price', getU64Encoder()],
     ]),
@@ -212,14 +212,14 @@ export function getWnsListInstructionDataEncoder(): Encoder<WnsListInstructionDa
       ...value,
       discriminator: [212, 193, 161, 215, 128, 43, 190, 204],
     })
-  );
+  ) satisfies Encoder<WnsListInstructionDataArgs>;
 }
 
-export function getWnsListInstructionDataDecoder(): Decoder<WnsListInstructionData> {
-  return getStructDecoder([
+export function getWnsListInstructionDataDecoder() {
+  return getStructDecoder<WnsListInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['price', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<WnsListInstructionData>;
 }
 
 export function getWnsListInstructionDataCodec(): Codec<

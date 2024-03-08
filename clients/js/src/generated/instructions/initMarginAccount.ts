@@ -107,23 +107,27 @@ export type InitMarginAccountInstructionDataArgs = {
   name: Uint8Array;
 };
 
-export function getInitMarginAccountInstructionDataEncoder(): Encoder<InitMarginAccountInstructionDataArgs> {
+export function getInitMarginAccountInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      marginNr: number;
+      name: Uint8Array;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['marginNr', getU16Encoder()],
       ['name', getBytesEncoder({ size: 32 })],
     ]),
     (value) => ({ ...value, discriminator: [10, 54, 68, 252, 130, 97, 39, 52] })
-  );
+  ) satisfies Encoder<InitMarginAccountInstructionDataArgs>;
 }
 
-export function getInitMarginAccountInstructionDataDecoder(): Decoder<InitMarginAccountInstructionData> {
-  return getStructDecoder([
+export function getInitMarginAccountInstructionDataDecoder() {
+  return getStructDecoder<InitMarginAccountInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['marginNr', getU16Decoder()],
     ['name', getBytesDecoder({ size: 32 })],
-  ]);
+  ]) satisfies Decoder<InitMarginAccountInstructionData>;
 }
 
 export function getInitMarginAccountInstructionDataCodec(): Codec<

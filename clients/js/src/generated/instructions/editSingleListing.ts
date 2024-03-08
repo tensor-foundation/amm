@@ -109,9 +109,9 @@ export type EditSingleListingInstructionData = {
 
 export type EditSingleListingInstructionDataArgs = { price: number | bigint };
 
-export function getEditSingleListingInstructionDataEncoder(): Encoder<EditSingleListingInstructionDataArgs> {
+export function getEditSingleListingInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number>; price: number | bigint }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['price', getU64Encoder()],
     ]),
@@ -119,14 +119,14 @@ export function getEditSingleListingInstructionDataEncoder(): Encoder<EditSingle
       ...value,
       discriminator: [88, 38, 236, 212, 31, 185, 18, 166],
     })
-  );
+  ) satisfies Encoder<EditSingleListingInstructionDataArgs>;
 }
 
-export function getEditSingleListingInstructionDataDecoder(): Decoder<EditSingleListingInstructionData> {
-  return getStructDecoder([
+export function getEditSingleListingInstructionDataDecoder() {
+  return getStructDecoder<EditSingleListingInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['price', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<EditSingleListingInstructionData>;
 }
 
 export function getEditSingleListingInstructionDataCodec(): Codec<

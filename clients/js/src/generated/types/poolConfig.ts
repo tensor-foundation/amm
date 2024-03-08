@@ -56,26 +56,26 @@ export type PoolConfigArgs = {
   mmFeeBps: OptionOrNullable<number>;
 };
 
-export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
-  return getStructEncoder([
+export function getPoolConfigEncoder() {
+  return getStructEncoder<PoolConfigArgs>([
     ['poolType', getPoolTypeEncoder()],
     ['curveType', getCurveTypeEncoder()],
     ['startingPrice', getU64Encoder()],
     ['delta', getU64Encoder()],
     ['mmCompoundFees', getBooleanEncoder()],
     ['mmFeeBps', getOptionEncoder(getU16Encoder())],
-  ]);
+  ]) satisfies Encoder<PoolConfigArgs>;
 }
 
-export function getPoolConfigDecoder(): Decoder<PoolConfig> {
-  return getStructDecoder([
+export function getPoolConfigDecoder() {
+  return getStructDecoder<PoolConfig>([
     ['poolType', getPoolTypeDecoder()],
     ['curveType', getCurveTypeDecoder()],
     ['startingPrice', getU64Decoder()],
     ['delta', getU64Decoder()],
     ['mmCompoundFees', getBooleanDecoder()],
     ['mmFeeBps', getOptionDecoder(getU16Decoder())],
-  ]);
+  ]) satisfies Decoder<PoolConfig>;
 }
 
 export function getPoolConfigCodec(): Codec<PoolConfigArgs, PoolConfig> {

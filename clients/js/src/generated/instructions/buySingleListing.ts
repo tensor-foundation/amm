@@ -253,9 +253,15 @@ export type BuySingleListingInstructionDataArgs = {
   optionalRoyaltyPct: OptionOrNullable<number>;
 };
 
-export function getBuySingleListingInstructionDataEncoder(): Encoder<BuySingleListingInstructionDataArgs> {
+export function getBuySingleListingInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      maxPrice: number | bigint;
+      rulesAccPresent: boolean;
+      authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
+      optionalRoyaltyPct: OptionOrNullable<number>;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['maxPrice', getU64Encoder()],
       ['rulesAccPresent', getBooleanEncoder()],
@@ -269,17 +275,17 @@ export function getBuySingleListingInstructionDataEncoder(): Encoder<BuySingleLi
       ...value,
       discriminator: [245, 220, 105, 73, 117, 98, 78, 141],
     })
-  );
+  ) satisfies Encoder<BuySingleListingInstructionDataArgs>;
 }
 
-export function getBuySingleListingInstructionDataDecoder(): Decoder<BuySingleListingInstructionData> {
-  return getStructDecoder([
+export function getBuySingleListingInstructionDataDecoder() {
+  return getStructDecoder<BuySingleListingInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['maxPrice', getU64Decoder()],
     ['rulesAccPresent', getBooleanDecoder()],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['optionalRoyaltyPct', getOptionDecoder(getU16Decoder())],
-  ]);
+  ]) satisfies Decoder<BuySingleListingInstructionData>;
 }
 
 export function getBuySingleListingInstructionDataCodec(): Codec<

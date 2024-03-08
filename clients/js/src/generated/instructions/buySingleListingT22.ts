@@ -179,21 +179,24 @@ export type BuySingleListingT22InstructionDataArgs = {
   maxPrice: number | bigint;
 };
 
-export function getBuySingleListingT22InstructionDataEncoder(): Encoder<BuySingleListingT22InstructionDataArgs> {
+export function getBuySingleListingT22InstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      maxPrice: number | bigint;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['maxPrice', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: [102, 89, 66, 0, 5, 68, 84, 216] })
-  );
+  ) satisfies Encoder<BuySingleListingT22InstructionDataArgs>;
 }
 
-export function getBuySingleListingT22InstructionDataDecoder(): Decoder<BuySingleListingT22InstructionData> {
-  return getStructDecoder([
+export function getBuySingleListingT22InstructionDataDecoder() {
+  return getStructDecoder<BuySingleListingT22InstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['maxPrice', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<BuySingleListingT22InstructionData>;
 }
 
 export function getBuySingleListingT22InstructionDataCodec(): Codec<

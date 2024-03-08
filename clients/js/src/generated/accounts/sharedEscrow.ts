@@ -77,9 +77,17 @@ export type SharedEscrowAccountDataArgs = {
   reserved: Uint8Array;
 };
 
-export function getSharedEscrowAccountDataEncoder(): Encoder<SharedEscrowAccountDataArgs> {
+export function getSharedEscrowAccountDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      owner: Address;
+      name: Uint8Array;
+      nr: number;
+      bump: Array<number>;
+      poolsAttached: number;
+      reserved: Uint8Array;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['owner', getAddressEncoder()],
       ['name', getBytesEncoder({ size: 32 })],
@@ -92,11 +100,11 @@ export function getSharedEscrowAccountDataEncoder(): Encoder<SharedEscrowAccount
       ...value,
       discriminator: [224, 55, 20, 31, 220, 116, 183, 194],
     })
-  );
+  ) satisfies Encoder<SharedEscrowAccountDataArgs>;
 }
 
-export function getSharedEscrowAccountDataDecoder(): Decoder<SharedEscrowAccountData> {
-  return getStructDecoder([
+export function getSharedEscrowAccountDataDecoder() {
+  return getStructDecoder<SharedEscrowAccountData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['owner', getAddressDecoder()],
     ['name', getBytesDecoder({ size: 32 })],
@@ -104,7 +112,7 @@ export function getSharedEscrowAccountDataDecoder(): Decoder<SharedEscrowAccount
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
     ['poolsAttached', getU32Decoder()],
     ['reserved', getBytesDecoder({ size: 64 })],
-  ]);
+  ]) satisfies Decoder<SharedEscrowAccountData>;
 }
 
 export function getSharedEscrowAccountDataCodec(): Codec<

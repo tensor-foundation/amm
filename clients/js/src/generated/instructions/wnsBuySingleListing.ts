@@ -219,9 +219,12 @@ export type WnsBuySingleListingInstructionDataArgs = {
   maxPrice: number | bigint;
 };
 
-export function getWnsBuySingleListingInstructionDataEncoder(): Encoder<WnsBuySingleListingInstructionDataArgs> {
+export function getWnsBuySingleListingInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      maxPrice: number | bigint;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['maxPrice', getU64Encoder()],
     ]),
@@ -229,14 +232,14 @@ export function getWnsBuySingleListingInstructionDataEncoder(): Encoder<WnsBuySi
       ...value,
       discriminator: [28, 14, 132, 207, 212, 248, 121, 199],
     })
-  );
+  ) satisfies Encoder<WnsBuySingleListingInstructionDataArgs>;
 }
 
-export function getWnsBuySingleListingInstructionDataDecoder(): Decoder<WnsBuySingleListingInstructionData> {
-  return getStructDecoder([
+export function getWnsBuySingleListingInstructionDataDecoder() {
+  return getStructDecoder<WnsBuySingleListingInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['maxPrice', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<WnsBuySingleListingInstructionData>;
 }
 
 export function getWnsBuySingleListingInstructionDataCodec(): Codec<

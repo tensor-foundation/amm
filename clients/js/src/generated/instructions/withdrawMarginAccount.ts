@@ -103,21 +103,24 @@ export type WithdrawMarginAccountInstructionDataArgs = {
   lamports: number | bigint;
 };
 
-export function getWithdrawMarginAccountInstructionDataEncoder(): Encoder<WithdrawMarginAccountInstructionDataArgs> {
+export function getWithdrawMarginAccountInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      lamports: number | bigint;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['lamports', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: [54, 73, 150, 208, 207, 5, 18, 17] })
-  );
+  ) satisfies Encoder<WithdrawMarginAccountInstructionDataArgs>;
 }
 
-export function getWithdrawMarginAccountInstructionDataDecoder(): Decoder<WithdrawMarginAccountInstructionData> {
-  return getStructDecoder([
+export function getWithdrawMarginAccountInstructionDataDecoder() {
+  return getStructDecoder<WithdrawMarginAccountInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['lamports', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<WithdrawMarginAccountInstructionData>;
 }
 
 export function getWithdrawMarginAccountInstructionDataCodec(): Codec<

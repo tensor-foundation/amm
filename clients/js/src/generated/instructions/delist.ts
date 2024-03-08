@@ -235,9 +235,13 @@ export type DelistInstructionDataArgs = {
   rulesAccPresent: boolean;
 };
 
-export function getDelistInstructionDataEncoder(): Encoder<DelistInstructionDataArgs> {
+export function getDelistInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
+      rulesAccPresent: boolean;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       [
         'authorizationData',
@@ -249,15 +253,15 @@ export function getDelistInstructionDataEncoder(): Encoder<DelistInstructionData
       ...value,
       discriminator: [55, 136, 205, 107, 107, 173, 4, 31],
     })
-  );
+  ) satisfies Encoder<DelistInstructionDataArgs>;
 }
 
-export function getDelistInstructionDataDecoder(): Decoder<DelistInstructionData> {
-  return getStructDecoder([
+export function getDelistInstructionDataDecoder() {
+  return getStructDecoder<DelistInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['rulesAccPresent', getBooleanDecoder()],
-  ]);
+  ]) satisfies Decoder<DelistInstructionData>;
 }
 
 export function getDelistInstructionDataCodec(): Codec<

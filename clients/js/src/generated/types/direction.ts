@@ -19,12 +19,12 @@ export enum Direction {
 
 export type DirectionArgs = Direction;
 
-export function getDirectionEncoder(): Encoder<DirectionArgs> {
-  return getScalarEnumEncoder(Direction);
+export function getDirectionEncoder() {
+  return getScalarEnumEncoder(Direction) satisfies Encoder<DirectionArgs>;
 }
 
-export function getDirectionDecoder(): Decoder<Direction> {
-  return getScalarEnumDecoder(Direction);
+export function getDirectionDecoder() {
+  return getScalarEnumDecoder(Direction) satisfies Decoder<Direction>;
 }
 
 export function getDirectionCodec(): Codec<DirectionArgs, Direction> {

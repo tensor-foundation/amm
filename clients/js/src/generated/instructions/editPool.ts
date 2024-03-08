@@ -123,25 +123,30 @@ export type EditPoolInstructionDataArgs = {
   maxTakerSellCount: OptionOrNullable<number>;
 };
 
-export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstructionDataArgs> {
+export function getEditPoolInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      newConfig: OptionOrNullable<PoolConfigArgs>;
+      cosigner: OptionOrNullable<Address>;
+      maxTakerSellCount: OptionOrNullable<number>;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['newConfig', getOptionEncoder(getPoolConfigEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: [50, 174, 34, 36, 3, 166, 29, 204] })
-  );
+  ) satisfies Encoder<EditPoolInstructionDataArgs>;
 }
 
-export function getEditPoolInstructionDataDecoder(): Decoder<EditPoolInstructionData> {
-  return getStructDecoder([
+export function getEditPoolInstructionDataDecoder() {
+  return getStructDecoder<EditPoolInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['newConfig', getOptionDecoder(getPoolConfigDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
-  ]);
+  ]) satisfies Decoder<EditPoolInstructionData>;
 }
 
 export function getEditPoolInstructionDataCodec(): Codec<

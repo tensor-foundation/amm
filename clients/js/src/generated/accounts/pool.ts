@@ -138,9 +138,39 @@ export type PoolAccountDataArgs = {
   maxTakerSellCount: number;
 };
 
-export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
+export function getPoolAccountDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      /** Pool version, used to control upgrades. */
+      version: number;
+      /** Bump seed for the pool PDA. */
+      bump: Array<number>;
+      /** SOL Escrow PDA bump seed. */
+      solEscrowBump: Array<number>;
+      /** Owner-chosen identifier for the pool */
+      identifier: Uint8Array;
+      /** Unix timestamp of the pool creation, in seconds. */
+      createdAt: number | bigint;
+      /** Last time a buy or sell order has been executed */
+      updatedAt: number | bigint;
+      config: PoolConfigArgs;
+      owner: Address;
+      whitelist: Address;
+      solEscrow: Address;
+      /** How many times a taker has SOLD into the pool */
+      takerSellCount: number;
+      /** How many times a taker has BOUGHT from the pool */
+      takerBuyCount: number;
+      nftsHeld: number;
+      stats: PoolStatsArgs;
+      /** If an escrow account present, means it's a shared-escrow pool (currently bids only) */
+      sharedEscrow: OptionOrNullable<Address>;
+      /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
+      cosigner: OptionOrNullable<Address>;
+      /** Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity */
+      maxTakerSellCount: number;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['version', getU8Encoder()],
       ['bump', getArrayEncoder(getU8Encoder(), { size: 1 })],
@@ -164,11 +194,11 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ...value,
       discriminator: [241, 154, 109, 4, 17, 177, 109, 188],
     })
-  );
+  ) satisfies Encoder<PoolAccountDataArgs>;
 }
 
-export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
-  return getStructDecoder([
+export function getPoolAccountDataDecoder() {
+  return getStructDecoder<PoolAccountData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['version', getU8Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
@@ -187,7 +217,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['maxTakerSellCount', getU32Decoder()],
-  ]);
+  ]) satisfies Decoder<PoolAccountData>;
 }
 
 export function getPoolAccountDataCodec(): Codec<

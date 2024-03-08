@@ -23,16 +23,16 @@ export type ProofInfoLocal = {
 
 export type ProofInfoLocalArgs = ProofInfoLocal;
 
-export function getProofInfoLocalEncoder(): Encoder<ProofInfoLocalArgs> {
-  return getStructEncoder([
+export function getProofInfoLocalEncoder() {
+  return getStructEncoder<ProofInfoLocalArgs>([
     ['proof', getArrayEncoder(getBytesEncoder({ size: 32 }))],
-  ]);
+  ]) satisfies Encoder<ProofInfoLocalArgs>;
 }
 
-export function getProofInfoLocalDecoder(): Decoder<ProofInfoLocal> {
-  return getStructDecoder([
+export function getProofInfoLocalDecoder() {
+  return getStructDecoder<ProofInfoLocal>([
     ['proof', getArrayDecoder(getBytesDecoder({ size: 32 }))],
-  ]);
+  ]) satisfies Decoder<ProofInfoLocal>;
 }
 
 export function getProofInfoLocalCodec(): Codec<

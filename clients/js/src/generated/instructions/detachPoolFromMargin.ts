@@ -135,9 +135,13 @@ export type DetachPoolFromMarginInstructionDataArgs = {
   lamports: number | bigint;
 };
 
-export function getDetachPoolFromMarginInstructionDataEncoder(): Encoder<DetachPoolFromMarginInstructionDataArgs> {
+export function getDetachPoolFromMarginInstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{
+      discriminator: Array<number>;
+      config: PoolConfigArgs;
+      lamports: number | bigint;
+    }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['config', getPoolConfigEncoder()],
       ['lamports', getU64Encoder()],
@@ -146,15 +150,15 @@ export function getDetachPoolFromMarginInstructionDataEncoder(): Encoder<DetachP
       ...value,
       discriminator: [182, 54, 73, 38, 188, 87, 185, 101],
     })
-  );
+  ) satisfies Encoder<DetachPoolFromMarginInstructionDataArgs>;
 }
 
-export function getDetachPoolFromMarginInstructionDataDecoder(): Decoder<DetachPoolFromMarginInstructionData> {
-  return getStructDecoder([
+export function getDetachPoolFromMarginInstructionDataDecoder() {
+  return getStructDecoder<DetachPoolFromMarginInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['config', getPoolConfigDecoder()],
     ['lamports', getU64Decoder()],
-  ]);
+  ]) satisfies Decoder<DetachPoolFromMarginInstructionData>;
 }
 
 export function getDetachPoolFromMarginInstructionDataCodec(): Codec<

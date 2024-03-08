@@ -166,22 +166,22 @@ export type DelistT22InstructionData = { discriminator: Array<number> };
 
 export type DelistT22InstructionDataArgs = {};
 
-export function getDelistT22InstructionDataEncoder(): Encoder<DelistT22InstructionDataArgs> {
+export function getDelistT22InstructionDataEncoder() {
   return mapEncoder(
-    getStructEncoder([
+    getStructEncoder<{ discriminator: Array<number> }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [216, 72, 73, 18, 204, 82, 123, 26],
     })
-  );
+  ) satisfies Encoder<DelistT22InstructionDataArgs>;
 }
 
-export function getDelistT22InstructionDataDecoder(): Decoder<DelistT22InstructionData> {
-  return getStructDecoder([
+export function getDelistT22InstructionDataDecoder() {
+  return getStructDecoder<DelistT22InstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]);
+  ]) satisfies Decoder<DelistT22InstructionData>;
 }
 
 export function getDelistT22InstructionDataCodec(): Codec<
