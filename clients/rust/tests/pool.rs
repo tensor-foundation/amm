@@ -3,7 +3,11 @@ pub mod setup;
 
 use amm::{
     accounts::Pool,
-    instructions::{ClosePool, ClosePoolInstructionArgs, ReallocPool, ReallocPoolInstructionArgs},
+    instructions::{
+        ClosePool, ClosePoolInstructionArgs, EditPool, EditPoolInstructionArgs, ReallocPool,
+        ReallocPoolInstructionArgs,
+    },
+    types::{CurveType, PoolConfig},
 };
 use borsh::BorshDeserialize;
 use solana_program_test::tokio;
@@ -139,7 +143,6 @@ pub async fn realloc_pool() {
     // When the pool is reallocated
     let ix = ReallocPool {
         pool,
-        whitelist,
         owner: owner.pubkey(),
         cosigner: cosigner.pubkey(),
         system_program: system_program::id(),
@@ -239,4 +242,99 @@ async fn close_pool() {
     // Then the account is gone
     let account = context.banks_client.get_account(pool).await.unwrap();
     assert!(account.is_none());
+}
+
+#[tokio::test]
+async fn edit_pool() {
+    // Set up program context with Tamm and WhiteList programs
+    let mut context = program_context().await;
+
+    // Set up signers and identity and fund them.
+    let owner = Keypair::new();
+    let cosigner = Keypair::new();
+    let identifier = Keypair::new();
+
+    airdrop(&mut context, &owner.pubkey(), ONE_SOL_LAMPORTS)
+        .await
+        .unwrap();
+    airdrop(&mut context, &cosigner.pubkey(), ONE_SOL_LAMPORTS)
+        .await
+        .unwrap();
+
+    // Set up a basic whitelist.
+    let TestWhitelist { whitelist, .. } = setup_default_whitelist(
+        &mut context,
+        TestWhitelistInputs {
+            owner: &owner,
+            cosigner: &cosigner,
+            identifier: identifier.pubkey().to_bytes(),
+        },
+    )
+    .await;
+
+    // When a pool is created
+    let TestPool { pool, config, .. } = setup_default_pool(
+        &mut context,
+        TestPoolInputs {
+            owner: &owner,
+            cosigner: &cosigner,
+            identifier: identifier.pubkey(),
+            whitelist,
+            // Use defaults for the rest
+            pool_type: None,
+            curve_type: None,
+            starting_price: None,
+            delta: None,
+            mm_compound_fees: None,
+            mm_fee_bps: None,
+        },
+    )
+    .await;
+
+    // Then an account was created with the correct data.
+    let account = context.banks_client.get_account(pool).await.unwrap();
+
+    assert!(account.is_some());
+
+    let account = account.unwrap();
+
+    let mut account_data = account.data.as_ref();
+    let pool_data = Pool::deserialize(&mut account_data).unwrap();
+    assert_eq!(pool_data.config, config);
+
+    let new_config = PoolConfig {
+        curve_type: CurveType::Exponential,
+        starting_price: 10,
+        delta: 3,
+        ..config
+    };
+
+    let ix = EditPool {
+        pool,
+        owner: owner.pubkey(),
+        system_program: system_program::id(),
+    }
+    .instruction(EditPoolInstructionArgs {
+        new_config: Some(new_config.clone()),
+        cosigner: None,
+        max_taker_sell_count: None,
+    });
+
+    let tx = Transaction::new_signed_with_payer(
+        &[ix],
+        Some(&context.payer.pubkey()),
+        &[&context.payer, &owner],
+        context.last_blockhash,
+    );
+    context.banks_client.process_transaction(tx).await.unwrap();
+
+    let account = context.banks_client.get_account(pool).await.unwrap();
+
+    assert!(account.is_some());
+
+    let account = account.unwrap();
+
+    let mut account_data = account.data.as_ref();
+    let pool_data = Pool::deserialize(&mut account_data).unwrap();
+    assert_eq!(pool_data.config, new_config);
 }

@@ -1,4 +1,7 @@
 use anchor_lang::prelude::*;
+use vipers::throw_err;
+
+use crate::error::ErrorCode;
 
 // (!) INCLUSIVE of discriminator (8 bytes)
 #[constant]
@@ -92,4 +95,26 @@ pub struct Pool {
     pub max_taker_sell_count: u32,
     // (!) make sure aligns with last number in SIZE
     // pub _reserved: [u8; 0],
+}
+
+impl Pool {
+    //used when editing pools to prevent setting a new cap that's too low
+    pub fn valid_max_sell_count(&self, new_count: u32) -> Result<()> {
+        //0 indicates no restriction
+        if new_count == 0 {
+            return Ok(());
+        }
+
+        //if the pool has made more sells than buys, by defn we can set any cap (including lowest = 1)
+        if self.stats.taker_buy_count > self.stats.taker_sell_count {
+            return Ok(());
+        }
+
+        //< without = because we should let them edit the cap to stop sales
+        if new_count < self.stats.taker_sell_count - self.stats.taker_buy_count {
+            throw_err!(ErrorCode::MaxTakerSellCountTooSmall);
+        }
+
+        Ok(())
+    }
 }

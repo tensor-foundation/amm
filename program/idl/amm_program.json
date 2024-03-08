@@ -35,14 +35,6 @@
           "isSigner": false
         },
         {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "Needed for pool seeds derivation / will be stored inside pool"
-          ]
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": false
@@ -104,6 +96,48 @@
           "name": "args",
           "type": {
             "defined": "CreatePoolArgs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "editPool",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConfig",
+          "type": {
+            "option": {
+              "defined": "PoolConfig"
+            }
+          }
+        },
+        {
+          "name": "cosigner",
+          "type": {
+            "option": "publicKey"
+          }
+        },
+        {
+          "name": "maxTakerSellCount",
+          "type": {
+            "option": "u32"
           }
         }
       ]

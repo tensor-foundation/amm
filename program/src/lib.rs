@@ -38,6 +38,15 @@ pub mod amm_program {
         process_create_pool(ctx, args)
     }
 
+    pub fn edit_pool(
+        ctx: Context<EditPool>,
+        new_config: Option<PoolConfig>,
+        cosigner: Option<Pubkey>,
+        max_taker_sell_count: Option<u32>,
+    ) -> Result<()> {
+        instructions::edit_pool::process_edit_pool(ctx, new_config, cosigner, max_taker_sell_count)
+    }
+
     pub fn close_pool<'info>(
         ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>,
         _config: PoolConfig,

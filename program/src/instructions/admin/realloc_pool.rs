@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use tensor_whitelist::{self, Whitelist};
 use vipers::{throw_err, Validate};
 
 use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, Pool, PoolConfig, POOL_SIZE};
@@ -14,20 +13,12 @@ pub struct ReallocPool<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist,
+        has_one = owner,
         realloc = POOL_SIZE,
         realloc::payer = cosigner,
         realloc::zero = false,
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
 
     /// CHECK: used in seed derivation - NOT A SIGNER, COZ WE'RE MIGRATING ON THEIR BEHALF
     pub owner: AccountInfo<'info>,
