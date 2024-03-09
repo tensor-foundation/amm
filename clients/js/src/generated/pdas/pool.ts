@@ -12,13 +12,14 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from '@solana/addresses';
+import { getBytesEncoder } from '@solana/codecs-data-structures';
 import { getStringEncoder } from '@solana/codecs-strings';
 
 export type PoolSeeds = {
   /** The address of the pool owner */
   owner: Address;
   /** Pool unique identifier */
-  identifier: Address;
+  identifier: Uint8Array;
 };
 
 export async function findPoolPda(
@@ -33,7 +34,7 @@ export async function findPoolPda(
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('pool'),
       getAddressEncoder().encode(seeds.owner),
-      getAddressEncoder().encode(seeds.identifier),
+      getBytesEncoder().encode(seeds.identifier),
     ],
   });
 }

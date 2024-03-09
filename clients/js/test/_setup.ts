@@ -27,9 +27,33 @@ import {
   setTransactionLifetimeUsingBlockhash,
 } from '@solana/web3.js';
 
+const OWNER = [
+  2, 137, 224, 78, 3, 88, 80, 1, 90, 104, 69, 173, 41, 72, 156, 101, 61, 28,
+  161, 206, 55, 239, 245, 124, 205, 126, 177, 10, 77, 15, 2, 196, 28, 187, 45,
+  102, 121, 86, 21, 222, 190, 244, 255, 22, 1, 5, 21, 171, 100, 22, 199, 167,
+  131, 109, 27, 207, 206, 139, 62, 136, 6, 69, 15, 209,
+];
+
+const COSIGNER = [
+  63, 201, 215, 122, 70, 129, 164, 234, 138, 215, 154, 200, 69, 41, 220, 47, 84,
+  238, 101, 234, 165, 187, 198, 195, 211, 71, 210, 107, 95, 83, 26, 152, 211,
+  35, 143, 215, 197, 161, 88, 73, 106, 218, 0, 209, 140, 249, 174, 18, 232, 128,
+  243, 136, 151, 255, 53, 244, 12, 20, 94, 128, 72, 199, 46, 187,
+];
+
 type Client = {
   rpc: ReturnType<typeof createSolanaRpc>;
   rpcSubscriptions: ReturnType<typeof createSolanaRpcSubscriptions>;
+};
+
+export const setupSigners = async (client: Client) => {
+  const owner = await createKeyPairSigner(client, Uint8Array.from(OWNER));
+  const cosigner = await createKeyPairSigner(client, Uint8Array.from(COSIGNER));
+
+  await fundWalletWithSol(client, owner.address);
+  await fundWalletWithSol(client, cosigner.address);
+
+  return { owner, cosigner };
 };
 
 export const createDefaultSolanaClient = (): Client => {

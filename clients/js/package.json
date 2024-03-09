@@ -44,6 +44,7 @@
     "@solana/rpc-transport": "2.0.0-experimental.dbe6a73",
     "@solana/web3.js": "2.0.0-experimental.dbe6a73",
     "@solana/webcrypto-ed25519-polyfill": "2.0.0-experimental.dbe6a73",
+    "@tensor-foundation/whitelist": "^0.0.0",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.46.1",
     "ava": "^5.1.0",
@@ -61,7 +62,9 @@
     "vercel": "^28.16.0"
   },
   "ava": {
-    "require": ["./test/_globals.js"],
+    "require": [
+      "./test/_globals.js"
+    ],
     "typescript": {
       "compile": false,
       "rewritePaths": {

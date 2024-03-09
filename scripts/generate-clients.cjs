@@ -28,7 +28,7 @@ kinobi.update(
         ),
         k.variablePdaSeedNode(
           "identifier",
-          k.publicKeyTypeNode(),
+          k.bytesTypeNode(),
           "Pool unique identifier"
         )
       ]

@@ -15,7 +15,7 @@
     "emitDeclarationOnly": false,
     "importHelpers": false,
     "strict": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false, // TODO: set to true for prod
     "noFallthroughCasesInSwitch": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
