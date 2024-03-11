@@ -34,7 +34,7 @@ export async function findPoolPda(
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('pool'),
       getAddressEncoder().encode(seeds.owner),
-      getBytesEncoder().encode(seeds.identifier),
+      getBytesEncoder({ size: 32 }).encode(seeds.identifier),
     ],
   });
 }

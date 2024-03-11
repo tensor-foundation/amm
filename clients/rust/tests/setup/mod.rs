@@ -145,9 +145,8 @@ pub async fn setup_default_pool<'a>(
         mm_fee_bps,
     } = inputs;
 
-    let pool = Pool::find_pda(&owner.pubkey(), &identifier).0;
+    let pool = Pool::find_pda(&owner.pubkey(), identifier.to_bytes()).0;
     let sol_escrow = SolEscrow::find_pda(&pool).0;
-
     let config = PoolConfig {
         pool_type: pool_type.unwrap_or(PoolType::Token),
         curve_type: curve_type.unwrap_or(CurveType::Linear),
