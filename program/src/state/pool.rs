@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
+use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
+use tensor_toolbox::calc_creators_fee;
 use vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
@@ -109,6 +111,24 @@ pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
 }
 
 impl Pool {
+    pub fn taker_allowed_to_sell(&self) -> Result<()> {
+        //0 indicates no restriction on buy count / if no shared_escrow, not relevant
+        if self.max_taker_sell_count == 0 || self.shared_escrow.is_none() {
+            return Ok(());
+        }
+
+        //if the pool has made more sells than buys, by defn it can buy more to get to initial state
+        if self.stats.taker_buy_count > self.stats.taker_sell_count {
+            return Ok(());
+        }
+
+        //<= because equal means taker can no longer sell
+        if self.max_taker_sell_count <= self.stats.taker_sell_count - self.stats.taker_buy_count {
+            throw_err!(ErrorCode::MaxTakerSellCountExceeded);
+        }
+        Ok(())
+    }
+
     //used when editing pools to prevent setting a new cap that's too low
     pub fn valid_max_sell_count(&self, new_count: u32) -> Result<()> {
         //0 indicates no restriction
@@ -186,6 +206,20 @@ impl Pool {
                 throw_err!(ErrorCode::WrongPoolType);
             }
         }
+    }
+
+    pub fn calc_creators_fee(
+        &self,
+        metadata: &Metadata,
+        current_price: u64,
+        optional_royalty_pct: Option<u16>,
+    ) -> Result<u64> {
+        calc_creators_fee(
+            metadata.seller_fee_basis_points,
+            current_price,
+            metadata.token_standard,
+            optional_royalty_pct,
+        )
     }
 
     pub fn shift_price_by_delta(&self, direction: Direction, times: u32) -> Result<u64> {

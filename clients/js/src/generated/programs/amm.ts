@@ -33,6 +33,7 @@ export function getAmmProgram(): AmmProgram {
 }
 
 export enum AmmAccount {
+  NftDepositReceipt,
   Pool,
   SharedEscrow,
   SingleListing,
@@ -43,6 +44,9 @@ export function identifyAmmAccount(
   account: { data: Uint8Array } | Uint8Array
 ): AmmAccount {
   const data = account instanceof Uint8Array ? account : account.data;
+  if (memcmp(data, new Uint8Array([206, 255, 132, 254, 67, 78, 62, 96]), 0)) {
+    return AmmAccount.NftDepositReceipt;
+  }
   if (memcmp(data, new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]), 0)) {
     return AmmAccount.Pool;
   }
@@ -65,7 +69,14 @@ export enum AmmInstruction {
   CreatePool,
   EditPool,
   ClosePool,
-  InitMarginAccount,
+  DepositNft,
+  WithdrawNft,
+  DepositSol,
+  WithdrawSol,
+  BuyNft,
+  SellNftTokenPool,
+  SellNftTradePool,
+  InitSharedEscrowAccount,
   CloseMarginAccount,
   DepositMarginAccount,
   WithdrawMarginAccount,
@@ -102,8 +113,33 @@ export function identifyAmmInstruction(
   if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
     return AmmInstruction.ClosePool;
   }
-  if (memcmp(data, new Uint8Array([10, 54, 68, 252, 130, 97, 39, 52]), 0)) {
-    return AmmInstruction.InitMarginAccount;
+  if (memcmp(data, new Uint8Array([93, 226, 132, 166, 141, 9, 48, 101]), 0)) {
+    return AmmInstruction.DepositNft;
+  }
+  if (
+    memcmp(data, new Uint8Array([142, 181, 191, 149, 82, 175, 216, 100]), 0)
+  ) {
+    return AmmInstruction.WithdrawNft;
+  }
+  if (memcmp(data, new Uint8Array([108, 81, 78, 117, 125, 155, 56, 200]), 0)) {
+    return AmmInstruction.DepositSol;
+  }
+  if (memcmp(data, new Uint8Array([145, 131, 74, 136, 65, 137, 42, 38]), 0)) {
+    return AmmInstruction.WithdrawSol;
+  }
+  if (memcmp(data, new Uint8Array([96, 0, 28, 190, 49, 107, 83, 222]), 0)) {
+    return AmmInstruction.BuyNft;
+  }
+  if (memcmp(data, new Uint8Array([57, 44, 192, 48, 83, 8, 107, 48]), 0)) {
+    return AmmInstruction.SellNftTokenPool;
+  }
+  if (memcmp(data, new Uint8Array([131, 82, 125, 77, 13, 157, 36, 90]), 0)) {
+    return AmmInstruction.SellNftTradePool;
+  }
+  if (
+    memcmp(data, new Uint8Array([250, 243, 149, 156, 231, 41, 150, 104]), 0)
+  ) {
+    return AmmInstruction.InitSharedEscrowAccount;
   }
   if (memcmp(data, new Uint8Array([105, 215, 41, 239, 166, 207, 1, 103]), 0)) {
     return AmmInstruction.CloseMarginAccount;

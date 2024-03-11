@@ -17,14 +17,12 @@ import {
 import {
   getArrayDecoder,
   getArrayEncoder,
-  getBytesDecoder,
-  getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
 } from '@solana/codecs-data-structures';
 import {
-  getU16Decoder,
-  getU16Encoder,
+  getU64Decoder,
+  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
 } from '@solana/codecs-numbers';
@@ -44,10 +42,18 @@ import {
   accountMetaWithDefault,
   getAccountMetasWithSigners,
 } from '../shared';
+import {
+  PoolConfig,
+  PoolConfigArgs,
+  getPoolConfigDecoder,
+  getPoolConfigEncoder,
+} from '../types';
 
-export type InitMarginAccountInstruction<
+export type WithdrawSolInstruction<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
+  TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -57,9 +63,15 @@ export type InitMarginAccountInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountSharedEscrow extends string
-        ? WritableAccount<TAccountSharedEscrow>
-        : TAccountSharedEscrow,
+      TAccountPool extends string
+        ? WritableAccount<TAccountPool>
+        : TAccountPool,
+      TAccountWhitelist extends string
+        ? ReadonlyAccount<TAccountWhitelist>
+        : TAccountWhitelist,
+      TAccountSolEscrow extends string
+        ? WritableAccount<TAccountSolEscrow>
+        : TAccountSolEscrow,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner>
         : TAccountOwner,
@@ -70,9 +82,11 @@ export type InitMarginAccountInstruction<
     ]
   >;
 
-export type InitMarginAccountInstructionWithSigners<
+export type WithdrawSolInstructionWithSigners<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
+  TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -82,9 +96,15 @@ export type InitMarginAccountInstructionWithSigners<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountSharedEscrow extends string
-        ? WritableAccount<TAccountSharedEscrow>
-        : TAccountSharedEscrow,
+      TAccountPool extends string
+        ? WritableAccount<TAccountPool>
+        : TAccountPool,
+      TAccountWhitelist extends string
+        ? ReadonlyAccount<TAccountWhitelist>
+        : TAccountWhitelist,
+      TAccountSolEscrow extends string
+        ? WritableAccount<TAccountSolEscrow>
+        : TAccountSolEscrow,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
@@ -96,116 +116,145 @@ export type InitMarginAccountInstructionWithSigners<
     ]
   >;
 
-export type InitMarginAccountInstructionData = {
+export type WithdrawSolInstructionData = {
   discriminator: Array<number>;
-  marginNr: number;
-  name: Uint8Array;
+  config: PoolConfig;
+  lamports: bigint;
 };
 
-export type InitMarginAccountInstructionDataArgs = {
-  marginNr: number;
-  name: Uint8Array;
+export type WithdrawSolInstructionDataArgs = {
+  config: PoolConfigArgs;
+  lamports: number | bigint;
 };
 
-export function getInitMarginAccountInstructionDataEncoder() {
+export function getWithdrawSolInstructionDataEncoder() {
   return mapEncoder(
     getStructEncoder<{
       discriminator: Array<number>;
-      marginNr: number;
-      name: Uint8Array;
+      config: PoolConfigArgs;
+      lamports: number | bigint;
     }>([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['marginNr', getU16Encoder()],
-      ['name', getBytesEncoder({ size: 32 })],
+      ['config', getPoolConfigEncoder()],
+      ['lamports', getU64Encoder()],
     ]),
-    (value) => ({ ...value, discriminator: [10, 54, 68, 252, 130, 97, 39, 52] })
-  ) satisfies Encoder<InitMarginAccountInstructionDataArgs>;
+    (value) => ({
+      ...value,
+      discriminator: [145, 131, 74, 136, 65, 137, 42, 38],
+    })
+  ) satisfies Encoder<WithdrawSolInstructionDataArgs>;
 }
 
-export function getInitMarginAccountInstructionDataDecoder() {
-  return getStructDecoder<InitMarginAccountInstructionData>([
+export function getWithdrawSolInstructionDataDecoder() {
+  return getStructDecoder<WithdrawSolInstructionData>([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['marginNr', getU16Decoder()],
-    ['name', getBytesDecoder({ size: 32 })],
-  ]) satisfies Decoder<InitMarginAccountInstructionData>;
+    ['config', getPoolConfigDecoder()],
+    ['lamports', getU64Decoder()],
+  ]) satisfies Decoder<WithdrawSolInstructionData>;
 }
 
-export function getInitMarginAccountInstructionDataCodec(): Codec<
-  InitMarginAccountInstructionDataArgs,
-  InitMarginAccountInstructionData
+export function getWithdrawSolInstructionDataCodec(): Codec<
+  WithdrawSolInstructionDataArgs,
+  WithdrawSolInstructionData
 > {
   return combineCodec(
-    getInitMarginAccountInstructionDataEncoder(),
-    getInitMarginAccountInstructionDataDecoder()
+    getWithdrawSolInstructionDataEncoder(),
+    getWithdrawSolInstructionDataDecoder()
   );
 }
 
-export type InitMarginAccountInput<
-  TAccountSharedEscrow extends string,
+export type WithdrawSolInput<
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSolEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string
 > = {
-  sharedEscrow: Address<TAccountSharedEscrow>;
+  pool: Address<TAccountPool>;
+  whitelist: Address<TAccountWhitelist>;
+  solEscrow: Address<TAccountSolEscrow>;
+  /** Tied to the pool because used to verify pool seeds */
   owner: Address<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
-  marginNr: InitMarginAccountInstructionDataArgs['marginNr'];
-  name: InitMarginAccountInstructionDataArgs['name'];
+  config: WithdrawSolInstructionDataArgs['config'];
+  lamports: WithdrawSolInstructionDataArgs['lamports'];
 };
 
-export type InitMarginAccountInputWithSigners<
-  TAccountSharedEscrow extends string,
+export type WithdrawSolInputWithSigners<
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSolEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string
 > = {
-  sharedEscrow: Address<TAccountSharedEscrow>;
+  pool: Address<TAccountPool>;
+  whitelist: Address<TAccountWhitelist>;
+  solEscrow: Address<TAccountSolEscrow>;
+  /** Tied to the pool because used to verify pool seeds */
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
-  marginNr: InitMarginAccountInstructionDataArgs['marginNr'];
-  name: InitMarginAccountInstructionDataArgs['name'];
+  config: WithdrawSolInstructionDataArgs['config'];
+  lamports: WithdrawSolInstructionDataArgs['lamports'];
 };
 
-export function getInitMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
+export function getWithdrawSolInstruction<
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSolEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
-  input: InitMarginAccountInputWithSigners<
-    TAccountSharedEscrow,
+  input: WithdrawSolInputWithSigners<
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSolEscrow,
     TAccountOwner,
     TAccountSystemProgram
   >
-): InitMarginAccountInstructionWithSigners<
+): WithdrawSolInstructionWithSigners<
   TProgram,
-  TAccountSharedEscrow,
+  TAccountPool,
+  TAccountWhitelist,
+  TAccountSolEscrow,
   TAccountOwner,
   TAccountSystemProgram
 >;
-export function getInitMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
+export function getWithdrawSolInstruction<
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSolEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
-  input: InitMarginAccountInput<
-    TAccountSharedEscrow,
+  input: WithdrawSolInput<
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSolEscrow,
     TAccountOwner,
     TAccountSystemProgram
   >
-): InitMarginAccountInstruction<
+): WithdrawSolInstruction<
   TProgram,
-  TAccountSharedEscrow,
+  TAccountPool,
+  TAccountWhitelist,
+  TAccountSolEscrow,
   TAccountOwner,
   TAccountSystemProgram
 >;
-export function getInitMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
+export function getWithdrawSolInstruction<
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSolEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
-  input: InitMarginAccountInput<
-    TAccountSharedEscrow,
+  input: WithdrawSolInput<
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSolEscrow,
     TAccountOwner,
     TAccountSystemProgram
   >
@@ -216,15 +265,19 @@ export function getInitMarginAccountInstruction<
 
   // Original accounts.
   type AccountMetas = Parameters<
-    typeof getInitMarginAccountInstructionRaw<
+    typeof getWithdrawSolInstructionRaw<
       TProgram,
-      TAccountSharedEscrow,
+      TAccountPool,
+      TAccountWhitelist,
+      TAccountSolEscrow,
       TAccountOwner,
       TAccountSystemProgram
     >
   >[0];
   const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
-    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
+    pool: { value: input.pool ?? null, isWritable: true },
+    whitelist: { value: input.whitelist ?? null, isWritable: false },
+    solEscrow: { value: input.solEscrow ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -245,18 +298,20 @@ export function getInitMarginAccountInstruction<
     programAddress
   );
 
-  const instruction = getInitMarginAccountInstructionRaw(
+  const instruction = getWithdrawSolInstructionRaw(
     accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    args as InitMarginAccountInstructionDataArgs,
+    args as WithdrawSolInstructionDataArgs,
     programAddress
   );
 
   return instruction;
 }
 
-export function getInitMarginAccountInstructionRaw<
+export function getWithdrawSolInstructionRaw<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
+  TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -264,9 +319,13 @@ export function getInitMarginAccountInstructionRaw<
   TRemainingAccounts extends Array<IAccountMeta<string>> = []
 >(
   accounts: {
-    sharedEscrow: TAccountSharedEscrow extends string
-      ? Address<TAccountSharedEscrow>
-      : TAccountSharedEscrow;
+    pool: TAccountPool extends string ? Address<TAccountPool> : TAccountPool;
+    whitelist: TAccountWhitelist extends string
+      ? Address<TAccountWhitelist>
+      : TAccountWhitelist;
+    solEscrow: TAccountSolEscrow extends string
+      ? Address<TAccountSolEscrow>
+      : TAccountSolEscrow;
     owner: TAccountOwner extends string
       ? Address<TAccountOwner>
       : TAccountOwner;
@@ -274,13 +333,15 @@ export function getInitMarginAccountInstructionRaw<
       ? Address<TAccountSystemProgram>
       : TAccountSystemProgram;
   },
-  args: InitMarginAccountInstructionDataArgs,
+  args: WithdrawSolInstructionDataArgs,
   programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
   remainingAccounts?: TRemainingAccounts
 ) {
   return {
     accounts: [
-      accountMetaWithDefault(accounts.sharedEscrow, AccountRole.WRITABLE),
+      accountMetaWithDefault(accounts.pool, AccountRole.WRITABLE),
+      accountMetaWithDefault(accounts.whitelist, AccountRole.READONLY),
+      accountMetaWithDefault(accounts.solEscrow, AccountRole.WRITABLE),
       accountMetaWithDefault(accounts.owner, AccountRole.WRITABLE_SIGNER),
       accountMetaWithDefault(
         accounts.systemProgram ??
@@ -289,39 +350,44 @@ export function getInitMarginAccountInstructionRaw<
       ),
       ...(remainingAccounts ?? []),
     ],
-    data: getInitMarginAccountInstructionDataEncoder().encode(args),
+    data: getWithdrawSolInstructionDataEncoder().encode(args),
     programAddress,
-  } as InitMarginAccountInstruction<
+  } as WithdrawSolInstruction<
     TProgram,
-    TAccountSharedEscrow,
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSolEscrow,
     TAccountOwner,
     TAccountSystemProgram,
     TRemainingAccounts
   >;
 }
 
-export type ParsedInitMarginAccountInstruction<
+export type ParsedWithdrawSolInstruction<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    sharedEscrow: TAccountMetas[0];
-    owner: TAccountMetas[1];
-    systemProgram: TAccountMetas[2];
+    pool: TAccountMetas[0];
+    whitelist: TAccountMetas[1];
+    solEscrow: TAccountMetas[2];
+    /** Tied to the pool because used to verify pool seeds */
+    owner: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
-  data: InitMarginAccountInstructionData;
+  data: WithdrawSolInstructionData;
 };
 
-export function parseInitMarginAccountInstruction<
+export function parseWithdrawSolInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[]
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedInitMarginAccountInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+): ParsedWithdrawSolInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -334,10 +400,12 @@ export function parseInitMarginAccountInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      sharedEscrow: getNextAccount(),
+      pool: getNextAccount(),
+      whitelist: getNextAccount(),
+      solEscrow: getNextAccount(),
       owner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getInitMarginAccountInstructionDataDecoder().decode(instruction.data),
+    data: getWithdrawSolInstructionDataDecoder().decode(instruction.data),
   };
 }

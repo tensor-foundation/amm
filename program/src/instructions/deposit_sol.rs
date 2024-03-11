@@ -1,0 +1,80 @@
+//! User depositing SOL into their Token/Trade pool (to purchase NFTs)
+use anchor_lang::solana_program::{program::invoke, system_instruction};
+use tensor_whitelist::Whitelist;
+use vipers::{throw_err, Validate};
+
+use crate::{error::ErrorCode, *};
+
+#[derive(Accounts)]
+#[instruction( config: PoolConfig)]
+pub struct DepositSol<'info> {
+    #[account(
+        mut,
+        seeds = [
+            b"pool",
+            owner.key().as_ref(),
+            whitelist.key().as_ref(),
+        ],
+        bump = pool.bump[0],
+        has_one = owner, has_one = whitelist, has_one = sol_escrow,
+        // can only deposit SOL into Token/Trade pool
+        constraint = config.pool_type == PoolType::Token ||  config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+    )]
+    pub pool: Box<Account<'info, Pool>>,
+
+    /// CHECK: has_one = whitelist in pool
+    #[account(
+        seeds = [&whitelist.uuid],
+        bump,
+        seeds::program = tensor_whitelist::ID
+    )]
+    pub whitelist: Box<Account<'info, Whitelist>>,
+
+    /// CHECK: has_one = escrow in pool
+    #[account(
+        mut,
+        seeds=[
+            b"sol_escrow".as_ref(),
+            pool.key().as_ref(),
+        ],
+        bump = pool.sol_escrow_bump[0],
+    )]
+    pub sol_escrow: Box<Account<'info, SolEscrow>>,
+
+    /// CHECK: has_one = owner in pool
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+impl<'info> DepositSol<'info> {
+    fn transfer_lamports(&self, lamports: u64) -> Result<()> {
+        invoke(
+            &system_instruction::transfer(self.owner.key, &self.sol_escrow.key(), lamports),
+            &[
+                self.owner.to_account_info(),
+                self.sol_escrow.to_account_info(),
+                self.system_program.to_account_info(),
+            ],
+        )
+        .map_err(Into::into)
+    }
+}
+
+impl<'info> Validate<'info> for DepositSol<'info> {
+    fn validate(&self) -> Result<()> {
+        if self.pool.shared_escrow.is_some() {
+            throw_err!(ErrorCode::PoolOnSharedEscrow);
+        }
+        Ok(())
+    }
+}
+
+#[access_control(ctx.accounts.validate())]
+pub fn process_deposit_sol<'info>(
+    ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
+    lamports: u64,
+) -> Result<()> {
+    ctx.accounts.transfer_lamports(lamports)
+}

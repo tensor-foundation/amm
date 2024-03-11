@@ -54,92 +54,92 @@ pub mod amm_program {
         instructions::close_pool::process_close_pool(ctx)
     }
 
-    // pub fn deposit_nft<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
-    //     _config: PoolConfig,
-    //     authorization_data: Option<AuthorizationDataLocal>,
-    //     rules_acc_present: bool,
-    // ) -> Result<()> {
-    //     instructions::deposit_nft::process_deposit_nft(ctx, authorization_data, rules_acc_present)
-    // }
+    pub fn deposit_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
+        _config: PoolConfig,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::deposit_nft::process_deposit_nft(ctx, authorization_data, rules_acc_present)
+    }
 
-    // pub fn withdraw_nft<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
-    //     _config: PoolConfig,
-    //     authorization_data: Option<AuthorizationDataLocal>,
-    //     rules_acc_present: bool,
-    // ) -> Result<()> {
-    //     instructions::withdraw_nft::process_withdraw_nft(ctx, authorization_data, rules_acc_present)
-    // }
+    pub fn withdraw_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
+        _config: PoolConfig,
+        authorization_data: Option<AuthorizationDataLocal>,
+        rules_acc_present: bool,
+    ) -> Result<()> {
+        instructions::withdraw_nft::process_withdraw_nft(ctx, authorization_data, rules_acc_present)
+    }
 
-    // pub fn deposit_sol<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
-    //     _config: PoolConfig,
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::deposit_sol::process_deposit_sol(ctx, lamports)
-    // }
+    pub fn deposit_sol<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
+        _config: PoolConfig,
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::deposit_sol::process_deposit_sol(ctx, lamports)
+    }
 
-    // pub fn withdraw_sol<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
-    //     _config: PoolConfig,
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::withdraw_sol::process_withdraw_sol(ctx, lamports)
-    // }
+    pub fn withdraw_sol<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
+        _config: PoolConfig,
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::withdraw_sol::process_withdraw_sol(ctx, lamports)
+    }
 
-    // pub fn buy_nft<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
-    //     _config: PoolConfig,
-    //     max_price: u64,
-    //     rules_acc_present: bool,
-    //     authorization_data: Option<AuthorizationDataLocal>,
-    //     optional_royalty_pct: Option<u16>,
-    // ) -> Result<()> {
-    //     instructions::buy_nft::process_buy_nft(
-    //         ctx,
-    //         max_price,
-    //         rules_acc_present,
-    //         authorization_data,
-    //         optional_royalty_pct,
-    //     )
-    // }
+    pub fn buy_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
+        _config: PoolConfig,
+        max_price: u64,
+        rules_acc_present: bool,
+        authorization_data: Option<AuthorizationDataLocal>,
+        optional_royalty_pct: Option<u16>,
+    ) -> Result<()> {
+        instructions::buy_nft::process_buy_nft(
+            ctx,
+            max_price,
+            rules_acc_present,
+            authorization_data,
+            optional_royalty_pct,
+        )
+    }
 
-    // pub fn sell_nft_token_pool<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, SellNftTokenPool<'info>>,
-    //     _config: PoolConfig,
-    //     min_price: u64,
-    //     rules_acc_present: bool,
-    //     authorization_data: Option<AuthorizationDataLocal>,
-    //     optional_royalty_pct: Option<u16>,
-    // ) -> Result<()> {
-    //     instructions::sell_nft_token_pool::process_sell_nft_token_pool(
-    //         ctx,
-    //         min_price,
-    //         rules_acc_present,
-    //         authorization_data,
-    //         optional_royalty_pct,
-    //     )
-    // }
+    pub fn sell_nft_token_pool<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTokenPool<'info>>,
+        _config: PoolConfig,
+        min_price: u64,
+        rules_acc_present: bool,
+        authorization_data: Option<AuthorizationDataLocal>,
+        optional_royalty_pct: Option<u16>,
+    ) -> Result<()> {
+        instructions::sell_nft_token_pool::process_sell_nft_token_pool(
+            ctx,
+            min_price,
+            rules_acc_present,
+            authorization_data,
+            optional_royalty_pct,
+        )
+    }
 
-    // pub fn sell_nft_trade_pool<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
-    //     _config: PoolConfig,
-    //     min_price: u64,
-    //     rules_acc_present: bool,
-    //     authorization_data: Option<AuthorizationDataLocal>,
-    //     optional_royalty_pct: Option<u16>,
-    // ) -> Result<()> {
-    //     instructions::sell_nft_trade_pool::process_sell_nft_trade_pool(
-    //         ctx,
-    //         min_price,
-    //         rules_acc_present,
-    //         authorization_data,
-    //         optional_royalty_pct,
-    //     )
-    // }
+    pub fn sell_nft_trade_pool<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
+        _config: PoolConfig,
+        min_price: u64,
+        rules_acc_present: bool,
+        authorization_data: Option<AuthorizationDataLocal>,
+        optional_royalty_pct: Option<u16>,
+    ) -> Result<()> {
+        instructions::sell_nft_trade_pool::process_sell_nft_trade_pool(
+            ctx,
+            min_price,
+            rules_acc_present,
+            authorization_data,
+            optional_royalty_pct,
+        )
+    }
 
-    pub fn init_margin_account(
+    pub fn init_shared_escrow_account(
         ctx: Context<InitSharedEscrow>,
         margin_nr: u16,
         name: [u8; 32],

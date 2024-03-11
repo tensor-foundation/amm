@@ -1,7 +1,9 @@
+pub mod nft_deposit_receipt;
 pub mod pool;
 pub mod shared_escrow;
 pub mod single_listing;
 
+pub use nft_deposit_receipt::*;
 pub use pool::*;
 pub use shared_escrow::*;
 pub use single_listing::*;

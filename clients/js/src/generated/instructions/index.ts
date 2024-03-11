@@ -7,6 +7,7 @@
  */
 
 export * from './attachPoolToMargin';
+export * from './buyNft';
 export * from './buySingleListing';
 export * from './buySingleListingT22';
 export * from './closeMarginAccount';
@@ -15,14 +16,20 @@ export * from './createPool';
 export * from './delist';
 export * from './delistT22';
 export * from './depositMarginAccount';
+export * from './depositNft';
+export * from './depositSol';
 export * from './detachPoolFromMargin';
 export * from './editPool';
 export * from './editSingleListing';
-export * from './initMarginAccount';
+export * from './initSharedEscrowAccount';
 export * from './list';
 export * from './listT22';
 export * from './reallocPool';
+export * from './sellNftTokenPool';
+export * from './sellNftTradePool';
 export * from './withdrawMarginAccount';
+export * from './withdrawNft';
+export * from './withdrawSol';
 export * from './wnsBuySingleListing';
 export * from './wnsDelist';
 export * from './wnsList';
