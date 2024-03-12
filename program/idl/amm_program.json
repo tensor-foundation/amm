@@ -74,7 +74,7 @@
       "type": {
         "defined": "usize"
       },
-      "value": "8 + (3 * 1) + 32 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4"
+      "value": "8 + (3 * 1) + 32 + 8 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (4 * 32) + 1 + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4"
     },
     {
       "name": "SHARED_ESCROW_SIZE",
@@ -2337,7 +2337,14 @@
           {
             "name": "updatedAt",
             "docs": [
-              "Last time a buy or sell order has been executed"
+              "Unix timestamp of the last time the pool has been updated, in seconds."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "expiresAt",
+            "docs": [
+              "Unix timestamp of when the pool expires, in seconds."
             ],
             "type": "i64"
           },
@@ -2358,6 +2365,12 @@
           {
             "name": "solEscrow",
             "type": "publicKey"
+          },
+          {
+            "name": "currency",
+            "type": {
+              "option": "publicKey"
+            }
           },
           {
             "name": "takerSellCount",
@@ -2604,22 +2617,6 @@
           {
             "name": "accumulatedMmProfit",
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Frozen",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "time",
-            "type": "i64"
           }
         ]
       }

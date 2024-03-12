@@ -87,12 +87,15 @@ export type PoolAccountData = {
   identifier: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
   createdAt: bigint;
-  /** Last time a buy or sell order has been executed */
+  /** Unix timestamp of the last time the pool has been updated, in seconds. */
   updatedAt: bigint;
+  /** Unix timestamp of when the pool expires, in seconds. */
+  expiresAt: bigint;
   config: PoolConfig;
   owner: Address;
   whitelist: Address;
   solEscrow: Address;
+  currency: Option<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -118,12 +121,15 @@ export type PoolAccountDataArgs = {
   identifier: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
   createdAt: number | bigint;
-  /** Last time a buy or sell order has been executed */
+  /** Unix timestamp of the last time the pool has been updated, in seconds. */
   updatedAt: number | bigint;
+  /** Unix timestamp of when the pool expires, in seconds. */
+  expiresAt: number | bigint;
   config: PoolConfigArgs;
   owner: Address;
   whitelist: Address;
   solEscrow: Address;
+  currency: OptionOrNullable<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -152,12 +158,15 @@ export function getPoolAccountDataEncoder() {
       identifier: Uint8Array;
       /** Unix timestamp of the pool creation, in seconds. */
       createdAt: number | bigint;
-      /** Last time a buy or sell order has been executed */
+      /** Unix timestamp of the last time the pool has been updated, in seconds. */
       updatedAt: number | bigint;
+      /** Unix timestamp of when the pool expires, in seconds. */
+      expiresAt: number | bigint;
       config: PoolConfigArgs;
       owner: Address;
       whitelist: Address;
       solEscrow: Address;
+      currency: OptionOrNullable<Address>;
       /** How many times a taker has SOLD into the pool */
       takerSellCount: number;
       /** How many times a taker has BOUGHT from the pool */
@@ -178,10 +187,12 @@ export function getPoolAccountDataEncoder() {
       ['identifier', getBytesEncoder({ size: 32 })],
       ['createdAt', getI64Encoder()],
       ['updatedAt', getI64Encoder()],
+      ['expiresAt', getI64Encoder()],
       ['config', getPoolConfigEncoder()],
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
       ['solEscrow', getAddressEncoder()],
+      ['currency', getOptionEncoder(getAddressEncoder())],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
       ['nftsHeld', getU32Encoder()],
@@ -206,10 +217,12 @@ export function getPoolAccountDataDecoder() {
     ['identifier', getBytesDecoder({ size: 32 })],
     ['createdAt', getI64Decoder()],
     ['updatedAt', getI64Decoder()],
+    ['expiresAt', getI64Decoder()],
     ['config', getPoolConfigDecoder()],
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
     ['solEscrow', getAddressDecoder()],
+    ['currency', getOptionDecoder(getAddressDecoder())],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['nftsHeld', getU32Decoder()],

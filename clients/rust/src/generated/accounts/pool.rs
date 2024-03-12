@@ -25,8 +25,10 @@ pub struct Pool {
     pub identifier: [u8; 32],
     /// Unix timestamp of the pool creation, in seconds.
     pub created_at: i64,
-    /// Last time a buy or sell order has been executed
+    /// Unix timestamp of the last time the pool has been updated, in seconds.
     pub updated_at: i64,
+    /// Unix timestamp of when the pool expires, in seconds.
+    pub expires_at: i64,
     pub config: PoolConfig,
     #[cfg_attr(
         feature = "serde",
@@ -43,6 +45,7 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub sol_escrow: Pubkey,
+    pub currency: Option<Pubkey>,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
     /// How many times a taker has BOUGHT from the pool

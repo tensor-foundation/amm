@@ -13,8 +13,9 @@ pub const POOL_SIZE: usize = 8 + (3 * 1)
         + 32 // identifier
         + 8  // created_at
         + 8  // updated_at
+        + 8  // expires_at
         + (2 * 1) + (2 * 8) + 1 + 3 //pool config
-        + (3 * 32) // owner, whitelist, sol_escrow
+        + (4 * 32) + 1 // owner, whitelist, sol_escrow, currency
         + (3 * 4)  // taker_sell_count, taker_buy_count, nfts_held
         + (2 * 4) + 8 //pool stats
         + 32 + 1   // shared escrow Option
@@ -54,12 +55,6 @@ pub struct PoolStats {
     pub accumulated_mm_profit: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
-pub struct Frozen {
-    pub amount: u64,
-    pub time: i64,
-}
-
 #[account]
 pub struct Pool {
     /// Pool version, used to control upgrades.
@@ -73,13 +68,16 @@ pub struct Pool {
 
     /// Unix timestamp of the pool creation, in seconds.
     pub created_at: i64,
-    /// Last time a buy or sell order has been executed
+    /// Unix timestamp of the last time the pool has been updated, in seconds.
     pub updated_at: i64,
+    /// Unix timestamp of when the pool expires, in seconds.
+    pub expires_at: i64,
 
     pub config: PoolConfig,
     pub owner: Pubkey,
     pub whitelist: Pubkey,
     pub sol_escrow: Pubkey,
+    pub currency: Option<Pubkey>,
 
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,

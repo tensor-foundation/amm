@@ -9,7 +9,6 @@
 export * from './authorizationDataLocal';
 export * from './curveType';
 export * from './direction';
-export * from './frozen';
 export * from './payloadTypeLocal';
 export * from './poolConfig';
 export * from './poolStats';
