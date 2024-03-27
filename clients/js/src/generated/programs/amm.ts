@@ -13,6 +13,32 @@ import {
   AmmProgramErrorCode,
   getAmmProgramErrorFromCode,
 } from '../errors';
+import {
+  ParsedAttachPoolToMarginInstruction,
+  ParsedBuyNftInstruction,
+  ParsedBuySingleListingInstruction,
+  ParsedBuySingleListingT22Instruction,
+  ParsedCloseMarginAccountInstruction,
+  ParsedClosePoolInstruction,
+  ParsedCreatePoolInstruction,
+  ParsedDelistInstruction,
+  ParsedDelistT22Instruction,
+  ParsedDepositMarginAccountInstruction,
+  ParsedDepositNftInstruction,
+  ParsedDepositSolInstruction,
+  ParsedDetachPoolFromMarginInstruction,
+  ParsedEditPoolInstruction,
+  ParsedEditSingleListingInstruction,
+  ParsedInitSharedEscrowAccountInstruction,
+  ParsedListInstruction,
+  ParsedListT22Instruction,
+  ParsedReallocPoolInstruction,
+  ParsedSellNftTokenPoolInstruction,
+  ParsedSellNftTradePoolInstruction,
+  ParsedWithdrawMarginAccountInstruction,
+  ParsedWithdrawNftInstruction,
+  ParsedWithdrawSolInstruction,
+} from '../instructions';
 import { memcmp } from '../shared';
 
 export const AMM_PROGRAM_ADDRESS =
@@ -89,9 +115,6 @@ export enum AmmInstruction {
   BuySingleListingT22,
   ListT22,
   DelistT22,
-  WnsBuySingleListing,
-  WnsList,
-  WnsDelist,
 }
 
 export function identifyAmmInstruction(
@@ -177,20 +200,81 @@ export function identifyAmmInstruction(
   if (memcmp(data, new Uint8Array([216, 72, 73, 18, 204, 82, 123, 26]), 0)) {
     return AmmInstruction.DelistT22;
   }
-  if (memcmp(data, new Uint8Array([28, 14, 132, 207, 212, 248, 121, 199]), 0)) {
-    return AmmInstruction.WnsBuySingleListing;
-  }
-  if (
-    memcmp(data, new Uint8Array([212, 193, 161, 215, 128, 43, 190, 204]), 0)
-  ) {
-    return AmmInstruction.WnsList;
-  }
-  if (
-    memcmp(data, new Uint8Array([131, 226, 161, 134, 233, 132, 243, 159]), 0)
-  ) {
-    return AmmInstruction.WnsDelist;
-  }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'
   );
 }
+
+export type ParsedAmmInstruction<
+  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+> =
+  | ({
+      instructionType: AmmInstruction.ReallocPool;
+    } & ParsedReallocPoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.CreatePool;
+    } & ParsedCreatePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.EditPool;
+    } & ParsedEditPoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.ClosePool;
+    } & ParsedClosePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DepositNft;
+    } & ParsedDepositNftInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawNft;
+    } & ParsedWithdrawNftInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DepositSol;
+    } & ParsedDepositSolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawSol;
+    } & ParsedWithdrawSolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.BuyNft;
+    } & ParsedBuyNftInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.SellNftTokenPool;
+    } & ParsedSellNftTokenPoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.SellNftTradePool;
+    } & ParsedSellNftTradePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.InitSharedEscrowAccount;
+    } & ParsedInitSharedEscrowAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.CloseMarginAccount;
+    } & ParsedCloseMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DepositMarginAccount;
+    } & ParsedDepositMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawMarginAccount;
+    } & ParsedWithdrawMarginAccountInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.AttachPoolToMargin;
+    } & ParsedAttachPoolToMarginInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DetachPoolFromMargin;
+    } & ParsedDetachPoolFromMarginInstruction<TProgram>)
+  | ({ instructionType: AmmInstruction.List } & ParsedListInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.Delist;
+    } & ParsedDelistInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.BuySingleListing;
+    } & ParsedBuySingleListingInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.EditSingleListing;
+    } & ParsedEditSingleListingInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.BuySingleListingT22;
+    } & ParsedBuySingleListingT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.ListT22;
+    } & ParsedListT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DelistT22;
+    } & ParsedDelistT22Instruction<TProgram>);

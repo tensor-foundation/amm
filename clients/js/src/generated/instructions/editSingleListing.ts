@@ -12,22 +12,17 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
+  mapEncoder,
+} from '@solana/codecs';
 import {
-  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
@@ -37,50 +32,18 @@ import {
   WritableAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import {
-  ResolvedAccount,
-  accountMetaWithDefault,
-  getAccountMetasWithSigners,
-} from '../shared';
+import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 
 export type EditSingleListingInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountSingleListing extends string | IAccountMeta<string> = string,
   TAccountNftMint extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
-    [
-      TAccountSingleListing extends string
-        ? WritableAccount<TAccountSingleListing>
-        : TAccountSingleListing,
-      TAccountNftMint extends string
-        ? ReadonlyAccount<TAccountNftMint>
-        : TAccountNftMint,
-      TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      ...TRemainingAccounts
-    ]
-  >;
-
-export type EditSingleListingInstructionWithSigners<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSingleListing extends string | IAccountMeta<string> = string,
-  TAccountNftMint extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
+  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
@@ -98,7 +61,7 @@ export type EditSingleListingInstructionWithSigners<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      ...TRemainingAccounts
+      ...TRemainingAccounts,
     ]
   >;
 
@@ -109,9 +72,9 @@ export type EditSingleListingInstructionData = {
 
 export type EditSingleListingInstructionDataArgs = { price: number | bigint };
 
-export function getEditSingleListingInstructionDataEncoder() {
+export function getEditSingleListingInstructionDataEncoder(): Encoder<EditSingleListingInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{ discriminator: Array<number>; price: number | bigint }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['price', getU64Encoder()],
     ]),
@@ -119,14 +82,14 @@ export function getEditSingleListingInstructionDataEncoder() {
       ...value,
       discriminator: [88, 38, 236, 212, 31, 185, 18, 166],
     })
-  ) satisfies Encoder<EditSingleListingInstructionDataArgs>;
+  );
 }
 
-export function getEditSingleListingInstructionDataDecoder() {
-  return getStructDecoder<EditSingleListingInstructionData>([
+export function getEditSingleListingInstructionDataDecoder(): Decoder<EditSingleListingInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['price', getU64Decoder()],
-  ]) satisfies Decoder<EditSingleListingInstructionData>;
+  ]);
 }
 
 export function getEditSingleListingInstructionDataCodec(): Codec<
@@ -140,23 +103,10 @@ export function getEditSingleListingInstructionDataCodec(): Codec<
 }
 
 export type EditSingleListingInput<
-  TAccountSingleListing extends string,
-  TAccountNftMint extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
-> = {
-  singleListing: Address<TAccountSingleListing>;
-  nftMint: Address<TAccountNftMint>;
-  owner: Address<TAccountOwner>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  price: EditSingleListingInstructionDataArgs['price'];
-};
-
-export type EditSingleListingInputWithSigners<
-  TAccountSingleListing extends string,
-  TAccountNftMint extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
+  TAccountSingleListing extends string = string,
+  TAccountNftMint extends string = string,
+  TAccountOwner extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   singleListing: Address<TAccountSingleListing>;
   nftMint: Address<TAccountNftMint>;
@@ -170,27 +120,6 @@ export function getEditSingleListingInstruction<
   TAccountNftMint extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: EditSingleListingInputWithSigners<
-    TAccountSingleListing,
-    TAccountNftMint,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): EditSingleListingInstructionWithSigners<
-  TProgram,
-  TAccountSingleListing,
-  TAccountNftMint,
-  TAccountOwner,
-  TAccountSystemProgram
->;
-export function getEditSingleListingInstruction<
-  TAccountSingleListing extends string,
-  TAccountNftMint extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: EditSingleListingInput<
     TAccountSingleListing,
@@ -199,46 +128,26 @@ export function getEditSingleListingInstruction<
     TAccountSystemProgram
   >
 ): EditSingleListingInstruction<
-  TProgram,
+  typeof AMM_PROGRAM_ADDRESS,
   TAccountSingleListing,
   TAccountNftMint,
   TAccountOwner,
   TAccountSystemProgram
->;
-export function getEditSingleListingInstruction<
-  TAccountSingleListing extends string,
-  TAccountNftMint extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: EditSingleListingInput<
-    TAccountSingleListing,
-    TAccountNftMint,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): IInstruction {
+> {
   // Program address.
-  const programAddress =
-    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
-  type AccountMetas = Parameters<
-    typeof getEditSingleListingInstructionRaw<
-      TProgram,
-      TAccountSingleListing,
-      TAccountNftMint,
-      TAccountOwner,
-      TAccountSystemProgram
-    >
-  >[0];
-  const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
+  const originalAccounts = {
     singleListing: { value: input.singleListing ?? null, isWritable: true },
     nftMint: { value: input.nftMint ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
 
   // Original args.
   const args = { ...input };
@@ -249,77 +158,32 @@ export function getEditSingleListingInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  // Get account metas and signers.
-  const accountMetas = getAccountMetasWithSigners(
-    accounts,
-    'programId',
-    programAddress
-  );
-
-  const instruction = getEditSingleListingInstructionRaw(
-    accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    args as EditSingleListingInstructionDataArgs,
-    programAddress
-  );
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
+    accounts: [
+      getAccountMeta(accounts.singleListing),
+      getAccountMeta(accounts.nftMint),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    programAddress,
+    data: getEditSingleListingInstructionDataEncoder().encode(
+      args as EditSingleListingInstructionDataArgs
+    ),
+  } as EditSingleListingInstruction<
+    typeof AMM_PROGRAM_ADDRESS,
+    TAccountSingleListing,
+    TAccountNftMint,
+    TAccountOwner,
+    TAccountSystemProgram
+  >;
 
   return instruction;
 }
 
-export function getEditSingleListingInstructionRaw<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSingleListing extends string | IAccountMeta<string> = string,
-  TAccountNftMint extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
->(
-  accounts: {
-    singleListing: TAccountSingleListing extends string
-      ? Address<TAccountSingleListing>
-      : TAccountSingleListing;
-    nftMint: TAccountNftMint extends string
-      ? Address<TAccountNftMint>
-      : TAccountNftMint;
-    owner: TAccountOwner extends string
-      ? Address<TAccountOwner>
-      : TAccountOwner;
-    systemProgram?: TAccountSystemProgram extends string
-      ? Address<TAccountSystemProgram>
-      : TAccountSystemProgram;
-  },
-  args: EditSingleListingInstructionDataArgs,
-  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
-  remainingAccounts?: TRemainingAccounts
-) {
-  return {
-    accounts: [
-      accountMetaWithDefault(accounts.singleListing, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.nftMint, AccountRole.READONLY),
-      accountMetaWithDefault(accounts.owner, AccountRole.READONLY_SIGNER),
-      accountMetaWithDefault(
-        accounts.systemProgram ??
-          ('11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      ...(remainingAccounts ?? []),
-    ],
-    data: getEditSingleListingInstructionDataEncoder().encode(args),
-    programAddress,
-  } as EditSingleListingInstruction<
-    TProgram,
-    TAccountSingleListing,
-    TAccountNftMint,
-    TAccountOwner,
-    TAccountSystemProgram,
-    TRemainingAccounts
-  >;
-}
-
 export type ParsedEditSingleListingInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -333,7 +197,7 @@ export type ParsedEditSingleListingInstruction<
 
 export function parseEditSingleListingInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[]
+  TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &

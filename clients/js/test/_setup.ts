@@ -41,13 +41,13 @@ const COSIGNER = [
   243, 136, 151, 255, 53, 244, 12, 20, 94, 128, 72, 199, 46, 187,
 ];
 
-type Client = {
+export type Client = {
   rpc: ReturnType<typeof createSolanaRpc>;
   rpcSubscriptions: ReturnType<typeof createSolanaRpcSubscriptions>;
 };
 
 export const setupSigners = async (client: Client) => {
-  const owner = await createKeyPairSigner(client, Uint8Array.from(OWNER));
+  const owner = await generateKeyPairSignerWithSol(client);
   const cosigner = await createKeyPairSigner(client, Uint8Array.from(COSIGNER));
 
   await fundWalletWithSol(client, owner.address);
@@ -80,7 +80,7 @@ export const createKeyPairSigner = async (
     crypto.subtle.importKey('raw', publicKeyBytes, 'Ed25519', true, ['verify']),
     createPrivateKeyFromBytes(privateKeyBytes),
   ]);
-  return createSignerFromKeyPair({ privateKey, publicKey } as CryptoKeyPair);
+  return createSignerFromKeyPair({ privateKey, publicKey });
 };
 
 export const generateKeyPairSignerWithSol = async (

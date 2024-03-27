@@ -12,7 +12,7 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from '@solana/addresses';
-import { getStringEncoder } from '@solana/codecs-strings';
+import { getStringEncoder } from '@solana/codecs';
 
 export type SolEscrowSeeds = {
   /** The address of the pool */
@@ -26,7 +26,7 @@ export async function findSolEscrowPda(
   const {
     programAddress = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>,
   } = config;
-  return getProgramDerivedAddress({
+  return await getProgramDerivedAddress({
     programAddress,
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('sol_escrow'),

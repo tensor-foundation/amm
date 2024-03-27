@@ -11,20 +11,22 @@ import {
   Codec,
   Decoder,
   Encoder,
+  Option,
+  OptionOrNullable,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getBooleanDecoder,
   getBooleanEncoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import { getU8Decoder, getU8Encoder } from '@solana/codecs-numbers';
+  getU8Decoder,
+  getU8Encoder,
+  mapEncoder,
+} from '@solana/codecs';
 import {
-  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
@@ -33,18 +35,9 @@ import {
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
-import {
-  Option,
-  OptionOrNullable,
-  getOptionDecoder,
-  getOptionEncoder,
-} from '@solana/options';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import {
-  ResolvedAccount,
-  accountMetaWithDefault,
-  getAccountMetasWithSigners,
-} from '../shared';
+import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   AuthorizationDataLocal,
   AuthorizationDataLocalArgs,
@@ -53,7 +46,7 @@ import {
 } from '../types';
 
 export type DelistInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountSingleListing extends string | IAccountMeta<string> = string,
   TAccountNftDest extends string | IAccountMeta<string> = string,
   TAccountNftMint extends string | IAccountMeta<string> = string,
@@ -77,92 +70,7 @@ export type DelistInstruction<
   TAccountPnftShared extends string | IAccountMeta<string> = string,
   TAccountAuthRules extends string | IAccountMeta<string> = string,
   TAccountPayer extends string | IAccountMeta<string> = string,
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
-    [
-      TAccountSingleListing extends string
-        ? WritableAccount<TAccountSingleListing>
-        : TAccountSingleListing,
-      TAccountNftDest extends string
-        ? WritableAccount<TAccountNftDest>
-        : TAccountNftDest,
-      TAccountNftMint extends string
-        ? ReadonlyAccount<TAccountNftMint>
-        : TAccountNftMint,
-      TAccountNftEscrowOwner extends string
-        ? WritableAccount<TAccountNftEscrowOwner>
-        : TAccountNftEscrowOwner,
-      TAccountNftEscrowToken extends string
-        ? WritableAccount<TAccountNftEscrowToken>
-        : TAccountNftEscrowToken,
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
-      TAccountNftMetadata extends string
-        ? WritableAccount<TAccountNftMetadata>
-        : TAccountNftMetadata,
-      TAccountNftEdition extends string
-        ? ReadonlyAccount<TAccountNftEdition>
-        : TAccountNftEdition,
-      TAccountOwnerTokenRecord extends string
-        ? WritableAccount<TAccountOwnerTokenRecord>
-        : TAccountOwnerTokenRecord,
-      TAccountDestTokenRecord extends string
-        ? WritableAccount<TAccountDestTokenRecord>
-        : TAccountDestTokenRecord,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
-      TAccountPnftShared extends string
-        ? ReadonlyAccount<TAccountPnftShared>
-        : TAccountPnftShared,
-      TAccountAuthRules extends string
-        ? ReadonlyAccount<TAccountAuthRules>
-        : TAccountAuthRules,
-      TAccountPayer extends string
-        ? WritableSignerAccount<TAccountPayer>
-        : TAccountPayer,
-      ...TRemainingAccounts
-    ]
-  >;
-
-export type DelistInstructionWithSigners<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSingleListing extends string | IAccountMeta<string> = string,
-  TAccountNftDest extends string | IAccountMeta<string> = string,
-  TAccountNftMint extends string | IAccountMeta<string> = string,
-  TAccountNftEscrowOwner extends string | IAccountMeta<string> = string,
-  TAccountNftEscrowToken extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TAccountNftMetadata extends string | IAccountMeta<string> = string,
-  TAccountNftEdition extends string | IAccountMeta<string> = string,
-  TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountDestTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
-  TAccountPnftShared extends string | IAccountMeta<string> = string,
-  TAccountAuthRules extends string | IAccountMeta<string> = string,
-  TAccountPayer extends string | IAccountMeta<string> = string,
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
+  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
@@ -220,7 +128,7 @@ export type DelistInstructionWithSigners<
         ? WritableSignerAccount<TAccountPayer> &
             IAccountSignerMeta<TAccountPayer>
         : TAccountPayer,
-      ...TRemainingAccounts
+      ...TRemainingAccounts,
     ]
   >;
 
@@ -235,13 +143,9 @@ export type DelistInstructionDataArgs = {
   rulesAccPresent: boolean;
 };
 
-export function getDelistInstructionDataEncoder() {
+export function getDelistInstructionDataEncoder(): Encoder<DelistInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
-      rulesAccPresent: boolean;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       [
         'authorizationData',
@@ -253,15 +157,15 @@ export function getDelistInstructionDataEncoder() {
       ...value,
       discriminator: [55, 136, 205, 107, 107, 173, 4, 31],
     })
-  ) satisfies Encoder<DelistInstructionDataArgs>;
+  );
 }
 
-export function getDelistInstructionDataDecoder() {
-  return getStructDecoder<DelistInstructionData>([
+export function getDelistInstructionDataDecoder(): Decoder<DelistInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['rulesAccPresent', getBooleanDecoder()],
-  ]) satisfies Decoder<DelistInstructionData>;
+  ]);
 }
 
 export function getDelistInstructionDataCodec(): Codec<
@@ -275,23 +179,23 @@ export function getDelistInstructionDataCodec(): Codec<
 }
 
 export type DelistInput<
-  TAccountSingleListing extends string,
-  TAccountNftDest extends string,
-  TAccountNftMint extends string,
-  TAccountNftEscrowOwner extends string,
-  TAccountNftEscrowToken extends string,
-  TAccountOwner extends string,
-  TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
-  TAccountNftMetadata extends string,
-  TAccountNftEdition extends string,
-  TAccountOwnerTokenRecord extends string,
-  TAccountDestTokenRecord extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountPnftShared extends string,
-  TAccountAuthRules extends string,
-  TAccountPayer extends string
+  TAccountSingleListing extends string = string,
+  TAccountNftDest extends string = string,
+  TAccountNftMint extends string = string,
+  TAccountNftEscrowOwner extends string = string,
+  TAccountNftEscrowToken extends string = string,
+  TAccountOwner extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
+  TAccountRent extends string = string,
+  TAccountNftMetadata extends string = string,
+  TAccountNftEdition extends string = string,
+  TAccountOwnerTokenRecord extends string = string,
+  TAccountDestTokenRecord extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
+  TAccountPnftShared extends string = string,
+  TAccountAuthRules extends string = string,
+  TAccountPayer extends string = string,
 > = {
   singleListing: Address<TAccountSingleListing>;
   nftDest: Address<TAccountNftDest>;
@@ -301,52 +205,6 @@ export type DelistInput<
    * Implicitly checked via transfer. Will fail if wrong account
    * This is closed below (dest = owner)
    */
-
-  nftEscrowToken: Address<TAccountNftEscrowToken>;
-  owner: Address<TAccountOwner>;
-  tokenProgram?: Address<TAccountTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
-  nftMetadata: Address<TAccountNftMetadata>;
-  nftEdition: Address<TAccountNftEdition>;
-  ownerTokenRecord: Address<TAccountOwnerTokenRecord>;
-  destTokenRecord: Address<TAccountDestTokenRecord>;
-  associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
-  pnftShared: Address<TAccountPnftShared>;
-  authRules: Address<TAccountAuthRules>;
-  payer: Address<TAccountPayer>;
-  authorizationData: DelistInstructionDataArgs['authorizationData'];
-  rulesAccPresent: DelistInstructionDataArgs['rulesAccPresent'];
-};
-
-export type DelistInputWithSigners<
-  TAccountSingleListing extends string,
-  TAccountNftDest extends string,
-  TAccountNftMint extends string,
-  TAccountNftEscrowOwner extends string,
-  TAccountNftEscrowToken extends string,
-  TAccountOwner extends string,
-  TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
-  TAccountNftMetadata extends string,
-  TAccountNftEdition extends string,
-  TAccountOwnerTokenRecord extends string,
-  TAccountDestTokenRecord extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountPnftShared extends string,
-  TAccountAuthRules extends string,
-  TAccountPayer extends string
-> = {
-  singleListing: Address<TAccountSingleListing>;
-  nftDest: Address<TAccountNftDest>;
-  nftMint: Address<TAccountNftMint>;
-  nftEscrowOwner: Address<TAccountNftEscrowOwner>;
-  /**
-   * Implicitly checked via transfer. Will fail if wrong account
-   * This is closed below (dest = owner)
-   */
-
   nftEscrowToken: Address<TAccountNftEscrowToken>;
   owner: TransactionSigner<TAccountOwner>;
   tokenProgram?: Address<TAccountTokenProgram>;
@@ -382,66 +240,6 @@ export function getDelistInstruction<
   TAccountPnftShared extends string,
   TAccountAuthRules extends string,
   TAccountPayer extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: DelistInputWithSigners<
-    TAccountSingleListing,
-    TAccountNftDest,
-    TAccountNftMint,
-    TAccountNftEscrowOwner,
-    TAccountNftEscrowToken,
-    TAccountOwner,
-    TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent,
-    TAccountNftMetadata,
-    TAccountNftEdition,
-    TAccountOwnerTokenRecord,
-    TAccountDestTokenRecord,
-    TAccountAssociatedTokenProgram,
-    TAccountPnftShared,
-    TAccountAuthRules,
-    TAccountPayer
-  >
-): DelistInstructionWithSigners<
-  TProgram,
-  TAccountSingleListing,
-  TAccountNftDest,
-  TAccountNftMint,
-  TAccountNftEscrowOwner,
-  TAccountNftEscrowToken,
-  TAccountOwner,
-  TAccountTokenProgram,
-  TAccountSystemProgram,
-  TAccountRent,
-  TAccountNftMetadata,
-  TAccountNftEdition,
-  TAccountOwnerTokenRecord,
-  TAccountDestTokenRecord,
-  TAccountAssociatedTokenProgram,
-  TAccountPnftShared,
-  TAccountAuthRules,
-  TAccountPayer
->;
-export function getDelistInstruction<
-  TAccountSingleListing extends string,
-  TAccountNftDest extends string,
-  TAccountNftMint extends string,
-  TAccountNftEscrowOwner extends string,
-  TAccountNftEscrowToken extends string,
-  TAccountOwner extends string,
-  TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
-  TAccountNftMetadata extends string,
-  TAccountNftEdition extends string,
-  TAccountOwnerTokenRecord extends string,
-  TAccountDestTokenRecord extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountPnftShared extends string,
-  TAccountAuthRules extends string,
-  TAccountPayer extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: DelistInput<
     TAccountSingleListing,
@@ -463,7 +261,7 @@ export function getDelistInstruction<
     TAccountPayer
   >
 ): DelistInstruction<
-  TProgram,
+  typeof AMM_PROGRAM_ADDRESS,
   TAccountSingleListing,
   TAccountNftDest,
   TAccountNftMint,
@@ -481,75 +279,12 @@ export function getDelistInstruction<
   TAccountPnftShared,
   TAccountAuthRules,
   TAccountPayer
->;
-export function getDelistInstruction<
-  TAccountSingleListing extends string,
-  TAccountNftDest extends string,
-  TAccountNftMint extends string,
-  TAccountNftEscrowOwner extends string,
-  TAccountNftEscrowToken extends string,
-  TAccountOwner extends string,
-  TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
-  TAccountRent extends string,
-  TAccountNftMetadata extends string,
-  TAccountNftEdition extends string,
-  TAccountOwnerTokenRecord extends string,
-  TAccountDestTokenRecord extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountPnftShared extends string,
-  TAccountAuthRules extends string,
-  TAccountPayer extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: DelistInput<
-    TAccountSingleListing,
-    TAccountNftDest,
-    TAccountNftMint,
-    TAccountNftEscrowOwner,
-    TAccountNftEscrowToken,
-    TAccountOwner,
-    TAccountTokenProgram,
-    TAccountSystemProgram,
-    TAccountRent,
-    TAccountNftMetadata,
-    TAccountNftEdition,
-    TAccountOwnerTokenRecord,
-    TAccountDestTokenRecord,
-    TAccountAssociatedTokenProgram,
-    TAccountPnftShared,
-    TAccountAuthRules,
-    TAccountPayer
-  >
-): IInstruction {
+> {
   // Program address.
-  const programAddress =
-    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
-  type AccountMetas = Parameters<
-    typeof getDelistInstructionRaw<
-      TProgram,
-      TAccountSingleListing,
-      TAccountNftDest,
-      TAccountNftMint,
-      TAccountNftEscrowOwner,
-      TAccountNftEscrowToken,
-      TAccountOwner,
-      TAccountTokenProgram,
-      TAccountSystemProgram,
-      TAccountRent,
-      TAccountNftMetadata,
-      TAccountNftEdition,
-      TAccountOwnerTokenRecord,
-      TAccountDestTokenRecord,
-      TAccountAssociatedTokenProgram,
-      TAccountPnftShared,
-      TAccountAuthRules,
-      TAccountPayer
-    >
-  >[0];
-  const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
+  const originalAccounts = {
     singleListing: { value: input.singleListing ?? null, isWritable: true },
     nftDest: { value: input.nftDest ?? null, isWritable: true },
     nftMint: { value: input.nftMint ?? null, isWritable: false },
@@ -574,6 +309,10 @@ export function getDelistInstruction<
     authRules: { value: input.authRules ?? null, isWritable: false },
     payer: { value: input.payer ?? null, isWritable: true },
   };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
 
   // Original args.
   const args = { ...input };
@@ -592,144 +331,33 @@ export function getDelistInstruction<
       'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
   }
 
-  // Get account metas and signers.
-  const accountMetas = getAccountMetasWithSigners(
-    accounts,
-    'programId',
-    programAddress
-  );
-
-  const instruction = getDelistInstructionRaw(
-    accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    args as DelistInstructionDataArgs,
-    programAddress
-  );
-
-  return instruction;
-}
-
-export function getDelistInstructionRaw<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSingleListing extends string | IAccountMeta<string> = string,
-  TAccountNftDest extends string | IAccountMeta<string> = string,
-  TAccountNftMint extends string | IAccountMeta<string> = string,
-  TAccountNftEscrowOwner extends string | IAccountMeta<string> = string,
-  TAccountNftEscrowToken extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountTokenProgram extends
-    | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
-  TAccountNftMetadata extends string | IAccountMeta<string> = string,
-  TAccountNftEdition extends string | IAccountMeta<string> = string,
-  TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountDestTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
-  TAccountPnftShared extends string | IAccountMeta<string> = string,
-  TAccountAuthRules extends string | IAccountMeta<string> = string,
-  TAccountPayer extends string | IAccountMeta<string> = string,
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
->(
-  accounts: {
-    singleListing: TAccountSingleListing extends string
-      ? Address<TAccountSingleListing>
-      : TAccountSingleListing;
-    nftDest: TAccountNftDest extends string
-      ? Address<TAccountNftDest>
-      : TAccountNftDest;
-    nftMint: TAccountNftMint extends string
-      ? Address<TAccountNftMint>
-      : TAccountNftMint;
-    nftEscrowOwner: TAccountNftEscrowOwner extends string
-      ? Address<TAccountNftEscrowOwner>
-      : TAccountNftEscrowOwner;
-    nftEscrowToken: TAccountNftEscrowToken extends string
-      ? Address<TAccountNftEscrowToken>
-      : TAccountNftEscrowToken;
-    owner: TAccountOwner extends string
-      ? Address<TAccountOwner>
-      : TAccountOwner;
-    tokenProgram?: TAccountTokenProgram extends string
-      ? Address<TAccountTokenProgram>
-      : TAccountTokenProgram;
-    systemProgram?: TAccountSystemProgram extends string
-      ? Address<TAccountSystemProgram>
-      : TAccountSystemProgram;
-    rent?: TAccountRent extends string ? Address<TAccountRent> : TAccountRent;
-    nftMetadata: TAccountNftMetadata extends string
-      ? Address<TAccountNftMetadata>
-      : TAccountNftMetadata;
-    nftEdition: TAccountNftEdition extends string
-      ? Address<TAccountNftEdition>
-      : TAccountNftEdition;
-    ownerTokenRecord: TAccountOwnerTokenRecord extends string
-      ? Address<TAccountOwnerTokenRecord>
-      : TAccountOwnerTokenRecord;
-    destTokenRecord: TAccountDestTokenRecord extends string
-      ? Address<TAccountDestTokenRecord>
-      : TAccountDestTokenRecord;
-    associatedTokenProgram: TAccountAssociatedTokenProgram extends string
-      ? Address<TAccountAssociatedTokenProgram>
-      : TAccountAssociatedTokenProgram;
-    pnftShared: TAccountPnftShared extends string
-      ? Address<TAccountPnftShared>
-      : TAccountPnftShared;
-    authRules: TAccountAuthRules extends string
-      ? Address<TAccountAuthRules>
-      : TAccountAuthRules;
-    payer: TAccountPayer extends string
-      ? Address<TAccountPayer>
-      : TAccountPayer;
-  },
-  args: DelistInstructionDataArgs,
-  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
-  remainingAccounts?: TRemainingAccounts
-) {
-  return {
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
     accounts: [
-      accountMetaWithDefault(accounts.singleListing, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.nftDest, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.nftMint, AccountRole.READONLY),
-      accountMetaWithDefault(accounts.nftEscrowOwner, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.nftEscrowToken, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.owner, AccountRole.WRITABLE_SIGNER),
-      accountMetaWithDefault(
-        accounts.tokenProgram ??
-          ('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>),
-        AccountRole.READONLY
-      ),
-      accountMetaWithDefault(
-        accounts.systemProgram ??
-          ('11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      accountMetaWithDefault(
-        accounts.rent ??
-          ('SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      accountMetaWithDefault(accounts.nftMetadata, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.nftEdition, AccountRole.READONLY),
-      accountMetaWithDefault(accounts.ownerTokenRecord, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.destTokenRecord, AccountRole.WRITABLE),
-      accountMetaWithDefault(
-        accounts.associatedTokenProgram,
-        AccountRole.READONLY
-      ),
-      accountMetaWithDefault(accounts.pnftShared, AccountRole.READONLY),
-      accountMetaWithDefault(accounts.authRules, AccountRole.READONLY),
-      accountMetaWithDefault(accounts.payer, AccountRole.WRITABLE_SIGNER),
-      ...(remainingAccounts ?? []),
+      getAccountMeta(accounts.singleListing),
+      getAccountMeta(accounts.nftDest),
+      getAccountMeta(accounts.nftMint),
+      getAccountMeta(accounts.nftEscrowOwner),
+      getAccountMeta(accounts.nftEscrowToken),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.systemProgram),
+      getAccountMeta(accounts.rent),
+      getAccountMeta(accounts.nftMetadata),
+      getAccountMeta(accounts.nftEdition),
+      getAccountMeta(accounts.ownerTokenRecord),
+      getAccountMeta(accounts.destTokenRecord),
+      getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.pnftShared),
+      getAccountMeta(accounts.authRules),
+      getAccountMeta(accounts.payer),
     ],
-    data: getDelistInstructionDataEncoder().encode(args),
     programAddress,
+    data: getDelistInstructionDataEncoder().encode(
+      args as DelistInstructionDataArgs
+    ),
   } as DelistInstruction<
-    TProgram,
+    typeof AMM_PROGRAM_ADDRESS,
     TAccountSingleListing,
     TAccountNftDest,
     TAccountNftMint,
@@ -746,14 +374,15 @@ export function getDelistInstructionRaw<
     TAccountAssociatedTokenProgram,
     TAccountPnftShared,
     TAccountAuthRules,
-    TAccountPayer,
-    TRemainingAccounts
+    TAccountPayer
   >;
+
+  return instruction;
 }
 
 export type ParsedDelistInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -785,7 +414,7 @@ export type ParsedDelistInstruction<
 
 export function parseDelistInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[]
+  TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &

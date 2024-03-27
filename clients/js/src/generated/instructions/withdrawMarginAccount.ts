@@ -12,22 +12,17 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
+  mapEncoder,
+} from '@solana/codecs';
 import {
-  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
@@ -37,45 +32,17 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import {
-  ResolvedAccount,
-  accountMetaWithDefault,
-  getAccountMetasWithSigners,
-} from '../shared';
+import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 
 export type WithdrawMarginAccountInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
-    [
-      TAccountSharedEscrow extends string
-        ? WritableAccount<TAccountSharedEscrow>
-        : TAccountSharedEscrow,
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      ...TRemainingAccounts
-    ]
-  >;
-
-export type WithdrawMarginAccountInstructionWithSigners<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
+  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
@@ -90,7 +57,7 @@ export type WithdrawMarginAccountInstructionWithSigners<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      ...TRemainingAccounts
+      ...TRemainingAccounts,
     ]
   >;
 
@@ -103,24 +70,21 @@ export type WithdrawMarginAccountInstructionDataArgs = {
   lamports: number | bigint;
 };
 
-export function getWithdrawMarginAccountInstructionDataEncoder() {
+export function getWithdrawMarginAccountInstructionDataEncoder(): Encoder<WithdrawMarginAccountInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      lamports: number | bigint;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['lamports', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: [54, 73, 150, 208, 207, 5, 18, 17] })
-  ) satisfies Encoder<WithdrawMarginAccountInstructionDataArgs>;
+  );
 }
 
-export function getWithdrawMarginAccountInstructionDataDecoder() {
-  return getStructDecoder<WithdrawMarginAccountInstructionData>([
+export function getWithdrawMarginAccountInstructionDataDecoder(): Decoder<WithdrawMarginAccountInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['lamports', getU64Decoder()],
-  ]) satisfies Decoder<WithdrawMarginAccountInstructionData>;
+  ]);
 }
 
 export function getWithdrawMarginAccountInstructionDataCodec(): Codec<
@@ -134,20 +98,9 @@ export function getWithdrawMarginAccountInstructionDataCodec(): Codec<
 }
 
 export type WithdrawMarginAccountInput<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
-> = {
-  sharedEscrow: Address<TAccountSharedEscrow>;
-  owner: Address<TAccountOwner>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  lamports: WithdrawMarginAccountInstructionDataArgs['lamports'];
-};
-
-export type WithdrawMarginAccountInputWithSigners<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
+  TAccountSharedEscrow extends string = string,
+  TAccountOwner extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   sharedEscrow: Address<TAccountSharedEscrow>;
   owner: TransactionSigner<TAccountOwner>;
@@ -159,24 +112,6 @@ export function getWithdrawMarginAccountInstruction<
   TAccountSharedEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: WithdrawMarginAccountInputWithSigners<
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): WithdrawMarginAccountInstructionWithSigners<
-  TProgram,
-  TAccountSharedEscrow,
-  TAccountOwner,
-  TAccountSystemProgram
->;
-export function getWithdrawMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: WithdrawMarginAccountInput<
     TAccountSharedEscrow,
@@ -184,41 +119,24 @@ export function getWithdrawMarginAccountInstruction<
     TAccountSystemProgram
   >
 ): WithdrawMarginAccountInstruction<
-  TProgram,
+  typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow,
   TAccountOwner,
   TAccountSystemProgram
->;
-export function getWithdrawMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: WithdrawMarginAccountInput<
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): IInstruction {
+> {
   // Program address.
-  const programAddress =
-    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
-  type AccountMetas = Parameters<
-    typeof getWithdrawMarginAccountInstructionRaw<
-      TProgram,
-      TAccountSharedEscrow,
-      TAccountOwner,
-      TAccountSystemProgram
-    >
-  >[0];
-  const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
+  const originalAccounts = {
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
 
   // Original args.
   const args = { ...input };
@@ -229,71 +147,30 @@ export function getWithdrawMarginAccountInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  // Get account metas and signers.
-  const accountMetas = getAccountMetasWithSigners(
-    accounts,
-    'programId',
-    programAddress
-  );
-
-  const instruction = getWithdrawMarginAccountInstructionRaw(
-    accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    args as WithdrawMarginAccountInstructionDataArgs,
-    programAddress
-  );
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
+    accounts: [
+      getAccountMeta(accounts.sharedEscrow),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    programAddress,
+    data: getWithdrawMarginAccountInstructionDataEncoder().encode(
+      args as WithdrawMarginAccountInstructionDataArgs
+    ),
+  } as WithdrawMarginAccountInstruction<
+    typeof AMM_PROGRAM_ADDRESS,
+    TAccountSharedEscrow,
+    TAccountOwner,
+    TAccountSystemProgram
+  >;
 
   return instruction;
 }
 
-export function getWithdrawMarginAccountInstructionRaw<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
->(
-  accounts: {
-    sharedEscrow: TAccountSharedEscrow extends string
-      ? Address<TAccountSharedEscrow>
-      : TAccountSharedEscrow;
-    owner: TAccountOwner extends string
-      ? Address<TAccountOwner>
-      : TAccountOwner;
-    systemProgram?: TAccountSystemProgram extends string
-      ? Address<TAccountSystemProgram>
-      : TAccountSystemProgram;
-  },
-  args: WithdrawMarginAccountInstructionDataArgs,
-  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
-  remainingAccounts?: TRemainingAccounts
-) {
-  return {
-    accounts: [
-      accountMetaWithDefault(accounts.sharedEscrow, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.owner, AccountRole.WRITABLE_SIGNER),
-      accountMetaWithDefault(
-        accounts.systemProgram ??
-          ('11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      ...(remainingAccounts ?? []),
-    ],
-    data: getWithdrawMarginAccountInstructionDataEncoder().encode(args),
-    programAddress,
-  } as WithdrawMarginAccountInstruction<
-    TProgram,
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram,
-    TRemainingAccounts
-  >;
-}
-
 export type ParsedWithdrawMarginAccountInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -306,7 +183,7 @@ export type ParsedWithdrawMarginAccountInstruction<
 
 export function parseWithdrawMarginAccountInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[]
+  TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &

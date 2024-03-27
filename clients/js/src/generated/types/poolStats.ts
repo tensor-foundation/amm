@@ -6,17 +6,18 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Codec, Decoder, Encoder, combineCodec } from '@solana/codecs-core';
 import {
+  Codec,
+  Decoder,
+  Encoder,
+  combineCodec,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU32Decoder,
   getU32Encoder,
   getU64Decoder,
   getU64Encoder,
-} from '@solana/codecs-numbers';
+} from '@solana/codecs';
 
 export type PoolStats = {
   takerSellCount: number;
@@ -30,20 +31,20 @@ export type PoolStatsArgs = {
   accumulatedMmProfit: number | bigint;
 };
 
-export function getPoolStatsEncoder() {
-  return getStructEncoder<PoolStatsArgs>([
+export function getPoolStatsEncoder(): Encoder<PoolStatsArgs> {
+  return getStructEncoder([
     ['takerSellCount', getU32Encoder()],
     ['takerBuyCount', getU32Encoder()],
     ['accumulatedMmProfit', getU64Encoder()],
-  ]) satisfies Encoder<PoolStatsArgs>;
+  ]);
 }
 
-export function getPoolStatsDecoder() {
-  return getStructDecoder<PoolStats>([
+export function getPoolStatsDecoder(): Decoder<PoolStats> {
+  return getStructDecoder([
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['accumulatedMmProfit', getU64Decoder()],
-  ]) satisfies Decoder<PoolStats>;
+  ]);
 }
 
 export function getPoolStatsCodec(): Codec<PoolStatsArgs, PoolStats> {

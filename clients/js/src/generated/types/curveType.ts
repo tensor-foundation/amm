@@ -6,11 +6,14 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Codec, Decoder, Encoder, combineCodec } from '@solana/codecs-core';
 import {
+  Codec,
+  Decoder,
+  Encoder,
+  combineCodec,
   getScalarEnumDecoder,
   getScalarEnumEncoder,
-} from '@solana/codecs-data-structures';
+} from '@solana/codecs';
 
 export enum CurveType {
   Linear,
@@ -19,12 +22,12 @@ export enum CurveType {
 
 export type CurveTypeArgs = CurveType;
 
-export function getCurveTypeEncoder() {
-  return getScalarEnumEncoder(CurveType) satisfies Encoder<CurveTypeArgs>;
+export function getCurveTypeEncoder(): Encoder<CurveTypeArgs> {
+  return getScalarEnumEncoder(CurveType);
 }
 
-export function getCurveTypeDecoder() {
-  return getScalarEnumDecoder(CurveType) satisfies Decoder<CurveType>;
+export function getCurveTypeDecoder(): Decoder<CurveType> {
+  return getScalarEnumDecoder(CurveType);
 }
 
 export function getCurveTypeCodec(): Codec<CurveTypeArgs, CurveType> {

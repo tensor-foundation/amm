@@ -7,6 +7,7 @@
     "programs:clean": "./scripts/program/clean.sh",
     "clients:rust:test": "./scripts/client/test-rust.sh",
     "clients:js:test": "./scripts/client/test-js.sh",
+    "js:clean": "rm -rf node_modules && rm -rf clients/js/node_modules",
     "generate": "pnpm generate:idls && pnpm generate:clients",
     "generate:idls": "node ./scripts/generate-idls.cjs",
     "generate:clients": "node ./scripts/generate-clients.cjs",
@@ -18,10 +19,10 @@
     "validator:stop": "amman stop"
   },
   "devDependencies": {
-    "@metaplex-foundation/kinobi": "0.17.3",
     "@metaplex-foundation/shank-js": "^0.1.0",
     "@metaplex-foundation/amman": "^0.12.1",
-    "typescript": "^4.9.4"
+    "@metaplex-foundation/kinobi": "^0.18.2",
+    "typescript": "^5.4.2"
   },
   "packageManager": "pnpm@8.9.0"
 }

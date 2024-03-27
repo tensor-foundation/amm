@@ -29,22 +29,18 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU64Decoder,
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
+  mapEncoder,
+} from '@solana/codecs';
 
 export type SingleListing<TAddress extends string = string> = Account<
   SingleListingAccountData,
@@ -73,16 +69,9 @@ export type SingleListingAccountDataArgs = {
   reserved: Uint8Array;
 };
 
-export function getSingleListingAccountDataEncoder() {
+export function getSingleListingAccountDataEncoder(): Encoder<SingleListingAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      owner: Address;
-      nftMint: Address;
-      price: number | bigint;
-      bump: Array<number>;
-      reserved: Uint8Array;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['owner', getAddressEncoder()],
       ['nftMint', getAddressEncoder()],
@@ -94,18 +83,18 @@ export function getSingleListingAccountDataEncoder() {
       ...value,
       discriminator: [14, 114, 212, 140, 24, 134, 31, 24],
     })
-  ) satisfies Encoder<SingleListingAccountDataArgs>;
+  );
 }
 
-export function getSingleListingAccountDataDecoder() {
-  return getStructDecoder<SingleListingAccountData>([
+export function getSingleListingAccountDataDecoder(): Decoder<SingleListingAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['owner', getAddressDecoder()],
     ['nftMint', getAddressDecoder()],
     ['price', getU64Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
     ['reserved', getBytesDecoder({ size: 64 })],
-  ]) satisfies Decoder<SingleListingAccountData>;
+  ]);
 }
 
 export function getSingleListingAccountDataCodec(): Codec<

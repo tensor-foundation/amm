@@ -47,10 +47,7 @@ pub mod amm_program {
         instructions::edit_pool::process_edit_pool(ctx, new_config, cosigner, max_taker_sell_count)
     }
 
-    pub fn close_pool<'info>(
-        ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>,
-        _config: PoolConfig,
-    ) -> Result<()> {
+    pub fn close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
         instructions::close_pool::process_close_pool(ctx)
     }
 
@@ -359,21 +356,21 @@ pub mod amm_program {
     //     instructions::wns_withdraw_nft::process_wns_withdraw_nft(ctx)
     // }
 
-    pub fn wns_buy_single_listing<'info>(
-        ctx: Context<'_, '_, '_, 'info, WnsBuySingleListing<'info>>,
-        max_price: u64,
-    ) -> Result<()> {
-        instructions::wns_buy_single_listing::wns_process_buy_single_listing(ctx, max_price)
-    }
+    // pub fn wns_buy_single_listing<'info>(
+    //     ctx: Context<'_, '_, '_, 'info, WnsBuySingleListing<'info>>,
+    //     max_price: u64,
+    // ) -> Result<()> {
+    //     instructions::wns_buy_single_listing::wns_process_buy_single_listing(ctx, max_price)
+    // }
 
-    pub fn wns_list<'info>(
-        ctx: Context<'_, '_, '_, 'info, WnsList<'info>>,
-        price: u64,
-    ) -> Result<()> {
-        instructions::wns_list::wns_process_list(ctx, price)
-    }
+    // pub fn wns_list<'info>(
+    //     ctx: Context<'_, '_, '_, 'info, WnsList<'info>>,
+    //     price: u64,
+    // ) -> Result<()> {
+    //     instructions::wns_list::wns_process_list(ctx, price)
+    // }
 
-    pub fn wns_delist<'info>(ctx: Context<'_, '_, '_, 'info, WnsDelist<'info>>) -> Result<()> {
-        instructions::wns_delist::wns_process_delist(ctx)
-    }
+    // pub fn wns_delist<'info>(ctx: Context<'_, '_, '_, 'info, WnsDelist<'info>>) -> Result<()> {
+    //     instructions::wns_delist::wns_process_delist(ctx)
+    // }
 }

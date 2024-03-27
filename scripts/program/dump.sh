@@ -1,7 +1,7 @@
 #!/bin/bash
 
-EXTERNAL_ID=("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV" "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW")
-EXTERNAL_SO=("spl_noop.so" "tensor_whitelist.so")
+EXTERNAL_ID=("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV")
+EXTERNAL_SO=("spl_noop.so")
 
 # output colours
 RED() { echo $'\e[1;31m'$1$'\e[0m'; }

@@ -29,24 +29,20 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU16Decoder,
   getU16Encoder,
   getU32Decoder,
   getU32Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
+  mapEncoder,
+} from '@solana/codecs';
 
 export type SharedEscrow<TAddress extends string = string> = Account<
   SharedEscrowAccountData,
@@ -77,17 +73,9 @@ export type SharedEscrowAccountDataArgs = {
   reserved: Uint8Array;
 };
 
-export function getSharedEscrowAccountDataEncoder() {
+export function getSharedEscrowAccountDataEncoder(): Encoder<SharedEscrowAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      owner: Address;
-      name: Uint8Array;
-      nr: number;
-      bump: Array<number>;
-      poolsAttached: number;
-      reserved: Uint8Array;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['owner', getAddressEncoder()],
       ['name', getBytesEncoder({ size: 32 })],
@@ -100,11 +88,11 @@ export function getSharedEscrowAccountDataEncoder() {
       ...value,
       discriminator: [224, 55, 20, 31, 220, 116, 183, 194],
     })
-  ) satisfies Encoder<SharedEscrowAccountDataArgs>;
+  );
 }
 
-export function getSharedEscrowAccountDataDecoder() {
-  return getStructDecoder<SharedEscrowAccountData>([
+export function getSharedEscrowAccountDataDecoder(): Decoder<SharedEscrowAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['owner', getAddressDecoder()],
     ['name', getBytesDecoder({ size: 32 })],
@@ -112,7 +100,7 @@ export function getSharedEscrowAccountDataDecoder() {
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
     ['poolsAttached', getU32Decoder()],
     ['reserved', getBytesDecoder({ size: 64 })],
-  ]) satisfies Decoder<SharedEscrowAccountData>;
+  ]);
 }
 
 export function getSharedEscrowAccountDataCodec(): Codec<

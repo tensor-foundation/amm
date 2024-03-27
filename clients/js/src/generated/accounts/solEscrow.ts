@@ -25,15 +25,14 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import { getU8Decoder, getU8Encoder } from '@solana/codecs-numbers';
+  getU8Decoder,
+  getU8Encoder,
+  mapEncoder,
+} from '@solana/codecs';
 import { SolEscrowSeeds, findSolEscrowPda } from '../pdas';
 
 export type SolEscrow<TAddress extends string = string> = Account<
@@ -50,22 +49,22 @@ export type SolEscrowAccountData = { discriminator: Array<number> };
 
 export type SolEscrowAccountDataArgs = {};
 
-export function getSolEscrowAccountDataEncoder() {
+export function getSolEscrowAccountDataEncoder(): Encoder<SolEscrowAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{ discriminator: Array<number> }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [75, 199, 250, 63, 244, 209, 235, 120],
     })
-  ) satisfies Encoder<SolEscrowAccountDataArgs>;
+  );
 }
 
-export function getSolEscrowAccountDataDecoder() {
-  return getStructDecoder<SolEscrowAccountData>([
+export function getSolEscrowAccountDataDecoder(): Decoder<SolEscrowAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]) satisfies Decoder<SolEscrowAccountData>;
+  ]);
 }
 
 export function getSolEscrowAccountDataCodec(): Codec<
@@ -152,5 +151,5 @@ export async function fetchMaybeSolEscrowFromSeeds(
 ): Promise<MaybeSolEscrow> {
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findSolEscrowPda(seeds, { programAddress });
-  return fetchMaybeSolEscrow(rpc, address, fetchConfig);
+  return await fetchMaybeSolEscrow(rpc, address, fetchConfig);
 }

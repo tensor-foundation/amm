@@ -12,17 +12,15 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import { getU8Decoder, getU8Encoder } from '@solana/codecs-numbers';
+  getU8Decoder,
+  getU8Encoder,
+  mapEncoder,
+} from '@solana/codecs';
 import {
-  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
@@ -32,45 +30,17 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import {
-  ResolvedAccount,
-  accountMetaWithDefault,
-  getAccountMetasWithSigners,
-} from '../shared';
+import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 
 export type CloseMarginAccountInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
-    [
-      TAccountSharedEscrow extends string
-        ? WritableAccount<TAccountSharedEscrow>
-        : TAccountSharedEscrow,
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      ...TRemainingAccounts
-    ]
-  >;
-
-export type CloseMarginAccountInstructionWithSigners<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
+  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
@@ -85,7 +55,7 @@ export type CloseMarginAccountInstructionWithSigners<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      ...TRemainingAccounts
+      ...TRemainingAccounts,
     ]
   >;
 
@@ -95,22 +65,22 @@ export type CloseMarginAccountInstructionData = {
 
 export type CloseMarginAccountInstructionDataArgs = {};
 
-export function getCloseMarginAccountInstructionDataEncoder() {
+export function getCloseMarginAccountInstructionDataEncoder(): Encoder<CloseMarginAccountInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{ discriminator: Array<number> }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
     ]),
     (value) => ({
       ...value,
       discriminator: [105, 215, 41, 239, 166, 207, 1, 103],
     })
-  ) satisfies Encoder<CloseMarginAccountInstructionDataArgs>;
+  );
 }
 
-export function getCloseMarginAccountInstructionDataDecoder() {
-  return getStructDecoder<CloseMarginAccountInstructionData>([
+export function getCloseMarginAccountInstructionDataDecoder(): Decoder<CloseMarginAccountInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-  ]) satisfies Decoder<CloseMarginAccountInstructionData>;
+  ]);
 }
 
 export function getCloseMarginAccountInstructionDataCodec(): Codec<
@@ -124,19 +94,9 @@ export function getCloseMarginAccountInstructionDataCodec(): Codec<
 }
 
 export type CloseMarginAccountInput<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
-> = {
-  sharedEscrow: Address<TAccountSharedEscrow>;
-  owner: Address<TAccountOwner>;
-  systemProgram?: Address<TAccountSystemProgram>;
-};
-
-export type CloseMarginAccountInputWithSigners<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string
+  TAccountSharedEscrow extends string = string,
+  TAccountOwner extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   sharedEscrow: Address<TAccountSharedEscrow>;
   owner: TransactionSigner<TAccountOwner>;
@@ -147,24 +107,6 @@ export function getCloseMarginAccountInstruction<
   TAccountSharedEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: CloseMarginAccountInputWithSigners<
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): CloseMarginAccountInstructionWithSigners<
-  TProgram,
-  TAccountSharedEscrow,
-  TAccountOwner,
-  TAccountSystemProgram
->;
-export function getCloseMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: CloseMarginAccountInput<
     TAccountSharedEscrow,
@@ -172,41 +114,24 @@ export function getCloseMarginAccountInstruction<
     TAccountSystemProgram
   >
 ): CloseMarginAccountInstruction<
-  TProgram,
+  typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow,
   TAccountOwner,
   TAccountSystemProgram
->;
-export function getCloseMarginAccountInstruction<
-  TAccountSharedEscrow extends string,
-  TAccountOwner extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: CloseMarginAccountInput<
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram
-  >
-): IInstruction {
+> {
   // Program address.
-  const programAddress =
-    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
-  type AccountMetas = Parameters<
-    typeof getCloseMarginAccountInstructionRaw<
-      TProgram,
-      TAccountSharedEscrow,
-      TAccountOwner,
-      TAccountSystemProgram
-    >
-  >[0];
-  const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
+  const originalAccounts = {
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
 
   // Resolve default values.
   if (!accounts.systemProgram.value) {
@@ -214,69 +139,28 @@ export function getCloseMarginAccountInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  // Get account metas and signers.
-  const accountMetas = getAccountMetasWithSigners(
-    accounts,
-    'programId',
-    programAddress
-  );
-
-  const instruction = getCloseMarginAccountInstructionRaw(
-    accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    programAddress
-  );
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
+    accounts: [
+      getAccountMeta(accounts.sharedEscrow),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    programAddress,
+    data: getCloseMarginAccountInstructionDataEncoder().encode({}),
+  } as CloseMarginAccountInstruction<
+    typeof AMM_PROGRAM_ADDRESS,
+    TAccountSharedEscrow,
+    TAccountOwner,
+    TAccountSystemProgram
+  >;
 
   return instruction;
 }
 
-export function getCloseMarginAccountInstructionRaw<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
->(
-  accounts: {
-    sharedEscrow: TAccountSharedEscrow extends string
-      ? Address<TAccountSharedEscrow>
-      : TAccountSharedEscrow;
-    owner: TAccountOwner extends string
-      ? Address<TAccountOwner>
-      : TAccountOwner;
-    systemProgram?: TAccountSystemProgram extends string
-      ? Address<TAccountSystemProgram>
-      : TAccountSystemProgram;
-  },
-  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
-  remainingAccounts?: TRemainingAccounts
-) {
-  return {
-    accounts: [
-      accountMetaWithDefault(accounts.sharedEscrow, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.owner, AccountRole.WRITABLE_SIGNER),
-      accountMetaWithDefault(
-        accounts.systemProgram ??
-          ('11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      ...(remainingAccounts ?? []),
-    ],
-    data: getCloseMarginAccountInstructionDataEncoder().encode({}),
-    programAddress,
-  } as CloseMarginAccountInstruction<
-    TProgram,
-    TAccountSharedEscrow,
-    TAccountOwner,
-    TAccountSystemProgram,
-    TRemainingAccounts
-  >;
-}
-
 export type ParsedCloseMarginAccountInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -289,7 +173,7 @@ export type ParsedCloseMarginAccountInstruction<
 
 export function parseCloseMarginAccountInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[]
+  TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &

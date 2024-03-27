@@ -30,6 +30,3 @@ export * from './sellNftTradePool';
 export * from './withdrawMarginAccount';
 export * from './withdrawNft';
 export * from './withdrawSol';
-export * from './wnsBuySingleListing';
-export * from './wnsDelist';
-export * from './wnsList';

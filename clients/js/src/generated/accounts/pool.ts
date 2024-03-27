@@ -28,31 +28,25 @@ import {
   Codec,
   Decoder,
   Encoder,
+  Option,
+  OptionOrNullable,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
-  getStructDecoder,
-  getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getI64Decoder,
   getI64Encoder,
+  getOptionDecoder,
+  getOptionEncoder,
+  getStructDecoder,
+  getStructEncoder,
   getU32Decoder,
   getU32Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
-import {
-  Option,
-  OptionOrNullable,
-  getOptionDecoder,
-  getOptionEncoder,
-} from '@solana/options';
+  mapEncoder,
+} from '@solana/codecs';
 import { PoolSeeds, findPoolPda } from '../pdas';
 import {
   PoolConfig,
@@ -144,42 +138,9 @@ export type PoolAccountDataArgs = {
   maxTakerSellCount: number;
 };
 
-export function getPoolAccountDataEncoder() {
+export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      /** Pool version, used to control upgrades. */
-      version: number;
-      /** Bump seed for the pool PDA. */
-      bump: Array<number>;
-      /** SOL Escrow PDA bump seed. */
-      solEscrowBump: Array<number>;
-      /** Owner-chosen identifier for the pool */
-      identifier: Uint8Array;
-      /** Unix timestamp of the pool creation, in seconds. */
-      createdAt: number | bigint;
-      /** Unix timestamp of the last time the pool has been updated, in seconds. */
-      updatedAt: number | bigint;
-      /** Unix timestamp of when the pool expires, in seconds. */
-      expiresAt: number | bigint;
-      config: PoolConfigArgs;
-      owner: Address;
-      whitelist: Address;
-      solEscrow: Address;
-      currency: OptionOrNullable<Address>;
-      /** How many times a taker has SOLD into the pool */
-      takerSellCount: number;
-      /** How many times a taker has BOUGHT from the pool */
-      takerBuyCount: number;
-      nftsHeld: number;
-      stats: PoolStatsArgs;
-      /** If an escrow account present, means it's a shared-escrow pool (currently bids only) */
-      sharedEscrow: OptionOrNullable<Address>;
-      /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
-      cosigner: OptionOrNullable<Address>;
-      /** Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity */
-      maxTakerSellCount: number;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['version', getU8Encoder()],
       ['bump', getArrayEncoder(getU8Encoder(), { size: 1 })],
@@ -205,11 +166,11 @@ export function getPoolAccountDataEncoder() {
       ...value,
       discriminator: [241, 154, 109, 4, 17, 177, 109, 188],
     })
-  ) satisfies Encoder<PoolAccountDataArgs>;
+  );
 }
 
-export function getPoolAccountDataDecoder() {
-  return getStructDecoder<PoolAccountData>([
+export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['version', getU8Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
@@ -230,7 +191,7 @@ export function getPoolAccountDataDecoder() {
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['maxTakerSellCount', getU32Decoder()],
-  ]) satisfies Decoder<PoolAccountData>;
+  ]);
 }
 
 export function getPoolAccountDataCodec(): Codec<
@@ -310,5 +271,5 @@ export async function fetchMaybePoolFromSeeds(
 ): Promise<MaybePool> {
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findPoolPda(seeds, { programAddress });
-  return fetchMaybePool(rpc, address, fetchConfig);
+  return await fetchMaybePool(rpc, address, fetchConfig);
 }

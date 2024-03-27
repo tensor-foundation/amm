@@ -29,9 +29,6 @@ pub(crate) mod r#sell_nft_trade_pool;
 pub(crate) mod r#withdraw_margin_account;
 pub(crate) mod r#withdraw_nft;
 pub(crate) mod r#withdraw_sol;
-pub(crate) mod r#wns_buy_single_listing;
-pub(crate) mod r#wns_delist;
-pub(crate) mod r#wns_list;
 
 pub use self::r#attach_pool_to_margin::*;
 pub use self::r#buy_nft::*;
@@ -57,6 +54,3 @@ pub use self::r#sell_nft_trade_pool::*;
 pub use self::r#withdraw_margin_account::*;
 pub use self::r#withdraw_nft::*;
 pub use self::r#withdraw_sol::*;
-pub use self::r#wns_buy_single_listing::*;
-pub use self::r#wns_delist::*;
-pub use self::r#wns_list::*;

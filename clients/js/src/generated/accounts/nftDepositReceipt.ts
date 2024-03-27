@@ -29,15 +29,14 @@ import {
   Decoder,
   Encoder,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import { getU8Decoder, getU8Encoder } from '@solana/codecs-numbers';
+  getU8Decoder,
+  getU8Encoder,
+  mapEncoder,
+} from '@solana/codecs';
 
 export type NftDepositReceipt<TAddress extends string = string> = Account<
   NftDepositReceiptAccountData,
@@ -60,14 +59,9 @@ export type NftDepositReceiptAccountDataArgs = {
   nftEscrow: Address;
 };
 
-export function getNftDepositReceiptAccountDataEncoder() {
+export function getNftDepositReceiptAccountDataEncoder(): Encoder<NftDepositReceiptAccountDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      bump: number;
-      nftMint: Address;
-      nftEscrow: Address;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['bump', getU8Encoder()],
       ['nftMint', getAddressEncoder()],
@@ -77,16 +71,16 @@ export function getNftDepositReceiptAccountDataEncoder() {
       ...value,
       discriminator: [206, 255, 132, 254, 67, 78, 62, 96],
     })
-  ) satisfies Encoder<NftDepositReceiptAccountDataArgs>;
+  );
 }
 
-export function getNftDepositReceiptAccountDataDecoder() {
-  return getStructDecoder<NftDepositReceiptAccountData>([
+export function getNftDepositReceiptAccountDataDecoder(): Decoder<NftDepositReceiptAccountData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['bump', getU8Decoder()],
     ['nftMint', getAddressDecoder()],
     ['nftEscrow', getAddressDecoder()],
-  ]) satisfies Decoder<NftDepositReceiptAccountData>;
+  ]);
 }
 
 export function getNftDepositReceiptAccountDataCodec(): Codec<
@@ -125,7 +119,7 @@ export async function fetchNftDepositReceipt<TAddress extends string = string>(
 }
 
 export async function fetchMaybeNftDepositReceipt<
-  TAddress extends string = string
+  TAddress extends string = string,
 >(
   rpc: Parameters<typeof fetchEncodedAccount>[0],
   address: Address<TAddress>,

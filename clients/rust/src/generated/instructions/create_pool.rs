@@ -89,6 +89,7 @@ pub struct CreatePoolInstructionArgs {
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
+    pub expiration_timestamp: Option<i64>,
 }
 
 /// Instruction builder for `CreatePool`.
@@ -112,6 +113,7 @@ pub struct CreatePoolBuilder {
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
+    expiration_timestamp: Option<i64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -173,6 +175,12 @@ impl CreatePoolBuilder {
         self.max_taker_sell_count = Some(max_taker_sell_count);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn expiration_timestamp(&mut self, expiration_timestamp: i64) -> &mut Self {
+        self.expiration_timestamp = Some(expiration_timestamp);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -208,6 +216,7 @@ impl CreatePoolBuilder {
             cosigner: self.cosigner.clone(),
             order_type: self.order_type.clone().expect("order_type is not set"),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
+            expiration_timestamp: self.expiration_timestamp.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -377,6 +386,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             cosigner: None,
             order_type: None,
             max_taker_sell_count: None,
+            expiration_timestamp: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -443,6 +453,12 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.max_taker_sell_count = Some(max_taker_sell_count);
         self
     }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn expiration_timestamp(&mut self, expiration_timestamp: i64) -> &mut Self {
+        self.instruction.expiration_timestamp = Some(expiration_timestamp);
+        self
+    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -498,6 +514,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .clone()
                 .expect("order_type is not set"),
             max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
+            expiration_timestamp: self.instruction.expiration_timestamp.clone(),
         };
         let instruction = CreatePoolCpi {
             __program: self.instruction.__program,
@@ -535,6 +552,7 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
+    expiration_timestamp: Option<i64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

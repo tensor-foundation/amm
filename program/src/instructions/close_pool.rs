@@ -1,12 +1,14 @@
 //! User (owner) closing their pool and reclaims rent (+ SOL escrow)
-use tensor_whitelist::Whitelist;
 use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct ClosePool<'info> {
+    /// CHECK: has_one = owner in pool
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
     #[account(mut,
         seeds = [
             b"pool",
@@ -14,7 +16,7 @@ pub struct ClosePool<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow @ ErrorCode::WrongAuthority,
+        has_one = owner, has_one = sol_escrow @ ErrorCode::WrongAuthority,
         close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -32,18 +34,6 @@ pub struct ClosePool<'info> {
     )]
     pub sol_escrow: Box<Account<'info, SolEscrow>>,
 
-    /// CHECK: has_one = whitelist in pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
-
-    /// CHECK: has_one = owner in pool
-    #[account(mut)]
-    pub owner: Signer<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
@@ -52,8 +42,8 @@ impl<'info> Validate<'info> for ClosePool<'info> {
         if self.pool.nfts_held > 0 {
             throw_err!(ErrorCode::ExistingNfts);
         }
-        //can't close a marginated pool, need to detach first
-        //this is needed because we need to reduce the counter on the margin acc to be able to close it later
+        //can't close a shared_escrow pool, need to detach first
+        //this is needed because we need to reduce the counter on the escrow acc to be able to close it later
         if self.pool.shared_escrow.is_some() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }

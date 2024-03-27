@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use tensor_whitelist::{self, Whitelist};
+use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, try_or_err, Validate};
 
 use crate::{
@@ -16,6 +16,7 @@ pub struct CreatePoolArgs {
     cosigner: Option<Pubkey>,
     order_type: u8,
     max_taker_sell_count: Option<u32>,
+    pub expiration_timestamp: Option<i64>,
 }
 
 #[derive(Accounts)]
@@ -52,11 +53,11 @@ pub struct CreatePool<'info> {
 
     /// Needed for pool seeds derivation / will be stored inside pool
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
+    pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     pub system_program: Program<'info, System>,
 }
@@ -108,7 +109,6 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.version = CURRENT_POOL_VERSION;
     pool.bump = [ctx.bumps.pool];
     pool.sol_escrow_bump = [ctx.bumps.sol_escrow];
-    pool.created_at = Clock::get()?.unix_timestamp;
     pool.config = args.config;
 
     pool.owner = ctx.accounts.owner.key();
@@ -122,13 +122,14 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.stats = PoolStats::default();
 
-    if args.cosigner.is_some() && args.config.pool_type != PoolType::Token {
-        throw_err!(ErrorCode::WrongPoolType);
-    }
     pool.cosigner = args.cosigner;
-    //all pools start off as non-marginated, and can be attached later
+    //all pools start off without a shared escrow, and can be attached later
     pool.shared_escrow = None;
-    pool.updated_at = Clock::get()?.unix_timestamp;
+
+    let timestamp = Clock::get()?.unix_timestamp;
+    pool.created_at = timestamp;
+    pool.updated_at = timestamp;
+    pool.expires_at = args.expiration_timestamp.unwrap_or(0);
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {
         pool.max_taker_sell_count = max_taker_sell_count;

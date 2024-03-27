@@ -6,25 +6,24 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import { Codec, Decoder, Encoder, combineCodec } from '@solana/codecs-core';
 import {
+  Codec,
+  Decoder,
+  Encoder,
+  Option,
+  OptionOrNullable,
+  combineCodec,
   getBooleanDecoder,
   getBooleanEncoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU16Decoder,
   getU16Encoder,
   getU64Decoder,
   getU64Encoder,
-} from '@solana/codecs-numbers';
-import {
-  Option,
-  OptionOrNullable,
-  getOptionDecoder,
-  getOptionEncoder,
-} from '@solana/options';
+} from '@solana/codecs';
 import {
   CurveType,
   CurveTypeArgs,
@@ -56,26 +55,26 @@ export type PoolConfigArgs = {
   mmFeeBps: OptionOrNullable<number>;
 };
 
-export function getPoolConfigEncoder() {
-  return getStructEncoder<PoolConfigArgs>([
+export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
+  return getStructEncoder([
     ['poolType', getPoolTypeEncoder()],
     ['curveType', getCurveTypeEncoder()],
     ['startingPrice', getU64Encoder()],
     ['delta', getU64Encoder()],
     ['mmCompoundFees', getBooleanEncoder()],
     ['mmFeeBps', getOptionEncoder(getU16Encoder())],
-  ]) satisfies Encoder<PoolConfigArgs>;
+  ]);
 }
 
-export function getPoolConfigDecoder() {
-  return getStructDecoder<PoolConfig>([
+export function getPoolConfigDecoder(): Decoder<PoolConfig> {
+  return getStructDecoder([
     ['poolType', getPoolTypeDecoder()],
     ['curveType', getCurveTypeDecoder()],
     ['startingPrice', getU64Decoder()],
     ['delta', getU64Decoder()],
     ['mmCompoundFees', getBooleanDecoder()],
     ['mmFeeBps', getOptionDecoder(getU16Decoder())],
-  ]) satisfies Decoder<PoolConfig>;
+  ]);
 }
 
 export function getPoolConfigCodec(): Codec<PoolConfigArgs, PoolConfig> {

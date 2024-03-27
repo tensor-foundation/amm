@@ -15,25 +15,26 @@ import {
   Codec,
   Decoder,
   Encoder,
+  Option,
+  OptionOrNullable,
   combineCodec,
-  mapEncoder,
-} from '@solana/codecs-core';
-import {
   getArrayDecoder,
   getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getI64Decoder,
+  getI64Encoder,
+  getOptionDecoder,
+  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-} from '@solana/codecs-data-structures';
-import {
   getU32Decoder,
   getU32Encoder,
   getU8Decoder,
   getU8Encoder,
-} from '@solana/codecs-numbers';
+  mapEncoder,
+} from '@solana/codecs';
 import {
-  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
@@ -42,18 +43,9 @@ import {
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
-import {
-  Option,
-  OptionOrNullable,
-  getOptionDecoder,
-  getOptionEncoder,
-} from '@solana/options';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import {
-  ResolvedAccount,
-  accountMetaWithDefault,
-  getAccountMetasWithSigners,
-} from '../shared';
+import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
   PoolConfigArgs,
@@ -62,7 +54,7 @@ import {
 } from '../types';
 
 export type CreatePoolInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountSolEscrow extends string | IAccountMeta<string> = string,
@@ -70,40 +62,7 @@ export type CreatePoolInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
-> = IInstruction<TProgram> &
-  IInstructionWithData<Uint8Array> &
-  IInstructionWithAccounts<
-    [
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner>
-        : TAccountOwner,
-      TAccountPool extends string
-        ? WritableAccount<TAccountPool>
-        : TAccountPool,
-      TAccountSolEscrow extends string
-        ? WritableAccount<TAccountSolEscrow>
-        : TAccountSolEscrow,
-      TAccountWhitelist extends string
-        ? ReadonlyAccount<TAccountWhitelist>
-        : TAccountWhitelist,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
-      ...TRemainingAccounts
-    ]
-  >;
-
-export type CreatePoolInstructionWithSigners<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
+  TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
@@ -124,7 +83,7 @@ export type CreatePoolInstructionWithSigners<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      ...TRemainingAccounts
+      ...TRemainingAccounts,
     ]
   >;
 
@@ -135,6 +94,7 @@ export type CreatePoolInstructionData = {
   cosigner: Option<Address>;
   orderType: number;
   maxTakerSellCount: Option<number>;
+  expirationTimestamp: Option<bigint>;
 };
 
 export type CreatePoolInstructionDataArgs = {
@@ -143,41 +103,37 @@ export type CreatePoolInstructionDataArgs = {
   cosigner: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
+  expirationTimestamp: OptionOrNullable<number | bigint>;
 };
 
-export function getCreatePoolInstructionDataEncoder() {
+export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstructionDataArgs> {
   return mapEncoder(
-    getStructEncoder<{
-      discriminator: Array<number>;
-      identifier: Uint8Array;
-      config: PoolConfigArgs;
-      cosigner: OptionOrNullable<Address>;
-      orderType: number;
-      maxTakerSellCount: OptionOrNullable<number>;
-    }>([
+    getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['identifier', getBytesEncoder({ size: 32 })],
       ['config', getPoolConfigEncoder()],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
+      ['expirationTimestamp', getOptionEncoder(getI64Encoder())],
     ]),
     (value) => ({
       ...value,
       discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
     })
-  ) satisfies Encoder<CreatePoolInstructionDataArgs>;
+  );
 }
 
-export function getCreatePoolInstructionDataDecoder() {
-  return getStructDecoder<CreatePoolInstructionData>([
+export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstructionData> {
+  return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['identifier', getBytesDecoder({ size: 32 })],
     ['config', getPoolConfigDecoder()],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
-  ]) satisfies Decoder<CreatePoolInstructionData>;
+    ['expirationTimestamp', getOptionDecoder(getI64Decoder())],
+  ]);
 }
 
 export function getCreatePoolInstructionDataCodec(): Codec<
@@ -191,31 +147,11 @@ export function getCreatePoolInstructionDataCodec(): Codec<
 }
 
 export type CreatePoolInput<
-  TAccountOwner extends string,
-  TAccountPool extends string,
-  TAccountSolEscrow extends string,
-  TAccountWhitelist extends string,
-  TAccountSystemProgram extends string
-> = {
-  owner: Address<TAccountOwner>;
-  pool: Address<TAccountPool>;
-  solEscrow: Address<TAccountSolEscrow>;
-  /** Needed for pool seeds derivation / will be stored inside pool */
-  whitelist: Address<TAccountWhitelist>;
-  systemProgram?: Address<TAccountSystemProgram>;
-  identifier: CreatePoolInstructionDataArgs['identifier'];
-  config: CreatePoolInstructionDataArgs['config'];
-  cosigner: CreatePoolInstructionDataArgs['cosigner'];
-  orderType: CreatePoolInstructionDataArgs['orderType'];
-  maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
-};
-
-export type CreatePoolInputWithSigners<
-  TAccountOwner extends string,
-  TAccountPool extends string,
-  TAccountSolEscrow extends string,
-  TAccountWhitelist extends string,
-  TAccountSystemProgram extends string
+  TAccountOwner extends string = string,
+  TAccountPool extends string = string,
+  TAccountSolEscrow extends string = string,
+  TAccountWhitelist extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
@@ -228,6 +164,7 @@ export type CreatePoolInputWithSigners<
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
+  expirationTimestamp: CreatePoolInstructionDataArgs['expirationTimestamp'];
 };
 
 export function getCreatePoolInstruction<
@@ -236,30 +173,6 @@ export function getCreatePoolInstruction<
   TAccountSolEscrow extends string,
   TAccountWhitelist extends string,
   TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: CreatePoolInputWithSigners<
-    TAccountOwner,
-    TAccountPool,
-    TAccountSolEscrow,
-    TAccountWhitelist,
-    TAccountSystemProgram
-  >
-): CreatePoolInstructionWithSigners<
-  TProgram,
-  TAccountOwner,
-  TAccountPool,
-  TAccountSolEscrow,
-  TAccountWhitelist,
-  TAccountSystemProgram
->;
-export function getCreatePoolInstruction<
-  TAccountOwner extends string,
-  TAccountPool extends string,
-  TAccountSolEscrow extends string,
-  TAccountWhitelist extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
 >(
   input: CreatePoolInput<
     TAccountOwner,
@@ -269,51 +182,28 @@ export function getCreatePoolInstruction<
     TAccountSystemProgram
   >
 ): CreatePoolInstruction<
-  TProgram,
+  typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
   TAccountSolEscrow,
   TAccountWhitelist,
   TAccountSystemProgram
->;
-export function getCreatePoolInstruction<
-  TAccountOwner extends string,
-  TAccountPool extends string,
-  TAccountSolEscrow extends string,
-  TAccountWhitelist extends string,
-  TAccountSystemProgram extends string,
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'
->(
-  input: CreatePoolInput<
-    TAccountOwner,
-    TAccountPool,
-    TAccountSolEscrow,
-    TAccountWhitelist,
-    TAccountSystemProgram
-  >
-): IInstruction {
+> {
   // Program address.
-  const programAddress =
-    'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
-  type AccountMetas = Parameters<
-    typeof getCreatePoolInstructionRaw<
-      TProgram,
-      TAccountOwner,
-      TAccountPool,
-      TAccountSolEscrow,
-      TAccountWhitelist,
-      TAccountSystemProgram
-    >
-  >[0];
-  const accounts: Record<keyof AccountMetas, ResolvedAccount> = {
+  const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     solEscrow: { value: input.solEscrow ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
 
   // Original args.
   const args = { ...input };
@@ -324,81 +214,34 @@ export function getCreatePoolInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
-  // Get account metas and signers.
-  const accountMetas = getAccountMetasWithSigners(
-    accounts,
-    'programId',
-    programAddress
-  );
-
-  const instruction = getCreatePoolInstructionRaw(
-    accountMetas as Record<keyof AccountMetas, IAccountMeta>,
-    args as CreatePoolInstructionDataArgs,
-    programAddress
-  );
-
-  return instruction;
-}
-
-export function getCreatePoolInstructionRaw<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TRemainingAccounts extends Array<IAccountMeta<string>> = []
->(
-  accounts: {
-    owner: TAccountOwner extends string
-      ? Address<TAccountOwner>
-      : TAccountOwner;
-    pool: TAccountPool extends string ? Address<TAccountPool> : TAccountPool;
-    solEscrow: TAccountSolEscrow extends string
-      ? Address<TAccountSolEscrow>
-      : TAccountSolEscrow;
-    whitelist: TAccountWhitelist extends string
-      ? Address<TAccountWhitelist>
-      : TAccountWhitelist;
-    systemProgram?: TAccountSystemProgram extends string
-      ? Address<TAccountSystemProgram>
-      : TAccountSystemProgram;
-  },
-  args: CreatePoolInstructionDataArgs,
-  programAddress: Address<TProgram> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<TProgram>,
-  remainingAccounts?: TRemainingAccounts
-) {
-  return {
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
     accounts: [
-      accountMetaWithDefault(accounts.owner, AccountRole.WRITABLE_SIGNER),
-      accountMetaWithDefault(accounts.pool, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.solEscrow, AccountRole.WRITABLE),
-      accountMetaWithDefault(accounts.whitelist, AccountRole.READONLY),
-      accountMetaWithDefault(
-        accounts.systemProgram ??
-          ('11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>),
-        AccountRole.READONLY
-      ),
-      ...(remainingAccounts ?? []),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.solEscrow),
+      getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.systemProgram),
     ],
-    data: getCreatePoolInstructionDataEncoder().encode(args),
     programAddress,
+    data: getCreatePoolInstructionDataEncoder().encode(
+      args as CreatePoolInstructionDataArgs
+    ),
   } as CreatePoolInstruction<
-    TProgram,
+    typeof AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
     TAccountSolEscrow,
     TAccountWhitelist,
-    TAccountSystemProgram,
-    TRemainingAccounts
+    TAccountSystemProgram
   >;
+
+  return instruction;
 }
 
 export type ParsedCreatePoolInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
-  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[]
+  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
@@ -414,7 +257,7 @@ export type ParsedCreatePoolInstruction<
 
 export function parseCreatePoolInstruction<
   TProgram extends string,
-  TAccountMetas extends readonly IAccountMeta[]
+  TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &

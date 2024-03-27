@@ -1,3 +1,4 @@
+const fs = require("fs");
 const path = require("path");
 const k = require("@metaplex-foundation/kinobi");
 
@@ -7,6 +8,9 @@ const idlDir = path.join(__dirname, "..", "program", "idl");
 
 // Instanciate Kinobi.
 const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
+// const kinobi = k.createFromJson(
+//   fs.readFileSync(path.join(idlDir, "amm_program.json"))
+// );
 
 // Update programs.
 kinobi.update(
