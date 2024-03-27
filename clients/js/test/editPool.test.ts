@@ -1,23 +1,17 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import test from 'ava';
-import { none, some } from '@solana/options';
 import { generateKeyPairSigner } from '@solana/signers';
+import { none } from '@solana/web3.js';
 import {
   Mode,
   WhitelistV2,
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
-import { CurveType, Pool, PoolType, fetchPool } from '../src';
 import {
   createDefaultSolanaClient,
   generateKeyPairSignerWithSol,
-} from './_setup';
-import {
-  createPool,
-  createPoolThrows,
-  createWhitelistV2,
-  tradePoolConfig,
-} from './_common';
+} from '@tensor-foundation/test-helpers';
+import { Pool, fetchPool } from '../src/index.js';
+import { createPool, createWhitelistV2 } from './_common.js';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
   const client = createDefaultSolanaClient();

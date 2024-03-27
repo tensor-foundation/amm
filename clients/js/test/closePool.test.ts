@@ -1,36 +1,18 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import test from 'ava';
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-  Mode,
-  WhitelistV2,
-  fetchWhitelistV2,
-} from '@tensor-foundation/whitelist';
-import {
-  createDefaultNft,
-  findMetadataPda,
-  mintNft,
-} from '@tensor-foundation/toolkit-token-metadata';
-import {
   createDefaultSolanaClient,
   createDefaultTransaction,
-  generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
-  CurveType,
   Pool,
-  PoolType,
   fetchMaybePool,
   fetchMaybeSolEscrow,
   fetchPool,
   getClosePoolInstruction,
-} from '../src';
-import {
-  LAMPORTS_PER_SOL,
-  createPoolAndWhitelist,
-  tradePoolConfig,
-} from './_common';
+} from '../src/index.js';
+import { createPoolAndWhitelist } from './_common.js';
 
 test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();

@@ -1,9 +1,6 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import '@solana/webcrypto-ed25519-polyfill';
 import { ExecutionContext } from 'ava';
 import {
-  findWhitelistPda,
-  getInitUpdateWhitelistInstructionAsync,
   Condition,
   Mode,
   findWhitelistV2Pda,
@@ -17,11 +14,12 @@ import {
   address,
   none,
   some,
+  isSolanaError,
+  SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
 } from '@solana/web3.js';
 import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
   Client,
-  createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
@@ -33,8 +31,7 @@ import {
   findPoolPda,
   findSolEscrowPda,
   getCreatePoolInstruction,
-} from '../src';
-import { setupSigners } from './_setup';
+} from '../src/index.js';
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -161,7 +158,7 @@ export interface CreatePoolParams {
 
 export interface CreatePoolThrowsParams extends CreatePoolParams {
   t: ExecutionContext;
-  message: RegExp;
+  code: number;
 }
 
 export interface CreatePoolReturns {
@@ -203,11 +200,11 @@ export async function createPool({
     };
   }
 
-  const [pool, poolBump] = await findPoolPda({
+  const [pool] = await findPoolPda({
     owner: owner.address,
     identifier,
   });
-  const [solEscrow, solEscrowBump] = await findSolEscrowPda({ pool });
+  const [solEscrow] = await findSolEscrowPda({ pool });
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
@@ -240,7 +237,7 @@ export async function createPoolThrows({
   identifier,
   config,
   t,
-  message,
+  code,
 }: CreatePoolThrowsParams) {
   // Pool values
   if (owner === undefined) {
@@ -264,11 +261,11 @@ export async function createPoolThrows({
     };
   }
 
-  const [pool, poolBump] = await findPoolPda({
+  const [pool] = await findPoolPda({
     owner: owner.address,
     identifier,
   });
-  const [solEscrow, solEscrowBump] = await findSolEscrowPda({ pool });
+  const [solEscrow] = await findSolEscrowPda({ pool });
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
@@ -290,7 +287,18 @@ export async function createPoolThrows({
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await t.throwsAsync(promise, { message });
+  const error = await t.throwsAsync<Error & { data: { logs: string[] } }>(
+    promise
+  );
+
+  if (isSolanaError(error.cause, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
+    t.assert(
+      error.cause.context.code === code,
+      `expected error code ${code}, received ${error.cause.context.code}`
+    );
+  } else {
+    t.fail("expected a custom error, but didn't get one");
+  }
 }
 
 type CreatePoolAndWhitelistParams = Omit<CreatePoolParams, 'whitelist'>;
@@ -316,7 +324,7 @@ export async function createPoolAndWhitelist({
     { mode: Mode.VOC, value: voc },
   ];
 
-  const { whitelist, uuid } = await createWhitelistV2({
+  const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority,
     conditions,
@@ -334,7 +342,14 @@ export async function createPoolAndWhitelist({
     identifier = Uint8Array.from({ length: 32 }, () => 1);
   }
 
-  return createPool({ client, whitelist, owner, cosigner, identifier, config });
+  return await createPool({
+    client,
+    whitelist,
+    owner,
+    cosigner,
+    identifier,
+    config,
+  });
 }
 
 export async function createPoolAndWhitelistThrows({
@@ -344,7 +359,7 @@ export async function createPoolAndWhitelistThrows({
   identifier,
   config,
   t,
-  message,
+  code,
 }: CreatePoolAndWhitelistThrowsParams) {
   const updateAuthority = await generateKeyPairSignerWithSol(client);
   const namespace = await generateKeyPairSigner();
@@ -356,7 +371,7 @@ export async function createPoolAndWhitelistThrows({
     { mode: Mode.VOC, value: voc },
   ];
 
-  const { whitelist, uuid } = await createWhitelistV2({
+  const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority,
     conditions,
@@ -374,7 +389,7 @@ export async function createPoolAndWhitelistThrows({
     identifier = Uint8Array.from({ length: 32 }, () => 1);
   }
 
-  return createPoolThrows({
+  return await createPoolThrows({
     client,
     whitelist,
     owner,
@@ -382,6 +397,6 @@ export async function createPoolAndWhitelistThrows({
     identifier,
     config,
     t,
-    message,
+    code,
   });
 }

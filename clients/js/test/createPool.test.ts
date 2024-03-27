@@ -6,18 +6,18 @@ import {
   WhitelistV2,
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
-import { CurveType, Pool, PoolType, fetchPool } from '../src';
+import { Address, none, some } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   generateKeyPairSignerWithSol,
 } from '@tensor-foundation/test-helpers';
+import { CurveType, Pool, PoolType, fetchPool } from '../src/index.js';
 import {
   createPool,
   createPoolThrows,
   createWhitelistV2,
   tradePoolConfig,
-} from './_common';
-import { Address, none, some } from '@solana/web3.js';
+} from './_common.js';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
   const client = createDefaultSolanaClient();
@@ -129,7 +129,7 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
     },
     t,
     // 0x2ee8 - 12008 DeltaTooLarge
-    message: /custom program error: 0x2ee8/,
+    code: 12008,
   });
 });
 
@@ -179,7 +179,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
     },
     t,
     // 0x2ef1 - 12017 DeltaTooLarge
-    message: /custom program error: 0x2ef1/,
+    code: 12017,
   });
 });
 
@@ -233,6 +233,6 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
       mmFeeBps: some(10_000), // too high, should fail
     },
     t,
-    message: /0x2ee7/, // 12007 FeesTooHigh
+    code: 12007, // 0x2ef1 - 12007 FeesTooHigh
   });
 });

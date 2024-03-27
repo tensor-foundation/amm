@@ -26,7 +26,7 @@ module.exports = {
       {
         label: "Tensor Whitelist",
         programId: "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
-        deployPath: getProgram("tensor_whitelist.so")
+        deployPath: getProgram("whitelist_program.so")
       }
     ]
   }
