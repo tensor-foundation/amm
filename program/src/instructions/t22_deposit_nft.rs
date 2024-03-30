@@ -100,7 +100,9 @@ pub struct DepositNftT22<'info> {
 
 impl<'info> DepositNftT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        verify_whitelist(&self.whitelist, &self.mint_proof, &self.nft_mint, None)
+        //TODO
+        // verify_whitelist(&self.whitelist, &self.mint_proof, &self.nft_mint, None)
+        Ok(())
     }
 }
 

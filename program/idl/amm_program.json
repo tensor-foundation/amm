@@ -241,6 +241,11 @@
       "name": "depositNft",
       "accounts": [
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "pool",
           "isMut": true,
           "isSigner": false
@@ -254,22 +259,17 @@
           ]
         },
         {
-          "name": "nftSource",
+          "name": "sourceTokenAccount",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nftMint",
+          "name": "mint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "nftEscrowOwner",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nftEscrow",
+          "name": "escrowTokenAccount",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -280,11 +280,6 @@
           "name": "nftReceipt",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "tokenProgram",
@@ -302,17 +297,18 @@
           "isSigner": false
         },
         {
-          "name": "nftMetadata",
-          "isMut": true,
+          "name": "metadata",
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "mintProof",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
-          "name": "nftEdition",
+          "name": "edition",
           "isMut": false,
           "isSigner": false
         },
@@ -332,29 +328,25 @@
           "isSigner": false
         },
         {
-          "name": "pnftShared",
-          "accounts": [
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "instructions",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -371,10 +363,6 @@
               "defined": "AuthorizationDataLocal"
             }
           }
-        },
-        {
-          "name": "rulesAccPresent",
-          "type": "bool"
         }
       ]
     },
@@ -392,18 +380,13 @@
           "isSigner": false
         },
         {
-          "name": "nftDest",
+          "name": "destTokenAccount",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nftMint",
+          "name": "mint",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "nftEscrowOwner",
-          "isMut": true,
           "isSigner": false
         },
         {
@@ -519,6 +502,11 @@
       "name": "depositSol",
       "accounts": [
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "pool",
           "isMut": true,
           "isSigner": false
@@ -534,23 +522,12 @@
           "isSigner": false
         },
         {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "lamports",
           "type": "u64"
@@ -812,12 +789,12 @@
               "isSigner": false
             },
             {
-              "name": "nftMint",
+              "name": "mint",
               "isMut": false,
               "isSigner": false
             },
             {
-              "name": "nftMetadata",
+              "name": "metadata",
               "isMut": true,
               "isSigner": false
             },
@@ -1001,12 +978,12 @@
               "isSigner": false
             },
             {
-              "name": "nftMint",
+              "name": "mint",
               "isMut": false,
               "isSigner": false
             },
             {
-              "name": "nftMetadata",
+              "name": "metadata",
               "isMut": true,
               "isSigner": false
             },
@@ -2226,6 +2203,13 @@
       "docs": [
         "Need dummy Anchor account so we can use `close` constraint."
       ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "EscrowTokenAccount",
       "type": {
         "kind": "struct",
         "fields": []

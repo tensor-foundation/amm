@@ -55,9 +55,8 @@ pub mod amm_program {
         ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
         _config: PoolConfig,
         authorization_data: Option<AuthorizationDataLocal>,
-        rules_acc_present: bool,
     ) -> Result<()> {
-        instructions::deposit_nft::process_deposit_nft(ctx, authorization_data, rules_acc_present)
+        instructions::deposit_nft::process_deposit_nft(ctx, authorization_data)
     }
 
     pub fn withdraw_nft<'info>(
@@ -71,7 +70,6 @@ pub mod amm_program {
 
     pub fn deposit_sol<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
-        _config: PoolConfig,
         lamports: u64,
     ) -> Result<()> {
         instructions::deposit_sol::process_deposit_sol(ctx, lamports)

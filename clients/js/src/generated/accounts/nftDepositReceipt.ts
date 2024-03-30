@@ -37,6 +37,7 @@ import {
   getU8Encoder,
   mapEncoder,
 } from '@solana/codecs';
+import { NftDepositReceiptSeeds, findNftDepositReceiptPda } from '../pdas';
 
 export type NftDepositReceipt<TAddress extends string = string> = Account<
   NftDepositReceiptAccountData,
@@ -156,4 +157,28 @@ export async function fetchAllMaybeNftDepositReceipt(
 
 export function getNftDepositReceiptSize(): number {
   return 73;
+}
+
+export async function fetchNftDepositReceiptFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: NftDepositReceiptSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<NftDepositReceipt> {
+  const maybeAccount = await fetchMaybeNftDepositReceiptFromSeeds(
+    rpc,
+    seeds,
+    config
+  );
+  assertAccountExists(maybeAccount);
+  return maybeAccount;
+}
+
+export async function fetchMaybeNftDepositReceiptFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: NftDepositReceiptSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<MaybeNftDepositReceipt> {
+  const { programAddress, ...fetchConfig } = config;
+  const [address] = await findNftDepositReceiptPda(seeds, { programAddress });
+  return await fetchMaybeNftDepositReceipt(rpc, address, fetchConfig);
 }

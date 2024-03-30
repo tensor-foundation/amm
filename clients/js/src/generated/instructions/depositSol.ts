@@ -34,19 +34,13 @@ import {
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type DepositSolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountSolEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -55,6 +49,10 @@ export type DepositSolInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
+      TAccountOwner extends string
+        ? WritableSignerAccount<TAccountOwner> &
+            IAccountSignerMeta<TAccountOwner>
+        : TAccountOwner,
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
@@ -64,10 +62,6 @@ export type DepositSolInstruction<
       TAccountSolEscrow extends string
         ? WritableAccount<TAccountSolEscrow>
         : TAccountSolEscrow,
-      TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner> &
-            IAccountSignerMeta<TAccountOwner>
-        : TAccountOwner,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -77,20 +71,15 @@ export type DepositSolInstruction<
 
 export type DepositSolInstructionData = {
   discriminator: Array<number>;
-  config: PoolConfig;
   lamports: bigint;
 };
 
-export type DepositSolInstructionDataArgs = {
-  config: PoolConfigArgs;
-  lamports: number | bigint;
-};
+export type DepositSolInstructionDataArgs = { lamports: number | bigint };
 
 export function getDepositSolInstructionDataEncoder(): Encoder<DepositSolInstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
       ['lamports', getU64Encoder()],
     ]),
     (value) => ({
@@ -103,7 +92,6 @@ export function getDepositSolInstructionDataEncoder(): Encoder<DepositSolInstruc
 export function getDepositSolInstructionDataDecoder(): Decoder<DepositSolInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
     ['lamports', getU64Decoder()],
   ]);
 }
@@ -119,41 +107,40 @@ export function getDepositSolInstructionDataCodec(): Codec<
 }
 
 export type DepositSolInput<
+  TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountSolEscrow extends string = string,
-  TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   whitelist: Address<TAccountWhitelist>;
   solEscrow: Address<TAccountSolEscrow>;
-  owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
-  config: DepositSolInstructionDataArgs['config'];
   lamports: DepositSolInstructionDataArgs['lamports'];
 };
 
 export function getDepositSolInstruction<
+  TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountSolEscrow extends string,
-  TAccountOwner extends string,
   TAccountSystemProgram extends string,
 >(
   input: DepositSolInput<
+    TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountSolEscrow,
-    TAccountOwner,
     TAccountSystemProgram
   >
 ): DepositSolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
+  TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
   TAccountSolEscrow,
-  TAccountOwner,
   TAccountSystemProgram
 > {
   // Program address.
@@ -161,10 +148,10 @@ export function getDepositSolInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     solEscrow: { value: input.solEscrow ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -184,10 +171,10 @@ export function getDepositSolInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.solEscrow),
-      getAccountMeta(accounts.owner),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -196,10 +183,10 @@ export function getDepositSolInstruction<
     ),
   } as DepositSolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
+    TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountSolEscrow,
-    TAccountOwner,
     TAccountSystemProgram
   >;
 
@@ -212,10 +199,10 @@ export type ParsedDepositSolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    pool: TAccountMetas[0];
-    whitelist: TAccountMetas[1];
-    solEscrow: TAccountMetas[2];
-    owner: TAccountMetas[3];
+    owner: TAccountMetas[0];
+    pool: TAccountMetas[1];
+    whitelist: TAccountMetas[2];
+    solEscrow: TAccountMetas[3];
     systemProgram: TAccountMetas[4];
   };
   data: DepositSolInstructionData;
@@ -242,10 +229,10 @@ export function parseDepositSolInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
       solEscrow: getNextAccount(),
-      owner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getDepositSolInstructionDataDecoder().decode(instruction.data),

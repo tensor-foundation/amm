@@ -1,34 +1,37 @@
 //! User depositing SOL into their Token/Trade pool (to purchase NFTs)
 use anchor_lang::solana_program::{program::invoke, system_instruction};
-use tensor_whitelist::Whitelist;
+use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
-#[instruction( config: PoolConfig)]
 pub struct DepositSol<'info> {
+    /// CHECK: has_one = owner in pool
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
     #[account(
         mut,
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            whitelist.key().as_ref(),
+            pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist, has_one = sol_escrow,
         // can only deposit SOL into Token/Trade pool
-        constraint = config.pool_type == PoolType::Token ||  config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
     /// CHECK: has_one = whitelist in pool
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
+    pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     /// CHECK: has_one = escrow in pool
     #[account(
@@ -40,10 +43,6 @@ pub struct DepositSol<'info> {
         bump = pool.sol_escrow_bump[0],
     )]
     pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
-    /// CHECK: has_one = owner in pool
-    #[account(mut)]
-    pub owner: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 }

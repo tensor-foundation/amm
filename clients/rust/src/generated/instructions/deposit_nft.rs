@@ -12,21 +12,19 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct DepositNft {
+    pub owner: solana_program::pubkey::Pubkey,
+
     pub pool: solana_program::pubkey::Pubkey,
     /// Needed for pool seeds derivation, also checked via has_one on pool
     pub whitelist: solana_program::pubkey::Pubkey,
 
-    pub nft_source: solana_program::pubkey::Pubkey,
+    pub source_token_account: solana_program::pubkey::Pubkey,
 
-    pub nft_mint: solana_program::pubkey::Pubkey,
-
-    pub nft_escrow_owner: solana_program::pubkey::Pubkey,
+    pub mint: solana_program::pubkey::Pubkey,
     /// Implicitly checked via transfer. Will fail if wrong account
-    pub nft_escrow: solana_program::pubkey::Pubkey,
+    pub escrow_token_account: solana_program::pubkey::Pubkey,
 
     pub nft_receipt: solana_program::pubkey::Pubkey,
-
-    pub owner: solana_program::pubkey::Pubkey,
 
     pub token_program: solana_program::pubkey::Pubkey,
 
@@ -34,11 +32,11 @@ pub struct DepositNft {
 
     pub rent: solana_program::pubkey::Pubkey,
 
-    pub nft_metadata: solana_program::pubkey::Pubkey,
+    pub metadata: solana_program::pubkey::Pubkey,
 
-    pub mint_proof: solana_program::pubkey::Pubkey,
+    pub mint_proof: Option<solana_program::pubkey::Pubkey>,
 
-    pub nft_edition: solana_program::pubkey::Pubkey,
+    pub edition: solana_program::pubkey::Pubkey,
 
     pub owner_token_record: solana_program::pubkey::Pubkey,
 
@@ -46,9 +44,13 @@ pub struct DepositNft {
 
     pub associated_token_program: solana_program::pubkey::Pubkey,
 
-    pub pnft_shared: solana_program::pubkey::Pubkey,
+    pub token_metadata_program: solana_program::pubkey::Pubkey,
 
-    pub auth_rules: solana_program::pubkey::Pubkey,
+    pub instructions: solana_program::pubkey::Pubkey,
+
+    pub authorization_rules_program: solana_program::pubkey::Pubkey,
+
+    pub auth_rules: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl DepositNft {
@@ -64,7 +66,10 @@ impl DepositNft {
         args: DepositNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.owner, true,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
         ));
@@ -73,27 +78,19 @@ impl DepositNft {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_source,
+            self.source_token_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.nft_mint,
-            false,
+            self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_escrow_owner,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_escrow,
+            self.escrow_token_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_receipt,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.token_program,
@@ -106,16 +103,22 @@ impl DepositNft {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_metadata,
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.metadata,
             false,
         ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                mint_proof, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint_proof,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.nft_edition,
+            self.edition,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -131,13 +134,27 @@ impl DepositNft {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.pnft_shared,
+            self.token_metadata_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.auth_rules,
+            self.instructions,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.authorization_rules_program,
+            false,
+        ));
+        if let Some(auth_rules) = self.auth_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                auth_rules, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = DepositNftInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -169,62 +186,67 @@ impl DepositNftInstructionData {
 pub struct DepositNftInstructionArgs {
     pub config: PoolConfig,
     pub authorization_data: Option<AuthorizationDataLocal>,
-    pub rules_acc_present: bool,
 }
 
 /// Instruction builder for `DepositNft`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[writable]` nft_source
-///   3. `[]` nft_mint
-///   4. `[writable]` nft_escrow_owner
-///   5. `[writable]` nft_escrow
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[writable]` source_token_account
+///   4. `[]` mint
+///   5. `[writable]` escrow_token_account
 ///   6. `[writable]` nft_receipt
-///   7. `[writable, signer]` owner
-///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   11. `[writable]` nft_metadata
-///   12. `[]` mint_proof
-///   13. `[]` nft_edition
-///   14. `[writable]` owner_token_record
-///   15. `[writable]` dest_token_record
-///   16. `[]` associated_token_program
-///   17. `[]` pnft_shared
-///   18. `[]` auth_rules
+///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   9. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   10. `[]` metadata
+///   11. `[optional]` mint_proof
+///   12. `[]` edition
+///   13. `[writable]` owner_token_record
+///   14. `[writable]` dest_token_record
+///   15. `[]` associated_token_program
+///   16. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
+///   17. `[]` instructions
+///   18. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
+///   19. `[optional]` auth_rules
 #[derive(Default)]
 pub struct DepositNftBuilder {
+    owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
-    nft_source: Option<solana_program::pubkey::Pubkey>,
-    nft_mint: Option<solana_program::pubkey::Pubkey>,
-    nft_escrow_owner: Option<solana_program::pubkey::Pubkey>,
-    nft_escrow: Option<solana_program::pubkey::Pubkey>,
+    source_token_account: Option<solana_program::pubkey::Pubkey>,
+    mint: Option<solana_program::pubkey::Pubkey>,
+    escrow_token_account: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
-    owner: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     rent: Option<solana_program::pubkey::Pubkey>,
-    nft_metadata: Option<solana_program::pubkey::Pubkey>,
+    metadata: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
-    nft_edition: Option<solana_program::pubkey::Pubkey>,
+    edition: Option<solana_program::pubkey::Pubkey>,
     owner_token_record: Option<solana_program::pubkey::Pubkey>,
     dest_token_record: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
-    pnft_shared: Option<solana_program::pubkey::Pubkey>,
+    token_metadata_program: Option<solana_program::pubkey::Pubkey>,
+    instructions: Option<solana_program::pubkey::Pubkey>,
+    authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
     auth_rules: Option<solana_program::pubkey::Pubkey>,
     config: Option<PoolConfig>,
     authorization_data: Option<AuthorizationDataLocal>,
-    rules_acc_present: Option<bool>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
 impl DepositNftBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+    #[inline(always)]
+    pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.owner = Some(owner);
+        self
     }
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -238,37 +260,30 @@ impl DepositNftBuilder {
         self
     }
     #[inline(always)]
-    pub fn nft_source(&mut self, nft_source: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_source = Some(nft_source);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_mint(&mut self, nft_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_mint = Some(nft_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_escrow_owner(
+    pub fn source_token_account(
         &mut self,
-        nft_escrow_owner: solana_program::pubkey::Pubkey,
+        source_token_account: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.nft_escrow_owner = Some(nft_escrow_owner);
+        self.source_token_account = Some(source_token_account);
+        self
+    }
+    #[inline(always)]
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint = Some(mint);
         self
     }
     /// Implicitly checked via transfer. Will fail if wrong account
     #[inline(always)]
-    pub fn nft_escrow(&mut self, nft_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_escrow = Some(nft_escrow);
+    pub fn escrow_token_account(
+        &mut self,
+        escrow_token_account: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.escrow_token_account = Some(escrow_token_account);
         self
     }
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
-        self
-    }
-    #[inline(always)]
-    pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.owner = Some(owner);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -290,18 +305,19 @@ impl DepositNftBuilder {
         self
     }
     #[inline(always)]
-    pub fn nft_metadata(&mut self, nft_metadata: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_metadata = Some(nft_metadata);
+    pub fn metadata(&mut self, metadata: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.metadata = Some(metadata);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.mint_proof = mint_proof;
         self
     }
     #[inline(always)]
-    pub fn mint_proof(&mut self, mint_proof: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.mint_proof = Some(mint_proof);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_edition(&mut self, nft_edition: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_edition = Some(nft_edition);
+    pub fn edition(&mut self, edition: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.edition = Some(edition);
         self
     }
     #[inline(always)]
@@ -328,14 +344,33 @@ impl DepositNftBuilder {
         self.associated_token_program = Some(associated_token_program);
         self
     }
+    /// `[optional account, default to 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s']`
     #[inline(always)]
-    pub fn pnft_shared(&mut self, pnft_shared: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pnft_shared = Some(pnft_shared);
+    pub fn token_metadata_program(
+        &mut self,
+        token_metadata_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.token_metadata_program = Some(token_metadata_program);
         self
     }
     #[inline(always)]
-    pub fn auth_rules(&mut self, auth_rules: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.auth_rules = Some(auth_rules);
+    pub fn instructions(&mut self, instructions: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.instructions = Some(instructions);
+        self
+    }
+    /// `[optional account, default to 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg']`
+    #[inline(always)]
+    pub fn authorization_rules_program(
+        &mut self,
+        authorization_rules_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.authorization_rules_program = Some(authorization_rules_program);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn auth_rules(&mut self, auth_rules: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.auth_rules = auth_rules;
         self
     }
     #[inline(always)]
@@ -347,11 +382,6 @@ impl DepositNftBuilder {
     #[inline(always)]
     pub fn authorization_data(&mut self, authorization_data: AuthorizationDataLocal) -> &mut Self {
         self.authorization_data = Some(authorization_data);
-        self
-    }
-    #[inline(always)]
-    pub fn rules_acc_present(&mut self, rules_acc_present: bool) -> &mut Self {
-        self.rules_acc_present = Some(rules_acc_present);
         self
     }
     /// Add an aditional account to the instruction.
@@ -374,46 +404,52 @@ impl DepositNftBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = DepositNft {
-            pool: self.pool.expect("pool is not set"),
-            whitelist: self.whitelist.expect("whitelist is not set"),
-            nft_source: self.nft_source.expect("nft_source is not set"),
-            nft_mint: self.nft_mint.expect("nft_mint is not set"),
-            nft_escrow_owner: self.nft_escrow_owner.expect("nft_escrow_owner is not set"),
-            nft_escrow: self.nft_escrow.expect("nft_escrow is not set"),
-            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-            owner: self.owner.expect("owner is not set"),
-            token_program: self.token_program.unwrap_or(solana_program::pubkey!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            rent: self.rent.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            nft_metadata: self.nft_metadata.expect("nft_metadata is not set"),
-            mint_proof: self.mint_proof.expect("mint_proof is not set"),
-            nft_edition: self.nft_edition.expect("nft_edition is not set"),
-            owner_token_record: self
-                .owner_token_record
-                .expect("owner_token_record is not set"),
-            dest_token_record: self
-                .dest_token_record
-                .expect("dest_token_record is not set"),
-            associated_token_program: self
-                .associated_token_program
-                .expect("associated_token_program is not set"),
-            pnft_shared: self.pnft_shared.expect("pnft_shared is not set"),
-            auth_rules: self.auth_rules.expect("auth_rules is not set"),
-        };
+        let accounts =
+            DepositNft {
+                owner: self.owner.expect("owner is not set"),
+                pool: self.pool.expect("pool is not set"),
+                whitelist: self.whitelist.expect("whitelist is not set"),
+                source_token_account: self
+                    .source_token_account
+                    .expect("source_token_account is not set"),
+                mint: self.mint.expect("mint is not set"),
+                escrow_token_account: self
+                    .escrow_token_account
+                    .expect("escrow_token_account is not set"),
+                nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
+                token_program: self.token_program.unwrap_or(solana_program::pubkey!(
+                    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                )),
+                system_program: self
+                    .system_program
+                    .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+                rent: self.rent.unwrap_or(solana_program::pubkey!(
+                    "SysvarRent111111111111111111111111111111111"
+                )),
+                metadata: self.metadata.expect("metadata is not set"),
+                mint_proof: self.mint_proof,
+                edition: self.edition.expect("edition is not set"),
+                owner_token_record: self
+                    .owner_token_record
+                    .expect("owner_token_record is not set"),
+                dest_token_record: self
+                    .dest_token_record
+                    .expect("dest_token_record is not set"),
+                associated_token_program: self
+                    .associated_token_program
+                    .expect("associated_token_program is not set"),
+                token_metadata_program: self.token_metadata_program.unwrap_or(
+                    solana_program::pubkey!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
+                ),
+                instructions: self.instructions.expect("instructions is not set"),
+                authorization_rules_program: self.authorization_rules_program.unwrap_or(
+                    solana_program::pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg"),
+                ),
+                auth_rules: self.auth_rules,
+            };
         let args = DepositNftInstructionArgs {
             config: self.config.clone().expect("config is not set"),
             authorization_data: self.authorization_data.clone(),
-            rules_acc_present: self
-                .rules_acc_present
-                .clone()
-                .expect("rules_acc_present is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -422,21 +458,19 @@ impl DepositNftBuilder {
 
 /// `deposit_nft` CPI accounts.
 pub struct DepositNftCpiAccounts<'a, 'b> {
+    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// Needed for pool seeds derivation, also checked via has_one on pool
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_source: &'b solana_program::account_info::AccountInfo<'a>,
+    pub source_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
-    pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -444,11 +478,11 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_metadata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+    pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -456,9 +490,13 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
 
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub instructions: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `deposit_nft` CPI instruction.
@@ -466,21 +504,19 @@ pub struct DepositNftCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// Needed for pool seeds derivation, also checked via has_one on pool
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_source: &'b solana_program::account_info::AccountInfo<'a>,
+    pub source_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
-    pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -488,11 +524,11 @@ pub struct DepositNftCpi<'a, 'b> {
 
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_metadata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+    pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -500,9 +536,13 @@ pub struct DepositNftCpi<'a, 'b> {
 
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub instructions: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: DepositNftInstructionArgs,
 }
@@ -515,24 +555,25 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
+            owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
-            nft_source: accounts.nft_source,
-            nft_mint: accounts.nft_mint,
-            nft_escrow_owner: accounts.nft_escrow_owner,
-            nft_escrow: accounts.nft_escrow,
+            source_token_account: accounts.source_token_account,
+            mint: accounts.mint,
+            escrow_token_account: accounts.escrow_token_account,
             nft_receipt: accounts.nft_receipt,
-            owner: accounts.owner,
             token_program: accounts.token_program,
             system_program: accounts.system_program,
             rent: accounts.rent,
-            nft_metadata: accounts.nft_metadata,
+            metadata: accounts.metadata,
             mint_proof: accounts.mint_proof,
-            nft_edition: accounts.nft_edition,
+            edition: accounts.edition,
             owner_token_record: accounts.owner_token_record,
             dest_token_record: accounts.dest_token_record,
             associated_token_program: accounts.associated_token_program,
-            pnft_shared: accounts.pnft_shared,
+            token_metadata_program: accounts.token_metadata_program,
+            instructions: accounts.instructions,
+            authorization_rules_program: accounts.authorization_rules_program,
             auth_rules: accounts.auth_rules,
             __args: args,
         }
@@ -570,7 +611,11 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.owner.key,
+            true,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
             false,
@@ -580,28 +625,20 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_source.key,
+            *self.source_token_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.nft_mint.key,
+            *self.mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_escrow_owner.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_escrow.key,
+            *self.escrow_token_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.nft_receipt.key,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.owner.key,
-            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.token_program.key,
@@ -615,16 +652,23 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             *self.rent.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_metadata.key,
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.metadata.key,
             false,
         ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *mint_proof.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint_proof.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.nft_edition.key,
+            *self.edition.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -640,13 +684,28 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.pnft_shared.key,
+            *self.token_metadata_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.auth_rules.key,
+            *self.instructions.key,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.authorization_rules_program.key,
+            false,
+        ));
+        if let Some(auth_rules) = self.auth_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *auth_rules.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -663,27 +722,32 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(19 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(20 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
+        account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.nft_source.clone());
-        account_infos.push(self.nft_mint.clone());
-        account_infos.push(self.nft_escrow_owner.clone());
-        account_infos.push(self.nft_escrow.clone());
+        account_infos.push(self.source_token_account.clone());
+        account_infos.push(self.mint.clone());
+        account_infos.push(self.escrow_token_account.clone());
         account_infos.push(self.nft_receipt.clone());
-        account_infos.push(self.owner.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.system_program.clone());
         account_infos.push(self.rent.clone());
-        account_infos.push(self.nft_metadata.clone());
-        account_infos.push(self.mint_proof.clone());
-        account_infos.push(self.nft_edition.clone());
+        account_infos.push(self.metadata.clone());
+        if let Some(mint_proof) = self.mint_proof {
+            account_infos.push(mint_proof.clone());
+        }
+        account_infos.push(self.edition.clone());
         account_infos.push(self.owner_token_record.clone());
         account_infos.push(self.dest_token_record.clone());
         account_infos.push(self.associated_token_program.clone());
-        account_infos.push(self.pnft_shared.clone());
-        account_infos.push(self.auth_rules.clone());
+        account_infos.push(self.token_metadata_program.clone());
+        account_infos.push(self.instructions.clone());
+        account_infos.push(self.authorization_rules_program.clone());
+        if let Some(auth_rules) = self.auth_rules {
+            account_infos.push(auth_rules.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -700,25 +764,26 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[writable]` nft_source
-///   3. `[]` nft_mint
-///   4. `[writable]` nft_escrow_owner
-///   5. `[writable]` nft_escrow
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[writable]` source_token_account
+///   4. `[]` mint
+///   5. `[writable]` escrow_token_account
 ///   6. `[writable]` nft_receipt
-///   7. `[writable, signer]` owner
-///   8. `[]` token_program
-///   9. `[]` system_program
-///   10. `[]` rent
-///   11. `[writable]` nft_metadata
-///   12. `[]` mint_proof
-///   13. `[]` nft_edition
-///   14. `[writable]` owner_token_record
-///   15. `[writable]` dest_token_record
-///   16. `[]` associated_token_program
-///   17. `[]` pnft_shared
-///   18. `[]` auth_rules
+///   7. `[]` token_program
+///   8. `[]` system_program
+///   9. `[]` rent
+///   10. `[]` metadata
+///   11. `[optional]` mint_proof
+///   12. `[]` edition
+///   13. `[writable]` owner_token_record
+///   14. `[writable]` dest_token_record
+///   15. `[]` associated_token_program
+///   16. `[]` token_metadata_program
+///   17. `[]` instructions
+///   18. `[]` authorization_rules_program
+///   19. `[optional]` auth_rules
 pub struct DepositNftCpiBuilder<'a, 'b> {
     instruction: Box<DepositNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -727,31 +792,36 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(DepositNftCpiBuilderInstruction {
             __program: program,
+            owner: None,
             pool: None,
             whitelist: None,
-            nft_source: None,
-            nft_mint: None,
-            nft_escrow_owner: None,
-            nft_escrow: None,
+            source_token_account: None,
+            mint: None,
+            escrow_token_account: None,
             nft_receipt: None,
-            owner: None,
             token_program: None,
             system_program: None,
             rent: None,
-            nft_metadata: None,
+            metadata: None,
             mint_proof: None,
-            nft_edition: None,
+            edition: None,
             owner_token_record: None,
             dest_token_record: None,
             associated_token_program: None,
-            pnft_shared: None,
+            token_metadata_program: None,
+            instructions: None,
+            authorization_rules_program: None,
             auth_rules: None,
             config: None,
             authorization_data: None,
-            rules_acc_present: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
+    }
+    #[inline(always)]
+    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.owner = Some(owner);
+        self
     }
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
@@ -768,36 +838,25 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn nft_source(
+    pub fn source_token_account(
         &mut self,
-        nft_source: &'b solana_program::account_info::AccountInfo<'a>,
+        source_token_account: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_source = Some(nft_source);
+        self.instruction.source_token_account = Some(source_token_account);
         self
     }
     #[inline(always)]
-    pub fn nft_mint(
-        &mut self,
-        nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_mint = Some(nft_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_escrow_owner(
-        &mut self,
-        nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_escrow_owner = Some(nft_escrow_owner);
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.mint = Some(mint);
         self
     }
     /// Implicitly checked via transfer. Will fail if wrong account
     #[inline(always)]
-    pub fn nft_escrow(
+    pub fn escrow_token_account(
         &mut self,
-        nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+        escrow_token_account: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_escrow = Some(nft_escrow);
+        self.instruction.escrow_token_account = Some(escrow_token_account);
         self
     }
     #[inline(always)]
@@ -806,11 +865,6 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.nft_receipt = Some(nft_receipt);
-        self
-    }
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
         self
     }
     #[inline(always)]
@@ -835,27 +889,28 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn nft_metadata(
+    pub fn metadata(
         &mut self,
-        nft_metadata: &'b solana_program::account_info::AccountInfo<'a>,
+        metadata: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_metadata = Some(nft_metadata);
+        self.instruction.metadata = Some(metadata);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn mint_proof(
         &mut self,
-        mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.mint_proof = Some(mint_proof);
+        self.instruction.mint_proof = mint_proof;
         self
     }
     #[inline(always)]
-    pub fn nft_edition(
+    pub fn edition(
         &mut self,
-        nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+        edition: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_edition = Some(nft_edition);
+        self.instruction.edition = Some(edition);
         self
     }
     #[inline(always)]
@@ -883,19 +938,36 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn pnft_shared(
+    pub fn token_metadata_program(
         &mut self,
-        pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+        token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.pnft_shared = Some(pnft_shared);
+        self.instruction.token_metadata_program = Some(token_metadata_program);
         self
     }
     #[inline(always)]
+    pub fn instructions(
+        &mut self,
+        instructions: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.instructions = Some(instructions);
+        self
+    }
+    #[inline(always)]
+    pub fn authorization_rules_program(
+        &mut self,
+        authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.authorization_rules_program = Some(authorization_rules_program);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
     pub fn auth_rules(
         &mut self,
-        auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+        auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.auth_rules = Some(auth_rules);
+        self.instruction.auth_rules = auth_rules;
         self
     }
     #[inline(always)]
@@ -907,11 +979,6 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn authorization_data(&mut self, authorization_data: AuthorizationDataLocal) -> &mut Self {
         self.instruction.authorization_data = Some(authorization_data);
-        self
-    }
-    #[inline(always)]
-    pub fn rules_acc_present(&mut self, rules_acc_present: bool) -> &mut Self {
-        self.instruction.rules_acc_present = Some(rules_acc_present);
         self
     }
     /// Add an additional account to the instruction.
@@ -958,36 +1025,32 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         let args = DepositNftInstructionArgs {
             config: self.instruction.config.clone().expect("config is not set"),
             authorization_data: self.instruction.authorization_data.clone(),
-            rules_acc_present: self
-                .instruction
-                .rules_acc_present
-                .clone()
-                .expect("rules_acc_present is not set"),
         };
         let instruction = DepositNftCpi {
             __program: self.instruction.__program,
+
+            owner: self.instruction.owner.expect("owner is not set"),
 
             pool: self.instruction.pool.expect("pool is not set"),
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            nft_source: self.instruction.nft_source.expect("nft_source is not set"),
-
-            nft_mint: self.instruction.nft_mint.expect("nft_mint is not set"),
-
-            nft_escrow_owner: self
+            source_token_account: self
                 .instruction
-                .nft_escrow_owner
-                .expect("nft_escrow_owner is not set"),
+                .source_token_account
+                .expect("source_token_account is not set"),
 
-            nft_escrow: self.instruction.nft_escrow.expect("nft_escrow is not set"),
+            mint: self.instruction.mint.expect("mint is not set"),
+
+            escrow_token_account: self
+                .instruction
+                .escrow_token_account
+                .expect("escrow_token_account is not set"),
 
             nft_receipt: self
                 .instruction
                 .nft_receipt
                 .expect("nft_receipt is not set"),
-
-            owner: self.instruction.owner.expect("owner is not set"),
 
             token_program: self
                 .instruction
@@ -1001,17 +1064,11 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
 
             rent: self.instruction.rent.expect("rent is not set"),
 
-            nft_metadata: self
-                .instruction
-                .nft_metadata
-                .expect("nft_metadata is not set"),
+            metadata: self.instruction.metadata.expect("metadata is not set"),
 
-            mint_proof: self.instruction.mint_proof.expect("mint_proof is not set"),
+            mint_proof: self.instruction.mint_proof,
 
-            nft_edition: self
-                .instruction
-                .nft_edition
-                .expect("nft_edition is not set"),
+            edition: self.instruction.edition.expect("edition is not set"),
 
             owner_token_record: self
                 .instruction
@@ -1028,12 +1085,22 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
                 .associated_token_program
                 .expect("associated_token_program is not set"),
 
-            pnft_shared: self
+            token_metadata_program: self
                 .instruction
-                .pnft_shared
-                .expect("pnft_shared is not set"),
+                .token_metadata_program
+                .expect("token_metadata_program is not set"),
 
-            auth_rules: self.instruction.auth_rules.expect("auth_rules is not set"),
+            instructions: self
+                .instruction
+                .instructions
+                .expect("instructions is not set"),
+
+            authorization_rules_program: self
+                .instruction
+                .authorization_rules_program
+                .expect("authorization_rules_program is not set"),
+
+            auth_rules: self.instruction.auth_rules,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1045,28 +1112,28 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
 
 struct DepositNftCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
+    owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_source: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_escrow_owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    source_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    escrow_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     dest_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pnft_shared: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<PoolConfig>,
     authorization_data: Option<AuthorizationDataLocal>,
-    rules_acc_present: Option<bool>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

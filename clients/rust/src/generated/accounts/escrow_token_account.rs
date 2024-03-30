@@ -9,50 +9,36 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
-/// Represents NFTs deposited into our protocol.
-/// Always associated to (1) NFT mint (2) NFT escrow and (3) pool (every type).
-
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct NftDepositReceipt {
+pub struct EscrowTokenAccount {
     pub discriminator: [u8; 8],
-    pub bump: u8,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub nft_mint: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub nft_escrow: Pubkey,
 }
 
-impl NftDepositReceipt {
-    pub const LEN: usize = 73;
+impl EscrowTokenAccount {
+    pub const LEN: usize = 8;
 
     /// Prefix values used to generate a PDA for this account.
     ///
     /// Values are positional and appear in the following order:
     ///
-    ///   0. `NftDepositReceipt::PREFIX`
+    ///   0. `EscrowTokenAccount::PREFIX`
     ///   1. mint (`Pubkey`)
-    pub const PREFIX: &'static [u8] = "nft_receipt".as_bytes();
+    pub const PREFIX: &'static [u8] = "nft_escrow".as_bytes();
 
     pub fn create_pda(
         mint: Pubkey,
         bump: u8,
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
-            &["nft_receipt".as_bytes(), mint.as_ref(), &[bump]],
+            &["nft_escrow".as_bytes(), mint.as_ref(), &[bump]],
             &crate::AMM_ID,
         )
     }
 
     pub fn find_pda(mint: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
-            &["nft_receipt".as_bytes(), mint.as_ref()],
+            &["nft_escrow".as_bytes(), mint.as_ref()],
             &crate::AMM_ID,
         )
     }
@@ -64,7 +50,7 @@ impl NftDepositReceipt {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for NftDepositReceipt {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for EscrowTokenAccount {
     type Error = std::io::Error;
 
     fn try_from(

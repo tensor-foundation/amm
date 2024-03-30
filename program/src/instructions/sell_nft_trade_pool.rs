@@ -23,7 +23,7 @@ pub struct SellNftTradePool<'info> {
     #[account(mut,
     seeds = [
         b"nft_owner",
-        shared.nft_mint.key().as_ref(),
+        shared.mint.key().as_ref(),
         ],
         bump
     )]
@@ -35,10 +35,10 @@ pub struct SellNftTradePool<'info> {
         payer = shared.seller,
         seeds=[
             b"nft_escrow".as_ref(),
-            shared.nft_mint.key().as_ref(),
+            shared.mint.key().as_ref(),
         ],
         bump,
-        token::mint = shared.nft_mint, token::authority = nft_escrow_owner,
+        token::mint = shared.mint, token::authority = nft_escrow_owner,
     )]
     pub nft_escrow: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -47,7 +47,7 @@ pub struct SellNftTradePool<'info> {
         payer = shared.seller,
         seeds=[
             b"nft_receipt".as_ref(),
-            shared.nft_mint.key().as_ref(),
+            shared.mint.key().as_ref(),
         ],
         bump,
         space = DEPOSIT_RECEIPT_SIZE,
@@ -132,8 +132,8 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             source_ata: &ctx.accounts.shared.nft_seller_acc,
             dest_ata: &ctx.accounts.nft_escrow,
             dest_owner: &ctx.accounts.nft_escrow_owner.to_account_info(),
-            nft_mint: &ctx.accounts.shared.nft_mint,
-            nft_metadata: &ctx.accounts.shared.nft_metadata,
+            nft_mint: &ctx.accounts.shared.mint,
+            nft_metadata: &ctx.accounts.shared.metadata,
             nft_edition: &ctx.accounts.nft_edition,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
@@ -149,8 +149,8 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     )?;
 
     let metadata = &assert_decode_metadata(
-        &ctx.accounts.shared.nft_mint.key(),
-        &ctx.accounts.shared.nft_metadata,
+        &ctx.accounts.shared.mint.key(),
+        &ctx.accounts.shared.metadata,
     )?;
 
     let current_price = pool.current_price(TakerSide::Sell)?;
@@ -247,7 +247,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     //create nft receipt for trade pool
     let receipt_state = &mut ctx.accounts.nft_receipt;
     receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.nft_mint = ctx.accounts.shared.nft_mint.key();
+    receipt_state.nft_mint = ctx.accounts.shared.mint.key();
     receipt_state.nft_escrow = ctx.accounts.nft_escrow.key();
 
     //update pool accounting

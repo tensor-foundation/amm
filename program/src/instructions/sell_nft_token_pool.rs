@@ -22,7 +22,7 @@ pub struct SellNftTokenPool<'info> {
     #[account(
         init_if_needed,
         payer = shared.seller,
-        associated_token::mint = shared.nft_mint,
+        associated_token::mint = shared.mint,
         associated_token::authority = shared.owner,
     )]
     pub owner_ata_acc: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -52,7 +52,7 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut,
     seeds = [
         b"nft_owner",
-        shared.nft_mint.key().as_ref(),
+        shared.mint.key().as_ref(),
         ],
         bump
     )]
@@ -65,10 +65,10 @@ pub struct SellNftTokenPool<'info> {
         payer = shared.seller,
         seeds=[
             b"nft_escrow".as_ref(),
-            shared.nft_mint.key().as_ref(),
+            shared.mint.key().as_ref(),
         ],
         bump,
-        token::mint = shared.nft_mint, token::authority = nft_escrow_owner
+        token::mint = shared.mint, token::authority = nft_escrow_owner
     )]
     pub nft_escrow: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -77,7 +77,7 @@ pub struct SellNftTokenPool<'info> {
         seeds=[
             mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
             mpl_token_metadata::ID.as_ref(),
-            shared.nft_mint.key().as_ref(),
+            shared.mint.key().as_ref(),
             mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
             nft_escrow.key().as_ref()
         ],
@@ -162,8 +162,8 @@ pub fn process_sell_nft_token_pool<'info>(
             source_ata: &ctx.accounts.shared.nft_seller_acc,
             dest_ata: &ctx.accounts.nft_escrow, //<- send to escrow first
             dest_owner: &ctx.accounts.nft_escrow_owner.to_account_info(),
-            nft_mint: &ctx.accounts.shared.nft_mint,
-            nft_metadata: &ctx.accounts.shared.nft_metadata,
+            nft_mint: &ctx.accounts.shared.mint,
+            nft_metadata: &ctx.accounts.shared.metadata,
             nft_edition: &ctx.accounts.nft_edition,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
@@ -178,7 +178,7 @@ pub fn process_sell_nft_token_pool<'info>(
         },
     )?;
 
-    let nft_mint_pubkey = ctx.accounts.shared.nft_mint.key();
+    let nft_mint_pubkey = ctx.accounts.shared.mint.key();
 
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"nft_owner",
@@ -195,8 +195,8 @@ pub fn process_sell_nft_token_pool<'info>(
             source_ata: &ctx.accounts.nft_escrow,
             dest_ata: &ctx.accounts.owner_ata_acc,
             dest_owner: &ctx.accounts.shared.owner.to_account_info(),
-            nft_mint: &ctx.accounts.shared.nft_mint,
-            nft_metadata: &ctx.accounts.shared.nft_metadata,
+            nft_mint: &ctx.accounts.shared.mint,
+            nft_metadata: &ctx.accounts.shared.metadata,
             nft_edition: &ctx.accounts.nft_edition,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
@@ -257,8 +257,8 @@ pub fn process_sell_nft_token_pool<'info>(
     }
 
     let metadata = &assert_decode_metadata(
-        &ctx.accounts.shared.nft_mint.key(),
-        &ctx.accounts.shared.nft_metadata,
+        &ctx.accounts.shared.mint.key(),
+        &ctx.accounts.shared.metadata,
     )?;
 
     let current_price = pool.current_price(TakerSide::Sell)?;

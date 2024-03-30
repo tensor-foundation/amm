@@ -1,7 +1,7 @@
 #!/bin/bash
 
-EXTERNAL_ID=("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV")
-EXTERNAL_SO=("spl_noop.so")
+EXTERNAL_ID=("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV" "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
+EXTERNAL_SO=("spl_noop.so" "mpl_token_metadata.so")
 
 # output colours
 RED() { echo $'\e[1;31m'$1$'\e[0m'; }

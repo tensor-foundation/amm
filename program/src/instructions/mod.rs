@@ -42,18 +42,17 @@ pub use t22_withdraw_nft::*;
 pub use withdraw_mm_fees::*;
 pub use withdraw_nft::*;
 pub use withdraw_sol::*;
-pub use wns_buy_nft::*;
-pub use wns_deposit_nft::*;
-pub use wns_sell_nft_token_pool::*;
-pub use wns_sell_nft_trade_pool::*;
-pub use wns_withdraw_nft::*;
+// pub use wns_buy_nft::*;
+// pub use wns_deposit_nft::*;
+// pub use wns_sell_nft_token_pool::*;
+// pub use wns_sell_nft_trade_pool::*;
+// pub use wns_withdraw_nft::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount};
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
-use tensor_toolbox::assert_decode_metadata;
-use tensor_whitelist::{self, FullMerkleProof, MintProof, Whitelist, ZERO_ARRAY};
+use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked};
 
 use crate::constants::{HUNDRED_PCT_BPS, MAKER_REBATE_BPS, TAKER_BROKER_PCT, TSWAP_TAKER_FEE_BPS};
@@ -123,32 +122,59 @@ pub fn assert_decode_mint_proof(
 }
 
 #[inline(never)]
-pub fn verify_whitelist(
-    whitelist: &Account<Whitelist>,
-    mint_proof: &UncheckedAccount,
+pub fn assert_decode_mint_proof_v2(
+    whitelist: &Account<WhitelistV2>,
     nft_mint: &InterfaceAccount<Mint>,
-    nft_metadata: Option<&UncheckedAccount>,
-) -> Result<()> {
-    //prioritize merkle tree if proof present
-    if whitelist.root_hash != ZERO_ARRAY {
-        let mint_proof = assert_decode_mint_proof(whitelist, nft_mint, mint_proof)?;
-        let leaf = anchor_lang::solana_program::keccak::hash(nft_mint.key().as_ref());
-        let proof = &mut mint_proof.proof.to_vec();
-        proof.truncate(mint_proof.proof_len as usize);
-        whitelist.verify_whitelist(
-            None,
-            Some(FullMerkleProof {
-                proof: proof.clone(),
-                leaf: leaf.0,
-            }),
-        )
-    } else if let Some(nft_metadata) = nft_metadata {
-        let metadata = &assert_decode_metadata(&nft_mint.key(), nft_metadata)?;
-        whitelist.verify_whitelist(Some(metadata), None)
-    } else {
+    mint_proof: &UncheckedAccount,
+) -> Result<Box<MintProofV2>> {
+    let (key, _) = Pubkey::find_program_address(
+        &[
+            b"mint_proof".as_ref(),
+            nft_mint.key().as_ref(),
+            whitelist.key().as_ref(),
+        ],
+        &tensor_whitelist::ID,
+    );
+    if key != *mint_proof.key {
         throw_err!(ErrorCode::BadMintProof);
     }
+    // Check program owner (redundant because of find_program_address above, but why not).
+    if *mint_proof.owner != tensor_whitelist::ID {
+        throw_err!(ErrorCode::BadMintProof);
+    }
+
+    let mut data: &[u8] = &mint_proof.try_borrow_data()?;
+    let mint_proof: Box<MintProofV2> = Box::new(AccountDeserialize::try_deserialize(&mut data)?);
+    Ok(mint_proof)
 }
+
+// #[inline(never)]
+// pub fn verify_whitelist(
+//     whitelist: &Account<WhitelistV2>,
+//     mint_proof: &UncheckedAccount,
+//     nft_mint: &InterfaceAccount<Mint>,
+//     nft_metadata: Option<&UncheckedAccount>,
+// ) -> Result<()> {
+//     //prioritize merkle tree if proof present
+//     if whitelist.root_hash != ZERO_ARRAY {
+//         let mint_proof = assert_decode_mint_proof(whitelist, nft_mint, mint_proof)?;
+//         let leaf = anchor_lang::solana_program::keccak::hash(nft_mint.key().as_ref());
+//         let proof = &mut mint_proof.proof.to_vec();
+//         proof.truncate(mint_proof.proof_len as usize);
+//         whitelist.verify_whitelist(
+//             None,
+//             Some(FullMerkleProof {
+//                 proof: proof.clone(),
+//                 leaf: leaf.0,
+//             }),
+//         )
+//     } else if let Some(nft_metadata) = nft_metadata {
+//         let metadata = &assert_decode_metadata(&nft_mint.key(), nft_metadata)?;
+//         whitelist.verify_whitelist(Some(metadata), None)
+//     } else {
+//         throw_err!(ErrorCode::BadMintProof);
+//     }
+// }
 
 /// Shared accounts between the two sell ixs.
 #[derive(Accounts)]
@@ -184,7 +210,7 @@ pub struct SellNftShared<'info> {
     #[account(
         seeds = [
             b"mint_proof".as_ref(),
-            nft_mint.key().as_ref(),
+            mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],
         bump,
@@ -192,11 +218,11 @@ pub struct SellNftShared<'info> {
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
-    #[account(mut, token::mint = nft_mint, token::authority = seller)]
+    #[account(mut, token::mint = mint, token::authority = seller)]
     pub nft_seller_acc: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    pub nft_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     //can't deserialize directly coz Anchor traits not implemented
     /// CHECK: assert_decode_metadata + seeds below
@@ -204,12 +230,12 @@ pub struct SellNftShared<'info> {
         seeds=[
             mpl_token_metadata::accounts::Metadata::PREFIX,
             mpl_token_metadata::ID.as_ref(),
-            nft_mint.key().as_ref(),
+            mint.key().as_ref(),
         ],
         seeds::program = mpl_token_metadata::ID,
         bump
     )]
-    pub nft_metadata: UncheckedAccount<'info>,
+    pub metadata: UncheckedAccount<'info>,
 
     /// CHECK: has_one = escrow in pool
     #[account(
@@ -232,12 +258,13 @@ pub struct SellNftShared<'info> {
 
 impl<'info> SellNftShared<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        verify_whitelist(
-            &self.whitelist,
-            &self.mint_proof,
-            &self.nft_mint,
-            Some(&self.nft_metadata),
-        )
+        // verify_whitelist(
+        //     &self.whitelist,
+        //     &self.mint_proof,
+        //     &self.nft_mint,
+        //     Some(&self.nft_metadata),
+        // )
+        Ok(())
     }
 }
 
@@ -309,7 +336,8 @@ pub struct SellNftSharedT22<'info> {
 
 impl<'info> SellNftSharedT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        verify_whitelist(&self.whitelist, &self.mint_proof, &self.nft_mint, None)
+        // verify_whitelist(&self.whitelist, &self.mint_proof, &self.nft_mint, None)
+        Ok(())
     }
 }
 

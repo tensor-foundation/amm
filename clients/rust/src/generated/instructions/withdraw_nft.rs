@@ -16,11 +16,9 @@ pub struct WithdrawNft {
 
     pub whitelist: solana_program::pubkey::Pubkey,
 
-    pub nft_dest: solana_program::pubkey::Pubkey,
+    pub dest_token_account: solana_program::pubkey::Pubkey,
 
-    pub nft_mint: solana_program::pubkey::Pubkey,
-
-    pub nft_escrow_owner: solana_program::pubkey::Pubkey,
+    pub mint: solana_program::pubkey::Pubkey,
     /// Implicitly checked via transfer. Will fail if wrong account
     /// This is closed below (dest = owner)
     pub nft_escrow: solana_program::pubkey::Pubkey,
@@ -63,7 +61,7 @@ impl WithdrawNft {
         args: WithdrawNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
         ));
@@ -72,16 +70,11 @@ impl WithdrawNft {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_dest,
+            self.dest_token_account,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.nft_mint,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_escrow_owner,
-            false,
+            self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_escrow,
@@ -173,29 +166,27 @@ pub struct WithdrawNftInstructionArgs {
 ///
 ///   0. `[writable]` pool
 ///   1. `[]` whitelist
-///   2. `[writable]` nft_dest
-///   3. `[]` nft_mint
-///   4. `[writable]` nft_escrow_owner
-///   5. `[writable]` nft_escrow
-///   6. `[writable]` nft_receipt
-///   7. `[writable, signer]` owner
-///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   9. `[]` associated_token_program
-///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   11. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   12. `[writable]` nft_metadata
-///   13. `[]` nft_edition
-///   14. `[writable]` owner_token_record
-///   15. `[writable]` dest_token_record
-///   16. `[]` pnft_shared
-///   17. `[]` auth_rules
+///   2. `[writable]` dest_token_account
+///   3. `[]` mint
+///   4. `[writable]` nft_escrow
+///   5. `[writable]` nft_receipt
+///   6. `[writable, signer]` owner
+///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   8. `[]` associated_token_program
+///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   10. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   11. `[writable]` nft_metadata
+///   12. `[]` nft_edition
+///   13. `[writable]` owner_token_record
+///   14. `[writable]` dest_token_record
+///   15. `[]` pnft_shared
+///   16. `[]` auth_rules
 #[derive(Default)]
 pub struct WithdrawNftBuilder {
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
-    nft_dest: Option<solana_program::pubkey::Pubkey>,
-    nft_mint: Option<solana_program::pubkey::Pubkey>,
-    nft_escrow_owner: Option<solana_program::pubkey::Pubkey>,
+    dest_token_account: Option<solana_program::pubkey::Pubkey>,
+    mint: Option<solana_program::pubkey::Pubkey>,
     nft_escrow: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -230,21 +221,16 @@ impl WithdrawNftBuilder {
         self
     }
     #[inline(always)]
-    pub fn nft_dest(&mut self, nft_dest: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_dest = Some(nft_dest);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_mint(&mut self, nft_mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_mint = Some(nft_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_escrow_owner(
+    pub fn dest_token_account(
         &mut self,
-        nft_escrow_owner: solana_program::pubkey::Pubkey,
+        dest_token_account: solana_program::pubkey::Pubkey,
     ) -> &mut Self {
-        self.nft_escrow_owner = Some(nft_escrow_owner);
+        self.dest_token_account = Some(dest_token_account);
+        self
+    }
+    #[inline(always)]
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint = Some(mint);
         self
     }
     /// Implicitly checked via transfer. Will fail if wrong account
@@ -366,9 +352,10 @@ impl WithdrawNftBuilder {
         let accounts = WithdrawNft {
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
-            nft_dest: self.nft_dest.expect("nft_dest is not set"),
-            nft_mint: self.nft_mint.expect("nft_mint is not set"),
-            nft_escrow_owner: self.nft_escrow_owner.expect("nft_escrow_owner is not set"),
+            dest_token_account: self
+                .dest_token_account
+                .expect("dest_token_account is not set"),
+            mint: self.mint.expect("mint is not set"),
             nft_escrow: self.nft_escrow.expect("nft_escrow is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             owner: self.owner.expect("owner is not set"),
@@ -414,11 +401,9 @@ pub struct WithdrawNftCpiAccounts<'a, 'b> {
 
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_dest: &'b solana_program::account_info::AccountInfo<'a>,
+    pub dest_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
     /// This is closed below (dest = owner)
     pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
@@ -457,11 +442,9 @@ pub struct WithdrawNftCpi<'a, 'b> {
 
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_dest: &'b solana_program::account_info::AccountInfo<'a>,
+    pub dest_token_account: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
     /// This is closed below (dest = owner)
     pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
@@ -503,9 +486,8 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             __program: program,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
-            nft_dest: accounts.nft_dest,
-            nft_mint: accounts.nft_mint,
-            nft_escrow_owner: accounts.nft_escrow_owner,
+            dest_token_account: accounts.dest_token_account,
+            mint: accounts.mint,
             nft_escrow: accounts.nft_escrow,
             nft_receipt: accounts.nft_receipt,
             owner: accounts.owner,
@@ -555,7 +537,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
             false,
@@ -565,15 +547,11 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_dest.key,
+            *self.dest_token_account.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.nft_mint.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_escrow_owner.key,
+            *self.mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -644,13 +622,12 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(18 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(17 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.nft_dest.clone());
-        account_infos.push(self.nft_mint.clone());
-        account_infos.push(self.nft_escrow_owner.clone());
+        account_infos.push(self.dest_token_account.clone());
+        account_infos.push(self.mint.clone());
         account_infos.push(self.nft_escrow.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.owner.clone());
@@ -682,22 +659,21 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
 ///
 ///   0. `[writable]` pool
 ///   1. `[]` whitelist
-///   2. `[writable]` nft_dest
-///   3. `[]` nft_mint
-///   4. `[writable]` nft_escrow_owner
-///   5. `[writable]` nft_escrow
-///   6. `[writable]` nft_receipt
-///   7. `[writable, signer]` owner
-///   8. `[]` token_program
-///   9. `[]` associated_token_program
-///   10. `[]` system_program
-///   11. `[]` rent
-///   12. `[writable]` nft_metadata
-///   13. `[]` nft_edition
-///   14. `[writable]` owner_token_record
-///   15. `[writable]` dest_token_record
-///   16. `[]` pnft_shared
-///   17. `[]` auth_rules
+///   2. `[writable]` dest_token_account
+///   3. `[]` mint
+///   4. `[writable]` nft_escrow
+///   5. `[writable]` nft_receipt
+///   6. `[writable, signer]` owner
+///   7. `[]` token_program
+///   8. `[]` associated_token_program
+///   9. `[]` system_program
+///   10. `[]` rent
+///   11. `[writable]` nft_metadata
+///   12. `[]` nft_edition
+///   13. `[writable]` owner_token_record
+///   14. `[writable]` dest_token_record
+///   15. `[]` pnft_shared
+///   16. `[]` auth_rules
 pub struct WithdrawNftCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -708,9 +684,8 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
             __program: program,
             pool: None,
             whitelist: None,
-            nft_dest: None,
-            nft_mint: None,
-            nft_escrow_owner: None,
+            dest_token_account: None,
+            mint: None,
             nft_escrow: None,
             nft_receipt: None,
             owner: None,
@@ -745,27 +720,16 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn nft_dest(
+    pub fn dest_token_account(
         &mut self,
-        nft_dest: &'b solana_program::account_info::AccountInfo<'a>,
+        dest_token_account: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_dest = Some(nft_dest);
+        self.instruction.dest_token_account = Some(dest_token_account);
         self
     }
     #[inline(always)]
-    pub fn nft_mint(
-        &mut self,
-        nft_mint: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_mint = Some(nft_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_escrow_owner(
-        &mut self,
-        nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_escrow_owner = Some(nft_escrow_owner);
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.mint = Some(mint);
         self
     }
     /// Implicitly checked via transfer. Will fail if wrong account
@@ -942,14 +906,12 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            nft_dest: self.instruction.nft_dest.expect("nft_dest is not set"),
-
-            nft_mint: self.instruction.nft_mint.expect("nft_mint is not set"),
-
-            nft_escrow_owner: self
+            dest_token_account: self
                 .instruction
-                .nft_escrow_owner
-                .expect("nft_escrow_owner is not set"),
+                .dest_token_account
+                .expect("dest_token_account is not set"),
+
+            mint: self.instruction.mint.expect("mint is not set"),
 
             nft_escrow: self.instruction.nft_escrow.expect("nft_escrow is not set"),
 
@@ -1016,9 +978,8 @@ struct WithdrawNftCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_dest: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_escrow_owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    dest_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,

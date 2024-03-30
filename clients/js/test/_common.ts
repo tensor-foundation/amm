@@ -16,10 +16,15 @@ import {
   some,
   isSolanaError,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
+  ProgramDerivedAddress,
+  getProgramDerivedAddress,
+  getAddressEncoder,
 } from '@solana/web3.js';
 import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
+  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
+  TOKEN_PROGRAM_ID,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
@@ -38,6 +43,28 @@ export const DEFAULT_PUBKEY: Address = address(
 );
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
 export const DEFAULT_DELTA = 1000n;
+
+export type AtaSeeds = {
+  /** The address of the owner of the associated token account */
+  owner: Address;
+  /** The address of the mint account */
+  mint: Address;
+  /** The address of the token program */
+  tokenProgramId?: Address;
+};
+
+export const findAtaPda = async (
+  seeds: AtaSeeds
+): Promise<ProgramDerivedAddress> => {
+  return await getProgramDerivedAddress({
+    seeds: [
+      getAddressEncoder().encode(seeds.owner),
+      getAddressEncoder().encode(seeds.tokenProgramId ?? TOKEN_PROGRAM_ID),
+      getAddressEncoder().encode(seeds.mint),
+    ],
+    programAddress: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
+  });
+};
 
 export const tradePoolConfig: PoolConfig = {
   poolType: PoolType.Trade,
@@ -318,19 +345,6 @@ export async function createPoolAndWhitelist({
   const namespace = await generateKeyPairSigner();
   const voc = (await generateKeyPairSigner()).address;
 
-  // Setup a basic whitelist to use with the pool.
-  const conditions = [
-    { mode: Mode.FVC, value: updateAuthority.address },
-    { mode: Mode.VOC, value: voc },
-  ];
-
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority,
-    conditions,
-    namespace,
-  });
-
   // Pool values
   if (owner === undefined) {
     owner = await generateKeyPairSignerWithSol(client);
@@ -341,6 +355,22 @@ export async function createPoolAndWhitelist({
   if (identifier === undefined) {
     identifier = Uint8Array.from({ length: 32 }, () => 1);
   }
+
+  // Setup a basic whitelist to use with the pool.
+  const conditions = [
+    { mode: Mode.FVC, value: owner.address },
+    { mode: Mode.VOC, value: voc },
+  ];
+
+  console.log('creating whitelist');
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    conditions,
+    namespace,
+  });
+
+  console.log('creating pool');
 
   return await createPool({
     client,

@@ -53,9 +53,8 @@ export type WithdrawNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountNftDest extends string | IAccountMeta<string> = string,
-  TAccountNftMint extends string | IAccountMeta<string> = string,
-  TAccountNftEscrowOwner extends string | IAccountMeta<string> = string,
+  TAccountDestTokenAccount extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountNftEscrow extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
@@ -86,15 +85,12 @@ export type WithdrawNftInstruction<
       TAccountWhitelist extends string
         ? ReadonlyAccount<TAccountWhitelist>
         : TAccountWhitelist,
-      TAccountNftDest extends string
-        ? WritableAccount<TAccountNftDest>
-        : TAccountNftDest,
-      TAccountNftMint extends string
-        ? ReadonlyAccount<TAccountNftMint>
-        : TAccountNftMint,
-      TAccountNftEscrowOwner extends string
-        ? WritableAccount<TAccountNftEscrowOwner>
-        : TAccountNftEscrowOwner,
+      TAccountDestTokenAccount extends string
+        ? WritableAccount<TAccountDestTokenAccount>
+        : TAccountDestTokenAccount,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountNftEscrow extends string
         ? WritableAccount<TAccountNftEscrow>
         : TAccountNftEscrow,
@@ -192,9 +188,8 @@ export function getWithdrawNftInstructionDataCodec(): Codec<
 export type WithdrawNftInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
-  TAccountNftDest extends string = string,
-  TAccountNftMint extends string = string,
-  TAccountNftEscrowOwner extends string = string,
+  TAccountDestTokenAccount extends string = string,
+  TAccountMint extends string = string,
   TAccountNftEscrow extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountOwner extends string = string,
@@ -211,9 +206,8 @@ export type WithdrawNftInput<
 > = {
   pool: Address<TAccountPool>;
   whitelist: Address<TAccountWhitelist>;
-  nftDest: Address<TAccountNftDest>;
-  nftMint: Address<TAccountNftMint>;
-  nftEscrowOwner: Address<TAccountNftEscrowOwner>;
+  destTokenAccount: Address<TAccountDestTokenAccount>;
+  mint: Address<TAccountMint>;
   /**
    * Implicitly checked via transfer. Will fail if wrong account
    * This is closed below (dest = owner)
@@ -240,9 +234,8 @@ export type WithdrawNftInput<
 export function getWithdrawNftInstruction<
   TAccountPool extends string,
   TAccountWhitelist extends string,
-  TAccountNftDest extends string,
-  TAccountNftMint extends string,
-  TAccountNftEscrowOwner extends string,
+  TAccountDestTokenAccount extends string,
+  TAccountMint extends string,
   TAccountNftEscrow extends string,
   TAccountNftReceipt extends string,
   TAccountOwner extends string,
@@ -260,9 +253,8 @@ export function getWithdrawNftInstruction<
   input: WithdrawNftInput<
     TAccountPool,
     TAccountWhitelist,
-    TAccountNftDest,
-    TAccountNftMint,
-    TAccountNftEscrowOwner,
+    TAccountDestTokenAccount,
+    TAccountMint,
     TAccountNftEscrow,
     TAccountNftReceipt,
     TAccountOwner,
@@ -281,9 +273,8 @@ export function getWithdrawNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountPool,
   TAccountWhitelist,
-  TAccountNftDest,
-  TAccountNftMint,
-  TAccountNftEscrowOwner,
+  TAccountDestTokenAccount,
+  TAccountMint,
   TAccountNftEscrow,
   TAccountNftReceipt,
   TAccountOwner,
@@ -305,9 +296,11 @@ export function getWithdrawNftInstruction<
   const originalAccounts = {
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
-    nftDest: { value: input.nftDest ?? null, isWritable: true },
-    nftMint: { value: input.nftMint ?? null, isWritable: false },
-    nftEscrowOwner: { value: input.nftEscrowOwner ?? null, isWritable: true },
+    destTokenAccount: {
+      value: input.destTokenAccount ?? null,
+      isWritable: true,
+    },
+    mint: { value: input.mint ?? null, isWritable: false },
     nftEscrow: { value: input.nftEscrow ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
@@ -355,9 +348,8 @@ export function getWithdrawNftInstruction<
     accounts: [
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
-      getAccountMeta(accounts.nftDest),
-      getAccountMeta(accounts.nftMint),
-      getAccountMeta(accounts.nftEscrowOwner),
+      getAccountMeta(accounts.destTokenAccount),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftEscrow),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.owner),
@@ -380,9 +372,8 @@ export function getWithdrawNftInstruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountPool,
     TAccountWhitelist,
-    TAccountNftDest,
-    TAccountNftMint,
-    TAccountNftEscrowOwner,
+    TAccountDestTokenAccount,
+    TAccountMint,
     TAccountNftEscrow,
     TAccountNftReceipt,
     TAccountOwner,
@@ -409,28 +400,27 @@ export type ParsedWithdrawNftInstruction<
   accounts: {
     pool: TAccountMetas[0];
     whitelist: TAccountMetas[1];
-    nftDest: TAccountMetas[2];
-    nftMint: TAccountMetas[3];
-    nftEscrowOwner: TAccountMetas[4];
+    destTokenAccount: TAccountMetas[2];
+    mint: TAccountMetas[3];
     /**
      * Implicitly checked via transfer. Will fail if wrong account
      * This is closed below (dest = owner)
      */
 
-    nftEscrow: TAccountMetas[5];
-    nftReceipt: TAccountMetas[6];
+    nftEscrow: TAccountMetas[4];
+    nftReceipt: TAccountMetas[5];
     /** Tied to the pool because used to verify pool seeds */
-    owner: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    associatedTokenProgram: TAccountMetas[9];
-    systemProgram: TAccountMetas[10];
-    rent: TAccountMetas[11];
-    nftMetadata: TAccountMetas[12];
-    nftEdition: TAccountMetas[13];
-    ownerTokenRecord: TAccountMetas[14];
-    destTokenRecord: TAccountMetas[15];
-    pnftShared: TAccountMetas[16];
-    authRules: TAccountMetas[17];
+    owner: TAccountMetas[6];
+    tokenProgram: TAccountMetas[7];
+    associatedTokenProgram: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
+    rent: TAccountMetas[10];
+    nftMetadata: TAccountMetas[11];
+    nftEdition: TAccountMetas[12];
+    ownerTokenRecord: TAccountMetas[13];
+    destTokenRecord: TAccountMetas[14];
+    pnftShared: TAccountMetas[15];
+    authRules: TAccountMetas[16];
   };
   data: WithdrawNftInstructionData;
 };
@@ -443,7 +433,7 @@ export function parseWithdrawNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 17) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -458,9 +448,8 @@ export function parseWithdrawNftInstruction<
     accounts: {
       pool: getNextAccount(),
       whitelist: getNextAccount(),
-      nftDest: getNextAccount(),
-      nftMint: getNextAccount(),
-      nftEscrowOwner: getNextAccount(),
+      destTokenAccount: getNextAccount(),
+      mint: getNextAccount(),
       nftEscrow: getNextAccount(),
       nftReceipt: getNextAccount(),
       owner: getNextAccount(),

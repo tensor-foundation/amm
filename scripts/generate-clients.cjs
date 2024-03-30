@@ -8,9 +8,6 @@ const idlDir = path.join(__dirname, "..", "program", "idl");
 
 // Instanciate Kinobi.
 const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
-// const kinobi = k.createFromJson(
-//   fs.readFileSync(path.join(idlDir, "amm_program.json"))
-// );
 
 // Update programs.
 kinobi.update(
@@ -44,6 +41,26 @@ kinobi.update(
           "pool",
           k.publicKeyTypeNode(),
           "The address of the pool"
+        )
+      ]
+    },
+    escrowTokenAccount: {
+      seeds: [
+        k.constantPdaSeedNodeFromString("nft_escrow"),
+        k.variablePdaSeedNode(
+          "mint",
+          k.publicKeyTypeNode(),
+          "The nft mint address"
+        )
+      ]
+    },
+    nftDepositReceipt: {
+      seeds: [
+        k.constantPdaSeedNodeFromString("nft_receipt"),
+        k.variablePdaSeedNode(
+          "mint",
+          k.publicKeyTypeNode(),
+          "The nft mint address"
         )
       ]
     }

@@ -27,6 +27,11 @@ module.exports = {
         label: "Tensor Whitelist",
         programId: "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
         deployPath: getProgram("whitelist_program.so")
+      },
+      {
+        label: "Token Metadata",
+        programId: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+        deployPath: getProgram("mpl_token_metadata.so")
       }
     ]
   }
