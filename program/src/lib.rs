@@ -2,6 +2,7 @@ pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
+pub mod utils;
 
 use anchor_lang::prelude::*;
 use instructions::*;
@@ -102,7 +103,6 @@ pub mod amm_program {
 
     pub fn sell_nft_token_pool<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTokenPool<'info>>,
-        _config: PoolConfig,
         min_price: u64,
         rules_acc_present: bool,
         authorization_data: Option<AuthorizationDataLocal>,

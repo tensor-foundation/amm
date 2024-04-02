@@ -1,13 +1,13 @@
 import test from 'ava';
 import {} from '@solana/programs';
 import {
-  Address,
   Commitment,
   CompilableTransaction,
   ITransactionWithBlockhashLifetime,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   address,
   appendTransactionInstruction,
+  generateKeyPairSigner,
   getSignatureFromTransaction,
   isSolanaError,
   none,
@@ -41,8 +41,10 @@ import {
   getDepositSolInstruction,
   PoolConfig,
   getSellNftTokenPoolInstruction,
+  findEscrowOwnerPda,
 } from '../src/index.js';
-import { createPoolAndWhitelist } from './_common.js';
+import { createPoolAndWhitelist, findAtaPda } from './_common.js';
+import { findMintProofV2Pda } from '@tensor-foundation/whitelist';
 
 const pnftShared = {
   tokenMetadata: MPL_TOKEN_METADATA_PROGRAM_ID,
@@ -207,23 +209,11 @@ test('close pool fails if nfts still deposited', async (t) => {
   }
 });
 
-interface SellNftShared {
-  owner: ReturnType<typeof generateKeyPairSignerWithSol>;
-  seller: ReturnType<typeof generateKeyPairSignerWithSol>;
-  feeVault: Address;
-  pool: Address;
-  whitelist: Address;
-  mintProof: Address;
-  nftSellerAccount: Address;
-  mint: Address;
-  metadata: Address;
-  solEscrow: string;
-}
-
 test.only('close pool fails if someone sold nfts into it', async (t) => {
   const client = createDefaultSolanaClient();
 
   const owner = await generateKeyPairSignerWithSol(client);
+  const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config: PoolConfig = {
     poolType: PoolType.Token,
@@ -242,11 +232,11 @@ test.only('close pool fails if someone sold nfts into it', async (t) => {
   });
 
   // Mint NFT
-  const { mint, metadata } = await createDefaultNft(
+  const { mint, metadata, masterEdition } = await createDefaultNft(
     client,
-    owner,
-    owner,
-    owner
+    nftOwner,
+    nftOwner,
+    nftOwner
   );
 
   // Deposit SOL
@@ -264,21 +254,47 @@ test.only('close pool fails if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
+  // TODO: What should this be?
+  const feeVault = (await generateKeyPairSigner()).address;
+
+  const [poolOwnerAta] = await findAtaPda({ mint, owner: owner.address });
+  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
+  const [nftEscrowOwner] = await findEscrowOwnerPda({ mint });
+  const [nftEscrow] = await findEscrowTokenAccountPda({ mint });
+  const [mintProof] = await findMintProofV2Pda({ mint, whitelist });
+
+  const minPrice = 100_000n;
+
   // Sell NFT into pool
-  let sellNftIx = getSellNftTokenPoolInstruction({
-    shared: {
-      owner: owner.address,
-      seller: owner.address,
-      feeVault: owner.address,
-      pool,
-      whitelist,
-      mintProof: mint,
-      nftSellerAccount: metadata,
-      mint,
-      metadata,
-      solEscrow,1
-    },
+  const sellNftIx = getSellNftTokenPoolInstruction({
+    feeVault,
+    pool,
+    whitelist,
+    mintProof,
+    nftSellerAcc: sellerAta,
+    mint,
+    metadata,
+    solEscrow,
+    owner: owner.address, // pool owner
+    seller: nftOwner, // nft owner--the seller
+    ownerAtaAcc: poolOwnerAta,
+    edition: masterEdition,
+    nftEscrowOwner,
+    nftEscrow,
+    sharedEscrow: nftEscrow, // No shared escrow so we put a dummy account here for now
+    takerBroker: owner.address, // No taker broker so we put a dummy here for now
+    minPrice,
+    rulesAccPresent: false,
+    authorizationData: none(),
+    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
+    optionalRoyaltyPct: none(),
   });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner.address),
+    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
 
   t.pass();
 });

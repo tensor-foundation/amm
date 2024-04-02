@@ -64,6 +64,7 @@ export enum AmmAccount {
   SharedEscrow,
   SingleListing,
   SolEscrow,
+  EscrowOwner,
   EscrowTokenAccount,
 }
 
@@ -85,6 +86,9 @@ export function identifyAmmAccount(
   }
   if (memcmp(data, new Uint8Array([75, 199, 250, 63, 244, 209, 235, 120]), 0)) {
     return AmmAccount.SolEscrow;
+  }
+  if (memcmp(data, new Uint8Array([215, 217, 229, 238, 9, 70, 144, 119]), 0)) {
+    return AmmAccount.EscrowOwner;
   }
   if (memcmp(data, new Uint8Array([187, 204, 104, 138, 3, 193, 34, 208]), 0)) {
     return AmmAccount.EscrowTokenAccount;

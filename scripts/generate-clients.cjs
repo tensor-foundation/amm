@@ -44,6 +44,16 @@ kinobi.update(
         )
       ]
     },
+    escrowOwner: {
+      seeds: [
+        k.constantPdaSeedNodeFromString("nft_owner"),
+        k.variablePdaSeedNode(
+          "mint",
+          k.publicKeyTypeNode(),
+          "The nft mint address"
+        )
+      ]
+    },
     escrowTokenAccount: {
       seeds: [
         k.constantPdaSeedNodeFromString("nft_escrow"),

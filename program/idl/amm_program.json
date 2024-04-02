@@ -755,65 +755,60 @@
       "name": "sellNftTokenPool",
       "accounts": [
         {
-          "name": "shared",
-          "accounts": [
-            {
-              "name": "feeVault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "pool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "whitelist",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "Needed for pool seeds derivation, also checked via has_one on pool"
-              ]
-            },
-            {
-              "name": "mintProof",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification"
-              ]
-            },
-            {
-              "name": "nftSellerAcc",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "mint",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "metadata",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "solEscrow",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "owner",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "seller",
-              "isMut": true,
-              "isSigner": true
-            }
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Needed for pool seeds derivation, also checked via has_one on pool"
           ]
+        },
+        {
+          "name": "mintProof",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification"
+          ]
+        },
+        {
+          "name": "nftSellerAcc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "solEscrow",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "ownerAtaAcc",
@@ -836,44 +831,39 @@
           "isSigner": false
         },
         {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "nftEdition",
+          "name": "edition",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "ownerTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "destTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
-          "name": "pnftShared",
-          "accounts": [
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "instructions",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "nftEscrowOwner",
@@ -891,15 +881,17 @@
         {
           "name": "tempEscrowTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
-          "name": "marginAccount",
+          "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false
         },
@@ -910,12 +902,6 @@
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "minPrice",
           "type": "u64"
@@ -2203,6 +2189,13 @@
       "docs": [
         "Need dummy Anchor account so we can use `close` constraint."
       ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "EscrowOwner",
       "type": {
         "kind": "struct",
         "fields": []

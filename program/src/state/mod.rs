@@ -23,6 +23,9 @@ pub struct DummyCtx<'info> {
 pub struct SolEscrow {}
 
 #[account]
+pub struct EscrowOwner {}
+
+#[account]
 pub struct EscrowTokenAccount {}
 
 // --------------------------------------- events

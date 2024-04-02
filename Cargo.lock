@@ -131,6 +131,7 @@ dependencies = [
  "solana-program",
  "solana-program-test",
  "solana-sdk",
+ "spl-associated-token-account",
  "tensor-whitelist",
  "thiserror",
 ]

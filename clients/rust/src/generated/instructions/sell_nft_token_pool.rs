@@ -6,13 +6,30 @@
 //!
 
 use crate::generated::types::AuthorizationDataLocal;
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct SellNftTokenPool {
-    pub shared: solana_program::pubkey::Pubkey,
+    pub fee_vault: solana_program::pubkey::Pubkey,
+
+    pub pool: solana_program::pubkey::Pubkey,
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    pub whitelist: solana_program::pubkey::Pubkey,
+    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
+    pub mint_proof: solana_program::pubkey::Pubkey,
+
+    pub nft_seller_acc: solana_program::pubkey::Pubkey,
+
+    pub mint: solana_program::pubkey::Pubkey,
+
+    pub metadata: solana_program::pubkey::Pubkey,
+
+    pub sol_escrow: solana_program::pubkey::Pubkey,
+
+    pub owner: solana_program::pubkey::Pubkey,
+
+    pub seller: solana_program::pubkey::Pubkey,
 
     pub owner_ata_acc: solana_program::pubkey::Pubkey,
 
@@ -22,25 +39,27 @@ pub struct SellNftTokenPool {
 
     pub system_program: solana_program::pubkey::Pubkey,
 
-    pub rent: solana_program::pubkey::Pubkey,
+    pub edition: solana_program::pubkey::Pubkey,
 
-    pub nft_edition: solana_program::pubkey::Pubkey,
+    pub owner_token_record: Option<solana_program::pubkey::Pubkey>,
 
-    pub owner_token_record: solana_program::pubkey::Pubkey,
+    pub dest_token_record: Option<solana_program::pubkey::Pubkey>,
 
-    pub dest_token_record: solana_program::pubkey::Pubkey,
+    pub token_metadata_program: Option<solana_program::pubkey::Pubkey>,
 
-    pub pnft_shared: solana_program::pubkey::Pubkey,
+    pub instructions: Option<solana_program::pubkey::Pubkey>,
+
+    pub authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
 
     pub nft_escrow_owner: solana_program::pubkey::Pubkey,
     /// Implicitly checked via transfer. Will fail if wrong account
     pub nft_escrow: solana_program::pubkey::Pubkey,
 
-    pub temp_escrow_token_record: solana_program::pubkey::Pubkey,
+    pub temp_escrow_token_record: Option<solana_program::pubkey::Pubkey>,
 
-    pub auth_rules: solana_program::pubkey::Pubkey,
+    pub auth_rules: Option<solana_program::pubkey::Pubkey>,
 
-    pub margin_account: solana_program::pubkey::Pubkey,
+    pub shared_escrow: solana_program::pubkey::Pubkey,
 
     pub taker_broker: solana_program::pubkey::Pubkey,
 }
@@ -58,10 +77,43 @@ impl SellNftTokenPool {
         args: SellNftTokenPoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.shared,
+        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.fee_vault,
             false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.whitelist,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mint_proof,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.nft_seller_acc,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mint, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.metadata,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.sol_escrow,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.owner, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.seller,
+            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner_ata_acc,
@@ -80,24 +132,64 @@ impl SellNftTokenPool {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.rent, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.nft_edition,
+            self.edition,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.owner_token_record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.dest_token_record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.pnft_shared,
-            false,
-        ));
+        if let Some(owner_token_record) = self.owner_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                owner_token_record,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(dest_token_record) = self.dest_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                dest_token_record,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                token_metadata_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(instructions) = self.instructions {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                instructions,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                authorization_rules_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_escrow_owner,
             false,
@@ -106,16 +198,29 @@ impl SellNftTokenPool {
             self.nft_escrow,
             false,
         ));
+        if let Some(temp_escrow_token_record) = self.temp_escrow_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                temp_escrow_token_record,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(auth_rules) = self.auth_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                auth_rules, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.temp_escrow_token_record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.auth_rules,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.margin_account,
+            self.shared_escrow,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -151,7 +256,6 @@ impl SellNftTokenPoolInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SellNftTokenPoolInstructionArgs {
-    pub config: PoolConfig,
     pub min_price: u64,
     pub rules_acc_present: bool,
     pub authorization_data: Option<AuthorizationDataLocal>,
@@ -162,41 +266,60 @@ pub struct SellNftTokenPoolInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` shared
-///   1. `[writable]` owner_ata_acc
-///   2. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   3. `[]` associated_token_program
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   5. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   6. `[]` nft_edition
-///   7. `[writable]` owner_token_record
-///   8. `[writable]` dest_token_record
-///   9. `[]` pnft_shared
-///   10. `[writable]` nft_escrow_owner
-///   11. `[writable]` nft_escrow
-///   12. `[writable]` temp_escrow_token_record
-///   13. `[]` auth_rules
-///   14. `[writable]` margin_account
-///   15. `[writable]` taker_broker
+///   0. `[writable]` fee_vault
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[]` mint_proof
+///   4. `[writable]` nft_seller_acc
+///   5. `[]` mint
+///   6. `[writable]` metadata
+///   7. `[writable]` sol_escrow
+///   8. `[writable]` owner
+///   9. `[writable, signer]` seller
+///   10. `[writable]` owner_ata_acc
+///   11. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   12. `[]` associated_token_program
+///   13. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   14. `[]` edition
+///   15. `[writable, optional]` owner_token_record
+///   16. `[writable, optional]` dest_token_record
+///   17. `[optional]` token_metadata_program
+///   18. `[optional]` instructions
+///   19. `[optional]` authorization_rules_program
+///   20. `[writable]` nft_escrow_owner
+///   21. `[writable]` nft_escrow
+///   22. `[writable, optional]` temp_escrow_token_record
+///   23. `[optional]` auth_rules
+///   24. `[writable]` shared_escrow
+///   25. `[writable]` taker_broker
 #[derive(Default)]
 pub struct SellNftTokenPoolBuilder {
-    shared: Option<solana_program::pubkey::Pubkey>,
+    fee_vault: Option<solana_program::pubkey::Pubkey>,
+    pool: Option<solana_program::pubkey::Pubkey>,
+    whitelist: Option<solana_program::pubkey::Pubkey>,
+    mint_proof: Option<solana_program::pubkey::Pubkey>,
+    nft_seller_acc: Option<solana_program::pubkey::Pubkey>,
+    mint: Option<solana_program::pubkey::Pubkey>,
+    metadata: Option<solana_program::pubkey::Pubkey>,
+    sol_escrow: Option<solana_program::pubkey::Pubkey>,
+    owner: Option<solana_program::pubkey::Pubkey>,
+    seller: Option<solana_program::pubkey::Pubkey>,
     owner_ata_acc: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    rent: Option<solana_program::pubkey::Pubkey>,
-    nft_edition: Option<solana_program::pubkey::Pubkey>,
+    edition: Option<solana_program::pubkey::Pubkey>,
     owner_token_record: Option<solana_program::pubkey::Pubkey>,
     dest_token_record: Option<solana_program::pubkey::Pubkey>,
-    pnft_shared: Option<solana_program::pubkey::Pubkey>,
+    token_metadata_program: Option<solana_program::pubkey::Pubkey>,
+    instructions: Option<solana_program::pubkey::Pubkey>,
+    authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
     nft_escrow_owner: Option<solana_program::pubkey::Pubkey>,
     nft_escrow: Option<solana_program::pubkey::Pubkey>,
     temp_escrow_token_record: Option<solana_program::pubkey::Pubkey>,
     auth_rules: Option<solana_program::pubkey::Pubkey>,
-    margin_account: Option<solana_program::pubkey::Pubkey>,
+    shared_escrow: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,
@@ -209,8 +332,55 @@ impl SellNftTokenPoolBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn shared(&mut self, shared: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.shared = Some(shared);
+    pub fn fee_vault(&mut self, fee_vault: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.fee_vault = Some(fee_vault);
+        self
+    }
+    #[inline(always)]
+    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool = Some(pool);
+        self
+    }
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    #[inline(always)]
+    pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.whitelist = Some(whitelist);
+        self
+    }
+    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
+    #[inline(always)]
+    pub fn mint_proof(&mut self, mint_proof: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint_proof = Some(mint_proof);
+        self
+    }
+    #[inline(always)]
+    pub fn nft_seller_acc(&mut self, nft_seller_acc: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.nft_seller_acc = Some(nft_seller_acc);
+        self
+    }
+    #[inline(always)]
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint = Some(mint);
+        self
+    }
+    #[inline(always)]
+    pub fn metadata(&mut self, metadata: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.metadata = Some(metadata);
+        self
+    }
+    #[inline(always)]
+    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.sol_escrow = Some(sol_escrow);
+        self
+    }
+    #[inline(always)]
+    pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.owner = Some(owner);
+        self
+    }
+    #[inline(always)]
+    pub fn seller(&mut self, seller: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.seller = Some(seller);
         self
     }
     #[inline(always)]
@@ -238,36 +408,54 @@ impl SellNftTokenPoolBuilder {
         self.system_program = Some(system_program);
         self
     }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     #[inline(always)]
-    pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent = Some(rent);
+    pub fn edition(&mut self, edition: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.edition = Some(edition);
         self
     }
-    #[inline(always)]
-    pub fn nft_edition(&mut self, nft_edition: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_edition = Some(nft_edition);
-        self
-    }
+    /// `[optional account]`
     #[inline(always)]
     pub fn owner_token_record(
         &mut self,
-        owner_token_record: solana_program::pubkey::Pubkey,
+        owner_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.owner_token_record = Some(owner_token_record);
+        self.owner_token_record = owner_token_record;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn dest_token_record(
         &mut self,
-        dest_token_record: solana_program::pubkey::Pubkey,
+        dest_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.dest_token_record = Some(dest_token_record);
+        self.dest_token_record = dest_token_record;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn pnft_shared(&mut self, pnft_shared: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pnft_shared = Some(pnft_shared);
+    pub fn token_metadata_program(
+        &mut self,
+        token_metadata_program: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.token_metadata_program = token_metadata_program;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn instructions(
+        &mut self,
+        instructions: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.instructions = instructions;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn authorization_rules_program(
+        &mut self,
+        authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.authorization_rules_program = authorization_rules_program;
         self
     }
     #[inline(always)]
@@ -284,32 +472,29 @@ impl SellNftTokenPoolBuilder {
         self.nft_escrow = Some(nft_escrow);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn temp_escrow_token_record(
         &mut self,
-        temp_escrow_token_record: solana_program::pubkey::Pubkey,
+        temp_escrow_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.temp_escrow_token_record = Some(temp_escrow_token_record);
+        self.temp_escrow_token_record = temp_escrow_token_record;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn auth_rules(&mut self, auth_rules: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.auth_rules = auth_rules;
         self
     }
     #[inline(always)]
-    pub fn auth_rules(&mut self, auth_rules: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.auth_rules = Some(auth_rules);
-        self
-    }
-    #[inline(always)]
-    pub fn margin_account(&mut self, margin_account: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.margin_account = Some(margin_account);
+    pub fn shared_escrow(&mut self, shared_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.shared_escrow = Some(shared_escrow);
         self
     }
     #[inline(always)]
     pub fn taker_broker(&mut self, taker_broker: solana_program::pubkey::Pubkey) -> &mut Self {
         self.taker_broker = Some(taker_broker);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
         self
     }
     #[inline(always)]
@@ -355,7 +540,16 @@ impl SellNftTokenPoolBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = SellNftTokenPool {
-            shared: self.shared.expect("shared is not set"),
+            fee_vault: self.fee_vault.expect("fee_vault is not set"),
+            pool: self.pool.expect("pool is not set"),
+            whitelist: self.whitelist.expect("whitelist is not set"),
+            mint_proof: self.mint_proof.expect("mint_proof is not set"),
+            nft_seller_acc: self.nft_seller_acc.expect("nft_seller_acc is not set"),
+            mint: self.mint.expect("mint is not set"),
+            metadata: self.metadata.expect("metadata is not set"),
+            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
+            owner: self.owner.expect("owner is not set"),
+            seller: self.seller.expect("seller is not set"),
             owner_ata_acc: self.owner_ata_acc.expect("owner_ata_acc is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
@@ -366,28 +560,20 @@ impl SellNftTokenPoolBuilder {
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            rent: self.rent.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            nft_edition: self.nft_edition.expect("nft_edition is not set"),
-            owner_token_record: self
-                .owner_token_record
-                .expect("owner_token_record is not set"),
-            dest_token_record: self
-                .dest_token_record
-                .expect("dest_token_record is not set"),
-            pnft_shared: self.pnft_shared.expect("pnft_shared is not set"),
+            edition: self.edition.expect("edition is not set"),
+            owner_token_record: self.owner_token_record,
+            dest_token_record: self.dest_token_record,
+            token_metadata_program: self.token_metadata_program,
+            instructions: self.instructions,
+            authorization_rules_program: self.authorization_rules_program,
             nft_escrow_owner: self.nft_escrow_owner.expect("nft_escrow_owner is not set"),
             nft_escrow: self.nft_escrow.expect("nft_escrow is not set"),
-            temp_escrow_token_record: self
-                .temp_escrow_token_record
-                .expect("temp_escrow_token_record is not set"),
-            auth_rules: self.auth_rules.expect("auth_rules is not set"),
-            margin_account: self.margin_account.expect("margin_account is not set"),
+            temp_escrow_token_record: self.temp_escrow_token_record,
+            auth_rules: self.auth_rules,
+            shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
             taker_broker: self.taker_broker.expect("taker_broker is not set"),
         };
         let args = SellNftTokenPoolInstructionArgs {
-            config: self.config.clone().expect("config is not set"),
             min_price: self.min_price.clone().expect("min_price is not set"),
             rules_acc_present: self
                 .rules_acc_present
@@ -403,7 +589,25 @@ impl SellNftTokenPoolBuilder {
 
 /// `sell_nft_token_pool` CPI accounts.
 pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
-    pub shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
+    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub nft_seller_acc: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub seller: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_ata_acc: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -413,25 +617,27 @@ pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+    pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub dest_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub dest_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
     pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub temp_escrow_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub temp_escrow_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub margin_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -441,7 +647,25 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
+    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub nft_seller_acc: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub seller: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_ata_acc: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -451,25 +675,27 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub rent: &'b solana_program::account_info::AccountInfo<'a>,
+    pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub dest_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub dest_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+    pub instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub nft_escrow_owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// Implicitly checked via transfer. Will fail if wrong account
     pub nft_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub temp_escrow_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub temp_escrow_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
-    pub margin_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -484,21 +710,31 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            shared: accounts.shared,
+            fee_vault: accounts.fee_vault,
+            pool: accounts.pool,
+            whitelist: accounts.whitelist,
+            mint_proof: accounts.mint_proof,
+            nft_seller_acc: accounts.nft_seller_acc,
+            mint: accounts.mint,
+            metadata: accounts.metadata,
+            sol_escrow: accounts.sol_escrow,
+            owner: accounts.owner,
+            seller: accounts.seller,
             owner_ata_acc: accounts.owner_ata_acc,
             token_program: accounts.token_program,
             associated_token_program: accounts.associated_token_program,
             system_program: accounts.system_program,
-            rent: accounts.rent,
-            nft_edition: accounts.nft_edition,
+            edition: accounts.edition,
             owner_token_record: accounts.owner_token_record,
             dest_token_record: accounts.dest_token_record,
-            pnft_shared: accounts.pnft_shared,
+            token_metadata_program: accounts.token_metadata_program,
+            instructions: accounts.instructions,
+            authorization_rules_program: accounts.authorization_rules_program,
             nft_escrow_owner: accounts.nft_escrow_owner,
             nft_escrow: accounts.nft_escrow,
             temp_escrow_token_record: accounts.temp_escrow_token_record,
             auth_rules: accounts.auth_rules,
-            margin_account: accounts.margin_account,
+            shared_escrow: accounts.shared_escrow,
             taker_broker: accounts.taker_broker,
             __args: args,
         }
@@ -536,10 +772,46 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.shared.key,
+        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.fee_vault.key,
             false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.whitelist.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mint_proof.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.nft_seller_acc.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mint.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.metadata.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.sol_escrow.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.owner.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.seller.key,
+            true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner_ata_acc.key,
@@ -558,25 +830,64 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.rent.key,
+            *self.edition.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.nft_edition.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.owner_token_record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.dest_token_record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.pnft_shared.key,
-            false,
-        ));
+        if let Some(owner_token_record) = self.owner_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *owner_token_record.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(dest_token_record) = self.dest_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *dest_token_record.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *token_metadata_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(instructions) = self.instructions {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *instructions.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *authorization_rules_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.nft_escrow_owner.key,
             false,
@@ -585,16 +896,30 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             *self.nft_escrow.key,
             false,
         ));
+        if let Some(temp_escrow_token_record) = self.temp_escrow_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *temp_escrow_token_record.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(auth_rules) = self.auth_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *auth_rules.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.temp_escrow_token_record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.auth_rules.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.margin_account.key,
+            *self.shared_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -617,23 +942,47 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(16 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(26 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.shared.clone());
+        account_infos.push(self.fee_vault.clone());
+        account_infos.push(self.pool.clone());
+        account_infos.push(self.whitelist.clone());
+        account_infos.push(self.mint_proof.clone());
+        account_infos.push(self.nft_seller_acc.clone());
+        account_infos.push(self.mint.clone());
+        account_infos.push(self.metadata.clone());
+        account_infos.push(self.sol_escrow.clone());
+        account_infos.push(self.owner.clone());
+        account_infos.push(self.seller.clone());
         account_infos.push(self.owner_ata_acc.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.associated_token_program.clone());
         account_infos.push(self.system_program.clone());
-        account_infos.push(self.rent.clone());
-        account_infos.push(self.nft_edition.clone());
-        account_infos.push(self.owner_token_record.clone());
-        account_infos.push(self.dest_token_record.clone());
-        account_infos.push(self.pnft_shared.clone());
+        account_infos.push(self.edition.clone());
+        if let Some(owner_token_record) = self.owner_token_record {
+            account_infos.push(owner_token_record.clone());
+        }
+        if let Some(dest_token_record) = self.dest_token_record {
+            account_infos.push(dest_token_record.clone());
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            account_infos.push(token_metadata_program.clone());
+        }
+        if let Some(instructions) = self.instructions {
+            account_infos.push(instructions.clone());
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            account_infos.push(authorization_rules_program.clone());
+        }
         account_infos.push(self.nft_escrow_owner.clone());
         account_infos.push(self.nft_escrow.clone());
-        account_infos.push(self.temp_escrow_token_record.clone());
-        account_infos.push(self.auth_rules.clone());
-        account_infos.push(self.margin_account.clone());
+        if let Some(temp_escrow_token_record) = self.temp_escrow_token_record {
+            account_infos.push(temp_escrow_token_record.clone());
+        }
+        if let Some(auth_rules) = self.auth_rules {
+            account_infos.push(auth_rules.clone());
+        }
+        account_infos.push(self.shared_escrow.clone());
         account_infos.push(self.taker_broker.clone());
         remaining_accounts
             .iter()
@@ -651,22 +1000,32 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` shared
-///   1. `[writable]` owner_ata_acc
-///   2. `[]` token_program
-///   3. `[]` associated_token_program
-///   4. `[]` system_program
-///   5. `[]` rent
-///   6. `[]` nft_edition
-///   7. `[writable]` owner_token_record
-///   8. `[writable]` dest_token_record
-///   9. `[]` pnft_shared
-///   10. `[writable]` nft_escrow_owner
-///   11. `[writable]` nft_escrow
-///   12. `[writable]` temp_escrow_token_record
-///   13. `[]` auth_rules
-///   14. `[writable]` margin_account
-///   15. `[writable]` taker_broker
+///   0. `[writable]` fee_vault
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[]` mint_proof
+///   4. `[writable]` nft_seller_acc
+///   5. `[]` mint
+///   6. `[writable]` metadata
+///   7. `[writable]` sol_escrow
+///   8. `[writable]` owner
+///   9. `[writable, signer]` seller
+///   10. `[writable]` owner_ata_acc
+///   11. `[]` token_program
+///   12. `[]` associated_token_program
+///   13. `[]` system_program
+///   14. `[]` edition
+///   15. `[writable, optional]` owner_token_record
+///   16. `[writable, optional]` dest_token_record
+///   17. `[optional]` token_metadata_program
+///   18. `[optional]` instructions
+///   19. `[optional]` authorization_rules_program
+///   20. `[writable]` nft_escrow_owner
+///   21. `[writable]` nft_escrow
+///   22. `[writable, optional]` temp_escrow_token_record
+///   23. `[optional]` auth_rules
+///   24. `[writable]` shared_escrow
+///   25. `[writable]` taker_broker
 pub struct SellNftTokenPoolCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTokenPoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -675,23 +1034,32 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(SellNftTokenPoolCpiBuilderInstruction {
             __program: program,
-            shared: None,
+            fee_vault: None,
+            pool: None,
+            whitelist: None,
+            mint_proof: None,
+            nft_seller_acc: None,
+            mint: None,
+            metadata: None,
+            sol_escrow: None,
+            owner: None,
+            seller: None,
             owner_ata_acc: None,
             token_program: None,
             associated_token_program: None,
             system_program: None,
-            rent: None,
-            nft_edition: None,
+            edition: None,
             owner_token_record: None,
             dest_token_record: None,
-            pnft_shared: None,
+            token_metadata_program: None,
+            instructions: None,
+            authorization_rules_program: None,
             nft_escrow_owner: None,
             nft_escrow: None,
             temp_escrow_token_record: None,
             auth_rules: None,
-            margin_account: None,
+            shared_escrow: None,
             taker_broker: None,
-            config: None,
             min_price: None,
             rules_acc_present: None,
             authorization_data: None,
@@ -701,11 +1069,76 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         Self { instruction }
     }
     #[inline(always)]
-    pub fn shared(
+    pub fn fee_vault(
         &mut self,
-        shared: &'b solana_program::account_info::AccountInfo<'a>,
+        fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.shared = Some(shared);
+        self.instruction.fee_vault = Some(fee_vault);
+        self
+    }
+    #[inline(always)]
+    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.pool = Some(pool);
+        self
+    }
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    #[inline(always)]
+    pub fn whitelist(
+        &mut self,
+        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.whitelist = Some(whitelist);
+        self
+    }
+    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
+    #[inline(always)]
+    pub fn mint_proof(
+        &mut self,
+        mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.mint_proof = Some(mint_proof);
+        self
+    }
+    #[inline(always)]
+    pub fn nft_seller_acc(
+        &mut self,
+        nft_seller_acc: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.nft_seller_acc = Some(nft_seller_acc);
+        self
+    }
+    #[inline(always)]
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.mint = Some(mint);
+        self
+    }
+    #[inline(always)]
+    pub fn metadata(
+        &mut self,
+        metadata: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.metadata = Some(metadata);
+        self
+    }
+    #[inline(always)]
+    pub fn sol_escrow(
+        &mut self,
+        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.sol_escrow = Some(sol_escrow);
+        self
+    }
+    #[inline(always)]
+    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.owner = Some(owner);
+        self
+    }
+    #[inline(always)]
+    pub fn seller(
+        &mut self,
+        seller: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.seller = Some(seller);
         self
     }
     #[inline(always)]
@@ -741,40 +1174,56 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.rent = Some(rent);
-        self
-    }
-    #[inline(always)]
-    pub fn nft_edition(
+    pub fn edition(
         &mut self,
-        nft_edition: &'b solana_program::account_info::AccountInfo<'a>,
+        edition: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.nft_edition = Some(nft_edition);
+        self.instruction.edition = Some(edition);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn owner_token_record(
         &mut self,
-        owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+        owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.owner_token_record = Some(owner_token_record);
+        self.instruction.owner_token_record = owner_token_record;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn dest_token_record(
         &mut self,
-        dest_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+        dest_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.dest_token_record = Some(dest_token_record);
+        self.instruction.dest_token_record = dest_token_record;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn pnft_shared(
+    pub fn token_metadata_program(
         &mut self,
-        pnft_shared: &'b solana_program::account_info::AccountInfo<'a>,
+        token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.pnft_shared = Some(pnft_shared);
+        self.instruction.token_metadata_program = token_metadata_program;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn instructions(
+        &mut self,
+        instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.instructions = instructions;
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn authorization_rules_program(
+        &mut self,
+        authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.authorization_rules_program = authorization_rules_program;
         self
     }
     #[inline(always)]
@@ -794,28 +1243,30 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self.instruction.nft_escrow = Some(nft_escrow);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn temp_escrow_token_record(
         &mut self,
-        temp_escrow_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+        temp_escrow_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.temp_escrow_token_record = Some(temp_escrow_token_record);
+        self.instruction.temp_escrow_token_record = temp_escrow_token_record;
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn auth_rules(
         &mut self,
-        auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+        auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.auth_rules = Some(auth_rules);
+        self.instruction.auth_rules = auth_rules;
         self
     }
     #[inline(always)]
-    pub fn margin_account(
+    pub fn shared_escrow(
         &mut self,
-        margin_account: &'b solana_program::account_info::AccountInfo<'a>,
+        shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.margin_account = Some(margin_account);
+        self.instruction.shared_escrow = Some(shared_escrow);
         self
     }
     #[inline(always)]
@@ -824,11 +1275,6 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.taker_broker = Some(taker_broker);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
         self
     }
     #[inline(always)]
@@ -895,7 +1341,6 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SellNftTokenPoolInstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
             min_price: self
                 .instruction
                 .min_price
@@ -912,7 +1357,28 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         let instruction = SellNftTokenPoolCpi {
             __program: self.instruction.__program,
 
-            shared: self.instruction.shared.expect("shared is not set"),
+            fee_vault: self.instruction.fee_vault.expect("fee_vault is not set"),
+
+            pool: self.instruction.pool.expect("pool is not set"),
+
+            whitelist: self.instruction.whitelist.expect("whitelist is not set"),
+
+            mint_proof: self.instruction.mint_proof.expect("mint_proof is not set"),
+
+            nft_seller_acc: self
+                .instruction
+                .nft_seller_acc
+                .expect("nft_seller_acc is not set"),
+
+            mint: self.instruction.mint.expect("mint is not set"),
+
+            metadata: self.instruction.metadata.expect("metadata is not set"),
+
+            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
+
+            owner: self.instruction.owner.expect("owner is not set"),
+
+            seller: self.instruction.seller.expect("seller is not set"),
 
             owner_ata_acc: self
                 .instruction
@@ -934,27 +1400,17 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
                 .system_program
                 .expect("system_program is not set"),
 
-            rent: self.instruction.rent.expect("rent is not set"),
+            edition: self.instruction.edition.expect("edition is not set"),
 
-            nft_edition: self
-                .instruction
-                .nft_edition
-                .expect("nft_edition is not set"),
+            owner_token_record: self.instruction.owner_token_record,
 
-            owner_token_record: self
-                .instruction
-                .owner_token_record
-                .expect("owner_token_record is not set"),
+            dest_token_record: self.instruction.dest_token_record,
 
-            dest_token_record: self
-                .instruction
-                .dest_token_record
-                .expect("dest_token_record is not set"),
+            token_metadata_program: self.instruction.token_metadata_program,
 
-            pnft_shared: self
-                .instruction
-                .pnft_shared
-                .expect("pnft_shared is not set"),
+            instructions: self.instruction.instructions,
+
+            authorization_rules_program: self.instruction.authorization_rules_program,
 
             nft_escrow_owner: self
                 .instruction
@@ -963,17 +1419,14 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
 
             nft_escrow: self.instruction.nft_escrow.expect("nft_escrow is not set"),
 
-            temp_escrow_token_record: self
-                .instruction
-                .temp_escrow_token_record
-                .expect("temp_escrow_token_record is not set"),
+            temp_escrow_token_record: self.instruction.temp_escrow_token_record,
 
-            auth_rules: self.instruction.auth_rules.expect("auth_rules is not set"),
+            auth_rules: self.instruction.auth_rules,
 
-            margin_account: self
+            shared_escrow: self
                 .instruction
-                .margin_account
-                .expect("margin_account is not set"),
+                .shared_escrow
+                .expect("shared_escrow is not set"),
 
             taker_broker: self
                 .instruction
@@ -990,23 +1443,32 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
 
 struct SellNftTokenPoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    shared: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    fee_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    nft_seller_acc: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    seller: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner_ata_acc: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     dest_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pnft_shared: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_escrow_owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     temp_escrow_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    margin_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,
