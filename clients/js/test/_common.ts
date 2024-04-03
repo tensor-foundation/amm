@@ -177,7 +177,7 @@ export const nameToUint8Array = (name: string) => {
 export interface CreatePoolParams {
   client: Client;
   whitelist: Address;
-  owner?: KeyPairSigner;
+  owner: KeyPairSigner;
   cosigner?: KeyPairSigner;
   identifier?: Uint8Array;
   config?: PoolConfig;
@@ -192,7 +192,7 @@ export interface CreatePoolReturns {
   pool: Address;
   solEscrow: Address;
   owner: KeyPairSigner;
-  cosigner: KeyPairSigner;
+  cosigner: KeyPairSigner | undefined;
   identifier: Uint8Array;
   whitelist: Address;
 }
@@ -206,12 +206,7 @@ export async function createPool({
   config,
 }: CreatePoolParams): Promise<CreatePoolReturns> {
   // Pool values
-  if (owner === undefined) {
-    owner = await generateKeyPairSignerWithSol(client);
-  }
-  if (cosigner === undefined) {
-    cosigner = await generateKeyPairSigner();
-  }
+
   if (identifier === undefined) {
     identifier = Uint8Array.from({ length: 32 }, () => 1);
   }
@@ -242,7 +237,7 @@ export async function createPool({
     identifier,
     config,
     maxTakerSellCount: 0,
-    cosigner: some(cosigner.address),
+    cosigner: cosigner ? some(cosigner.address) : none(),
     orderType: 0,
     expirationTimestamp: null,
   });
@@ -328,11 +323,15 @@ export async function createPoolThrows({
   }
 }
 
-type CreatePoolAndWhitelistParams = Omit<CreatePoolParams, 'whitelist'>;
+// Turn owner into an optional param.
+type CreatePoolAndWhitelistParams = Omit<
+  CreatePoolParams,
+  'whitelist' | 'owner'
+> & { owner?: KeyPairSigner };
 type CreatePoolAndWhitelistThrowsParams = Omit<
   CreatePoolThrowsParams,
-  'whitelist'
->;
+  'whitelist' | 'owner'
+> & { owner?: KeyPairSigner };
 
 export async function createPoolAndWhitelist({
   client,
@@ -362,15 +361,12 @@ export async function createPoolAndWhitelist({
     { mode: Mode.VOC, value: voc },
   ];
 
-  console.log('creating whitelist');
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority,
     conditions,
     namespace,
   });
-
-  console.log('creating pool');
 
   return await createPool({
     client,

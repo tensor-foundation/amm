@@ -40,6 +40,7 @@
     "@solana/accounts": "^2.0.0-preview",
     "@solana/addresses": "^2.0.0-preview",
     "@solana/codecs": "^2.0.0-preview",
+    "@solana-program/compute-budget": "0.2.0",
     "@solana/instructions": "^2.0.0-preview",
     "@solana/programs": "^2.0.0-preview",
     "@solana/signers": "^2.0.0-preview",

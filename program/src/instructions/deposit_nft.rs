@@ -129,6 +129,7 @@ pub struct DepositNft<'info> {
     pub auth_rules: Option<UncheckedAccount<'info>>,
 }
 
+// TODO: extract all the account handler impls into a trait to reduce code duplication?
 impl<'info> DepositNft<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
         let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;

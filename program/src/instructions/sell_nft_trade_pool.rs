@@ -105,9 +105,10 @@ impl<'info> Validate<'info> for SellNftTradePool<'info> {
     }
 }
 
-#[access_control(ctx.accounts.shared.verify_whitelist(); ctx.accounts.validate())]
-pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, SellNftTradePool<'info>>,
+// TODO: add access control
+// #[access_control(ctx.accounts.shared.verify_whitelist(); ctx.accounts.validate())]
+pub fn process_sell_nft_trade_pool<'info>(
+    ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,
     rules_acc_present: bool,

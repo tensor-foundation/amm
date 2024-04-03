@@ -77,6 +77,21 @@ kinobi.update(
   })
 );
 
+// Update instructions.
+kinobi.update(
+  k.updateInstructionsVisitor({
+    sellNftTokenPool: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true
+        })
+      ]
+    }
+  })
+);
+
 // Render JavaScript.
 const jsDir = path.join(clientDir, "js", "src", "generated");
 const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));

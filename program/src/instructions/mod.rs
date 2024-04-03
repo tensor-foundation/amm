@@ -256,17 +256,17 @@ pub struct SellNftShared<'info> {
     pub seller: Signer<'info>,
 }
 
-impl<'info> SellNftShared<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        // verify_whitelist(
-        //     &self.whitelist,
-        //     &self.mint_proof,
-        //     &self.nft_mint,
-        //     Some(&self.nft_metadata),
-        // )
-        Ok(())
-    }
-}
+// impl<'info> SellNftShared<'info> {
+//     pub fn verify_whitelist(&self) -> Result<()> {
+//         verify_whitelist(
+//                 &self.whitelist,
+//                 &self.mint_proof,
+//                 &self.nft_mint,
+//                 Some(&self.nft_metadata),
+//             )
+//         Ok(())
+//     }
+// }
 
 /// Shared accounts between the two sell T22 ixs.
 #[derive(Accounts)]

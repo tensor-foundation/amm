@@ -12,7 +12,6 @@ declare_id!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");
 
 #[program]
 pub mod amm_program {
-
     use super::*;
 
     //-------------------------------//

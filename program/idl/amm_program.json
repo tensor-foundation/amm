@@ -755,6 +755,16 @@
       "name": "sellNftTokenPool",
       "accounts": [
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "feeVault",
           "isMut": true,
           "isSigner": false
@@ -776,6 +786,7 @@
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification"
           ]
@@ -799,16 +810,6 @@
           "name": "solEscrow",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "seller",
-          "isMut": true,
-          "isSigner": true
         },
         {
           "name": "ownerAtaAcc",
@@ -838,32 +839,27 @@
         {
           "name": "ownerTokenRecord",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "destTokenRecord",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "tokenMetadataProgram",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "instructions",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "nftEscrowOwner",
@@ -881,14 +877,12 @@
         {
           "name": "tempEscrowTokenRecord",
           "isMut": true,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false,
-          "isOptional": true
+          "isSigner": false
         },
         {
           "name": "sharedEscrow",
@@ -899,6 +893,12 @@
           "name": "takerBroker",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true
         }
       ],
       "args": [

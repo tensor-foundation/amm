@@ -47,7 +47,11 @@ test('it can create a pool w/ correct timestamps', async (t) => {
   }));
 
   // Create default pool
-  const { pool } = await createPool({ client, whitelist });
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: updateAuthority,
+  });
 
   const expectedTimestampSecs = BigInt(Math.floor(Date.now() / 1000));
 

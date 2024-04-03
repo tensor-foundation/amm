@@ -53,7 +53,11 @@ test('it can create a pool w/ correct timestamps', async (t) => {
   }));
 
   // Create default pool
-  const { pool } = await createPool({ client, whitelist });
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: updateAuthority,
+  });
 
   const expectedTimestampSecs = BigInt(Math.floor(Date.now() / 1000));
 
@@ -121,6 +125,7 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
   await createPoolThrows({
     client,
     whitelist,
+    owner: updateAuthority,
     config: {
       ...tradePoolConfig,
       poolType: PoolType.Token,
@@ -169,6 +174,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
   await createPoolThrows({
     client,
     whitelist,
+    owner: updateAuthority,
     config: {
       poolType: PoolType.Token,
       curveType: CurveType.Exponential,
@@ -186,6 +192,8 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
 test('it cannot init trade pool with no fees or high fees', async (t) => {
   const client = createDefaultSolanaClient();
   const updateAuthority = await generateKeyPairSignerWithSol(client);
+  const owner1 = await generateKeyPairSignerWithSol(client);
+  const owner2 = await generateKeyPairSignerWithSol(client);
   const freezeAuthority = (await generateKeyPairSigner()).address;
   const namespace = await generateKeyPairSigner();
   const voc = (await generateKeyPairSigner()).address;
@@ -219,6 +227,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
   await createPool({
     client,
     whitelist,
+    owner: owner1,
     config: {
       ...tradePoolConfig,
       mmFeeBps: some(9_900), // should succeed
@@ -228,6 +237,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
   await createPoolThrows({
     client,
     whitelist,
+    owner: owner2,
     config: {
       ...tradePoolConfig,
       mmFeeBps: some(10_000), // too high, should fail
