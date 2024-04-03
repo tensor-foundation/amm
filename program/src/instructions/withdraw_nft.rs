@@ -6,64 +6,56 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{send_pnft, PnftTransferArgs};
-use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
+/// Allows a pool owner to ithdraw an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct WithdrawNft<'info> {
+    /// The owner of the pool and will receive the NFT at the owner_ata account.
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    /// The pool from which the NFT will be withdrawn.
     #[account(
         mut,
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            whitelist.key().as_ref(),
+            pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist, has_one = owner,
-        // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
-        constraint = config.pool_type == PoolType::NFT || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        has_one = owner,
+        // can only buy from NFT/Trade pool
+        constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// CHECK: has_one = whitelist in pool
-    #[account(
-        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, WhitelistV2>>,
-
+    /// The ATA of the owner, where the NFT will be transferred to as a result of this action.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub dest_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The ATA of the pool, where the NFT token is escrowed.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = pool,
+    )]
+    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        constraint = mint.key() == nft_escrow.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.nft_mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// Implicitly checked via transfer. Will fail if wrong account
-    /// This is closed below (dest = owner)
-    #[account(
-        mut,
-        seeds=[
-            b"nft_escrow".as_ref(),
-            mint.key().as_ref(),
-        ],
-        bump,
-        token::mint = mint, token::authority = pool,
-    )]
-    pub nft_escrow: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -75,13 +67,9 @@ pub struct WithdrawNft<'info> {
         close = owner,
         //can't withdraw an NFT that's associated with a different pool
         // redundant but extra safety
-        constraint = nft_receipt.nft_mint == mint.key() && nft_receipt.nft_escrow == nft_escrow.key() @ ErrorCode::WrongMint,
+        constraint = nft_receipt.nft_mint == mint.key() && nft_receipt.nft_escrow == pool.key() @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// Tied to the pool because used to verify pool seeds
-    #[account(mut)]
-    pub owner: Signer<'info>,
 
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -91,7 +79,7 @@ pub struct WithdrawNft<'info> {
     // --------------------------------------- pNft
 
     //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: assert_decode_metadata + seeds below
+    /// CHECK: seeds below
     #[account(
         mut,
         seeds=[
@@ -102,32 +90,59 @@ pub struct WithdrawNft<'info> {
         seeds::program = mpl_token_metadata::ID,
         bump
     )]
-    pub nft_metadata: UncheckedAccount<'info>,
+    pub metadata: UncheckedAccount<'info>,
 
     //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
     /// CHECK: seeds checked on Token Metadata CPI
-    pub nft_edition: UncheckedAccount<'info>,
+    pub edition: UncheckedAccount<'info>,
 
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
     pub owner_token_record: UncheckedAccount<'info>,
 
-    /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
-    pub dest_token_record: UncheckedAccount<'info>,
+    /// The Token Metadata pool temporary token record account of the NFT.
+    /// CHECK: seeds checked here
+    #[account(mut,
+            seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            pool_ata.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
+    pub pool_token_record: UncheckedAccount<'info>,
 
-    pub pnft_shared: ProgNftShared<'info>,
+    // Todo: add ProgNftShared back in, if possible
+    // pub pnft_shared: ProgNftShared<'info>,
+    /// The Token Metadata program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = mpl_token_metadata::ID)]
+    pub token_metadata_program: UncheckedAccount<'info>,
 
+    /// The sysvar instructions account.
+    /// CHECK: address constraint is checked here
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
+
+    /// The Metaplex Token Authority Rules program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
+    pub authorization_rules_program: UncheckedAccount<'info>,
+
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     /// CHECK: validated by mplex's pnft code
     pub auth_rules: UncheckedAccount<'info>,
 }
 
 impl<'info> WithdrawNft<'info> {
-    fn close_nft_escrow_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.nft_escrow.to_account_info(),
+                account: self.pool_ata.to_account_info(),
                 destination: self.owner.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -150,6 +165,7 @@ pub fn process_withdraw_nft<'info>(
     authorization_data: Option<AuthorizationDataLocal>,
     rules_acc_present: bool,
 ) -> Result<()> {
+    msg!("WithdrawNft");
     let auth_rules_acc_info = &ctx.accounts.auth_rules.to_account_info();
     let auth_rules = if rules_acc_present {
         Some(auth_rules_acc_info)
@@ -159,13 +175,12 @@ pub fn process_withdraw_nft<'info>(
 
     let pool = &ctx.accounts.pool;
 
-    let whitelist_pubkey = ctx.accounts.whitelist.key();
     let owner_pubkey = ctx.accounts.owner.key();
 
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"pool",
-        whitelist_pubkey.as_ref(),
         owner_pubkey.as_ref(),
+        pool.identifier.as_ref(),
         &[pool.bump[0]],
     ]];
 
@@ -174,19 +189,19 @@ pub fn process_withdraw_nft<'info>(
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.pool.to_account_info(),
             payer: &ctx.accounts.owner.to_account_info(),
-            source_ata: &ctx.accounts.nft_escrow,
-            dest_ata: &ctx.accounts.dest_token_account,
+            source_ata: &ctx.accounts.pool_ata,
+            dest_ata: &ctx.accounts.owner_ata,
             dest_owner: &ctx.accounts.owner,
             nft_mint: &ctx.accounts.mint,
-            nft_metadata: &ctx.accounts.nft_metadata,
-            nft_edition: &ctx.accounts.nft_edition,
+            nft_metadata: &ctx.accounts.metadata,
+            nft_edition: &ctx.accounts.edition,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             ata_program: &ctx.accounts.associated_token_program,
-            instructions: &ctx.accounts.pnft_shared.instructions,
-            owner_token_record: &ctx.accounts.owner_token_record,
-            dest_token_record: &ctx.accounts.dest_token_record,
-            authorization_rules_program: &ctx.accounts.pnft_shared.authorization_rules_program,
+            instructions: &ctx.accounts.instructions,
+            owner_token_record: &ctx.accounts.pool_token_record,
+            dest_token_record: &ctx.accounts.owner_token_record,
+            authorization_rules_program: &ctx.accounts.authorization_rules_program,
             rules_acc: auth_rules,
             authorization_data: authorization_data.map(AuthorizationData::from),
             delegate: None,
@@ -194,11 +209,7 @@ pub fn process_withdraw_nft<'info>(
     )?;
 
     // close nft escrow account
-    token_interface::close_account(
-        ctx.accounts
-            .close_nft_escrow_ctx()
-            .with_signer(signer_seeds),
-    )?;
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

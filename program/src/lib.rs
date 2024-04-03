@@ -61,7 +61,6 @@ pub mod amm_program {
 
     pub fn withdraw_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
-        _config: PoolConfig,
         authorization_data: Option<AuthorizationDataLocal>,
         rules_acc_present: bool,
     ) -> Result<()> {

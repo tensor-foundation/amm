@@ -370,19 +370,36 @@
       "name": "withdrawNft",
       "accounts": [
         {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool and will receive the NFT at the owner_ata account."
+          ]
+        },
+        {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool from which the NFT will be withdrawn."
+          ]
         },
         {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "destTokenAccount",
+          "name": "ownerAta",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ATA of the owner, where the NFT will be transferred to as a result of this action."
+          ]
+        },
+        {
+          "name": "poolAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT token is escrowed."
+          ]
         },
         {
           "name": "mint",
@@ -390,26 +407,9 @@
           "isSigner": false
         },
         {
-          "name": "nftEscrow",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Implicitly checked via transfer. Will fail if wrong account",
-            "This is closed below (dest = owner)"
-          ]
-        },
-        {
           "name": "nftReceipt",
           "isMut": true,
           "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "Tied to the pool because used to verify pool seeds"
-          ]
         },
         {
           "name": "tokenProgram",
@@ -432,12 +432,12 @@
           "isSigner": false
         },
         {
-          "name": "nftMetadata",
+          "name": "metadata",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nftEdition",
+          "name": "edition",
           "isMut": false,
           "isSigner": false
         },
@@ -447,43 +447,47 @@
           "isSigner": false
         },
         {
-          "name": "destTokenRecord",
+          "name": "poolTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata pool temporary token record account of the NFT."
+          ]
         },
         {
-          "name": "pnftShared",
-          "accounts": [
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "instructions",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false
-            }
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata program account."
+          ]
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The sysvar instructions account."
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules program account."
           ]
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+          ]
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "authorizationData",
           "type": {
