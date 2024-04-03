@@ -59,11 +59,11 @@ export type SellNftTokenPoolInstruction<
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountMintProof extends string | IAccountMeta<string> = string,
-  TAccountNftSellerAcc extends string | IAccountMeta<string> = string,
+  TAccountSellerTokenAccount extends string | IAccountMeta<string> = string,
+  TAccountOwnerAta extends string | IAccountMeta<string> = string,
+  TAccountPoolAta extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountMetadata extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
-  TAccountOwnerAtaAcc extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
     | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
@@ -73,7 +73,8 @@ export type SellNftTokenPoolInstruction<
     | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountDestTokenRecord extends string | IAccountMeta<string> = string,
+  TAccountSellerTokenRecord extends string | IAccountMeta<string> = string,
+  TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
   TAccountTokenMetadataProgram extends
     | string
     | IAccountMeta<string> = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
@@ -81,9 +82,6 @@ export type SellNftTokenPoolInstruction<
   TAccountAuthorizationRulesProgram extends
     | string
     | IAccountMeta<string> = 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
-  TAccountNftEscrowOwner extends string | IAccountMeta<string> = string,
-  TAccountNftEscrow extends string | IAccountMeta<string> = string,
-  TAccountTempEscrowTokenRecord extends string | IAccountMeta<string> = string,
   TAccountAuthRules extends string | IAccountMeta<string> = string,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
@@ -112,21 +110,21 @@ export type SellNftTokenPoolInstruction<
       TAccountMintProof extends string
         ? ReadonlyAccount<TAccountMintProof>
         : TAccountMintProof,
-      TAccountNftSellerAcc extends string
-        ? WritableAccount<TAccountNftSellerAcc>
-        : TAccountNftSellerAcc,
+      TAccountSellerTokenAccount extends string
+        ? WritableAccount<TAccountSellerTokenAccount>
+        : TAccountSellerTokenAccount,
+      TAccountOwnerAta extends string
+        ? WritableAccount<TAccountOwnerAta>
+        : TAccountOwnerAta,
+      TAccountPoolAta extends string
+        ? WritableAccount<TAccountPoolAta>
+        : TAccountPoolAta,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
       TAccountMetadata extends string
         ? WritableAccount<TAccountMetadata>
         : TAccountMetadata,
-      TAccountSolEscrow extends string
-        ? WritableAccount<TAccountSolEscrow>
-        : TAccountSolEscrow,
-      TAccountOwnerAtaAcc extends string
-        ? WritableAccount<TAccountOwnerAtaAcc>
-        : TAccountOwnerAtaAcc,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
@@ -142,9 +140,12 @@ export type SellNftTokenPoolInstruction<
       TAccountOwnerTokenRecord extends string
         ? WritableAccount<TAccountOwnerTokenRecord>
         : TAccountOwnerTokenRecord,
-      TAccountDestTokenRecord extends string
-        ? WritableAccount<TAccountDestTokenRecord>
-        : TAccountDestTokenRecord,
+      TAccountSellerTokenRecord extends string
+        ? WritableAccount<TAccountSellerTokenRecord>
+        : TAccountSellerTokenRecord,
+      TAccountPoolTokenRecord extends string
+        ? WritableAccount<TAccountPoolTokenRecord>
+        : TAccountPoolTokenRecord,
       TAccountTokenMetadataProgram extends string
         ? ReadonlyAccount<TAccountTokenMetadataProgram>
         : TAccountTokenMetadataProgram,
@@ -154,15 +155,6 @@ export type SellNftTokenPoolInstruction<
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
-      TAccountNftEscrowOwner extends string
-        ? WritableAccount<TAccountNftEscrowOwner>
-        : TAccountNftEscrowOwner,
-      TAccountNftEscrow extends string
-        ? WritableAccount<TAccountNftEscrow>
-        : TAccountNftEscrow,
-      TAccountTempEscrowTokenRecord extends string
-        ? WritableAccount<TAccountTempEscrowTokenRecord>
-        : TAccountTempEscrowTokenRecord,
       TAccountAuthRules extends string
         ? ReadonlyAccount<TAccountAuthRules>
         : TAccountAuthRules,
@@ -238,57 +230,91 @@ export type SellNftTokenPoolInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
-  TAccountNftSellerAcc extends string = string,
+  TAccountSellerTokenAccount extends string = string,
+  TAccountOwnerAta extends string = string,
+  TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
   TAccountMetadata extends string = string,
-  TAccountSolEscrow extends string = string,
-  TAccountOwnerAtaAcc extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountEdition extends string = string,
   TAccountOwnerTokenRecord extends string = string,
-  TAccountDestTokenRecord extends string = string,
+  TAccountSellerTokenRecord extends string = string,
+  TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
   TAccountInstructions extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountNftEscrowOwner extends string = string,
-  TAccountNftEscrow extends string = string,
-  TAccountTempEscrowTokenRecord extends string = string,
   TAccountAuthRules extends string = string,
   TAccountSharedEscrow extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountCosigner extends string = string,
 > = {
+  /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
+  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
   feeVault: Address<TAccountFeeVault>;
+  /**
+   * The Pool state account that the NFT is being sold into. Stores pool state and config,
+   * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+   * Any pool can be specified provided it is a Token type and the NFT passes at least one
+   * whitelist condition.
+   */
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, also checked via has_one on pool */
+  /** The whitelist account that the pool uses to verify the NFTs being sold into it. */
   whitelist: Address<TAccountWhitelist>;
-  /** intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification */
+  /**
+   * Optional account which must be passed in if the NFT must be verified against a
+   * merkle proof condition in the whitelist.
+   */
   mintProof?: Address<TAccountMintProof>;
-  nftSellerAcc: Address<TAccountNftSellerAcc>;
+  /**
+   * The token account of the NFT for the seller's wallet.
+   * Typically, this should be an ATA for the mint and seller wallet.
+   */
+  sellerTokenAccount: Address<TAccountSellerTokenAccount>;
+  /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
+  ownerAta: Address<TAccountOwnerAta>;
+  /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
+  poolAta: Address<TAccountPoolAta>;
+  /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
+  /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
-  solEscrow: Address<TAccountSolEscrow>;
-  ownerAtaAcc: Address<TAccountOwnerAtaAcc>;
+  /** Either the legacy token program or token-2022. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
+  /** The SPL system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
+  /** The Token Metadata owner/buyer token record account of the NFT. */
   ownerTokenRecord: Address<TAccountOwnerTokenRecord>;
-  destTokenRecord: Address<TAccountDestTokenRecord>;
+  /** The Token Metadata seller/source token record account of the NFT. */
+  sellerTokenRecord: Address<TAccountSellerTokenRecord>;
+  /** The Token Metadata pool temporary token record account of the NFT. */
+  poolTokenRecord: Address<TAccountPoolTokenRecord>;
+  /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
+  /** The sysvar instructions account. */
   instructions: Address<TAccountInstructions>;
+  /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  nftEscrowOwner: Address<TAccountNftEscrowOwner>;
-  /** Implicitly checked via transfer. Will fail if wrong account */
-  nftEscrow: Address<TAccountNftEscrow>;
-  tempEscrowTokenRecord: Address<TAccountTempEscrowTokenRecord>;
+  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
   authRules: Address<TAccountAuthRules>;
+  /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow: Address<TAccountSharedEscrow>;
+  /**
+   * The taker broker account that receives the taker fees.
+   * TODO: optional account? what checks?
+   */
   takerBroker: Address<TAccountTakerBroker>;
+  /**
+   * The optional cosigner account that must be passed in if the pool has a cosigner.
+   * Checks are performed in the handler.
+   */
   cosigner?: TransactionSigner<TAccountCosigner>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   rulesAccPresent: SellNftTokenPoolInstructionDataArgs['rulesAccPresent'];
@@ -304,23 +330,21 @@ export function getSellNftTokenPoolInstruction<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
-  TAccountNftSellerAcc extends string,
+  TAccountSellerTokenAccount extends string,
+  TAccountOwnerAta extends string,
+  TAccountPoolAta extends string,
   TAccountMint extends string,
   TAccountMetadata extends string,
-  TAccountSolEscrow extends string,
-  TAccountOwnerAtaAcc extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountEdition extends string,
   TAccountOwnerTokenRecord extends string,
-  TAccountDestTokenRecord extends string,
+  TAccountSellerTokenRecord extends string,
+  TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
   TAccountInstructions extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountNftEscrowOwner extends string,
-  TAccountNftEscrow extends string,
-  TAccountTempEscrowTokenRecord extends string,
   TAccountAuthRules extends string,
   TAccountSharedEscrow extends string,
   TAccountTakerBroker extends string,
@@ -333,23 +357,21 @@ export function getSellNftTokenPoolInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftSellerAcc,
+    TAccountSellerTokenAccount,
+    TAccountOwnerAta,
+    TAccountPoolAta,
     TAccountMint,
     TAccountMetadata,
-    TAccountSolEscrow,
-    TAccountOwnerAtaAcc,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountEdition,
     TAccountOwnerTokenRecord,
-    TAccountDestTokenRecord,
+    TAccountSellerTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountInstructions,
     TAccountAuthorizationRulesProgram,
-    TAccountNftEscrowOwner,
-    TAccountNftEscrow,
-    TAccountTempEscrowTokenRecord,
     TAccountAuthRules,
     TAccountSharedEscrow,
     TAccountTakerBroker,
@@ -363,23 +385,21 @@ export function getSellNftTokenPoolInstruction<
   TAccountPool,
   TAccountWhitelist,
   TAccountMintProof,
-  TAccountNftSellerAcc,
+  TAccountSellerTokenAccount,
+  TAccountOwnerAta,
+  TAccountPoolAta,
   TAccountMint,
   TAccountMetadata,
-  TAccountSolEscrow,
-  TAccountOwnerAtaAcc,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
   TAccountEdition,
   TAccountOwnerTokenRecord,
-  TAccountDestTokenRecord,
+  TAccountSellerTokenRecord,
+  TAccountPoolTokenRecord,
   TAccountTokenMetadataProgram,
   TAccountInstructions,
   TAccountAuthorizationRulesProgram,
-  TAccountNftEscrowOwner,
-  TAccountNftEscrow,
-  TAccountTempEscrowTokenRecord,
   TAccountAuthRules,
   TAccountSharedEscrow,
   TAccountTakerBroker,
@@ -396,11 +416,14 @@ export function getSellNftTokenPoolInstruction<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
-    nftSellerAcc: { value: input.nftSellerAcc ?? null, isWritable: true },
+    sellerTokenAccount: {
+      value: input.sellerTokenAccount ?? null,
+      isWritable: true,
+    },
+    ownerAta: { value: input.ownerAta ?? null, isWritable: true },
+    poolAta: { value: input.poolAta ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
-    solEscrow: { value: input.solEscrow ?? null, isWritable: true },
-    ownerAtaAcc: { value: input.ownerAtaAcc ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
@@ -412,7 +435,11 @@ export function getSellNftTokenPoolInstruction<
       value: input.ownerTokenRecord ?? null,
       isWritable: true,
     },
-    destTokenRecord: { value: input.destTokenRecord ?? null, isWritable: true },
+    sellerTokenRecord: {
+      value: input.sellerTokenRecord ?? null,
+      isWritable: true,
+    },
+    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
       value: input.tokenMetadataProgram ?? null,
       isWritable: false,
@@ -421,12 +448,6 @@ export function getSellNftTokenPoolInstruction<
     authorizationRulesProgram: {
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
-    },
-    nftEscrowOwner: { value: input.nftEscrowOwner ?? null, isWritable: true },
-    nftEscrow: { value: input.nftEscrow ?? null, isWritable: true },
-    tempEscrowTokenRecord: {
-      value: input.tempEscrowTokenRecord ?? null,
-      isWritable: true,
     },
     authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
@@ -473,23 +494,21 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
-      getAccountMeta(accounts.nftSellerAcc),
+      getAccountMeta(accounts.sellerTokenAccount),
+      getAccountMeta(accounts.ownerAta),
+      getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.metadata),
-      getAccountMeta(accounts.solEscrow),
-      getAccountMeta(accounts.ownerAtaAcc),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.ownerTokenRecord),
-      getAccountMeta(accounts.destTokenRecord),
+      getAccountMeta(accounts.sellerTokenRecord),
+      getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
       getAccountMeta(accounts.instructions),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.nftEscrowOwner),
-      getAccountMeta(accounts.nftEscrow),
-      getAccountMeta(accounts.tempEscrowTokenRecord),
       getAccountMeta(accounts.authRules),
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.takerBroker),
@@ -508,23 +527,21 @@ export function getSellNftTokenPoolInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftSellerAcc,
+    TAccountSellerTokenAccount,
+    TAccountOwnerAta,
+    TAccountPoolAta,
     TAccountMint,
     TAccountMetadata,
-    TAccountSolEscrow,
-    TAccountOwnerAtaAcc,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountEdition,
     TAccountOwnerTokenRecord,
-    TAccountDestTokenRecord,
+    TAccountSellerTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountInstructions,
     TAccountAuthorizationRulesProgram,
-    TAccountNftEscrowOwner,
-    TAccountNftEscrow,
-    TAccountTempEscrowTokenRecord,
     TAccountAuthRules,
     TAccountSharedEscrow,
     TAccountTakerBroker,
@@ -540,36 +557,77 @@ export type ParsedSellNftTokenPoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** The owner of the pool and the buyer/recipient of the NFT. */
     owner: TAccountMetas[0];
+    /** The seller is the owner of the NFT who is selling the NFT into the pool. */
     seller: TAccountMetas[1];
     feeVault: TAccountMetas[2];
+    /**
+     * The Pool state account that the NFT is being sold into. Stores pool state and config,
+     * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+     * Any pool can be specified provided it is a Token type and the NFT passes at least one
+     * whitelist condition.
+     */
+
     pool: TAccountMetas[3];
-    /** Needed for pool seeds derivation, also checked via has_one on pool */
+    /** The whitelist account that the pool uses to verify the NFTs being sold into it. */
     whitelist: TAccountMetas[4];
-    /** intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification */
+    /**
+     * Optional account which must be passed in if the NFT must be verified against a
+     * merkle proof condition in the whitelist.
+     */
+
     mintProof?: TAccountMetas[5] | undefined;
-    nftSellerAcc: TAccountMetas[6];
-    mint: TAccountMetas[7];
-    metadata: TAccountMetas[8];
-    solEscrow: TAccountMetas[9];
-    ownerAtaAcc: TAccountMetas[10];
+    /**
+     * The token account of the NFT for the seller's wallet.
+     * Typically, this should be an ATA for the mint and seller wallet.
+     */
+
+    sellerTokenAccount: TAccountMetas[6];
+    /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
+    ownerAta: TAccountMetas[7];
+    /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
+    poolAta: TAccountMetas[8];
+    /** The mint account of the NFT being sold. */
+    mint: TAccountMetas[9];
+    /** The Token Metadata metadata account of the NFT. */
+    metadata: TAccountMetas[10];
+    /** Either the legacy token program or token-2022. */
     tokenProgram: TAccountMetas[11];
+    /** The SPL associated token program. */
     associatedTokenProgram: TAccountMetas[12];
+    /** The SPL system program. */
     systemProgram: TAccountMetas[13];
+    /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[14];
+    /** The Token Metadata owner/buyer token record account of the NFT. */
     ownerTokenRecord: TAccountMetas[15];
-    destTokenRecord: TAccountMetas[16];
-    tokenMetadataProgram: TAccountMetas[17];
-    instructions: TAccountMetas[18];
-    authorizationRulesProgram: TAccountMetas[19];
-    nftEscrowOwner: TAccountMetas[20];
-    /** Implicitly checked via transfer. Will fail if wrong account */
-    nftEscrow: TAccountMetas[21];
-    tempEscrowTokenRecord: TAccountMetas[22];
-    authRules: TAccountMetas[23];
-    sharedEscrow: TAccountMetas[24];
-    takerBroker: TAccountMetas[25];
-    cosigner?: TAccountMetas[26] | undefined;
+    /** The Token Metadata seller/source token record account of the NFT. */
+    sellerTokenRecord: TAccountMetas[16];
+    /** The Token Metadata pool temporary token record account of the NFT. */
+    poolTokenRecord: TAccountMetas[17];
+    /** The Token Metadata program account. */
+    tokenMetadataProgram: TAccountMetas[18];
+    /** The sysvar instructions account. */
+    instructions: TAccountMetas[19];
+    /** The Metaplex Token Authority Rules program account. */
+    authorizationRulesProgram: TAccountMetas[20];
+    /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
+    authRules: TAccountMetas[21];
+    /** The shared escrow account for pools that pool liquidity in a shared account. */
+    sharedEscrow: TAccountMetas[22];
+    /**
+     * The taker broker account that receives the taker fees.
+     * TODO: optional account? what checks?
+     */
+
+    takerBroker: TAccountMetas[23];
+    /**
+     * The optional cosigner account that must be passed in if the pool has a cosigner.
+     * Checks are performed in the handler.
+     */
+
+    cosigner?: TAccountMetas[24] | undefined;
   };
   data: SellNftTokenPoolInstructionData;
 };
@@ -582,7 +640,7 @@ export function parseSellNftTokenPoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 27) {
+  if (instruction.accounts.length < 25) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -607,23 +665,21 @@ export function parseSellNftTokenPoolInstruction<
       pool: getNextAccount(),
       whitelist: getNextAccount(),
       mintProof: getNextOptionalAccount(),
-      nftSellerAcc: getNextAccount(),
+      sellerTokenAccount: getNextAccount(),
+      ownerAta: getNextAccount(),
+      poolAta: getNextAccount(),
       mint: getNextAccount(),
       metadata: getNextAccount(),
-      solEscrow: getNextAccount(),
-      ownerAtaAcc: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       edition: getNextAccount(),
       ownerTokenRecord: getNextAccount(),
-      destTokenRecord: getNextAccount(),
+      sellerTokenRecord: getNextAccount(),
+      poolTokenRecord: getNextAccount(),
       tokenMetadataProgram: getNextAccount(),
       instructions: getNextAccount(),
       authorizationRulesProgram: getNextAccount(),
-      nftEscrowOwner: getNextAccount(),
-      nftEscrow: getNextAccount(),
-      tempEscrowTokenRecord: getNextAccount(),
       authRules: getNextAccount(),
       sharedEscrow: getNextAccount(),
       takerBroker: getNextAccount(),

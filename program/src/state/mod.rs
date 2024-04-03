@@ -28,6 +28,13 @@ pub struct EscrowOwner {}
 #[account]
 pub struct EscrowTokenAccount {}
 
+/// Sharded fee accounts
+/// Seeds: "fee_vault", number, bump
+/// There are up to 256 fee accounts, and the number in the seed
+/// is found by getting the last byte of mint pubkey.
+#[account]
+pub struct FeeVault {}
+
 // --------------------------------------- events
 
 #[event]

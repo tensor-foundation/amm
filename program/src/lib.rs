@@ -118,7 +118,6 @@ pub mod amm_program {
 
     pub fn sell_nft_trade_pool<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
-        _config: PoolConfig,
         min_price: u64,
         rules_acc_present: bool,
         authorization_data: Option<AuthorizationDataLocal>,

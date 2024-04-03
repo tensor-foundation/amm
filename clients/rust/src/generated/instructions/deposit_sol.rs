@@ -16,8 +16,6 @@ pub struct DepositSol {
 
     pub whitelist: solana_program::pubkey::Pubkey,
 
-    pub sol_escrow: solana_program::pubkey::Pubkey,
-
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -34,7 +32,7 @@ impl DepositSol {
         args: DepositSolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
@@ -43,10 +41,6 @@ impl DepositSol {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.whitelist,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.sol_escrow,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -92,14 +86,12 @@ pub struct DepositSolInstructionArgs {
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
-///   3. `[writable]` sol_escrow
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct DepositSolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
-    sol_escrow: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     lamports: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -122,11 +114,6 @@ impl DepositSolBuilder {
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sol_escrow = Some(sol_escrow);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -164,7 +151,6 @@ impl DepositSolBuilder {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
-            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -185,8 +171,6 @@ pub struct DepositSolCpiAccounts<'a, 'b> {
 
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -200,8 +184,6 @@ pub struct DepositSolCpi<'a, 'b> {
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -219,7 +201,6 @@ impl<'a, 'b> DepositSolCpi<'a, 'b> {
             owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
-            sol_escrow: accounts.sol_escrow,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -257,7 +238,7 @@ impl<'a, 'b> DepositSolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
@@ -268,10 +249,6 @@ impl<'a, 'b> DepositSolCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.whitelist.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.sol_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -294,12 +271,11 @@ impl<'a, 'b> DepositSolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.sol_escrow.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -320,8 +296,7 @@ impl<'a, 'b> DepositSolCpi<'a, 'b> {
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
-///   3. `[writable]` sol_escrow
-///   4. `[]` system_program
+///   3. `[]` system_program
 pub struct DepositSolCpiBuilder<'a, 'b> {
     instruction: Box<DepositSolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -333,7 +308,6 @@ impl<'a, 'b> DepositSolCpiBuilder<'a, 'b> {
             owner: None,
             pool: None,
             whitelist: None,
-            sol_escrow: None,
             system_program: None,
             lamports: None,
             __remaining_accounts: Vec::new(),
@@ -356,14 +330,6 @@ impl<'a, 'b> DepositSolCpiBuilder<'a, 'b> {
         whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(
-        &mut self,
-        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sol_escrow = Some(sol_escrow);
         self
     }
     #[inline(always)]
@@ -436,8 +402,6 @@ impl<'a, 'b> DepositSolCpiBuilder<'a, 'b> {
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
-
             system_program: self
                 .instruction
                 .system_program
@@ -456,7 +420,6 @@ struct DepositSolCpiBuilderInstruction<'a, 'b> {
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     lamports: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

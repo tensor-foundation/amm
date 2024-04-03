@@ -40,7 +40,6 @@ export type DepositSolInstruction<
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -59,9 +58,6 @@ export type DepositSolInstruction<
       TAccountWhitelist extends string
         ? ReadonlyAccount<TAccountWhitelist>
         : TAccountWhitelist,
-      TAccountSolEscrow extends string
-        ? WritableAccount<TAccountSolEscrow>
-        : TAccountSolEscrow,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -110,13 +106,11 @@ export type DepositSolInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
-  TAccountSolEscrow extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   whitelist: Address<TAccountWhitelist>;
-  solEscrow: Address<TAccountSolEscrow>;
   systemProgram?: Address<TAccountSystemProgram>;
   lamports: DepositSolInstructionDataArgs['lamports'];
 };
@@ -125,14 +119,12 @@ export function getDepositSolInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
-  TAccountSolEscrow extends string,
   TAccountSystemProgram extends string,
 >(
   input: DepositSolInput<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountSolEscrow,
     TAccountSystemProgram
   >
 ): DepositSolInstruction<
@@ -140,7 +132,6 @@ export function getDepositSolInstruction<
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
-  TAccountSolEscrow,
   TAccountSystemProgram
 > {
   // Program address.
@@ -151,7 +142,6 @@ export function getDepositSolInstruction<
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
-    solEscrow: { value: input.solEscrow ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -174,7 +164,6 @@ export function getDepositSolInstruction<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
-      getAccountMeta(accounts.solEscrow),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -186,7 +175,6 @@ export function getDepositSolInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountSolEscrow,
     TAccountSystemProgram
   >;
 
@@ -202,8 +190,7 @@ export type ParsedDepositSolInstruction<
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
     whitelist: TAccountMetas[2];
-    solEscrow: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    systemProgram: TAccountMetas[3];
   };
   data: DepositSolInstructionData;
 };
@@ -216,7 +203,7 @@ export function parseDepositSolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedDepositSolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -232,7 +219,6 @@ export function parseDepositSolInstruction<
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
-      solEscrow: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getDepositSolInstructionDataDecoder().decode(instruction.data),

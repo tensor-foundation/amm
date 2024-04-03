@@ -19,7 +19,7 @@ pub struct DepositSol<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow,
+        has_one = owner, has_one = whitelist,
         // can only deposit SOL into Token/Trade pool
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
@@ -33,27 +33,16 @@ pub struct DepositSol<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> DepositSol<'info> {
     fn transfer_lamports(&self, lamports: u64) -> Result<()> {
         invoke(
-            &system_instruction::transfer(self.owner.key, &self.sol_escrow.key(), lamports),
+            &system_instruction::transfer(self.owner.key, &self.pool.key(), lamports),
             &[
                 self.owner.to_account_info(),
-                self.sol_escrow.to_account_info(),
+                self.pool.to_account_info(),
                 self.system_program.to_account_info(),
             ],
         )

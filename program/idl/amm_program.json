@@ -517,11 +517,6 @@
           "isSigner": false
         },
         {
-          "name": "solEscrow",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -757,12 +752,18 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The owner of the pool and the buyer/recipient of the NFT."
+          ]
         },
         {
           "name": "seller",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The seller is the owner of the NFT who is selling the NFT into the pool."
+          ]
         },
         {
           "name": "feeVault",
@@ -772,14 +773,20 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Pool state account that the NFT is being sold into. Stores pool state and config,",
+            "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
+            "Any pool can be specified provided it is a Token type and the NFT passes at least one",
+            "whitelist condition."
+          ]
         },
         {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, also checked via has_one on pool"
+            "The whitelist account that the pool uses to verify the NFTs being sold into it."
           ]
         },
         {
@@ -788,117 +795,165 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
-            "intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification"
+            "Optional account which must be passed in if the NFT must be verified against a",
+            "merkle proof condition in the whitelist."
           ]
         },
         {
-          "name": "nftSellerAcc",
+          "name": "sellerTokenAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The token account of the NFT for the seller's wallet.",
+            "Typically, this should be an ATA for the mint and seller wallet."
+          ]
+        },
+        {
+          "name": "ownerAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The ATA of the owner, where the NFT will be transferred to as a result of this sale."
+          ]
+        },
+        {
+          "name": "poolAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale."
+          ]
         },
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint account of the NFT being sold."
+          ]
         },
         {
           "name": "metadata",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "solEscrow",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "ownerAtaAcc",
-          "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata metadata account of the NFT."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Either the legacy token program or token-2022."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL system program."
+          ]
         },
         {
           "name": "edition",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata edition account of the NFT."
+          ]
         },
         {
           "name": "ownerTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata owner/buyer token record account of the NFT."
+          ]
         },
         {
-          "name": "destTokenRecord",
+          "name": "sellerTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata seller/source token record account of the NFT."
+          ]
+        },
+        {
+          "name": "poolTokenRecord",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata pool temporary token record account of the NFT."
+          ]
         },
         {
           "name": "tokenMetadataProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata program account."
+          ]
         },
         {
           "name": "instructions",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The sysvar instructions account."
+          ]
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "nftEscrowOwner",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nftEscrow",
-          "isMut": true,
           "isSigner": false,
           "docs": [
-            "Implicitly checked via transfer. Will fail if wrong account"
+            "The Metaplex Token Authority Rules program account."
           ]
-        },
-        {
-          "name": "tempEscrowTokenRecord",
-          "isMut": true,
-          "isSigner": false
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+          ]
         },
         {
           "name": "sharedEscrow",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The shared escrow account for pools that pool liquidity in a shared account."
+          ]
         },
         {
           "name": "takerBroker",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The taker broker account that receives the taker fees.",
+            "TODO: optional account? what checks?"
+          ]
         },
         {
           "name": "cosigner",
           "isMut": false,
           "isSigner": true,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
+          ]
         }
       ],
       "args": [
@@ -930,77 +985,86 @@
       "name": "sellNftTradePool",
       "accounts": [
         {
-          "name": "shared",
-          "accounts": [
-            {
-              "name": "feeVault",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "pool",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "whitelist",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "Needed for pool seeds derivation, also checked via has_one on pool"
-              ]
-            },
-            {
-              "name": "mintProof",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification"
-              ]
-            },
-            {
-              "name": "nftSellerAcc",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "mint",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "metadata",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "solEscrow",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "owner",
-              "isMut": true,
-              "isSigner": false
-            },
-            {
-              "name": "seller",
-              "isMut": true,
-              "isSigner": true
-            }
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The owner of the pool and the buyer/recipient of the NFT."
           ]
         },
         {
-          "name": "nftEscrowOwner",
+          "name": "seller",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "The seller is the owner of the NFT who is selling the NFT into the pool."
+          ]
+        },
+        {
+          "name": "feeVault",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "nftEscrow",
+          "name": "pool",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "Implicitly checked via transfer. Will fail if wrong account"
+            "The Pool state account that the NFT is being sold into. Stores pool state and config,",
+            "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
+            "Any pool can be specified provided it is a Trade type and the NFT passes at least one",
+            "whitelist condition."
+          ]
+        },
+        {
+          "name": "whitelist",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The whitelist account that the pool uses to verify the NFTs being sold into it."
+          ]
+        },
+        {
+          "name": "mintProof",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "Optional account which must be passed in if the NFT must be verified against a",
+            "merkle proof condition in the whitelist."
+          ]
+        },
+        {
+          "name": "sellerTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account of the NFT for the seller's wallet.",
+            "Typically, this should be an ATA for the mint and seller wallet."
+          ]
+        },
+        {
+          "name": "poolAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale."
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The mint account of the NFT being sold."
+          ]
+        },
+        {
+          "name": "metadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata metadata account of the NFT."
           ]
         },
         {
@@ -1029,63 +1093,87 @@
           "isSigner": false
         },
         {
-          "name": "nftEdition",
+          "name": "edition",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "ownerTokenRecord",
+          "name": "sellerTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata seller/source token record account of the NFT."
+          ]
         },
         {
-          "name": "destTokenRecord",
+          "name": "poolTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata pool temporary token record account of the NFT."
+          ]
         },
         {
-          "name": "pnftShared",
-          "accounts": [
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "instructions",
-              "isMut": false,
-              "isSigner": false
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false
-            }
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata program account."
+          ]
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The sysvar instructions account."
+          ]
+        },
+        {
+          "name": "authorizationRulesProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules program account."
           ]
         },
         {
           "name": "authRules",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+          ]
         },
         {
-          "name": "marginAccount",
+          "name": "sharedEscrow",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The shared escrow account for pools that pool liquidity in a shared account."
+          ]
         },
         {
           "name": "takerBroker",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The taker broker account that receives the taker fees.",
+            "TODO: optional account? what checks?"
+          ]
+        },
+        {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
+          ]
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "minPrice",
           "type": "u64"
@@ -2203,6 +2291,19 @@
     },
     {
       "name": "EscrowTokenAccount",
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "FeeVault",
+      "docs": [
+        "Sharded fee accounts",
+        "Seeds: \"fee_vault\", number, bump",
+        "There are up to 256 fee accounts, and the number in the seed",
+        "is found by getting the last byte of mint pubkey."
+      ],
       "type": {
         "kind": "struct",
         "fields": []

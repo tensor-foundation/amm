@@ -8,6 +8,7 @@
 
 export * from './escrowOwner';
 export * from './escrowTokenAccount';
+export * from './feeVault';
 export * from './nftDepositReceipt';
 export * from './pool';
 export * from './sharedEscrow';

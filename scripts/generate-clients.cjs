@@ -88,6 +88,15 @@ kinobi.update(
           isWritable: true
         })
       ]
+    },
+    sellNftTradePool: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true
+        })
+      ]
     }
   })
 );

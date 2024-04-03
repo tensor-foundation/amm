@@ -18,34 +18,44 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, utils::send_pnft, *};
 
+/// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before 
+/// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
-    /// CHECK: has_one = owner in pool (owner is the buyer)
+    /// The owner of the pool and the buyer/recipient of the NFT.
+    /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
     #[account(mut)]
     pub seller: Signer<'info>,
 
-    // Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
+    // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
 
-    //degenerate: fee_acc now === TSwap, keeping around to preserve backwards compatibility
-    /// CHECK: has_one = fee_vault in tswap
-    #[account(mut)]
+    /// CHECK: todo
+    #[account(
+        mut,
+        seeds = [
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+        ],
+        bump
+    )]
     pub fee_vault: UncheckedAccount<'info>,
 
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     #[account(mut,
-        seeds = [
-            b"pool",
-            owner.key().as_ref(),
-            pool.identifier.as_ref(),
-        ],
-        bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow @ ErrorCode::WrongAuthority,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
+        constraint = pool.config.pool_type == PoolType::Token @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
@@ -53,140 +63,115 @@ pub struct SellNftTokenPool<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
-    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
-    /// CHECK: seeds below + assert_decode_mint_proof
-    #[account(
-        // seeds = [
-        //     b"mint_proof".as_ref(),
-        //     mint.key().as_ref(),
-        //     whitelist.key().as_ref(),
-        // ],
-        // bump,
-        // seeds::program = tensor_whitelist::ID
-    )]
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
+    /// The token account of the NFT for the seller's wallet.
+    /// Typically, this should be an ATA for the mint and seller wallet.
     #[account(mut, token::mint = mint, token::authority = seller)]
-    pub nft_seller_acc: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub seller_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
-    //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: assert_decode_metadata + seeds below
-    #[account(mut,
-        // seeds=[
-        //     mpl_token_metadata::accounts::Metadata::PREFIX,
-        //     mpl_token_metadata::ID.as_ref(),
-        //     mint.key().as_ref(),
-        // ],
-        // seeds::program = mpl_token_metadata::ID,
-        // bump
-    )]
-    pub metadata: UncheckedAccount<'info>,
-
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
+    /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
         init_if_needed,
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub owner_ata_acc: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
+    #[account(
+        init_if_needed,
+        payer = seller,
+        associated_token::mint = mint,
+        associated_token::authority = pool,
+    )]
+    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The mint account of the NFT being sold.
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The Token Metadata metadata account of the NFT.
+    ///  CHECK: seeds and ownership are checked in assert_decode_metadata.
+    #[account(mut)]
+    pub metadata: UncheckedAccount<'info>,
+
+    /// Either the legacy token program or token-2022.
     pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The SPL system program.
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
 
     //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    /// The Token Metadata edition account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     pub edition: UncheckedAccount<'info>,
 
+    /// The Token Metadata owner/buyer token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
     pub owner_token_record: UncheckedAccount<'info>,
 
+    /// The Token Metadata seller/source token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
-    pub dest_token_record: UncheckedAccount<'info>,
+    pub seller_token_record: UncheckedAccount<'info>,
 
-    // Todo: add ProgNftShared back in, if possible
-    // pub pnft_shared: ProgNftShared<'info>,
-
-    //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: address below
-    #[account(address = mpl_token_metadata::ID)]
-    pub token_metadata_program: UncheckedAccount<'info>,
-
-    //sysvar ixs don't deserialize in anchor
-    /// CHECK: address below
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-
-    /// CHECK: address below
-    #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
-    pub authorization_rules_program: UncheckedAccount<'info>,
-
-    /// CHECK: seeds checked so must be Tamm PDA
+    /// The Token Metadata pool temporary token record account of the NFT.
+    /// CHECK: seeds checked here
     #[account(mut,
-    seeds = [
-        b"nft_owner",
-        mint.key().as_ref(),
-        ],
-        bump
-    )]
-    pub nft_escrow_owner: UncheckedAccount<'info>,
-
-    //using this as temporary escrow to avoid having to rely on delegate
-    /// Implicitly checked via transfer. Will fail if wrong account
-    #[account(
-        init_if_needed,
-        payer = seller,
-        seeds=[
-            b"nft_escrow".as_ref(),
-            mint.key().as_ref(),
-        ],
-        bump,
-        token::mint = mint, token::authority = nft_escrow_owner
-    )]
-    pub nft_escrow: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// CHECK: seeds below
-    #[account(mut,
-        seeds=[
+            seeds=[
             mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
             mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
             mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
-            nft_escrow.key().as_ref()
+            pool_ata.key().as_ref()
         ],
         seeds::program = mpl_token_metadata::ID,
         bump
     )]
-    pub temp_escrow_token_record: UncheckedAccount<'info>,
+    pub pool_token_record: UncheckedAccount<'info>,
 
+    // Todo: add ProgNftShared back in, if possible
+    // pub pnft_shared: ProgNftShared<'info>,
+    /// The Token Metadata program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = mpl_token_metadata::ID)]
+    pub token_metadata_program: UncheckedAccount<'info>,
+
+    /// The sysvar instructions account.
+    /// CHECK: address constraint is checked here
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
+
+    /// The Metaplex Token Authority Rules program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
+    pub authorization_rules_program: UncheckedAccount<'info>,
+
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     /// CHECK: validated by mplex's pnft code
     pub auth_rules: UncheckedAccount<'info>,
+
+    /// The shared escrow account for pools that pool liquidity in a shared account.
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)margin acc stored on pool
     #[account(mut)]
     pub shared_escrow: UncheckedAccount<'info>,
-    /// CHECK:
+
+    /// The taker broker account that receives the taker fees.
+    /// TODO: optional account? what checks?
+    /// CHECK: need checks specified
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
 
-    // Moved out of remaining accounts.
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
     // remaining accounts:
     // optional 0 to N creator accounts
@@ -234,13 +219,13 @@ impl<'info> Validate<'info> for SellNftTokenPool<'info> {
 }
 
 impl<'info> SellNftTokenPool<'info> {
-    fn close_nft_escrow_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.nft_escrow.to_account_info(),
+                account: self.pool_ata.to_account_info(),
                 destination: self.seller.to_account_info(),
-                authority: self.nft_escrow_owner.to_account_info(),
+                authority: self.pool.to_account_info(),
             },
         )
     }
@@ -257,6 +242,7 @@ pub fn process_sell_nft_token_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let owner_pubkey = ctx.accounts.owner.key();
 
     // --------------------------------------- send pnft
 
@@ -270,13 +256,13 @@ pub fn process_sell_nft_token_pool<'info>(
     };
 
     let seller = &ctx.accounts.seller.to_account_info();
-    let dest_owner = &ctx.accounts.nft_escrow_owner.to_account_info();
+    let dest_owner = &ctx.accounts.pool.to_account_info();
 
     let pnft_args = Box::new(PnftTransferArgs {
         authority_and_owner: seller,
         payer: seller,
-        source_ata: &ctx.accounts.nft_seller_acc,
-        dest_ata: &ctx.accounts.nft_escrow, //<- send to escrow first
+        source_ata: &ctx.accounts.seller_token_account,
+        dest_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
         dest_owner,
         nft_mint: &ctx.accounts.mint,
         nft_metadata: &ctx.accounts.metadata,
@@ -285,8 +271,8 @@ pub fn process_sell_nft_token_pool<'info>(
         token_program: &ctx.accounts.token_program,
         ata_program: &ctx.accounts.associated_token_program,
         instructions: &ctx.accounts.instructions,
-        owner_token_record: &ctx.accounts.owner_token_record,
-        dest_token_record: &ctx.accounts.temp_escrow_token_record,
+        owner_token_record: &ctx.accounts.seller_token_record,
+        dest_token_record: &ctx.accounts.pool_token_record,
         authorization_rules_program: &ctx.accounts.authorization_rules_program,
         rules_acc: auth_rules,
         authorization_data: authorization_data.clone().map(AuthorizationData::from),
@@ -294,24 +280,25 @@ pub fn process_sell_nft_token_pool<'info>(
     });
 
     //STEP 1/2: SEND TO ESCROW
+    msg!("Sending NFT to pool escrow");
     send_pnft(None, *pnft_args)?;
 
-    let nft_mint_pubkey = ctx.accounts.mint.key();
-
     let signer_seeds: &[&[&[u8]]] = &[&[
-        b"nft_owner",
-        nft_mint_pubkey.as_ref(),
-        &[ctx.bumps.nft_escrow_owner],
+        b"pool",
+        owner_pubkey.as_ref(),
+        pool.identifier.as_ref(),
+        &[pool.bump[0]],
     ]];
 
     //STEP 2/2: SEND FROM ESCROW
+    msg!("Sending NFT from pool escrow to owner");
     send_pnft(
         Some(signer_seeds),
         PnftTransferArgs {
-            authority_and_owner: &ctx.accounts.nft_escrow_owner.to_account_info(),
+            authority_and_owner: &ctx.accounts.pool.to_account_info(),
             payer: &ctx.accounts.seller.to_account_info(),
-            source_ata: &ctx.accounts.nft_escrow,
-            dest_ata: &ctx.accounts.owner_ata_acc,
+            source_ata: &ctx.accounts.pool_ata,
+            dest_ata: &ctx.accounts.owner_ata,
             dest_owner: &ctx.accounts.owner.to_account_info(),
             nft_mint: &ctx.accounts.mint,
             nft_metadata: &ctx.accounts.metadata,
@@ -320,8 +307,8 @@ pub fn process_sell_nft_token_pool<'info>(
             token_program: &ctx.accounts.token_program,
             ata_program: &ctx.accounts.associated_token_program,
             instructions: &ctx.accounts.instructions,
-            owner_token_record: &ctx.accounts.owner_token_record,
-            dest_token_record: &ctx.accounts.temp_escrow_token_record,
+            owner_token_record: &ctx.accounts.pool_token_record,
+            dest_token_record: &ctx.accounts.owner_token_record,
             authorization_rules_program: &ctx.accounts.authorization_rules_program,
             rules_acc: Some(auth_rules_acc_info),
             authorization_data: authorization_data.map(AuthorizationData::from),
@@ -329,12 +316,8 @@ pub fn process_sell_nft_token_pool<'info>(
         },
     )?;
 
-    // close temp nft escrow account, so it's not dangling
-    token_interface::close_account(
-        ctx.accounts
-            .close_nft_escrow_ctx()
-            .with_signer(signer_seeds),
-    )?;
+    // close temp pool ata account, so it's not dangling
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     // TODO: remove?
     // USING DELEGATE (PAUSE TO NOT RELY ON DELEGATE RULE)
@@ -404,18 +387,20 @@ pub fn process_sell_nft_token_pool<'info>(
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow,
-                &ctx.accounts.owner.to_account_info(),
+                &ctx.accounts.pool.to_account_info(),
             )?;
             if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
                 throw_err!(ErrorCode::BadSharedEscrow);
             }
             ctx.accounts.shared_escrow.to_account_info()
         }
-        None => ctx.accounts.sol_escrow.to_account_info(),
+        None => ctx.accounts.pool.to_account_info(),
     };
 
     // transfer fees
+    msg!("Transferring fees");
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
+    msg!("tswap fee: {}, broker fee: {}", tswap_fee, broker_fee);
     transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
         &from,
@@ -425,7 +410,8 @@ pub fn process_sell_nft_token_pool<'info>(
 
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
-    // transfer royalties
+    // transfer royalties   
+    msg!("Transferring royalties");
     let actual_creators_fee = transfer_creators_fee(
         &metadata
             .creators
@@ -445,6 +431,7 @@ pub fn process_sell_nft_token_pool<'info>(
     // transfer remainder to seller
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
     // (!) maker rebate already taken out of this amount
+    msg!("Transferring remainder to seller");
     transfer_lamports_from_pda(
         &from,
         &ctx.accounts.seller.to_account_info(),
@@ -454,6 +441,7 @@ pub fn process_sell_nft_token_pool<'info>(
     // --------------------------------------- accounting
 
     //update pool accounting
+    msg!("Updating pool accounting");
     let pool = &mut ctx.accounts.pool;
     pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));

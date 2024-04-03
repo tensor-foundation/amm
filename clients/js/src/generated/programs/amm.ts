@@ -66,6 +66,7 @@ export enum AmmAccount {
   SolEscrow,
   EscrowOwner,
   EscrowTokenAccount,
+  FeeVault,
 }
 
 export function identifyAmmAccount(
@@ -92,6 +93,9 @@ export function identifyAmmAccount(
   }
   if (memcmp(data, new Uint8Array([187, 204, 104, 138, 3, 193, 34, 208]), 0)) {
     return AmmAccount.EscrowTokenAccount;
+  }
+  if (memcmp(data, new Uint8Array([192, 178, 69, 232, 58, 149, 157, 132]), 0)) {
+    return AmmAccount.FeeVault;
   }
   throw new Error(
     'The provided account could not be identified as a amm account.'

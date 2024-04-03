@@ -286,12 +286,10 @@ pub fn send_pnft(
     // https://solscan.io/tx/4EbK8Us3c3mixGY4Y6zUx4pRoarWHJ718PtU8vDnAkcC6GmVtBWi8jotZ8koML8c94JPmQB6jHjQnPEBb83Mfv7C
     // hence have to do a normal transfer
 
-    msg!("md");
     let metadata = Box::new(assert_decode_metadata(
         &args.nft_mint.key(),
         args.nft_metadata,
     )?);
-    msg!("md done");
 
     if matches!(
         metadata.token_standard,
@@ -299,12 +297,10 @@ pub fn send_pnft(
             | Some(TokenStandard::ProgrammableNonFungibleEdition)
     ) {
         // pnft transfer
-        msg!("pnft transfer");
         return pnft_transfer_cpi(signer_seeds, args);
     }
 
     // non-pnft / no token std, normal transfer
-    msg!("normal transfer");
     let ctx = Box::new(CpiContext::new(
         args.token_program.to_account_info(),
         TransferChecked {
@@ -314,7 +310,6 @@ pub fn send_pnft(
             mint: args.nft_mint.to_account_info(),
         },
     ));
-    msg!("transfer_checked");
 
     if let Some(signer_seeds) = signer_seeds {
         token_interface::transfer_checked(ctx.with_signer(signer_seeds), 1, 0)
