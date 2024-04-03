@@ -97,6 +97,15 @@ kinobi.update(
           isWritable: true
         })
       ]
+    },
+    buyNft: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true
+        })
+      ]
     }
   })
 );

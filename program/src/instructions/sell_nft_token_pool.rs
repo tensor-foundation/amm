@@ -33,7 +33,7 @@ pub struct SellNftTokenPool<'info> {
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
 
-    /// CHECK: todo
+    /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
         seeds = [

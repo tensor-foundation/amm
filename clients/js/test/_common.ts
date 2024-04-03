@@ -1,5 +1,6 @@
 import '@solana/webcrypto-ed25519-polyfill';
 import { ExecutionContext } from 'ava';
+import bs58 from 'bs58';
 import {
   Condition,
   Mode,
@@ -19,6 +20,7 @@ import {
   ProgramDerivedAddress,
   getProgramDerivedAddress,
   getAddressEncoder,
+  Base64EncodedDataResponse,
 } from '@solana/web3.js';
 import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
@@ -425,4 +427,22 @@ export async function createPoolAndWhitelistThrows({
     t,
     code,
   });
+}
+
+const TOKEN_OWNER_START_INDEX = 32;
+const TOKEN_OWNER_END_INDEX = 64;
+const TOKEN_AMOUNT_START_INDEX = 64;
+
+export function getTokenAmount(data: Base64EncodedDataResponse): BigInt {
+  const buffer = Buffer.from(String(data), 'base64');
+  return buffer.readBigUInt64LE(TOKEN_AMOUNT_START_INDEX);
+}
+
+export function getTokenOwner(data: Base64EncodedDataResponse): Address {
+  const buffer = Buffer.from(String(data), 'base64');
+  const base58string = bs58.encode(
+    buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
+  );
+  console.log('base58string', base58string);
+  return address(base58string);
 }

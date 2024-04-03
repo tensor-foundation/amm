@@ -31,7 +31,7 @@ pub struct SellNftTradePool<'info> {
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
 
-    /// CHECK: todo
+    /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
         seeds = [
@@ -80,7 +80,7 @@ pub struct SellNftTradePool<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
-        /// The mint account of the NFT being sold.
+    /// The mint account of the NFT being sold.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.

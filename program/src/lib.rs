@@ -85,7 +85,6 @@ pub mod amm_program {
 
     pub fn buy_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
-        _config: PoolConfig,
         max_price: u64,
         rules_acc_present: bool,
         authorization_data: Option<AuthorizationDataLocal>,
