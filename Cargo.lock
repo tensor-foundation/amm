@@ -5982,7 +5982,7 @@ checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 [[package]]
 name = "whitelist-program"
 version = "0.0.0"
-source = "git+ssh://git@github.com/tensor-foundation/whitelist.git?branch=refactor/improve-failure-handling#a75c80abd4284face0cd23a622b55a28cc983854"
+source = "git+ssh://git@github.com/tensor-foundation/whitelist.git#306fcb3b0792f6c51ec4cb9d6df2c82f3b682037"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
