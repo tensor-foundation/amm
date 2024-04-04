@@ -124,15 +124,10 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     commitment: 'confirmed',
   });
 
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
   const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
 
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
   const [sellerTokenRecord] = await findTokenRecordPda({
     mint,
     token: sellerAta,
@@ -150,16 +145,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   const minPrice = 900_000n;
   const maxPrice = 1_100_000n;
-
-  console.log('ownerAta', ownerAta);
-  console.log('sellerAta', sellerAta);
-  console.log('poolAta', poolAta);
-  console.log('mint', mint);
-  console.log('ownerTokenRecord', ownerTokenRecord);
-  console.log('sellerTokenRecord', sellerTokenRecord);
-  console.log('poolTokenRecord', poolTokenRecord);
-  console.log('feeVault', feeVault);
-  console.log('takerBroker', owner.address);
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({

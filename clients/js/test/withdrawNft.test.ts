@@ -144,16 +144,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   const minPrice = 900_000n;
 
-  console.log('ownerAta', ownerAta);
-  console.log('sellerAta', sellerAta);
-  console.log('poolAta', poolAta);
-  console.log('mint', mint);
-  console.log('ownerTokenRecord', ownerTokenRecord);
-  console.log('sellerTokenRecord', sellerTokenRecord);
-  console.log('poolTokenRecord', poolTokenRecord);
-  console.log('feeVault', feeVault);
-  console.log('takerBroker', owner.address);
-
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
     owner: owner.address, // pool owner

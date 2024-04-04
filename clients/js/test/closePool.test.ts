@@ -84,7 +84,6 @@ export const signAndSendTransaction = async (
 
   const signedTransaction = await signTransactionWithSigners(transaction);
   const signature = getSignatureFromTransaction(signedTransaction);
-  console.log('signature', signature);
   await sendAndConfirmTransactionFactory(client)(signedTransaction, {
     commitment,
     skipPreflight,
@@ -322,16 +321,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   const minPrice = 1_000_000n;
 
-  console.log('ownerAta', ownerAta);
-  console.log('sellerAta', sellerAta);
-  console.log('poolAta', poolAta);
-  console.log('mint', mint);
-  console.log('ownerTokenRecord', ownerTokenRecord);
-  console.log('sellerTokenRecord', sellerTokenRecord);
-  console.log('poolTokenRecord', poolTokenRecord);
-  console.log('feeVault', feeVault);
-  console.log('takerBroker', owner.address);
-
   // Sell NFT into pool
   const sellNftIx = getSellNftTokenPoolInstruction({
     owner: owner.address, // pool owner
@@ -471,14 +460,9 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     commitment: 'confirmed',
   });
 
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
 
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
   const [sellerTokenRecord] = await findTokenRecordPda({
     mint,
     token: sellerAta,
@@ -491,16 +475,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   const [nftReceipt] = await findNftDepositReceiptPda({ mint });
 
   const minPrice = 900_000n;
-
-  console.log('ownerAta', ownerAta);
-  console.log('sellerAta', sellerAta);
-  console.log('poolAta', poolAta);
-  console.log('mint', mint);
-  console.log('ownerTokenRecord', ownerTokenRecord);
-  console.log('sellerTokenRecord', sellerTokenRecord);
-  console.log('poolTokenRecord', poolTokenRecord);
-  console.log('feeVault', feeVault);
-  console.log('takerBroker', owner.address);
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
