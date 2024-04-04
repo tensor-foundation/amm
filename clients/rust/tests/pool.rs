@@ -120,7 +120,6 @@ async fn close_pool() {
     // When the pool is closed
     let ix = ClosePool {
         pool,
-        sol_escrow: pool_data.sol_escrow,
         owner: update_authority,
         system_program: system_program::id(),
     }
