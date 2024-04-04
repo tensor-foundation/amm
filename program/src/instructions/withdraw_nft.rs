@@ -12,7 +12,7 @@ use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
-/// Allows a pool owner to ithdraw an NFT from a Trade or NFT pool.
+/// Allows a Trade or NFT pool owner to withdraw an NFT from the pool.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
     /// The owner of the pool and will receive the NFT at the owner_ata account.

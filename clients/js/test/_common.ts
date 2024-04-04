@@ -443,6 +443,5 @@ export function getTokenOwner(data: Base64EncodedDataResponse): Address {
   const base58string = bs58.encode(
     buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
   );
-  console.log('base58string', base58string);
   return address(base58string);
 }

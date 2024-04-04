@@ -85,6 +85,8 @@ export const enum AmmProgramErrorCode {
   BAD_ROYALTIES_PCT = 0x2f05, // 12037
   /** StartingPriceTooSmall: starting price can't be smaller than 1 lamport */
   STARTING_PRICE_TOO_SMALL = 0x2f06, // 12038
+  /** PoolKeepAlive: Pool must keep minimum rent balance */
+  POOL_KEEP_ALIVE = 0x2f07, // 12039
 }
 
 export class AmmProgramError extends Error {
@@ -260,6 +262,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.STARTING_PRICE_TOO_SMALL]: [
       'StartingPriceTooSmall',
       `starting price can't be smaller than 1 lamport`,
+    ],
+    [AmmProgramErrorCode.POOL_KEEP_ALIVE]: [
+      'PoolKeepAlive',
+      `Pool must keep minimum rent balance`,
     ],
   };
 }

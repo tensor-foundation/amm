@@ -76,7 +76,6 @@ pub mod amm_program {
 
     pub fn withdraw_sol<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
-        _config: PoolConfig,
         lamports: u64,
     ) -> Result<()> {
         instructions::withdraw_sol::process_withdraw_sol(ctx, lamports)
@@ -210,7 +209,6 @@ pub mod amm_program {
 
     // pub fn withdraw_mm_fee<'info>(
     //     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
-    //     _config: PoolConfig,
     //     lamports: u64,
     // ) -> Result<()> {
     //     instructions::withdraw_mm_fees::process_withdraw_mm_fees(ctx, lamports)

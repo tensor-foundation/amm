@@ -127,6 +127,9 @@ pub enum AmmError {
     /// 12038 (0x2F06) - starting price can't be smaller than 1 lamport
     #[error("starting price can't be smaller than 1 lamport")]
     StartingPriceTooSmall,
+    /// 12039 (0x2F07) - Pool must keep minimum rent balance
+    #[error("Pool must keep minimum rent balance")]
+    PoolKeepAlive,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

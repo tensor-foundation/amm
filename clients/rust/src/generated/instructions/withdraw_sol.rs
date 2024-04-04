@@ -5,19 +5,15 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct WithdrawSol {
-    pub pool: solana_program::pubkey::Pubkey,
-
-    pub whitelist: solana_program::pubkey::Pubkey,
-
-    pub sol_escrow: solana_program::pubkey::Pubkey,
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool and will receive the SOL.
     pub owner: solana_program::pubkey::Pubkey,
+    /// The pool from which the SOL will be withdrawn.
+    pub pool: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -35,20 +31,12 @@ impl WithdrawSol {
         args: WithdrawSolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.whitelist,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.sol_escrow,
-            false,
-        ));
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
@@ -83,7 +71,6 @@ impl WithdrawSolInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawSolInstructionArgs {
-    pub config: PoolConfig,
     pub lamports: u64,
 }
 
@@ -91,19 +78,14 @@ pub struct WithdrawSolInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[writable]` sol_escrow
-///   3. `[writable, signer]` owner
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct WithdrawSolBuilder {
-    pool: Option<solana_program::pubkey::Pubkey>,
-    whitelist: Option<solana_program::pubkey::Pubkey>,
-    sol_escrow: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
+    pool: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
     lamports: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -112,36 +94,22 @@ impl WithdrawSolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    #[inline(always)]
-    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pool = Some(pool);
-        self
-    }
-    #[inline(always)]
-    pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sol_escrow = Some(sol_escrow);
-        self
-    }
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool and will receive the SOL.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
+        self
+    }
+    /// The pool from which the SOL will be withdrawn.
+    #[inline(always)]
+    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool = Some(pool);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
         self
     }
     #[inline(always)]
@@ -170,16 +138,13 @@ impl WithdrawSolBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = WithdrawSol {
-            pool: self.pool.expect("pool is not set"),
-            whitelist: self.whitelist.expect("whitelist is not set"),
-            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
             owner: self.owner.expect("owner is not set"),
+            pool: self.pool.expect("pool is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = WithdrawSolInstructionArgs {
-            config: self.config.clone().expect("config is not set"),
             lamports: self.lamports.clone().expect("lamports is not set"),
         };
 
@@ -189,13 +154,10 @@ impl WithdrawSolBuilder {
 
 /// `withdraw_sol` CPI accounts.
 pub struct WithdrawSolCpiAccounts<'a, 'b> {
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool and will receive the SOL.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The pool from which the SOL will be withdrawn.
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -204,14 +166,10 @@ pub struct WithdrawSolCpiAccounts<'a, 'b> {
 pub struct WithdrawSolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool and will receive the SOL.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The pool from which the SOL will be withdrawn.
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -226,10 +184,8 @@ impl<'a, 'b> WithdrawSolCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            pool: accounts.pool,
-            whitelist: accounts.whitelist,
-            sol_escrow: accounts.sol_escrow,
             owner: accounts.owner,
+            pool: accounts.pool,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -267,22 +223,14 @@ impl<'a, 'b> WithdrawSolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.whitelist.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.sol_escrow.key,
-            false,
-        ));
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool.key,
+            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
@@ -304,12 +252,10 @@ impl<'a, 'b> WithdrawSolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.pool.clone());
-        account_infos.push(self.whitelist.clone());
-        account_infos.push(self.sol_escrow.clone());
         account_infos.push(self.owner.clone());
+        account_infos.push(self.pool.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -327,11 +273,9 @@ impl<'a, 'b> WithdrawSolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[]` whitelist
-///   2. `[writable]` sol_escrow
-///   3. `[writable, signer]` owner
-///   4. `[]` system_program
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` system_program
 pub struct WithdrawSolCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawSolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -340,42 +284,24 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(WithdrawSolCpiBuilderInstruction {
             __program: program,
-            pool: None,
-            whitelist: None,
-            sol_escrow: None,
             owner: None,
+            pool: None,
             system_program: None,
-            config: None,
             lamports: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
-    #[inline(always)]
-    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.pool = Some(pool);
-        self
-    }
-    #[inline(always)]
-    pub fn whitelist(
-        &mut self,
-        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(
-        &mut self,
-        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sol_escrow = Some(sol_escrow);
-        self
-    }
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool and will receive the SOL.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
+        self
+    }
+    /// The pool from which the SOL will be withdrawn.
+    #[inline(always)]
+    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.pool = Some(pool);
         self
     }
     #[inline(always)]
@@ -384,11 +310,6 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
         self
     }
     #[inline(always)]
@@ -438,7 +359,6 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = WithdrawSolInstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
             lamports: self
                 .instruction
                 .lamports
@@ -448,13 +368,9 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
         let instruction = WithdrawSolCpi {
             __program: self.instruction.__program,
 
-            pool: self.instruction.pool.expect("pool is not set"),
-
-            whitelist: self.instruction.whitelist.expect("whitelist is not set"),
-
-            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
+
+            pool: self.instruction.pool.expect("pool is not set"),
 
             system_program: self
                 .instruction
@@ -471,12 +387,9 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
 
 struct WithdrawSolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
     lamports: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

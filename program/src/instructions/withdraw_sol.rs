@@ -1,48 +1,29 @@
 //! User withdrawing SOL from their pool (all 3 types)
 use tensor_toolbox::transfer_lamports_from_pda;
-use tensor_whitelist::Whitelist;
 use vipers::throw_err;
 
 use crate::{error::ErrorCode, *};
 
+/// Allows a Trade or Token pool owner to withdraw SOL from the pool.
 #[derive(Accounts)]
-#[instruction( config: PoolConfig)]
 pub struct WithdrawSol<'info> {
+    /// The owner of the pool and will receive the SOL.
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    /// The pool from which the SOL will be withdrawn.
     #[account(
         mut,
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            whitelist.key().as_ref(),
+            pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        constraint = config.pool_type == PoolType::Token ||  config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
-        has_one = owner, has_one = whitelist, has_one = sol_escrow,
+        constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        has_one = owner
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// CHECK: has_one = whitelist in pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
-
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
-    /// Tied to the pool because used to verify pool seeds
-    #[account(mut)]
-    pub owner: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -78,6 +59,22 @@ pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     lamports: u64,
 ) -> Result<()> {
+    // ToDo: If pool has padding for future proofing, this can be extracted to a constant.
+    let rent = solana_program::rent::Rent::get()?;
+    let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
+
+    let current_pool_lamports = ctx.accounts.pool.to_account_info().get_lamports();
+
+    // The pool must maintain the minimum rent balance. To close the pool, use "close_pool", which
+    // performs appropriate checks.
+    if current_pool_lamports
+        .checked_sub(lamports)
+        .ok_or(ErrorCode::ArithmeticError)?
+        < pool_keep_alive
+    {
+        throw_err!(ErrorCode::PoolKeepAlive);
+    }
+
     ctx.accounts
-        .transfer_lamports(&ctx.accounts.sol_escrow.to_account_info(), lamports)
+        .transfer_lamports(&ctx.accounts.pool.to_account_info(), lamports)
 }

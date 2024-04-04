@@ -537,26 +537,19 @@
       "name": "withdrawSol",
       "accounts": [
         {
-          "name": "pool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "solEscrow",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "Tied to the pool because used to verify pool seeds"
+            "The owner of the pool and will receive the SOL."
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The pool from which the SOL will be withdrawn."
           ]
         },
         {
@@ -566,12 +559,6 @@
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "lamports",
           "type": "u64"
@@ -2837,6 +2824,11 @@
       "code": 12038,
       "name": "StartingPriceTooSmall",
       "msg": "starting price can't be smaller than 1 lamport"
+    },
+    {
+      "code": 12039,
+      "name": "PoolKeepAlive",
+      "msg": "Pool must keep minimum rent balance"
     }
   ],
   "metadata": {

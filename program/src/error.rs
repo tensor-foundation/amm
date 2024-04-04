@@ -160,4 +160,8 @@ pub enum ErrorCode {
     // 6038 | 0x1796
     #[msg("starting price can't be smaller than 1 lamport")]
     StartingPriceTooSmall,
+
+    // 6039 | 0x1797
+    #[msg("Pool must keep minimum rent balance")]
+    PoolKeepAlive,
 }
