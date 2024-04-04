@@ -26,7 +26,14 @@ module.exports = {
       {
         label: "Tensor Whitelist",
         programId: "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
-        deployPath: getProgram("whitelist_program.so")
+        // New version isn't deployed on-chain yet so we need to reference a local one.
+        deployPath: path.join(
+          __dirname,
+          "..",
+          "program",
+          "bins",
+          "whitelist_program.so"
+        )
       },
       {
         label: "Token Metadata",
