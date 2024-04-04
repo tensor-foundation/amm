@@ -37,7 +37,6 @@ export type ClosePoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -53,9 +52,6 @@ export type ClosePoolInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountSolEscrow extends string
-        ? WritableAccount<TAccountSolEscrow>
-        : TAccountSolEscrow,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -98,33 +94,23 @@ export function getClosePoolInstructionDataCodec(): Codec<
 export type ClosePoolInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
-  TAccountSolEscrow extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
-  /** (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed */
-  solEscrow: Address<TAccountSolEscrow>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
 export function getClosePoolInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
-  TAccountSolEscrow extends string,
   TAccountSystemProgram extends string,
 >(
-  input: ClosePoolInput<
-    TAccountOwner,
-    TAccountPool,
-    TAccountSolEscrow,
-    TAccountSystemProgram
-  >
+  input: ClosePoolInput<TAccountOwner, TAccountPool, TAccountSystemProgram>
 ): ClosePoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
-  TAccountSolEscrow,
   TAccountSystemProgram
 > {
   // Program address.
@@ -134,7 +120,6 @@ export function getClosePoolInstruction<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    solEscrow: { value: input.solEscrow ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -153,7 +138,6 @@ export function getClosePoolInstruction<
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.solEscrow),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -162,7 +146,6 @@ export function getClosePoolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
-    TAccountSolEscrow,
     TAccountSystemProgram
   >;
 
@@ -177,9 +160,7 @@ export type ParsedClosePoolInstruction<
   accounts: {
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
-    /** (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed */
-    solEscrow: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    systemProgram: TAccountMetas[2];
   };
   data: ClosePoolInstructionData;
 };
@@ -192,7 +173,7 @@ export function parseClosePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedClosePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -207,7 +188,6 @@ export function parseClosePoolInstruction<
     accounts: {
       owner: getNextAccount(),
       pool: getNextAccount(),
-      solEscrow: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getClosePoolInstructionDataDecoder().decode(instruction.data),

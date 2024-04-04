@@ -79,6 +79,7 @@
 //         seeds=[
 //             b"nft_receipt".as_ref(),
 //             nft_mint.key().as_ref(),
+//             pool.key().as_ref(),
 //         ],
 //         bump,
 //         space = DEPOSIT_RECEIPT_SIZE,
@@ -216,8 +217,8 @@
 //     //create nft receipt
 //     let receipt = &mut ctx.accounts.nft_receipt;
 //     receipt.bump = ctx.bumps.nft_receipt;
-//     receipt.nft_mint = ctx.accounts.nft_mint.key();
-//     receipt.nft_escrow = ctx.accounts.nft_escrow.key();
+//     receipt.mint = ctx.accounts.nft_mint.key();
+//     receipt.pool = ctx.accounts.nft_escrow.key();
 
 //     Ok(())
 // }

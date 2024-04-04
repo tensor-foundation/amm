@@ -9,8 +9,8 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
-/// Represents NFTs deposited into our protocol.
-/// Always associated to (1) NFT mint (2) NFT escrow and (3) pool (every type).
+/// Represents NFTs deposited into a Trade or NFT pool.
+/// Seeds: "nft_receipt", mint, pool
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -21,12 +21,12 @@ pub struct NftDepositReceipt {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub nft_mint: Pubkey,
+    pub mint: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub nft_escrow: Pubkey,
+    pub pool: Pubkey,
 }
 
 impl NftDepositReceipt {
@@ -38,21 +38,28 @@ impl NftDepositReceipt {
     ///
     ///   0. `NftDepositReceipt::PREFIX`
     ///   1. mint (`Pubkey`)
+    ///   2. pool (`Pubkey`)
     pub const PREFIX: &'static [u8] = "nft_receipt".as_bytes();
 
     pub fn create_pda(
         mint: Pubkey,
+        pool: Pubkey,
         bump: u8,
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
-            &["nft_receipt".as_bytes(), mint.as_ref(), &[bump]],
+            &[
+                "nft_receipt".as_bytes(),
+                mint.as_ref(),
+                pool.as_ref(),
+                &[bump],
+            ],
             &crate::AMM_ID,
         )
     }
 
-    pub fn find_pda(mint: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
+    pub fn find_pda(mint: &Pubkey, pool: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
-            &["nft_receipt".as_bytes(), mint.as_ref()],
+            &["nft_receipt".as_bytes(), mint.as_ref(), pool.as_ref()],
             &crate::AMM_ID,
         )
     }

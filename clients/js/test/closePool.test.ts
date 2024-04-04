@@ -40,11 +40,9 @@ import {
 import {
   Pool,
   fetchMaybePool,
-  fetchMaybeSolEscrow,
   fetchPool,
   getClosePoolInstruction,
   getDepositNftInstruction,
-  findEscrowTokenAccountPda,
   findNftDepositReceiptPda,
   PoolType,
   CurveType,
@@ -60,14 +58,6 @@ import {
   createWhitelistV2,
   findAtaPda,
 } from './_common.js';
-
-const pnftShared = {
-  tokenMetadata: MPL_TOKEN_METADATA_PROGRAM_ID,
-  authorizationRulesProgram: address(
-    'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg'
-  ),
-  instructions: address('Sysvar1nstructions1111111111111111111111111'),
-};
 
 export interface TransactionOptions {
   commitment?: Commitment;
@@ -96,7 +86,7 @@ test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Create default pool
-  const { pool, owner, solEscrow } = await createPoolAndWhitelist({ client });
+  const { pool, owner } = await createPoolAndWhitelist({ client });
 
   const poolAccount = await fetchPool(client.rpc, pool);
   // Then an account was created with the correct data.
@@ -118,7 +108,6 @@ test('it can close a pool', async (t) => {
   const closePoolIx = getClosePoolInstruction({
     owner,
     pool,
-    solEscrow,
   });
 
   await pipe(
@@ -127,14 +116,9 @@ test('it can close a pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Then the pool and solEscrow are closed
+  // Then the pool is closed.
   const maybePoolAccount = await fetchMaybePool(client.rpc, pool);
   t.assert(!maybePoolAccount.exists);
-  const maybeSolEscrowAccount = await fetchMaybeSolEscrow(
-    client.rpc,
-    solEscrow
-  );
-  t.assert(!maybeSolEscrowAccount.exists);
 });
 
 test('close pool fails if nfts still deposited', async (t) => {
@@ -142,62 +126,76 @@ test('close pool fails if nfts still deposited', async (t) => {
 
   const owner = await generateKeyPairSignerWithSol(client);
 
-  // Create pool and whitelist
-  const { pool, whitelist, solEscrow } = await createPoolAndWhitelist({
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000n,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: some(100),
+  };
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
     client,
+    updateAuthority: owner,
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist,
     owner,
+    config,
   });
 
   // Mint NFTs
-  const { mint, metadata, masterEdition, token } = await createDefaultNft(
+  const { mint, metadata, masterEdition } = await createDefaultNft(
     client,
     owner,
     owner,
     owner
   );
 
-  const [escrowTokenAccount] = await findEscrowTokenAccountPda({ mint });
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint });
-  const [ownerTokenRecord1] = await findTokenRecordPda({
+  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+
+  const [ownerTokenRecord] = await findTokenRecordPda({
     mint,
-    token,
+    token: ownerAta,
   });
-  const [destTokenRecord1] = await findTokenRecordPda({
+  const [poolTokenRecord] = await findTokenRecordPda({
     mint,
-    token: escrowTokenAccount,
+    token: poolAta,
   });
 
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+
   // Deposit NFT1 into pool
-  const depositPoolIx = getDepositNftInstruction({
+  const depositNftIx = getDepositNftInstruction({
+    owner,
     pool,
     whitelist,
-    owner,
-    sourceTokenAccount: token,
+    ownerAta,
+    poolAta,
     mint,
     metadata,
-    escrowTokenAccount,
     nftReceipt,
     edition: masterEdition,
-    ownerTokenRecord: ownerTokenRecord1,
-    destTokenRecord: destTokenRecord1,
+    ownerTokenRecord,
+    poolTokenRecord,
+    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+    instructions: SYSVARS_INSTRUCTIONS,
+    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
+    authRules: DEFAULT_PUBKEY,
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-    tokenMetadataProgram: pnftShared.tokenMetadata,
-    instructions: pnftShared.instructions,
-    authorizationRulesProgram: pnftShared.authorizationRulesProgram,
-    config: {
-      poolType: PoolType.NFT,
-      curveType: CurveType.Linear,
-      startingPrice: 0,
-      delta: 0,
-      mmCompoundFees: false,
-      mmFeeBps: null,
-    },
-    authorizationData: null,
+    authorizationData: none(),
   });
 
   await pipe(
     await createDefaultTransaction(client, owner.address),
-    (tx) => appendTransactionInstruction(depositPoolIx, tx),
+    (tx) => appendTransactionInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -205,7 +203,6 @@ test('close pool fails if nfts still deposited', async (t) => {
   const closePoolIx = getClosePoolInstruction({
     owner,
     pool,
-    solEscrow,
   });
 
   const promise = pipe(
@@ -254,7 +251,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   // Create pool and whitelist
-  const { pool, solEscrow, cosigner } = await createPool({
+  const { pool, cosigner } = await createPool({
     client,
     whitelist,
     owner,
@@ -368,7 +365,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const closePoolIx = getClosePoolInstruction({
     owner,
     pool,
-    solEscrow,
   });
 
   await pipe(
@@ -378,11 +374,9 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   );
 
   const poolAccount = await fetchMaybePool(client.rpc, pool);
-  const solEscrowAccount = await fetchMaybeSolEscrow(client.rpc, solEscrow);
 
-  // Pool and solEscrow are closed.
+  // Pool is closed.
   t.false(poolAccount.exists);
-  t.false(solEscrowAccount.exists);
 });
 
 test('close trade pool fail if someone sold nfts into it', async (t) => {
@@ -408,7 +402,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   });
 
   // Create pool and whitelist
-  const { pool, solEscrow, cosigner } = await createPool({
+  const { pool, cosigner } = await createPool({
     client,
     whitelist,
     owner,
@@ -472,7 +466,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     token: poolAta,
   });
 
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint });
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 900_000n;
 
@@ -522,7 +516,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   const closePoolIx = getClosePoolInstruction({
     owner,
     pool,
-    solEscrow,
   });
 
   const promise = pipe(

@@ -137,7 +137,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     token: poolAta,
   });
 
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint });
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 900_000n;
 

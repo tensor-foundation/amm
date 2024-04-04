@@ -15,6 +15,7 @@ use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
+/// Allows a buyer to purchase an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
     /// Owner is the pool owner who created the pool and the nominal owner of the 
@@ -71,10 +72,12 @@ pub struct BuyNft<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The SPL token mint account of the NFT being bought.
+    /// The mint account of the NFT. It should be the mint account common 
+    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
     #[account(
+        constraint = mint.key() == buyer_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.nft_mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -89,12 +92,13 @@ pub struct BuyNft<'info> {
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
+            pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
         close = owner,
         //can't buy an NFT that's associated with a different pool
         // redundant but extra safety
-        constraint = nft_receipt.nft_mint == mint.key() && nft_receipt.nft_escrow == pool.key() @ ErrorCode::WrongMint,
+        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

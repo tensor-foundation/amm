@@ -52,7 +52,7 @@ pub struct BuyNftT22<'info> {
 
     #[account(
         constraint = nft_mint.key() == nft_escrow.mint @ ErrorCode::WrongMint,
-        constraint = nft_mint.key() == nft_receipt.nft_mint @ ErrorCode::WrongMint,
+        constraint = nft_mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub nft_mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -84,12 +84,13 @@ pub struct BuyNftT22<'info> {
         seeds=[
             b"nft_receipt".as_ref(),
             nft_mint.key().as_ref(),
+            pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
         close = owner,
         //can't buy an NFT that's associated with a different pool
         // TODO: check this constraint replaces the old one sufficiently
-        constraint = nft_receipt.nft_mint == nft_mint.key() && nft_receipt.nft_escrow == nft_escrow.key() @ ErrorCode::WrongMint,
+        constraint = nft_receipt.mint == nft_mint.key() && nft_receipt.pool == nft_escrow.key() @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

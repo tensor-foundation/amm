@@ -94,6 +94,7 @@ pub struct SellNftTradePool<'info> {
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
+            pool.key().as_ref(),
         ],
         bump,
         space = DEPOSIT_RECEIPT_SIZE,
@@ -334,8 +335,8 @@ pub fn process_sell_nft_trade_pool<'info>(
     //create nft receipt for trade pool
     let receipt_state = &mut ctx.accounts.nft_receipt;
     receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.nft_mint = ctx.accounts.mint.key();
-    receipt_state.nft_escrow = ctx.accounts.pool.key();
+    receipt_state.mint = ctx.accounts.mint.key();
+    receipt_state.pool = ctx.accounts.pool.key();
 
     //update pool accounting
     let pool = &mut ctx.accounts.pool;

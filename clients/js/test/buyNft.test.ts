@@ -141,7 +141,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     token: buyerAta,
   });
 
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint });
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 900_000n;
   const maxPrice = 1_100_000n;

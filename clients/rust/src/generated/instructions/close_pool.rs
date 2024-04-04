@@ -13,8 +13,6 @@ pub struct ClosePool {
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    pub sol_escrow: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -28,16 +26,12 @@ impl ClosePool {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.sol_escrow,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
@@ -73,13 +67,11 @@ impl ClosePoolInstructionData {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[writable]` sol_escrow
-///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct ClosePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
-    sol_escrow: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -96,12 +88,6 @@ impl ClosePoolBuilder {
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
-        self
-    }
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    #[inline(always)]
-    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sol_escrow = Some(sol_escrow);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -133,7 +119,6 @@ impl ClosePoolBuilder {
         let accounts = ClosePool {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
-            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -148,8 +133,6 @@ pub struct ClosePoolCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -162,8 +145,6 @@ pub struct ClosePoolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -177,7 +158,6 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
             __program: program,
             owner: accounts.owner,
             pool: accounts.pool,
-            sol_escrow: accounts.sol_escrow,
             system_program: accounts.system_program,
         }
     }
@@ -214,17 +194,13 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.sol_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -245,11 +221,10 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
-        account_infos.push(self.sol_escrow.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -269,8 +244,7 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[writable]` sol_escrow
-///   3. `[]` system_program
+///   2. `[]` system_program
 pub struct ClosePoolCpiBuilder<'a, 'b> {
     instruction: Box<ClosePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -281,7 +255,6 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
             __program: program,
             owner: None,
             pool: None,
-            sol_escrow: None,
             system_program: None,
             __remaining_accounts: Vec::new(),
         });
@@ -295,15 +268,6 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
-        self
-    }
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    #[inline(always)]
-    pub fn sol_escrow(
-        &mut self,
-        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sol_escrow = Some(sol_escrow);
         self
     }
     #[inline(always)]
@@ -362,8 +326,6 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
-            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
-
             system_program: self
                 .instruction
                 .system_program
@@ -380,7 +342,6 @@ struct ClosePoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

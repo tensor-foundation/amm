@@ -222,14 +222,6 @@
           "isSigner": false
         },
         {
-          "name": "solEscrow",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "(!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed"
-          ]
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -243,7 +235,10 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool and the NFT."
+          ]
         },
         {
           "name": "pool",
@@ -255,31 +250,41 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, also checked via has_one on pool"
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
           ]
         },
         {
-          "name": "sourceTokenAccount",
+          "name": "ownerAta",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ATA of the owner, where the NFT will be transferred from."
+          ]
+        },
+        {
+          "name": "poolAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT will be escrowed."
+          ]
         },
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "escrowTokenAccount",
-          "isMut": true,
           "isSigner": false,
           "docs": [
-            "Implicitly checked via transfer. Will fail if wrong account"
+            "The mint account of the NFT. It should be the mint account common",
+            "to the owner_ata and pool_ata."
           ]
         },
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT receipt account denoting that an NFT has been deposited into a pool."
+          ]
         },
         {
           "name": "tokenProgram",
@@ -299,28 +304,45 @@
         {
           "name": "metadata",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata metadata account of the NFT."
+          ]
         },
         {
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "TODO: we can actually deserialize here with a MintProofV2 type",
+            "but may not be worth it since assert_decode_mint_proof checks",
+            "seeds, mint, whitelist, and key"
+          ]
         },
         {
           "name": "edition",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata edition account of the NFT."
+          ]
         },
         {
           "name": "ownerTokenRecord",
-          "isMut": true,
-          "isSigner": false
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata owner/buyer token record account of the NFT."
+          ]
         },
         {
-          "name": "destTokenRecord",
+          "name": "poolTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata pool token record account of the NFT."
+          ]
         },
         {
           "name": "associatedTokenProgram",
@@ -330,32 +352,37 @@
         {
           "name": "tokenMetadataProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata program account."
+          ]
         },
         {
           "name": "instructions",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The sysvar instructions account."
+          ]
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Metaplex Token Authority Rules program account."
+          ]
         },
         {
           "name": "authRules",
           "isMut": false,
           "isSigner": false,
-          "isOptional": true
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+          ]
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "authorizationData",
           "type": {
@@ -617,7 +644,8 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The SPL token mint account of the NFT being bought."
+            "The mint account of the NFT. It should be the mint account common",
+            "to the owner_ata, pool_ata and the mint stored in the nft receipt."
           ]
         },
         {
@@ -2027,8 +2055,8 @@
     {
       "name": "NftDepositReceipt",
       "docs": [
-        "Represents NFTs deposited into our protocol.",
-        "Always associated to (1) NFT mint (2) NFT escrow and (3) pool (every type)."
+        "Represents NFTs deposited into a Trade or NFT pool.",
+        "Seeds: \"nft_receipt\", mint, pool"
       ],
       "type": {
         "kind": "struct",
@@ -2038,11 +2066,11 @@
             "type": "u8"
           },
           {
-            "name": "nftMint",
+            "name": "mint",
             "type": "publicKey"
           },
           {
-            "name": "nftEscrow",
+            "name": "pool",
             "type": "publicKey"
           }
         ]

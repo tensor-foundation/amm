@@ -71,7 +71,8 @@ kinobi.update(
           "mint",
           k.publicKeyTypeNode(),
           "The nft mint address"
-        )
+        ),
+        k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
       ]
     }
   })

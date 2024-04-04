@@ -16,23 +16,10 @@ pub struct ClosePool<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = sol_escrow @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::WrongAuthority,
         close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// CHECK: has_one = escrow in pool
-    /// (!) if the order is marginated this won't return any funds to the user, since margin isn't auto-closed
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-        close = owner,
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
 
     pub system_program: Program<'info, System>,
 }
