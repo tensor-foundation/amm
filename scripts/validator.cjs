@@ -30,8 +30,10 @@ module.exports = {
         deployPath: path.join(
           __dirname,
           "..",
-          "program",
-          "bins",
+          "clients",
+          "rust",
+          "tests",
+          "fixtures",
           "whitelist_program.so"
         )
       },
