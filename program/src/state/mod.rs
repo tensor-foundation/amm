@@ -20,13 +20,7 @@ pub struct DummyCtx<'info> {
 
 /// Need dummy Anchor account so we can use `close` constraint.
 #[account]
-pub struct SolEscrow {}
-
-#[account]
-pub struct EscrowOwner {}
-
-#[account]
-pub struct EscrowTokenAccount {}
+pub struct PoolATA {}
 
 /// Sharded fee accounts
 /// Seeds: "fee_vault", number, bump
@@ -150,7 +144,6 @@ mod tests {
             Self {
                 version: 1,
                 bump: [1],
-                sol_escrow_bump: [1],
                 created_at: 1234,
                 updated_at: 0,
                 expires_at: 0,
@@ -169,7 +162,6 @@ mod tests {
                 taker_sell_count,
                 taker_buy_count,
                 nfts_held: 0,
-                sol_escrow: Pubkey::default(),
                 stats: PoolStats::default(),
                 currency: Some(Pubkey::default()),
                 shared_escrow: None,

@@ -29,7 +29,7 @@ pub struct BuyNftT22<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow,
+        has_one = owner, has_one = whitelist,
         constraint = config.pool_type == PoolType::NFT || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -94,17 +94,6 @@ pub struct BuyNftT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
     /// CHECK: has_one = owner in pool (owner is the seller)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
@@ -118,9 +107,9 @@ pub struct BuyNftT22<'info> {
 
     pub system_program: Program<'info, System>,
 
-    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)margin acc stored on pool
+    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared_escrow acc stored on pool
     #[account(mut)]
-    pub margin_account: UncheckedAccount<'info>,
+    pub shared_escrow_account: UncheckedAccount<'info>,
 
     /// CHECK:
     #[account(mut)]
@@ -244,17 +233,17 @@ pub fn process_t22_buy_nft<'info, 'b>(
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match &pool.shared_escrow {
-            Some(stored_margin_account) => {
+            Some(stored_shared_escrow_account) => {
                 assert_decode_shared_escrow_account(
-                    &ctx.accounts.margin_account,
+                    &ctx.accounts.shared_escrow_account,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
-                if *ctx.accounts.margin_account.key != *stored_margin_account {
+                if *ctx.accounts.shared_escrow_account.key != *stored_shared_escrow_account {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
-                ctx.accounts.margin_account.to_account_info()
+                ctx.accounts.shared_escrow_account.to_account_info()
             }
-            None => ctx.accounts.sol_escrow.to_account_info(),
+            None => ctx.accounts.pool.to_account_info(),
         },
         PoolType::Token => unreachable!(),
     };

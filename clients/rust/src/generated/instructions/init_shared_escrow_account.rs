@@ -73,7 +73,7 @@ impl InitSharedEscrowAccountInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InitSharedEscrowAccountInstructionArgs {
-    pub margin_nr: u16,
+    pub shared_escrow_nr: u16,
     pub name: [u8; 32],
 }
 
@@ -89,7 +89,7 @@ pub struct InitSharedEscrowAccountBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    margin_nr: Option<u16>,
+    shared_escrow_nr: Option<u16>,
     name: Option<[u8; 32]>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -115,8 +115,8 @@ impl InitSharedEscrowAccountBuilder {
         self
     }
     #[inline(always)]
-    pub fn margin_nr(&mut self, margin_nr: u16) -> &mut Self {
-        self.margin_nr = Some(margin_nr);
+    pub fn shared_escrow_nr(&mut self, shared_escrow_nr: u16) -> &mut Self {
+        self.shared_escrow_nr = Some(shared_escrow_nr);
         self
     }
     #[inline(always)]
@@ -152,7 +152,10 @@ impl InitSharedEscrowAccountBuilder {
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = InitSharedEscrowAccountInstructionArgs {
-            margin_nr: self.margin_nr.clone().expect("margin_nr is not set"),
+            shared_escrow_nr: self
+                .shared_escrow_nr
+                .clone()
+                .expect("shared_escrow_nr is not set"),
             name: self.name.clone().expect("name is not set"),
         };
 
@@ -296,7 +299,7 @@ impl<'a, 'b> InitSharedEscrowAccountCpiBuilder<'a, 'b> {
             shared_escrow: None,
             owner: None,
             system_program: None,
-            margin_nr: None,
+            shared_escrow_nr: None,
             name: None,
             __remaining_accounts: Vec::new(),
         });
@@ -324,8 +327,8 @@ impl<'a, 'b> InitSharedEscrowAccountCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn margin_nr(&mut self, margin_nr: u16) -> &mut Self {
-        self.instruction.margin_nr = Some(margin_nr);
+    pub fn shared_escrow_nr(&mut self, shared_escrow_nr: u16) -> &mut Self {
+        self.instruction.shared_escrow_nr = Some(shared_escrow_nr);
         self
     }
     #[inline(always)]
@@ -375,11 +378,11 @@ impl<'a, 'b> InitSharedEscrowAccountCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = InitSharedEscrowAccountInstructionArgs {
-            margin_nr: self
+            shared_escrow_nr: self
                 .instruction
-                .margin_nr
+                .shared_escrow_nr
                 .clone()
-                .expect("margin_nr is not set"),
+                .expect("shared_escrow_nr is not set"),
             name: self.instruction.name.clone().expect("name is not set"),
         };
         let instruction = InitSharedEscrowAccountCpi {
@@ -410,7 +413,7 @@ struct InitSharedEscrowAccountCpiBuilderInstruction<'a, 'b> {
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    margin_nr: Option<u16>,
+    shared_escrow_nr: Option<u16>,
     name: Option<[u8; 32]>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

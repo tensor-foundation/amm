@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct DepositMarginAccount {
+pub struct WithdrawSharedEscrowAccount {
     pub shared_escrow: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
@@ -17,17 +17,17 @@ pub struct DepositMarginAccount {
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl DepositMarginAccount {
+impl WithdrawSharedEscrowAccount {
     pub fn instruction(
         &self,
-        args: DepositMarginAccountInstructionArgs,
+        args: WithdrawSharedEscrowAccountInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: DepositMarginAccountInstructionArgs,
+        args: WithdrawSharedEscrowAccountInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
@@ -43,7 +43,7 @@ impl DepositMarginAccount {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = DepositMarginAccountInstructionData::new()
+        let mut data = WithdrawSharedEscrowAccountInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -58,25 +58,25 @@ impl DepositMarginAccount {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct DepositMarginAccountInstructionData {
+struct WithdrawSharedEscrowAccountInstructionData {
     discriminator: [u8; 8],
 }
 
-impl DepositMarginAccountInstructionData {
+impl WithdrawSharedEscrowAccountInstructionData {
     fn new() -> Self {
         Self {
-            discriminator: [190, 85, 242, 60, 119, 81, 33, 192],
+            discriminator: [95, 217, 248, 95, 202, 72, 5, 95],
         }
     }
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DepositMarginAccountInstructionArgs {
+pub struct WithdrawSharedEscrowAccountInstructionArgs {
     pub lamports: u64,
 }
 
-/// Instruction builder for `DepositMarginAccount`.
+/// Instruction builder for `WithdrawSharedEscrowAccount`.
 ///
 /// ### Accounts:
 ///
@@ -84,7 +84,7 @@ pub struct DepositMarginAccountInstructionArgs {
 ///   1. `[writable, signer]` owner
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
-pub struct DepositMarginAccountBuilder {
+pub struct WithdrawSharedEscrowAccountBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
@@ -92,7 +92,7 @@ pub struct DepositMarginAccountBuilder {
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl DepositMarginAccountBuilder {
+impl WithdrawSharedEscrowAccountBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -137,14 +137,14 @@ impl DepositMarginAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = DepositMarginAccount {
+        let accounts = WithdrawSharedEscrowAccount {
             shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
             owner: self.owner.expect("owner is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = DepositMarginAccountInstructionArgs {
+        let args = WithdrawSharedEscrowAccountInstructionArgs {
             lamports: self.lamports.clone().expect("lamports is not set"),
         };
 
@@ -152,8 +152,8 @@ impl DepositMarginAccountBuilder {
     }
 }
 
-/// `deposit_margin_account` CPI accounts.
-pub struct DepositMarginAccountCpiAccounts<'a, 'b> {
+/// `withdraw_shared_escrow_account` CPI accounts.
+pub struct WithdrawSharedEscrowAccountCpiAccounts<'a, 'b> {
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -161,8 +161,8 @@ pub struct DepositMarginAccountCpiAccounts<'a, 'b> {
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `deposit_margin_account` CPI instruction.
-pub struct DepositMarginAccountCpi<'a, 'b> {
+/// `withdraw_shared_escrow_account` CPI instruction.
+pub struct WithdrawSharedEscrowAccountCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -172,14 +172,14 @@ pub struct DepositMarginAccountCpi<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: DepositMarginAccountInstructionArgs,
+    pub __args: WithdrawSharedEscrowAccountInstructionArgs,
 }
 
-impl<'a, 'b> DepositMarginAccountCpi<'a, 'b> {
+impl<'a, 'b> WithdrawSharedEscrowAccountCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: DepositMarginAccountCpiAccounts<'a, 'b>,
-        args: DepositMarginAccountInstructionArgs,
+        accounts: WithdrawSharedEscrowAccountCpiAccounts<'a, 'b>,
+        args: WithdrawSharedEscrowAccountInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
@@ -242,7 +242,7 @@ impl<'a, 'b> DepositMarginAccountCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = DepositMarginAccountInstructionData::new()
+        let mut data = WithdrawSharedEscrowAccountInstructionData::new()
             .try_to_vec()
             .unwrap();
         let mut args = self.__args.try_to_vec().unwrap();
@@ -270,20 +270,20 @@ impl<'a, 'b> DepositMarginAccountCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `DepositMarginAccount` via CPI.
+/// Instruction builder for `WithdrawSharedEscrowAccount` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` shared_escrow
 ///   1. `[writable, signer]` owner
 ///   2. `[]` system_program
-pub struct DepositMarginAccountCpiBuilder<'a, 'b> {
-    instruction: Box<DepositMarginAccountCpiBuilderInstruction<'a, 'b>>,
+pub struct WithdrawSharedEscrowAccountCpiBuilder<'a, 'b> {
+    instruction: Box<WithdrawSharedEscrowAccountCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> DepositMarginAccountCpiBuilder<'a, 'b> {
+impl<'a, 'b> WithdrawSharedEscrowAccountCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(DepositMarginAccountCpiBuilderInstruction {
+        let instruction = Box::new(WithdrawSharedEscrowAccountCpiBuilderInstruction {
             __program: program,
             shared_escrow: None,
             owner: None,
@@ -360,14 +360,14 @@ impl<'a, 'b> DepositMarginAccountCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = DepositMarginAccountInstructionArgs {
+        let args = WithdrawSharedEscrowAccountInstructionArgs {
             lamports: self
                 .instruction
                 .lamports
                 .clone()
                 .expect("lamports is not set"),
         };
-        let instruction = DepositMarginAccountCpi {
+        let instruction = WithdrawSharedEscrowAccountCpi {
             __program: self.instruction.__program,
 
             shared_escrow: self
@@ -390,7 +390,7 @@ impl<'a, 'b> DepositMarginAccountCpiBuilder<'a, 'b> {
     }
 }
 
-struct DepositMarginAccountCpiBuilderInstruction<'a, 'b> {
+struct WithdrawSharedEscrowAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,

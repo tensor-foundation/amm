@@ -7,43 +7,17 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_program::pubkey::Pubkey;
 
 /// Need dummy Anchor account so we can use `close` constraint.
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SolEscrow {
+pub struct PoolATA {
     pub discriminator: [u8; 8],
 }
 
-impl SolEscrow {
+impl PoolATA {
     pub const LEN: usize = 8;
-
-    /// Prefix values used to generate a PDA for this account.
-    ///
-    /// Values are positional and appear in the following order:
-    ///
-    ///   0. `SolEscrow::PREFIX`
-    ///   1. pool (`Pubkey`)
-    pub const PREFIX: &'static [u8] = "sol_escrow".as_bytes();
-
-    pub fn create_pda(
-        pool: Pubkey,
-        bump: u8,
-    ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
-        solana_program::pubkey::Pubkey::create_program_address(
-            &["sol_escrow".as_bytes(), pool.as_ref(), &[bump]],
-            &crate::AMM_ID,
-        )
-    }
-
-    pub fn find_pda(pool: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
-        solana_program::pubkey::Pubkey::find_program_address(
-            &["sol_escrow".as_bytes(), pool.as_ref()],
-            &crate::AMM_ID,
-        )
-    }
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
@@ -52,7 +26,7 @@ impl SolEscrow {
     }
 }
 
-impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for SolEscrow {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for PoolATA {
     type Error = std::io::Error;
 
     fn try_from(

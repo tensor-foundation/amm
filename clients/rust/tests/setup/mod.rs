@@ -1,5 +1,5 @@
 use amm::{
-    accounts::{Pool, SolEscrow},
+    accounts::Pool,
     instructions::CreatePoolBuilder,
     types::{CurveType, PoolConfig, PoolType},
 };
@@ -126,7 +126,6 @@ pub async fn setup_default_whitelist<'a>(
 
 pub struct TestPool {
     pub pool: Pubkey,
-    pub sol_escrow: Pubkey,
     pub identifier: Pubkey,
     pub config: PoolConfig,
 }
@@ -177,7 +176,6 @@ pub async fn setup_default_pool<'a>(
     } = inputs;
 
     let pool = Pool::find_pda(&owner.pubkey(), identifier.to_bytes()).0;
-    let sol_escrow = SolEscrow::find_pda(&pool).0;
     let config = PoolConfig {
         pool_type: pool_type.unwrap_or(PoolType::Token),
         curve_type: curve_type.unwrap_or(CurveType::Linear),
@@ -190,7 +188,6 @@ pub async fn setup_default_pool<'a>(
     let ix = CreatePoolBuilder::new()
         .owner(owner.pubkey())
         .pool(pool)
-        .sol_escrow(sol_escrow)
         .whitelist(whitelist)
         .identifier(identifier.to_bytes())
         .config(config.clone())
@@ -209,7 +206,6 @@ pub async fn setup_default_pool<'a>(
 
     TestPool {
         pool,
-        sol_escrow,
         identifier,
         config,
     }

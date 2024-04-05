@@ -43,6 +43,7 @@ import {
   getU8Encoder,
   mapEncoder,
 } from '@solana/codecs';
+import { SharedEscrowSeeds, findSharedEscrowPda } from '../pdas';
 
 export type SharedEscrow<TAddress extends string = string> = Account<
   SharedEscrowAccountData,
@@ -168,4 +169,28 @@ export async function fetchAllMaybeSharedEscrow(
 
 export function getSharedEscrowSize(): number {
   return 143;
+}
+
+export async function fetchSharedEscrowFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: SharedEscrowSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<SharedEscrow> {
+  const maybeAccount = await fetchMaybeSharedEscrowFromSeeds(
+    rpc,
+    seeds,
+    config
+  );
+  assertAccountExists(maybeAccount);
+  return maybeAccount;
+}
+
+export async function fetchMaybeSharedEscrowFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: SharedEscrowSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<MaybeSharedEscrow> {
+  const { programAddress, ...fetchConfig } = config;
+  const [address] = await findSharedEscrowPda(seeds, { programAddress });
+  return await fetchMaybeSharedEscrow(rpc, address, fetchConfig);
 }

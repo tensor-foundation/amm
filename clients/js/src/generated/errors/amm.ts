@@ -71,8 +71,8 @@ export const enum AmmProgramErrorCode {
   WRONG_ORDER_TYPE = 0x2efe, // 12030
   /** WrongFrozenStatus: wrong frozen status */
   WRONG_FROZEN_STATUS = 0x2eff, // 12031
-  /** MarginInUse: margin account has pools open and is in use */
-  MARGIN_IN_USE = 0x2f00, // 12032
+  /** SharedEscrowInUse: shared escrow account has pools open and is in use */
+  SHARED_ESCROW_IN_USE = 0x2f00, // 12032
   /** MaxTakerSellCountExceeded: max taker sell count exceeded, pool cannot buy anymore NFTs */
   MAX_TAKER_SELL_COUNT_EXCEEDED = 0x2f01, // 12033
   /** MaxTakerSellCountTooSmall: max taker sell count is too small */
@@ -235,9 +235,9 @@ if (__DEV__) {
       'WrongFrozenStatus',
       `wrong frozen status`,
     ],
-    [AmmProgramErrorCode.MARGIN_IN_USE]: [
-      'MarginInUse',
-      `margin account has pools open and is in use`,
+    [AmmProgramErrorCode.SHARED_ESCROW_IN_USE]: [
+      'SharedEscrowInUse',
+      `shared escrow account has pools open and is in use`,
     ],
     [AmmProgramErrorCode.MAX_TAKER_SELL_COUNT_EXCEEDED]: [
       'MaxTakerSellCountExceeded',

@@ -13,10 +13,10 @@ pub struct SharedEscrow {
     pub name: [u8; 32],
     pub nr: u16,
     pub bump: [u8; 1],
-    //needed to know if we can close margin account
+    //needed to know if we can close this shared escrow account
     pub pools_attached: u32,
     // TODO: we forgot to track bids attached.
-    // Revisit this maybe for margin account V2.
+    // Revisit this maybe for V2.
     //(!) this is important - otherwise rent will be miscalculated by anchor client-side
     pub _reserved: [u8; 64],
 }

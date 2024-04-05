@@ -15,8 +15,6 @@ pub struct CreatePool {
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-
-    pub sol_escrow: solana_program::pubkey::Pubkey,
     /// Needed for pool seeds derivation / will be stored inside pool
     pub whitelist: solana_program::pubkey::Pubkey,
 
@@ -36,16 +34,12 @@ impl CreatePool {
         args: CreatePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.sol_escrow,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.whitelist,
@@ -98,14 +92,12 @@ pub struct CreatePoolInstructionArgs {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[writable]` sol_escrow
-///   3. `[]` whitelist
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[]` whitelist
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct CreatePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
-    sol_escrow: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     identifier: Option<[u8; 32]>,
@@ -129,11 +121,6 @@ impl CreatePoolBuilder {
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sol_escrow = Some(sol_escrow);
         self
     }
     /// Needed for pool seeds derivation / will be stored inside pool
@@ -204,7 +191,6 @@ impl CreatePoolBuilder {
         let accounts = CreatePool {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
-            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
             system_program: self
                 .system_program
@@ -228,8 +214,6 @@ pub struct CreatePoolCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     /// Needed for pool seeds derivation / will be stored inside pool
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -244,8 +228,6 @@ pub struct CreatePoolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     /// Needed for pool seeds derivation / will be stored inside pool
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -264,7 +246,6 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             __program: program,
             owner: accounts.owner,
             pool: accounts.pool,
-            sol_escrow: accounts.sol_escrow,
             whitelist: accounts.whitelist,
             system_program: accounts.system_program,
             __args: args,
@@ -303,17 +284,13 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.sol_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -340,11 +317,10 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
-        account_infos.push(self.sol_escrow.clone());
         account_infos.push(self.whitelist.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -365,9 +341,8 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[writable]` sol_escrow
-///   3. `[]` whitelist
-///   4. `[]` system_program
+///   2. `[]` whitelist
+///   3. `[]` system_program
 pub struct CreatePoolCpiBuilder<'a, 'b> {
     instruction: Box<CreatePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -378,7 +353,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             __program: program,
             owner: None,
             pool: None,
-            sol_escrow: None,
             whitelist: None,
             system_program: None,
             identifier: None,
@@ -399,14 +373,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(
-        &mut self,
-        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sol_escrow = Some(sol_escrow);
         self
     }
     /// Needed for pool seeds derivation / will be stored inside pool
@@ -523,8 +489,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
-            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
-
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
             system_program: self
@@ -544,7 +508,6 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     identifier: Option<[u8; 32]>,

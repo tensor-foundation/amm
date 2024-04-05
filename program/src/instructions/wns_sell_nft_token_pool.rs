@@ -37,9 +37,9 @@
 
 //     pub system_program: Program<'info, System>,
 
-//     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)margin acc stored on pool
+//     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
 //     #[account(mut)]
-//     pub margin_account: UncheckedAccount<'info>,
+//     pub shared_escrow_account: UncheckedAccount<'info>,
 
 //     /// CHECK:
 //     #[account(mut)]
@@ -180,17 +180,17 @@
 
 //     // --------------------------------------- SOL transfers
 
-//     //decide where we're sending the money from - margin (marginated pool) or escrow (normal pool)
+//     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
 //     let from = match &pool.shared_escrow {
-//         Some(stored_margin_account) => {
+//         Some(stored_shared_escrow_account) => {
 //             assert_decode_shared_escrow_account(
-//                 &ctx.accounts.margin_account,
+//                 &ctx.accounts.shared_escrow_account,
 //                 &ctx.accounts.shared.owner.to_account_info(),
 //             )?;
-//             if *ctx.accounts.margin_account.key != *stored_margin_account {
+//             if *ctx.accounts.shared_escrow_account.key != *stored_shared_escrow_account {
 //                 throw_err!(ErrorCode::BadSharedEscrow);
 //             }
-//             ctx.accounts.margin_account.to_account_info()
+//             ctx.accounts.shared_escrow_account.to_account_info()
 //         }
 //         None => ctx.accounts.shared.sol_escrow.to_account_info(),
 //     };

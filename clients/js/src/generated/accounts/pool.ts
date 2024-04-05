@@ -75,8 +75,6 @@ export type PoolAccountData = {
   version: number;
   /** Bump seed for the pool PDA. */
   bump: Array<number>;
-  /** SOL Escrow PDA bump seed. */
-  solEscrowBump: Array<number>;
   /** Owner-chosen identifier for the pool */
   identifier: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
@@ -88,7 +86,6 @@ export type PoolAccountData = {
   config: PoolConfig;
   owner: Address;
   whitelist: Address;
-  solEscrow: Address;
   currency: Option<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
@@ -100,7 +97,7 @@ export type PoolAccountData = {
   sharedEscrow: Option<Address>;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: Option<Address>;
-  /** Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity */
+  /** Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity */
   maxTakerSellCount: number;
 };
 
@@ -109,8 +106,6 @@ export type PoolAccountDataArgs = {
   version: number;
   /** Bump seed for the pool PDA. */
   bump: Array<number>;
-  /** SOL Escrow PDA bump seed. */
-  solEscrowBump: Array<number>;
   /** Owner-chosen identifier for the pool */
   identifier: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
@@ -122,7 +117,6 @@ export type PoolAccountDataArgs = {
   config: PoolConfigArgs;
   owner: Address;
   whitelist: Address;
-  solEscrow: Address;
   currency: OptionOrNullable<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
@@ -134,7 +128,7 @@ export type PoolAccountDataArgs = {
   sharedEscrow: OptionOrNullable<Address>;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: OptionOrNullable<Address>;
-  /** Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity */
+  /** Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity */
   maxTakerSellCount: number;
 };
 
@@ -144,7 +138,6 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['version', getU8Encoder()],
       ['bump', getArrayEncoder(getU8Encoder(), { size: 1 })],
-      ['solEscrowBump', getArrayEncoder(getU8Encoder(), { size: 1 })],
       ['identifier', getBytesEncoder({ size: 32 })],
       ['createdAt', getI64Encoder()],
       ['updatedAt', getI64Encoder()],
@@ -152,7 +145,6 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['config', getPoolConfigEncoder()],
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
-      ['solEscrow', getAddressEncoder()],
       ['currency', getOptionEncoder(getAddressEncoder())],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
@@ -174,7 +166,6 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['version', getU8Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
-    ['solEscrowBump', getArrayDecoder(getU8Decoder(), { size: 1 })],
     ['identifier', getBytesDecoder({ size: 32 })],
     ['createdAt', getI64Decoder()],
     ['updatedAt', getI64Decoder()],
@@ -182,7 +173,6 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['config', getPoolConfigDecoder()],
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
-    ['solEscrow', getAddressDecoder()],
     ['currency', getOptionDecoder(getAddressDecoder())],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],

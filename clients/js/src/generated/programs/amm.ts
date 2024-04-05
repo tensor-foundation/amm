@@ -14,19 +14,19 @@ import {
   getAmmProgramErrorFromCode,
 } from '../errors';
 import {
-  ParsedAttachPoolToMarginInstruction,
+  ParsedAttachPoolToSharedEscrowInstruction,
   ParsedBuyNftInstruction,
   ParsedBuySingleListingInstruction,
   ParsedBuySingleListingT22Instruction,
-  ParsedCloseMarginAccountInstruction,
   ParsedClosePoolInstruction,
+  ParsedCloseSharedEscrowAccountInstruction,
   ParsedCreatePoolInstruction,
   ParsedDelistInstruction,
   ParsedDelistT22Instruction,
-  ParsedDepositMarginAccountInstruction,
   ParsedDepositNftInstruction,
+  ParsedDepositSharedEscrowAccountInstruction,
   ParsedDepositSolInstruction,
-  ParsedDetachPoolFromMarginInstruction,
+  ParsedDetachPoolFromSharedEscrowInstruction,
   ParsedEditPoolInstruction,
   ParsedEditSingleListingInstruction,
   ParsedInitSharedEscrowAccountInstruction,
@@ -35,8 +35,8 @@ import {
   ParsedReallocPoolInstruction,
   ParsedSellNftTokenPoolInstruction,
   ParsedSellNftTradePoolInstruction,
-  ParsedWithdrawMarginAccountInstruction,
   ParsedWithdrawNftInstruction,
+  ParsedWithdrawSharedEscrowAccountInstruction,
   ParsedWithdrawSolInstruction,
 } from '../instructions';
 import { memcmp } from '../shared';
@@ -63,9 +63,7 @@ export enum AmmAccount {
   Pool,
   SharedEscrow,
   SingleListing,
-  SolEscrow,
-  EscrowOwner,
-  EscrowTokenAccount,
+  PoolATA,
   FeeVault,
 }
 
@@ -85,14 +83,10 @@ export function identifyAmmAccount(
   if (memcmp(data, new Uint8Array([14, 114, 212, 140, 24, 134, 31, 24]), 0)) {
     return AmmAccount.SingleListing;
   }
-  if (memcmp(data, new Uint8Array([75, 199, 250, 63, 244, 209, 235, 120]), 0)) {
-    return AmmAccount.SolEscrow;
-  }
-  if (memcmp(data, new Uint8Array([215, 217, 229, 238, 9, 70, 144, 119]), 0)) {
-    return AmmAccount.EscrowOwner;
-  }
-  if (memcmp(data, new Uint8Array([187, 204, 104, 138, 3, 193, 34, 208]), 0)) {
-    return AmmAccount.EscrowTokenAccount;
+  if (
+    memcmp(data, new Uint8Array([216, 126, 91, 204, 144, 246, 149, 131]), 0)
+  ) {
+    return AmmAccount.PoolATA;
   }
   if (memcmp(data, new Uint8Array([192, 178, 69, 232, 58, 149, 157, 132]), 0)) {
     return AmmAccount.FeeVault;
@@ -115,11 +109,11 @@ export enum AmmInstruction {
   SellNftTokenPool,
   SellNftTradePool,
   InitSharedEscrowAccount,
-  CloseMarginAccount,
-  DepositMarginAccount,
-  WithdrawMarginAccount,
-  AttachPoolToMargin,
-  DetachPoolFromMargin,
+  CloseSharedEscrowAccount,
+  DepositSharedEscrowAccount,
+  WithdrawSharedEscrowAccount,
+  AttachPoolToSharedEscrow,
+  DetachPoolFromSharedEscrow,
   List,
   Delist,
   BuySingleListing,
@@ -176,20 +170,20 @@ export function identifyAmmInstruction(
   ) {
     return AmmInstruction.InitSharedEscrowAccount;
   }
-  if (memcmp(data, new Uint8Array([105, 215, 41, 239, 166, 207, 1, 103]), 0)) {
-    return AmmInstruction.CloseMarginAccount;
+  if (memcmp(data, new Uint8Array([42, 165, 250, 238, 161, 145, 59, 4]), 0)) {
+    return AmmInstruction.CloseSharedEscrowAccount;
   }
-  if (memcmp(data, new Uint8Array([190, 85, 242, 60, 119, 81, 33, 192]), 0)) {
-    return AmmInstruction.DepositMarginAccount;
+  if (memcmp(data, new Uint8Array([86, 76, 60, 195, 244, 209, 62, 154]), 0)) {
+    return AmmInstruction.DepositSharedEscrowAccount;
   }
-  if (memcmp(data, new Uint8Array([54, 73, 150, 208, 207, 5, 18, 17]), 0)) {
-    return AmmInstruction.WithdrawMarginAccount;
+  if (memcmp(data, new Uint8Array([95, 217, 248, 95, 202, 72, 5, 95]), 0)) {
+    return AmmInstruction.WithdrawSharedEscrowAccount;
   }
-  if (memcmp(data, new Uint8Array([187, 105, 211, 137, 224, 59, 29, 227]), 0)) {
-    return AmmInstruction.AttachPoolToMargin;
+  if (memcmp(data, new Uint8Array([156, 47, 51, 203, 173, 150, 207, 0]), 0)) {
+    return AmmInstruction.AttachPoolToSharedEscrow;
   }
-  if (memcmp(data, new Uint8Array([182, 54, 73, 38, 188, 87, 185, 101]), 0)) {
-    return AmmInstruction.DetachPoolFromMargin;
+  if (memcmp(data, new Uint8Array([32, 130, 53, 4, 37, 115, 52, 51]), 0)) {
+    return AmmInstruction.DetachPoolFromSharedEscrow;
   }
   if (memcmp(data, new Uint8Array([54, 174, 193, 67, 17, 41, 132, 38]), 0)) {
     return AmmInstruction.List;
@@ -257,20 +251,20 @@ export type ParsedAmmInstruction<
       instructionType: AmmInstruction.InitSharedEscrowAccount;
     } & ParsedInitSharedEscrowAccountInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.CloseMarginAccount;
-    } & ParsedCloseMarginAccountInstruction<TProgram>)
+      instructionType: AmmInstruction.CloseSharedEscrowAccount;
+    } & ParsedCloseSharedEscrowAccountInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.DepositMarginAccount;
-    } & ParsedDepositMarginAccountInstruction<TProgram>)
+      instructionType: AmmInstruction.DepositSharedEscrowAccount;
+    } & ParsedDepositSharedEscrowAccountInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.WithdrawMarginAccount;
-    } & ParsedWithdrawMarginAccountInstruction<TProgram>)
+      instructionType: AmmInstruction.WithdrawSharedEscrowAccount;
+    } & ParsedWithdrawSharedEscrowAccountInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.AttachPoolToMargin;
-    } & ParsedAttachPoolToMarginInstruction<TProgram>)
+      instructionType: AmmInstruction.AttachPoolToSharedEscrow;
+    } & ParsedAttachPoolToSharedEscrowInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.DetachPoolFromMargin;
-    } & ParsedDetachPoolFromMarginInstruction<TProgram>)
+      instructionType: AmmInstruction.DetachPoolFromSharedEscrow;
+    } & ParsedDetachPoolFromSharedEscrowInstruction<TProgram>)
   | ({ instructionType: AmmInstruction.List } & ParsedListInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.Delist;

@@ -12,15 +12,17 @@ import {
   getAddressEncoder,
   getProgramDerivedAddress,
 } from '@solana/addresses';
-import { getStringEncoder } from '@solana/codecs';
+import { getStringEncoder, getU16Encoder } from '@solana/codecs';
 
-export type EscrowTokenAccountSeeds = {
-  /** The nft mint address */
-  mint: Address;
+export type SharedEscrowSeeds = {
+  /** The owner address */
+  owner: Address;
+  /** The escrow number */
+  nr: number;
 };
 
-export async function findEscrowTokenAccountPda(
-  seeds: EscrowTokenAccountSeeds,
+export async function findSharedEscrowPda(
+  seeds: SharedEscrowSeeds,
   config: { programAddress?: Address | undefined } = {}
 ): Promise<ProgramDerivedAddress> {
   const {
@@ -29,8 +31,9 @@ export async function findEscrowTokenAccountPda(
   return await getProgramDerivedAddress({
     programAddress,
     seeds: [
-      getStringEncoder({ size: 'variable' }).encode('nft_escrow'),
-      getAddressEncoder().encode(seeds.mint),
+      getStringEncoder({ size: 'variable' }).encode('shared_escrow'),
+      getAddressEncoder().encode(seeds.owner),
+      getU16Encoder().encode(seeds.nr),
     ],
   });
 }

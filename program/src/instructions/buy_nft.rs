@@ -146,7 +146,7 @@ pub struct BuyNft<'info> {
     pub auth_rules: UncheckedAccount<'info>,
 
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)margin acc stored on pool
+    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
     #[account(mut)]
     pub shared_escrow: UncheckedAccount<'info>,
 
