@@ -140,7 +140,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     token: poolAta,
   });
 
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint });
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 900_000n;
 

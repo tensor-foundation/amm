@@ -53,7 +53,6 @@ pub mod amm_program {
 
     pub fn deposit_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
-        _config: PoolConfig,
         authorization_data: Option<AuthorizationDataLocal>,
     ) -> Result<()> {
         instructions::deposit_nft::process_deposit_nft(ctx, authorization_data)

@@ -91,6 +91,7 @@
 //         seeds=[
 //             b"nft_receipt".as_ref(),
 //             nft_mint.key().as_ref(),
+//             pool.key().as_ref(),
 //         ],
 //         bump = nft_receipt.bump,
 //         close = owner,

@@ -50,6 +50,7 @@
 //         seeds=[
 //             b"nft_receipt".as_ref(),
 //             shared.nft_mint.key().as_ref(),
+//             shared.pool.key().as_ref(),
 //         ],
 //         bump,
 //         space = DEPOSIT_RECEIPT_SIZE,

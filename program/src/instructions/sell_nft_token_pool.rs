@@ -108,9 +108,9 @@ pub struct SellNftTokenPool<'info> {
 
     // --------------------------------------- pNft
 
-    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
     /// The Token Metadata edition account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
+    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
     pub edition: UncheckedAccount<'info>,
 
     /// The Token Metadata owner/buyer token record account of the NFT.

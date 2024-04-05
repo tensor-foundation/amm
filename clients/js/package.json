@@ -51,7 +51,7 @@
     "@ava/typescript": "^4.1.0",
     "@solana/eslint-config-solana": "^3.0.0",
     "@solana/webcrypto-ed25519-polyfill": "^2.0.0-preview",
-    "@tensor-foundation/whitelist": "*",
+    "@tensor-foundation/whitelist": "0.0.1-alpha.0",
     "@tensor-foundation/test-helpers": "0.0.1-alpha.2",
     "@tensor-foundation/toolkit-token-metadata": "0.0.1-alpha.2",
     "@types/node": "^20.11.26",

@@ -17,6 +17,8 @@ import { getStringEncoder } from '@solana/codecs';
 export type NftDepositReceiptSeeds = {
   /** The nft mint address */
   mint: Address;
+  /** The pool address */
+  pool: Address;
 };
 
 export async function findNftDepositReceiptPda(
@@ -31,6 +33,7 @@ export async function findNftDepositReceiptPda(
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('nft_receipt'),
       getAddressEncoder().encode(seeds.mint),
+      getAddressEncoder().encode(seeds.pool),
     ],
   });
 }

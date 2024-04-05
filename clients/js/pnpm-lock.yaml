@@ -50,8 +50,8 @@ devDependencies:
     specifier: 0.0.1-alpha.2
     version: 0.0.1-alpha.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0)
   '@tensor-foundation/whitelist':
-    specifier: '*'
-    version: link:../../../whitelist/clients/js
+    specifier: 0.0.1-alpha.0
+    version: 0.0.1-alpha.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0)
   '@types/node':
     specifier: ^20.11.26
     version: 20.11.30
@@ -2444,7 +2444,6 @@ packages:
     dependencies:
       chalk: 5.3.0
       commander: 12.0.0
-    dev: false
 
   /@solana/errors@2.0.0-preview.2:
     resolution: {integrity: sha512-H2DZ1l3iYF5Rp5pPbJpmmtCauWeQXRJapkDg8epQ8BJ7cA2Ut/QEtC3CMmw/iMTcuS6uemFNLcWvlOfoQhvQuA==}
@@ -2715,6 +2714,25 @@ packages:
       '@solana/signers': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/web3.js': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0)
       '@tensor-foundation/test-helpers': 0.0.1-alpha.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0)
+    transitivePeerDependencies:
+      - fastestsmallesttextencoderdecoder
+      - ws
+    dev: true
+
+  /@tensor-foundation/whitelist@0.0.1-alpha.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0):
+    resolution: {integrity: sha512-GEKnmX+Kd726J3gJkytIFdLc2oOQTCDOiTU7OdtBkvgWqr02EcJHTPE8EbulZCbs5f7KZ748ZrBUXr/PL1cx5g==}
+    dependencies:
+      '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/codecs': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/errors': 2.0.0-preview.1.20240323070910.9370133e414bfa863517248d97905449e9a867eb
+      '@solana/instructions': 2.0.0-preview.2
+      '@solana/keys': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/options': 2.0.0-preview.2
+      '@solana/programs': 2.0.0-preview.2
+      '@solana/signers': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/transactions': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
+      '@solana/web3.js': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.16.0)
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
       - ws

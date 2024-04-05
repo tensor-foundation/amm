@@ -50,14 +50,14 @@ export type MaybeNftDepositReceipt<TAddress extends string = string> =
 export type NftDepositReceiptAccountData = {
   discriminator: Array<number>;
   bump: number;
-  nftMint: Address;
-  nftEscrow: Address;
+  mint: Address;
+  pool: Address;
 };
 
 export type NftDepositReceiptAccountDataArgs = {
   bump: number;
-  nftMint: Address;
-  nftEscrow: Address;
+  mint: Address;
+  pool: Address;
 };
 
 export function getNftDepositReceiptAccountDataEncoder(): Encoder<NftDepositReceiptAccountDataArgs> {
@@ -65,8 +65,8 @@ export function getNftDepositReceiptAccountDataEncoder(): Encoder<NftDepositRece
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['bump', getU8Encoder()],
-      ['nftMint', getAddressEncoder()],
-      ['nftEscrow', getAddressEncoder()],
+      ['mint', getAddressEncoder()],
+      ['pool', getAddressEncoder()],
     ]),
     (value) => ({
       ...value,
@@ -79,8 +79,8 @@ export function getNftDepositReceiptAccountDataDecoder(): Decoder<NftDepositRece
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['bump', getU8Decoder()],
-    ['nftMint', getAddressDecoder()],
-    ['nftEscrow', getAddressDecoder()],
+    ['mint', getAddressDecoder()],
+    ['pool', getAddressDecoder()],
   ]);
 }
 

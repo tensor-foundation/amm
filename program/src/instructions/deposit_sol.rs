@@ -5,6 +5,7 @@ use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
+/// Allows a pool owner to deposit SOL into a Token or Trade pool.
 #[derive(Accounts)]
 pub struct DepositSol<'info> {
     /// CHECK: has_one = owner in pool
