@@ -63,7 +63,6 @@ export enum AmmAccount {
   Pool,
   SharedEscrow,
   SingleListing,
-  PoolATA,
   FeeVault,
 }
 
@@ -82,11 +81,6 @@ export function identifyAmmAccount(
   }
   if (memcmp(data, new Uint8Array([14, 114, 212, 140, 24, 134, 31, 24]), 0)) {
     return AmmAccount.SingleListing;
-  }
-  if (
-    memcmp(data, new Uint8Array([216, 126, 91, 204, 144, 246, 149, 131]), 0)
-  ) {
-    return AmmAccount.PoolATA;
   }
   if (memcmp(data, new Uint8Array([192, 178, 69, 232, 58, 149, 157, 132]), 0)) {
     return AmmAccount.FeeVault;

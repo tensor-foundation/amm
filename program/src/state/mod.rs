@@ -18,10 +18,6 @@ pub struct DummyCtx<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Need dummy Anchor account so we can use `close` constraint.
-#[account]
-pub struct PoolATA {}
-
 /// Sharded fee accounts
 /// Seeds: "fee_vault", number, bump
 /// There are up to 256 fee accounts, and the number in the seed

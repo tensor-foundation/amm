@@ -49,16 +49,6 @@ kinobi.update(
         )
       ]
     },
-    poolTokenAccount: {
-      seeds: [
-        k.constantPdaSeedNodeFromString("nft_escrow"),
-        k.variablePdaSeedNode(
-          "mint",
-          k.publicKeyTypeNode(),
-          "The nft mint address"
-        )
-      ]
-    },
     nftDepositReceipt: {
       seeds: [
         k.constantPdaSeedNodeFromString("nft_receipt"),

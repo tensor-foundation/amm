@@ -9,6 +9,5 @@
 export * from './feeVault';
 export * from './nftDepositReceipt';
 export * from './pool';
-export * from './poolATA';
 export * from './sharedEscrow';
 export * from './singleListing';

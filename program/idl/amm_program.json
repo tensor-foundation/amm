@@ -2247,16 +2247,6 @@
       }
     },
     {
-      "name": "PoolATA",
-      "docs": [
-        "Need dummy Anchor account so we can use `close` constraint."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
       "name": "FeeVault",
       "docs": [
         "Sharded fee accounts",
