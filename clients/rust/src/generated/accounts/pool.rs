@@ -19,8 +19,6 @@ pub struct Pool {
     pub version: u8,
     /// Bump seed for the pool PDA.
     pub bump: [u8; 1],
-    /// SOL Escrow PDA bump seed.
-    pub sol_escrow_bump: [u8; 1],
     /// Owner-chosen identifier for the pool
     pub identifier: [u8; 32],
     /// Unix timestamp of the pool creation, in seconds.
@@ -40,11 +38,6 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub whitelist: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub sol_escrow: Pubkey,
     pub currency: Option<Pubkey>,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
@@ -56,7 +49,7 @@ pub struct Pool {
     pub shared_escrow: Option<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: Option<Pubkey>,
-    /// Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity
+    /// Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity
     pub max_taker_sell_count: u32,
 }
 

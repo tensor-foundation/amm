@@ -34,33 +34,18 @@ kinobi.update(
         )
       ]
     },
-    solEscrow: {
+    sharedEscrow: {
       seeds: [
-        k.constantPdaSeedNodeFromString("sol_escrow"),
+        k.constantPdaSeedNodeFromString("shared_escrow"),
         k.variablePdaSeedNode(
-          "pool",
+          "owner",
           k.publicKeyTypeNode(),
-          "The address of the pool"
-        )
-      ]
-    },
-    escrowOwner: {
-      seeds: [
-        k.constantPdaSeedNodeFromString("nft_owner"),
+          "The owner address"
+        ),
         k.variablePdaSeedNode(
-          "mint",
-          k.publicKeyTypeNode(),
-          "The nft mint address"
-        )
-      ]
-    },
-    escrowTokenAccount: {
-      seeds: [
-        k.constantPdaSeedNodeFromString("nft_escrow"),
-        k.variablePdaSeedNode(
-          "mint",
-          k.publicKeyTypeNode(),
-          "The nft mint address"
+          "nr",
+          k.numberTypeNode("u16"),
+          "The escrow number"
         )
       ]
     },

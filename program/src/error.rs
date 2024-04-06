@@ -134,8 +134,8 @@ pub enum ErrorCode {
     WrongFrozenStatus = 6031,
 
     // 6032 | 0x1790
-    #[msg("margin account has pools open and is in use")]
-    MarginInUse = 6032,
+    #[msg("shared escrow account has pools open and is in use")]
+    SharedEscrowInUse = 6032,
 
     // 6033 | 0x1791
     #[msg("max taker sell count exceeded, pool cannot buy anymore NFTs")]

@@ -5,52 +5,30 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct DetachPoolFromMargin {
+pub struct CloseSharedEscrowAccount {
     pub shared_escrow: solana_program::pubkey::Pubkey,
-
-    pub pool: solana_program::pubkey::Pubkey,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: solana_program::pubkey::Pubkey,
-
-    pub sol_escrow: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl DetachPoolFromMargin {
-    pub fn instruction(
-        &self,
-        args: DetachPoolFromMarginInstructionArgs,
-    ) -> solana_program::instruction::Instruction {
-        self.instruction_with_remaining_accounts(args, &[])
+impl CloseSharedEscrowAccount {
+    pub fn instruction(&self) -> solana_program::instruction::Instruction {
+        self.instruction_with_remaining_accounts(&[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: DetachPoolFromMarginInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.shared_escrow,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.whitelist,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.sol_escrow,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -61,11 +39,9 @@ impl DetachPoolFromMargin {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = DetachPoolFromMarginInstructionData::new()
+        let data = CloseSharedEscrowAccountInstructionData::new()
             .try_to_vec()
             .unwrap();
-        let mut args = args.try_to_vec().unwrap();
-        data.append(&mut args);
 
         solana_program::instruction::Instruction {
             program_id: crate::AMM_ID,
@@ -76,71 +52,40 @@ impl DetachPoolFromMargin {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct DetachPoolFromMarginInstructionData {
+struct CloseSharedEscrowAccountInstructionData {
     discriminator: [u8; 8],
 }
 
-impl DetachPoolFromMarginInstructionData {
+impl CloseSharedEscrowAccountInstructionData {
     fn new() -> Self {
         Self {
-            discriminator: [182, 54, 73, 38, 188, 87, 185, 101],
+            discriminator: [42, 165, 250, 238, 161, 145, 59, 4],
         }
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DetachPoolFromMarginInstructionArgs {
-    pub config: PoolConfig,
-    pub lamports: u64,
-}
-
-/// Instruction builder for `DetachPoolFromMargin`.
+/// Instruction builder for `CloseSharedEscrowAccount`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` shared_escrow
-///   1. `[writable]` pool
-///   2. `[]` whitelist
-///   3. `[writable]` sol_escrow
-///   4. `[writable, signer]` owner
-///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   1. `[writable, signer]` owner
+///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
-pub struct DetachPoolFromMarginBuilder {
+pub struct CloseSharedEscrowAccountBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
-    pool: Option<solana_program::pubkey::Pubkey>,
-    whitelist: Option<solana_program::pubkey::Pubkey>,
-    sol_escrow: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
-    lamports: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl DetachPoolFromMarginBuilder {
+impl CloseSharedEscrowAccountBuilder {
     pub fn new() -> Self {
         Self::default()
     }
     #[inline(always)]
     pub fn shared_escrow(&mut self, shared_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
         self.shared_escrow = Some(shared_escrow);
-        self
-    }
-    #[inline(always)]
-    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pool = Some(pool);
-        self
-    }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(&mut self, sol_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sol_escrow = Some(sol_escrow);
         self
     }
     #[inline(always)]
@@ -152,16 +97,6 @@ impl DetachPoolFromMarginBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn lamports(&mut self, lamports: u64) -> &mut Self {
-        self.lamports = Some(lamports);
         self
     }
     /// Add an aditional account to the instruction.
@@ -184,75 +119,49 @@ impl DetachPoolFromMarginBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = DetachPoolFromMargin {
+        let accounts = CloseSharedEscrowAccount {
             shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
-            pool: self.pool.expect("pool is not set"),
-            whitelist: self.whitelist.expect("whitelist is not set"),
-            sol_escrow: self.sol_escrow.expect("sol_escrow is not set"),
             owner: self.owner.expect("owner is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = DetachPoolFromMarginInstructionArgs {
-            config: self.config.clone().expect("config is not set"),
-            lamports: self.lamports.clone().expect("lamports is not set"),
-        };
 
-        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
-/// `detach_pool_from_margin` CPI accounts.
-pub struct DetachPoolFromMarginCpiAccounts<'a, 'b> {
+/// `close_shared_escrow_account` CPI accounts.
+pub struct CloseSharedEscrowAccountCpiAccounts<'a, 'b> {
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `detach_pool_from_margin` CPI instruction.
-pub struct DetachPoolFromMarginCpi<'a, 'b> {
+/// `close_shared_escrow_account` CPI instruction.
+pub struct CloseSharedEscrowAccountCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The arguments for the instruction.
-    pub __args: DetachPoolFromMarginInstructionArgs,
 }
 
-impl<'a, 'b> DetachPoolFromMarginCpi<'a, 'b> {
+impl<'a, 'b> CloseSharedEscrowAccountCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: DetachPoolFromMarginCpiAccounts<'a, 'b>,
-        args: DetachPoolFromMarginInstructionArgs,
+        accounts: CloseSharedEscrowAccountCpiAccounts<'a, 'b>,
     ) -> Self {
         Self {
             __program: program,
             shared_escrow: accounts.shared_escrow,
-            pool: accounts.pool,
-            whitelist: accounts.whitelist,
-            sol_escrow: accounts.sol_escrow,
             owner: accounts.owner,
             system_program: accounts.system_program,
-            __args: args,
         }
     }
     #[inline(always)]
@@ -288,21 +197,9 @@ impl<'a, 'b> DetachPoolFromMarginCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.shared_escrow.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.whitelist.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.sol_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -320,23 +217,18 @@ impl<'a, 'b> DetachPoolFromMarginCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = DetachPoolFromMarginInstructionData::new()
+        let data = CloseSharedEscrowAccountInstructionData::new()
             .try_to_vec()
             .unwrap();
-        let mut args = self.__args.try_to_vec().unwrap();
-        data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::AMM_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.shared_escrow.clone());
-        account_infos.push(self.pool.clone());
-        account_infos.push(self.whitelist.clone());
-        account_infos.push(self.sol_escrow.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -351,32 +243,24 @@ impl<'a, 'b> DetachPoolFromMarginCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `DetachPoolFromMargin` via CPI.
+/// Instruction builder for `CloseSharedEscrowAccount` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` shared_escrow
-///   1. `[writable]` pool
-///   2. `[]` whitelist
-///   3. `[writable]` sol_escrow
-///   4. `[writable, signer]` owner
-///   5. `[]` system_program
-pub struct DetachPoolFromMarginCpiBuilder<'a, 'b> {
-    instruction: Box<DetachPoolFromMarginCpiBuilderInstruction<'a, 'b>>,
+///   1. `[writable, signer]` owner
+///   2. `[]` system_program
+pub struct CloseSharedEscrowAccountCpiBuilder<'a, 'b> {
+    instruction: Box<CloseSharedEscrowAccountCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
+impl<'a, 'b> CloseSharedEscrowAccountCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(DetachPoolFromMarginCpiBuilderInstruction {
+        let instruction = Box::new(CloseSharedEscrowAccountCpiBuilderInstruction {
             __program: program,
             shared_escrow: None,
-            pool: None,
-            whitelist: None,
-            sol_escrow: None,
             owner: None,
             system_program: None,
-            config: None,
-            lamports: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -390,28 +274,6 @@ impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.pool = Some(pool);
-        self
-    }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(
-        &mut self,
-        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.whitelist = Some(whitelist);
-        self
-    }
-    #[inline(always)]
-    pub fn sol_escrow(
-        &mut self,
-        sol_escrow: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sol_escrow = Some(sol_escrow);
-        self
-    }
-    #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
@@ -422,16 +284,6 @@ impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn lamports(&mut self, lamports: u64) -> &mut Self {
-        self.instruction.lamports = Some(lamports);
         self
     }
     /// Add an additional account to the instruction.
@@ -475,15 +327,7 @@ impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = DetachPoolFromMarginInstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
-            lamports: self
-                .instruction
-                .lamports
-                .clone()
-                .expect("lamports is not set"),
-        };
-        let instruction = DetachPoolFromMarginCpi {
+        let instruction = CloseSharedEscrowAccountCpi {
             __program: self.instruction.__program,
 
             shared_escrow: self
@@ -491,19 +335,12 @@ impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
                 .shared_escrow
                 .expect("shared_escrow is not set"),
 
-            pool: self.instruction.pool.expect("pool is not set"),
-
-            whitelist: self.instruction.whitelist.expect("whitelist is not set"),
-
-            sol_escrow: self.instruction.sol_escrow.expect("sol_escrow is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             system_program: self
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -512,16 +349,11 @@ impl<'a, 'b> DetachPoolFromMarginCpiBuilder<'a, 'b> {
     }
 }
 
-struct DetachPoolFromMarginCpiBuilderInstruction<'a, 'b> {
+struct CloseSharedEscrowAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sol_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
-    lamports: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

@@ -6,7 +6,7 @@ use crate::{
     constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
     error::ErrorCode,
     state::{Pool, PoolConfig, POOL_SIZE},
-    CurveType, PoolStats, PoolType, SolEscrow,
+    CurveType, PoolStats, PoolType,
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -39,17 +39,6 @@ pub struct CreatePool<'info> {
         bump
     )]
     pub pool: Account<'info, Pool>,
-
-    #[account(
-        init, payer = owner,
-        seeds = [
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump,
-        space = 8
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
 
     /// Needed for pool seeds derivation / will be stored inside pool
     #[account(
@@ -108,12 +97,10 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.version = CURRENT_POOL_VERSION;
     pool.bump = [ctx.bumps.pool];
-    pool.sol_escrow_bump = [ctx.bumps.sol_escrow];
     pool.config = args.config;
 
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
-    pool.sol_escrow = ctx.accounts.sol_escrow.key();
     pool.identifier = args.identifier;
 
     pool.taker_buy_count = 0;

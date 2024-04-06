@@ -130,37 +130,36 @@ pub mod amm_program {
 
     pub fn init_shared_escrow_account(
         ctx: Context<InitSharedEscrow>,
-        margin_nr: u16,
+        shared_escrow_nr: u16,
         name: [u8; 32],
     ) -> Result<()> {
-        instructions::init_shared_escrow::process_init_shared_escrow(ctx, margin_nr, name)
+        instructions::init_shared_escrow::process_init_shared_escrow(ctx, shared_escrow_nr, name)
     }
 
-    pub fn close_margin_account(ctx: Context<CloseSharedEscrow>) -> Result<()> {
+    pub fn close_shared_escrow_account(ctx: Context<CloseSharedEscrow>) -> Result<()> {
         instructions::close_shared_escrow::process_close_shared_escrow(ctx)
     }
 
-    pub fn deposit_margin_account(ctx: Context<DepositSharedEscrow>, lamports: u64) -> Result<()> {
+    pub fn deposit_shared_escrow_account(
+        ctx: Context<DepositSharedEscrow>,
+        lamports: u64,
+    ) -> Result<()> {
         instructions::deposit_shared_escrow::process_deposit_shared_escrow(ctx, lamports)
     }
 
-    pub fn withdraw_margin_account(
+    pub fn withdraw_shared_escrow_account(
         ctx: Context<WithdrawSharedEscrow>,
         lamports: u64,
     ) -> Result<()> {
         instructions::withdraw_shared_escrow::process_withdraw_shared_escrow(ctx, lamports)
     }
 
-    pub fn attach_pool_to_margin(
-        ctx: Context<AttachDetachPoolSharedEscrow>,
-        _config: PoolConfig,
-    ) -> Result<()> {
+    pub fn attach_pool_to_shared_escrow(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> {
         instructions::attach_detach_pool_shared_escrow::attach_handler(ctx)
     }
 
-    pub fn detach_pool_from_margin(
+    pub fn detach_pool_from_shared_escrow(
         ctx: Context<AttachDetachPoolSharedEscrow>,
-        _config: PoolConfig,
         lamports: u64,
     ) -> Result<()> {
         instructions::attach_detach_pool_shared_escrow::detach_handler(ctx, lamports)
@@ -213,34 +212,34 @@ pub mod amm_program {
     //     instructions::withdraw_mm_fees::process_withdraw_mm_fees(ctx, lamports)
     // }
 
-    // pub fn withdraw_margin_account_cpi(
+    // pub fn withdraw_shared_escrow_account_cpi(
     //     ctx: Context<WithdrawMarginAccountCpi>,
     //     _bump: u8,
     //     lamports: u64,
     // ) -> Result<()> {
-    //     instructions::withdraw_margin_account_from_tbid::process_withdraw_margin_account_from_tbid(
+    //     instructions::withdraw_shared_escrow_account_from_tbid::process_withdraw_shared_escrow_account_from_tbid(
     //         ctx, lamports,
     //     )
     // }
 
-    // pub fn withdraw_margin_account_cpi_tcomp(
+    // pub fn withdraw_shared_escrow_account_cpi_tcomp(
     //     ctx: Context<WithdrawMarginAccountCpiTcomp>,
     //     _bump: u8,
     //     _bid_id: Pubkey,
     //     lamports: u64,
     // ) -> Result<()> {
-    //     instructions::withdraw_margin_account_from_tcomp::process_withdraw_margin_account_from_tcomp(
+    //     instructions::withdraw_shared_escrow_account_from_tcomp::process_withdraw_shared_escrow_account_from_tcomp(
     //         ctx, lamports,
     //     )
     // }
 
-    // pub fn withdraw_margin_account_cpi_tlock(
+    // pub fn withdraw_shared_escrow_account_cpi_tlock(
     //     ctx: Context<WithdrawMarginAccountCpiTLock>,
     //     _bump: u8,
     //     _order_id: [u8; 32],
     //     lamports: u64,
     // ) -> Result<()> {
-    //     instructions::withdraw_margin_account_from_tlock::process_withdraw_margin_account_from_tlock(
+    //     instructions::withdraw_shared_escrow_account_from_tlock::process_withdraw_shared_escrow_account_from_tlock(
     //         ctx, lamports,
     //     )
     // }

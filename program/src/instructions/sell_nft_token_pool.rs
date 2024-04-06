@@ -160,7 +160,7 @@ pub struct SellNftTokenPool<'info> {
     pub auth_rules: UncheckedAccount<'info>,
 
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)margin acc stored on pool
+    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
     #[account(mut)]
     pub shared_escrow: UncheckedAccount<'info>,
 
@@ -382,7 +382,7 @@ pub fn process_sell_nft_token_pool<'info>(
     let mut left_for_seller = current_price;
 
     // --------------------------------------- SOL transfers
-    //decide where we're sending the money from - margin (marginated pool) or escrow (normal pool)
+    //decide where we're sending the money from - shared escrow (shared escrow pool) or the pool itself
     let from = match &pool.shared_escrow {
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(

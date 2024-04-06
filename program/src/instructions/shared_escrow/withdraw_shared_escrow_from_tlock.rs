@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use std::str::FromStr;
+use anchor_lang::solana_program::pubkey;
 use tensor_toolbox::transfer_lamports_from_pda;
 
 use crate::SharedEscrow;
@@ -24,7 +24,7 @@ pub struct WithdrawSharedEscrowCpiTLock<'info> {
     // Don't want to import tlock package just because of the key, so hardcoding
     #[account(
         seeds=[b"order_state".as_ref(), owner.key().as_ref(), order_id.as_ref()],
-        seeds::program = Pubkey::from_str("TLoCKic2wGJm7VhZKumih4Lc35fUhYqVMgA4j389Buk").unwrap(),
+        seeds::program = pubkey!("TLoCKic2wGJm7VhZKumih4Lc35fUhYqVMgA4j389Buk"),
         bump = bump,
     )]
     pub order_state: Signer<'info>,

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::pubkey;
 use anchor_spl::token_interface::Mint;
-use std::str::FromStr;
 use tensor_toolbox::transfer_lamports_from_pda;
 
 use crate::SharedEscrow;
@@ -25,7 +25,7 @@ pub struct WithdrawSharedEscrowCpi<'info> {
     // Don't want to import tensor_bid package just because of the key, so hardcoding
     #[account(
         seeds=[b"bid_state".as_ref(), owner.key().as_ref(), nft_mint.key().as_ref()],
-        seeds::program = Pubkey::from_str("TB1Dqt8JeKQh7RLDzfYDJsq8KS4fS2yt87avRjyRxMv").unwrap(),
+        seeds::program = pubkey!("TB1Dqt8JeKQh7RLDzfYDJsq8KS4fS2yt87avRjyRxMv"),
         bump = bump,
     )]
     pub bid_state: Signer<'info>,

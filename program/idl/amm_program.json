@@ -139,11 +139,6 @@
           "isSigner": false
         },
         {
-          "name": "solEscrow",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
@@ -1253,7 +1248,7 @@
       ],
       "args": [
         {
-          "name": "marginNr",
+          "name": "sharedEscrowNr",
           "type": "u16"
         },
         {
@@ -1268,7 +1263,7 @@
       ]
     },
     {
-      "name": "closeMarginAccount",
+      "name": "closeSharedEscrowAccount",
       "accounts": [
         {
           "name": "sharedEscrow",
@@ -1289,7 +1284,7 @@
       "args": []
     },
     {
-      "name": "depositMarginAccount",
+      "name": "depositSharedEscrowAccount",
       "accounts": [
         {
           "name": "sharedEscrow",
@@ -1315,7 +1310,7 @@
       ]
     },
     {
-      "name": "withdrawMarginAccount",
+      "name": "withdrawSharedEscrowAccount",
       "accounts": [
         {
           "name": "sharedEscrow",
@@ -1341,7 +1336,7 @@
       ]
     },
     {
-      "name": "attachPoolToMargin",
+      "name": "attachPoolToSharedEscrow",
       "accounts": [
         {
           "name": "sharedEscrow",
@@ -1350,19 +1345,6 @@
         },
         {
           "name": "pool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "Needed for pool seeds derivation / will be stored inside pool"
-          ]
-        },
-        {
-          "name": "solEscrow",
           "isMut": true,
           "isSigner": false
         },
@@ -1377,17 +1359,10 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        }
-      ]
+      "args": []
     },
     {
-      "name": "detachPoolFromMargin",
+      "name": "detachPoolFromSharedEscrow",
       "accounts": [
         {
           "name": "sharedEscrow",
@@ -1396,19 +1371,6 @@
         },
         {
           "name": "pool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "Needed for pool seeds derivation / will be stored inside pool"
-          ]
-        },
-        {
-          "name": "solEscrow",
           "isMut": true,
           "isSigner": false
         },
@@ -1424,12 +1386,6 @@
         }
       ],
       "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
         {
           "name": "lamports",
           "type": "u64"
@@ -2101,18 +2057,6 @@
             }
           },
           {
-            "name": "solEscrowBump",
-            "docs": [
-              "SOL Escrow PDA bump seed."
-            ],
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
-          },
-          {
             "name": "identifier",
             "docs": [
               "Owner-chosen identifier for the pool"
@@ -2157,10 +2101,6 @@
           },
           {
             "name": "whitelist",
-            "type": "publicKey"
-          },
-          {
-            "name": "solEscrow",
             "type": "publicKey"
           },
           {
@@ -2214,7 +2154,7 @@
           {
             "name": "maxTakerSellCount",
             "docs": [
-              "Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity"
+              "Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity"
             ],
             "type": "u32"
           }
@@ -2304,30 +2244,6 @@
             }
           }
         ]
-      }
-    },
-    {
-      "name": "SolEscrow",
-      "docs": [
-        "Need dummy Anchor account so we can use `close` constraint."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "EscrowOwner",
-      "type": {
-        "kind": "struct",
-        "fields": []
-      }
-    },
-    {
-      "name": "EscrowTokenAccount",
-      "type": {
-        "kind": "struct",
-        "fields": []
       }
     },
     {
@@ -2820,8 +2736,8 @@
     },
     {
       "code": 12032,
-      "name": "MarginInUse",
-      "msg": "margin account has pools open and is in use"
+      "name": "SharedEscrowInUse",
+      "msg": "shared escrow account has pools open and is in use"
     },
     {
       "code": 12033,

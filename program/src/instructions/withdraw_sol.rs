@@ -59,7 +59,7 @@ pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     lamports: u64,
 ) -> Result<()> {
-    // ToDo: If pool has padding for future proofing, this can be extracted to a constant.
+    // ToDo: If pool has padding for future proofing, the keep-alive rent  can be extracted to a constant.
     let rent = solana_program::rent::Rent::get()?;
     let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
 

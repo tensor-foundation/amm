@@ -106,9 +106,9 @@ pub enum AmmError {
     /// 12031 (0x2EFF) - wrong frozen status
     #[error("wrong frozen status")]
     WrongFrozenStatus,
-    /// 12032 (0x2F00) - margin account has pools open and is in use
-    #[error("margin account has pools open and is in use")]
-    MarginInUse,
+    /// 12032 (0x2F00) - shared escrow account has pools open and is in use
+    #[error("shared escrow account has pools open and is in use")]
+    SharedEscrowInUse,
     /// 12033 (0x2F01) - max taker sell count exceeded, pool cannot buy anymore NFTs
     #[error("max taker sell count exceeded, pool cannot buy anymore NFTs")]
     MaxTakerSellCountExceeded,

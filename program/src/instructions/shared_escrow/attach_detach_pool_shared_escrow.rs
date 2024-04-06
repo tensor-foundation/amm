@@ -1,15 +1,12 @@
 use anchor_lang::prelude::*;
-use tensor_toolbox::{transfer_all_lamports_from_pda, transfer_lamports_from_pda};
-use tensor_whitelist::Whitelist;
+use tensor_toolbox::transfer_lamports_from_pda;
 use vipers::{throw_err, unwrap_int, Validate};
 
 use crate::{
-    constants::CURRENT_POOL_VERSION, error::ErrorCode, Pool, PoolConfig, PoolType, SharedEscrow,
-    SolEscrow,
+    constants::CURRENT_POOL_VERSION, error::ErrorCode, Pool, PoolType, SharedEscrow, POOL_SIZE,
 };
 
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct AttachDetachPoolSharedEscrow<'info> {
     #[account(
         mut,
@@ -31,31 +28,12 @@ pub struct AttachDetachPoolSharedEscrow<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow,
+        has_one = owner,
         // can only deposit SOL into Token pool
         // TODO: if we decide to add Trade pool, need to update sell_nft_to_trade_pool.rs and buy_nft.rs w/ logic related to shared_escrow
-        constraint = config.pool_type == PoolType::Token || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.config.pool_type == PoolType::Token || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
-
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
 
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -82,15 +60,26 @@ impl<'info> Validate<'info> for AttachDetachPoolSharedEscrow<'info> {
 
 impl<'info> AttachDetachPoolSharedEscrow<'info> {
     fn empty_escrow(&self) -> Result<()> {
-        transfer_all_lamports_from_pda(
-            &self.sol_escrow.to_account_info(),
+        // We need to leave enough state bond to keep the pool alive.
+        let rent = solana_program::rent::Rent::get()?;
+        let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
+
+        let current_pool_lamports = self.pool.to_account_info().get_lamports();
+
+        let withdraw_lamports = current_pool_lamports
+            .checked_sub(pool_keep_alive)
+            .ok_or(ErrorCode::ArithmeticError)?;
+
+        transfer_lamports_from_pda(
+            &self.pool.to_account_info(),
             &self.shared_escrow.to_account_info(),
+            withdraw_lamports,
         )
     }
     fn move_to_escrow(&self, lamports: u64) -> Result<()> {
         transfer_lamports_from_pda(
             &self.shared_escrow.to_account_info(),
-            &self.sol_escrow.to_account_info(),
+            &self.pool.to_account_info(),
             lamports,
         )
     }
@@ -99,6 +88,8 @@ impl<'info> AttachDetachPoolSharedEscrow<'info> {
 #[access_control(ctx.accounts.validate())]
 pub fn attach_handler(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
+
+    // Already attached.
     if pool.shared_escrow.is_some() {
         throw_err!(ErrorCode::PoolOnSharedEscrow);
     }
@@ -122,14 +113,16 @@ pub fn attach_handler(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> 
 
 #[access_control(ctx.accounts.validate())]
 pub fn detach_handler(ctx: Context<AttachDetachPoolSharedEscrow>, lamports: u64) -> Result<()> {
+    // Already detached.
     if ctx.accounts.pool.shared_escrow.is_none() {
         throw_err!(ErrorCode::PoolNotOnSharedEscrow);
     }
+    // Wrong shared escrow.
     if ctx.accounts.shared_escrow.key() != ctx.accounts.pool.shared_escrow.unwrap() {
         throw_err!(ErrorCode::BadSharedEscrow);
     }
 
-    //move balance from shared_escrow to escrow
+    //move balance from shared_escrow to pool
     ctx.accounts.move_to_escrow(lamports)?;
 
     //update pool

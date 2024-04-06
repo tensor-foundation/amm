@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use std::str::FromStr;
+use anchor_lang::solana_program::pubkey;
 use tensor_toolbox::transfer_lamports_from_pda;
 
 use crate::SharedEscrow;
@@ -24,7 +24,7 @@ pub struct WithdrawSharedEscrowCpiTcomp<'info> {
     // Don't want to import tcomp package just because of the key, so hardcoding
     #[account(
         seeds=[b"bid_state".as_ref(), owner.key().as_ref(), bid_id.as_ref()],
-        seeds::program = Pubkey::from_str("TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp").unwrap(),
+        seeds::program = pubkey!("TCMPhJdwDryooaGtiocG1u3xcYbRpiJzb283XfCZsDp"),
         bump = bump,
     )]
     pub bid_state: Signer<'info>,

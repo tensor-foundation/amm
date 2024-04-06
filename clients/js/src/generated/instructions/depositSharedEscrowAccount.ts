@@ -16,6 +16,8 @@ import {
   getArrayEncoder,
   getStructDecoder,
   getStructEncoder,
+  getU64Decoder,
+  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
@@ -33,7 +35,7 @@ import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 
-export type CloseMarginAccountInstruction<
+export type DepositSharedEscrowAccountInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
@@ -59,41 +61,46 @@ export type CloseMarginAccountInstruction<
     ]
   >;
 
-export type CloseMarginAccountInstructionData = {
+export type DepositSharedEscrowAccountInstructionData = {
   discriminator: Array<number>;
+  lamports: bigint;
 };
 
-export type CloseMarginAccountInstructionDataArgs = {};
+export type DepositSharedEscrowAccountInstructionDataArgs = {
+  lamports: number | bigint;
+};
 
-export function getCloseMarginAccountInstructionDataEncoder(): Encoder<CloseMarginAccountInstructionDataArgs> {
+export function getDepositSharedEscrowAccountInstructionDataEncoder(): Encoder<DepositSharedEscrowAccountInstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
+      ['lamports', getU64Encoder()],
     ]),
     (value) => ({
       ...value,
-      discriminator: [105, 215, 41, 239, 166, 207, 1, 103],
+      discriminator: [86, 76, 60, 195, 244, 209, 62, 154],
     })
   );
 }
 
-export function getCloseMarginAccountInstructionDataDecoder(): Decoder<CloseMarginAccountInstructionData> {
+export function getDepositSharedEscrowAccountInstructionDataDecoder(): Decoder<DepositSharedEscrowAccountInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
+    ['lamports', getU64Decoder()],
   ]);
 }
 
-export function getCloseMarginAccountInstructionDataCodec(): Codec<
-  CloseMarginAccountInstructionDataArgs,
-  CloseMarginAccountInstructionData
+export function getDepositSharedEscrowAccountInstructionDataCodec(): Codec<
+  DepositSharedEscrowAccountInstructionDataArgs,
+  DepositSharedEscrowAccountInstructionData
 > {
   return combineCodec(
-    getCloseMarginAccountInstructionDataEncoder(),
-    getCloseMarginAccountInstructionDataDecoder()
+    getDepositSharedEscrowAccountInstructionDataEncoder(),
+    getDepositSharedEscrowAccountInstructionDataDecoder()
   );
 }
 
-export type CloseMarginAccountInput<
+export type DepositSharedEscrowAccountInput<
   TAccountSharedEscrow extends string = string,
   TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
@@ -101,19 +108,20 @@ export type CloseMarginAccountInput<
   sharedEscrow: Address<TAccountSharedEscrow>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
+  lamports: DepositSharedEscrowAccountInstructionDataArgs['lamports'];
 };
 
-export function getCloseMarginAccountInstruction<
+export function getDepositSharedEscrowAccountInstruction<
   TAccountSharedEscrow extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
 >(
-  input: CloseMarginAccountInput<
+  input: DepositSharedEscrowAccountInput<
     TAccountSharedEscrow,
     TAccountOwner,
     TAccountSystemProgram
   >
-): CloseMarginAccountInstruction<
+): DepositSharedEscrowAccountInstruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountSharedEscrow,
   TAccountOwner,
@@ -133,6 +141,9 @@ export function getCloseMarginAccountInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -147,8 +158,10 @@ export function getCloseMarginAccountInstruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getCloseMarginAccountInstructionDataEncoder().encode({}),
-  } as CloseMarginAccountInstruction<
+    data: getDepositSharedEscrowAccountInstructionDataEncoder().encode(
+      args as DepositSharedEscrowAccountInstructionDataArgs
+    ),
+  } as DepositSharedEscrowAccountInstruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountSharedEscrow,
     TAccountOwner,
@@ -158,7 +171,7 @@ export function getCloseMarginAccountInstruction<
   return instruction;
 }
 
-export type ParsedCloseMarginAccountInstruction<
+export type ParsedDepositSharedEscrowAccountInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -168,17 +181,17 @@ export type ParsedCloseMarginAccountInstruction<
     owner: TAccountMetas[1];
     systemProgram: TAccountMetas[2];
   };
-  data: CloseMarginAccountInstructionData;
+  data: DepositSharedEscrowAccountInstructionData;
 };
 
-export function parseCloseMarginAccountInstruction<
+export function parseDepositSharedEscrowAccountInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedCloseMarginAccountInstruction<TProgram, TAccountMetas> {
+): ParsedDepositSharedEscrowAccountInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
@@ -196,7 +209,7 @@ export function parseCloseMarginAccountInstruction<
       owner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCloseMarginAccountInstructionDataDecoder().decode(
+    data: getDepositSharedEscrowAccountInstructionDataDecoder().decode(
       instruction.data
     ),
   };

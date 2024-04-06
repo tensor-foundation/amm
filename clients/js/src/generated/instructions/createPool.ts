@@ -57,7 +57,6 @@ export type CreatePoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountSolEscrow extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -74,9 +73,6 @@ export type CreatePoolInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountSolEscrow extends string
-        ? WritableAccount<TAccountSolEscrow>
-        : TAccountSolEscrow,
       TAccountWhitelist extends string
         ? ReadonlyAccount<TAccountWhitelist>
         : TAccountWhitelist,
@@ -149,13 +145,11 @@ export function getCreatePoolInstructionDataCodec(): Codec<
 export type CreatePoolInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
-  TAccountSolEscrow extends string = string,
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
-  solEscrow: Address<TAccountSolEscrow>;
   /** Needed for pool seeds derivation / will be stored inside pool */
   whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -170,14 +164,12 @@ export type CreatePoolInput<
 export function getCreatePoolInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
-  TAccountSolEscrow extends string,
   TAccountWhitelist extends string,
   TAccountSystemProgram extends string,
 >(
   input: CreatePoolInput<
     TAccountOwner,
     TAccountPool,
-    TAccountSolEscrow,
     TAccountWhitelist,
     TAccountSystemProgram
   >
@@ -185,7 +177,6 @@ export function getCreatePoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
-  TAccountSolEscrow,
   TAccountWhitelist,
   TAccountSystemProgram
 > {
@@ -196,7 +187,6 @@ export function getCreatePoolInstruction<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    solEscrow: { value: input.solEscrow ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -219,7 +209,6 @@ export function getCreatePoolInstruction<
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.solEscrow),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.systemProgram),
     ],
@@ -231,7 +220,6 @@ export function getCreatePoolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
-    TAccountSolEscrow,
     TAccountWhitelist,
     TAccountSystemProgram
   >;
@@ -247,10 +235,9 @@ export type ParsedCreatePoolInstruction<
   accounts: {
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
-    solEscrow: TAccountMetas[2];
     /** Needed for pool seeds derivation / will be stored inside pool */
-    whitelist: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    whitelist: TAccountMetas[2];
+    systemProgram: TAccountMetas[3];
   };
   data: CreatePoolInstructionData;
 };
@@ -263,7 +250,7 @@ export function parseCreatePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedCreatePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -278,7 +265,6 @@ export function parseCreatePoolInstruction<
     accounts: {
       owner: getNextAccount(),
       pool: getNextAccount(),
-      solEscrow: getNextAccount(),
       whitelist: getNextAccount(),
       systemProgram: getNextAccount(),
     },

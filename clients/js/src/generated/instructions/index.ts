@@ -6,19 +6,19 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export * from './attachPoolToMargin';
+export * from './attachPoolToSharedEscrow';
 export * from './buyNft';
 export * from './buySingleListing';
 export * from './buySingleListingT22';
-export * from './closeMarginAccount';
 export * from './closePool';
+export * from './closeSharedEscrowAccount';
 export * from './createPool';
 export * from './delist';
 export * from './delistT22';
-export * from './depositMarginAccount';
 export * from './depositNft';
+export * from './depositSharedEscrowAccount';
 export * from './depositSol';
-export * from './detachPoolFromMargin';
+export * from './detachPoolFromSharedEscrow';
 export * from './editPool';
 export * from './editSingleListing';
 export * from './initSharedEscrowAccount';
@@ -27,6 +27,6 @@ export * from './listT22';
 export * from './reallocPool';
 export * from './sellNftTokenPool';
 export * from './sellNftTradePool';
-export * from './withdrawMarginAccount';
 export * from './withdrawNft';
+export * from './withdrawSharedEscrowAccount';
 export * from './withdrawSol';

@@ -65,12 +65,12 @@ export type InitSharedEscrowAccountInstruction<
 
 export type InitSharedEscrowAccountInstructionData = {
   discriminator: Array<number>;
-  marginNr: number;
+  sharedEscrowNr: number;
   name: Uint8Array;
 };
 
 export type InitSharedEscrowAccountInstructionDataArgs = {
-  marginNr: number;
+  sharedEscrowNr: number;
   name: Uint8Array;
 };
 
@@ -78,7 +78,7 @@ export function getInitSharedEscrowAccountInstructionDataEncoder(): Encoder<Init
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['marginNr', getU16Encoder()],
+      ['sharedEscrowNr', getU16Encoder()],
       ['name', getBytesEncoder({ size: 32 })],
     ]),
     (value) => ({
@@ -91,7 +91,7 @@ export function getInitSharedEscrowAccountInstructionDataEncoder(): Encoder<Init
 export function getInitSharedEscrowAccountInstructionDataDecoder(): Decoder<InitSharedEscrowAccountInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['marginNr', getU16Decoder()],
+    ['sharedEscrowNr', getU16Decoder()],
     ['name', getBytesDecoder({ size: 32 })],
   ]);
 }
@@ -114,7 +114,7 @@ export type InitSharedEscrowAccountInput<
   sharedEscrow: Address<TAccountSharedEscrow>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
-  marginNr: InitSharedEscrowAccountInstructionDataArgs['marginNr'];
+  sharedEscrowNr: InitSharedEscrowAccountInstructionDataArgs['sharedEscrowNr'];
   name: InitSharedEscrowAccountInstructionDataArgs['name'];
 };
 

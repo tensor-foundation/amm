@@ -192,7 +192,7 @@ pub struct SellNftShared<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow @ ErrorCode::WrongAuthority,
+        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
         close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -237,17 +237,6 @@ pub struct SellNftShared<'info> {
     )]
     pub metadata: UncheckedAccount<'info>,
 
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
-
     /// CHECK: has_one = owner in pool (owner is the buyer)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
@@ -284,7 +273,7 @@ pub struct SellNftSharedT22<'info> {
             pool.identifier.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist, has_one = sol_escrow @ ErrorCode::WrongAuthority,
+        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
         close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -314,17 +303,6 @@ pub struct SellNftSharedT22<'info> {
 
     /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
     pub nft_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// CHECK: has_one = escrow in pool
-    #[account(
-        mut,
-        seeds=[
-            b"sol_escrow".as_ref(),
-            pool.key().as_ref(),
-        ],
-        bump = pool.sol_escrow_bump[0],
-    )]
-    pub sol_escrow: Box<Account<'info, SolEscrow>>,
 
     /// CHECK: has_one = owner in pool (owner is the buyer)
     #[account(mut)]

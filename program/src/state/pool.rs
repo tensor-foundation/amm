@@ -61,8 +61,6 @@ pub struct Pool {
     pub version: u8,
     /// Bump seed for the pool PDA.
     pub bump: [u8; 1],
-    /// SOL Escrow PDA bump seed.
-    pub sol_escrow_bump: [u8; 1],
     /// Owner-chosen identifier for the pool
     pub identifier: [u8; 32],
 
@@ -76,7 +74,6 @@ pub struct Pool {
     pub config: PoolConfig,
     pub owner: Pubkey,
     pub whitelist: Pubkey,
-    pub sol_escrow: Pubkey,
     pub currency: Option<Pubkey>,
 
     /// How many times a taker has SOLD into the pool
@@ -91,7 +88,7 @@ pub struct Pool {
     pub shared_escrow: Option<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: Option<Pubkey>,
-    /// Limit how many buys a pool can execute - useful for cross-margin, else keeps buying into infinity
+    /// Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity
     // Ideally would use an option here, but not enough space w/o migrating pools, hence 0 = no restriction
     pub max_taker_sell_count: u32,
     // (!) make sure aligns with last number in SIZE
@@ -267,9 +264,9 @@ impl Pool {
 
     /// This check is against the following scenario:
     /// 1. user sets cap to 1 and reaches it (so 1/1)
-    /// 2. user detaches margin
+    /// 2. user detaches shared escrow
     /// 3. user sells more into the pool (so 2/1)
-    /// 4. user attaches margin again, but 2/1 is theoretically invalid
+    /// 4. user attaches shared escrow again, but 2/1 is theoretically invalid
     pub fn adjust_pool_max_taker_sell_count(&mut self) -> Result<()> {
         if self
             .valid_max_sell_count(self.max_taker_sell_count)

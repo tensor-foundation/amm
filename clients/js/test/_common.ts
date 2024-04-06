@@ -36,7 +36,6 @@ import {
   PoolConfig,
   PoolType,
   findPoolPda,
-  findSolEscrowPda,
   getCreatePoolInstruction,
 } from '../src/index.js';
 
@@ -192,7 +191,6 @@ export interface CreatePoolThrowsParams extends CreatePoolParams {
 
 export interface CreatePoolReturns {
   pool: Address;
-  solEscrow: Address;
   owner: KeyPairSigner;
   cosigner: KeyPairSigner | undefined;
   identifier: Uint8Array;
@@ -228,13 +226,11 @@ export async function createPool({
     owner: owner.address,
     identifier,
   });
-  const [solEscrow] = await findSolEscrowPda({ pool });
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
     owner,
     pool,
-    solEscrow,
     whitelist,
     identifier,
     config,
@@ -250,7 +246,7 @@ export async function createPool({
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  return { pool, solEscrow, owner, cosigner, identifier, whitelist };
+  return { pool, owner, cosigner, identifier, whitelist };
 }
 
 export async function createPoolThrows({
@@ -289,13 +285,11 @@ export async function createPoolThrows({
     owner: owner.address,
     identifier,
   });
-  const [solEscrow] = await findSolEscrowPda({ pool });
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
     owner,
     pool,
-    solEscrow,
     whitelist,
     identifier,
     config,

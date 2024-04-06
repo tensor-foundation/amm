@@ -9,15 +9,17 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 /// Accounts.
-pub struct CloseMarginAccount {
+pub struct AttachPoolToSharedEscrow {
     pub shared_escrow: solana_program::pubkey::Pubkey,
+
+    pub pool: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl CloseMarginAccount {
+impl AttachPoolToSharedEscrow {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(&[])
     }
@@ -26,10 +28,13 @@ impl CloseMarginAccount {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.shared_escrow,
             false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
@@ -39,7 +44,7 @@ impl CloseMarginAccount {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let data = CloseMarginAccountInstructionData::new()
+        let data = AttachPoolToSharedEscrowInstructionData::new()
             .try_to_vec()
             .unwrap();
 
@@ -52,40 +57,47 @@ impl CloseMarginAccount {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct CloseMarginAccountInstructionData {
+struct AttachPoolToSharedEscrowInstructionData {
     discriminator: [u8; 8],
 }
 
-impl CloseMarginAccountInstructionData {
+impl AttachPoolToSharedEscrowInstructionData {
     fn new() -> Self {
         Self {
-            discriminator: [105, 215, 41, 239, 166, 207, 1, 103],
+            discriminator: [156, 47, 51, 203, 173, 150, 207, 0],
         }
     }
 }
 
-/// Instruction builder for `CloseMarginAccount`.
+/// Instruction builder for `AttachPoolToSharedEscrow`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` shared_escrow
-///   1. `[writable, signer]` owner
-///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   1. `[writable]` pool
+///   2. `[writable, signer]` owner
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
-pub struct CloseMarginAccountBuilder {
+pub struct AttachPoolToSharedEscrowBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
+    pool: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl CloseMarginAccountBuilder {
+impl AttachPoolToSharedEscrowBuilder {
     pub fn new() -> Self {
         Self::default()
     }
     #[inline(always)]
     pub fn shared_escrow(&mut self, shared_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
         self.shared_escrow = Some(shared_escrow);
+        self
+    }
+    #[inline(always)]
+    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool = Some(pool);
         self
     }
     #[inline(always)]
@@ -119,8 +131,9 @@ impl CloseMarginAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = CloseMarginAccount {
+        let accounts = AttachPoolToSharedEscrow {
             shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
+            pool: self.pool.expect("pool is not set"),
             owner: self.owner.expect("owner is not set"),
             system_program: self
                 .system_program
@@ -131,35 +144,40 @@ impl CloseMarginAccountBuilder {
     }
 }
 
-/// `close_margin_account` CPI accounts.
-pub struct CloseMarginAccountCpiAccounts<'a, 'b> {
+/// `attach_pool_to_shared_escrow` CPI accounts.
+pub struct AttachPoolToSharedEscrowCpiAccounts<'a, 'b> {
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `close_margin_account` CPI instruction.
-pub struct CloseMarginAccountCpi<'a, 'b> {
+/// `attach_pool_to_shared_escrow` CPI instruction.
+pub struct AttachPoolToSharedEscrowCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-impl<'a, 'b> CloseMarginAccountCpi<'a, 'b> {
+impl<'a, 'b> AttachPoolToSharedEscrowCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: CloseMarginAccountCpiAccounts<'a, 'b>,
+        accounts: AttachPoolToSharedEscrowCpiAccounts<'a, 'b>,
     ) -> Self {
         Self {
             __program: program,
             shared_escrow: accounts.shared_escrow,
+            pool: accounts.pool,
             owner: accounts.owner,
             system_program: accounts.system_program,
         }
@@ -197,9 +215,13 @@ impl<'a, 'b> CloseMarginAccountCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.shared_escrow.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -217,7 +239,7 @@ impl<'a, 'b> CloseMarginAccountCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let data = CloseMarginAccountInstructionData::new()
+        let data = AttachPoolToSharedEscrowInstructionData::new()
             .try_to_vec()
             .unwrap();
 
@@ -226,9 +248,10 @@ impl<'a, 'b> CloseMarginAccountCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.shared_escrow.clone());
+        account_infos.push(self.pool.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -243,22 +266,24 @@ impl<'a, 'b> CloseMarginAccountCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `CloseMarginAccount` via CPI.
+/// Instruction builder for `AttachPoolToSharedEscrow` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable]` shared_escrow
-///   1. `[writable, signer]` owner
-///   2. `[]` system_program
-pub struct CloseMarginAccountCpiBuilder<'a, 'b> {
-    instruction: Box<CloseMarginAccountCpiBuilderInstruction<'a, 'b>>,
+///   1. `[writable]` pool
+///   2. `[writable, signer]` owner
+///   3. `[]` system_program
+pub struct AttachPoolToSharedEscrowCpiBuilder<'a, 'b> {
+    instruction: Box<AttachPoolToSharedEscrowCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> CloseMarginAccountCpiBuilder<'a, 'b> {
+impl<'a, 'b> AttachPoolToSharedEscrowCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(CloseMarginAccountCpiBuilderInstruction {
+        let instruction = Box::new(AttachPoolToSharedEscrowCpiBuilderInstruction {
             __program: program,
             shared_escrow: None,
+            pool: None,
             owner: None,
             system_program: None,
             __remaining_accounts: Vec::new(),
@@ -271,6 +296,11 @@ impl<'a, 'b> CloseMarginAccountCpiBuilder<'a, 'b> {
         shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.shared_escrow = Some(shared_escrow);
+        self
+    }
+    #[inline(always)]
+    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.pool = Some(pool);
         self
     }
     #[inline(always)]
@@ -327,13 +357,15 @@ impl<'a, 'b> CloseMarginAccountCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let instruction = CloseMarginAccountCpi {
+        let instruction = AttachPoolToSharedEscrowCpi {
             __program: self.instruction.__program,
 
             shared_escrow: self
                 .instruction
                 .shared_escrow
                 .expect("shared_escrow is not set"),
+
+            pool: self.instruction.pool.expect("pool is not set"),
 
             owner: self.instruction.owner.expect("owner is not set"),
 
@@ -349,9 +381,10 @@ impl<'a, 'b> CloseMarginAccountCpiBuilder<'a, 'b> {
     }
 }
 
-struct CloseMarginAccountCpiBuilderInstruction<'a, 'b> {
+struct AttachPoolToSharedEscrowCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
