@@ -16,22 +16,15 @@ import {
 import {
   ParsedAttachPoolToSharedEscrowInstruction,
   ParsedBuyNftInstruction,
-  ParsedBuySingleListingInstruction,
-  ParsedBuySingleListingT22Instruction,
   ParsedClosePoolInstruction,
   ParsedCloseSharedEscrowAccountInstruction,
   ParsedCreatePoolInstruction,
-  ParsedDelistInstruction,
-  ParsedDelistT22Instruction,
   ParsedDepositNftInstruction,
   ParsedDepositSharedEscrowAccountInstruction,
   ParsedDepositSolInstruction,
   ParsedDetachPoolFromSharedEscrowInstruction,
   ParsedEditPoolInstruction,
-  ParsedEditSingleListingInstruction,
   ParsedInitSharedEscrowAccountInstruction,
-  ParsedListInstruction,
-  ParsedListT22Instruction,
   ParsedReallocPoolInstruction,
   ParsedSellNftTokenPoolInstruction,
   ParsedSellNftTradePoolInstruction,
@@ -108,13 +101,6 @@ export enum AmmInstruction {
   WithdrawSharedEscrowAccount,
   AttachPoolToSharedEscrow,
   DetachPoolFromSharedEscrow,
-  List,
-  Delist,
-  BuySingleListing,
-  EditSingleListing,
-  BuySingleListingT22,
-  ListT22,
-  DelistT22,
 }
 
 export function identifyAmmInstruction(
@@ -179,27 +165,6 @@ export function identifyAmmInstruction(
   if (memcmp(data, new Uint8Array([32, 130, 53, 4, 37, 115, 52, 51]), 0)) {
     return AmmInstruction.DetachPoolFromSharedEscrow;
   }
-  if (memcmp(data, new Uint8Array([54, 174, 193, 67, 17, 41, 132, 38]), 0)) {
-    return AmmInstruction.List;
-  }
-  if (memcmp(data, new Uint8Array([55, 136, 205, 107, 107, 173, 4, 31]), 0)) {
-    return AmmInstruction.Delist;
-  }
-  if (memcmp(data, new Uint8Array([245, 220, 105, 73, 117, 98, 78, 141]), 0)) {
-    return AmmInstruction.BuySingleListing;
-  }
-  if (memcmp(data, new Uint8Array([88, 38, 236, 212, 31, 185, 18, 166]), 0)) {
-    return AmmInstruction.EditSingleListing;
-  }
-  if (memcmp(data, new Uint8Array([102, 89, 66, 0, 5, 68, 84, 216]), 0)) {
-    return AmmInstruction.BuySingleListingT22;
-  }
-  if (memcmp(data, new Uint8Array([9, 117, 93, 230, 221, 4, 199, 212]), 0)) {
-    return AmmInstruction.ListT22;
-  }
-  if (memcmp(data, new Uint8Array([216, 72, 73, 18, 204, 82, 123, 26]), 0)) {
-    return AmmInstruction.DelistT22;
-  }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'
   );
@@ -258,23 +223,4 @@ export type ParsedAmmInstruction<
     } & ParsedAttachPoolToSharedEscrowInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.DetachPoolFromSharedEscrow;
-    } & ParsedDetachPoolFromSharedEscrowInstruction<TProgram>)
-  | ({ instructionType: AmmInstruction.List } & ParsedListInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.Delist;
-    } & ParsedDelistInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.BuySingleListing;
-    } & ParsedBuySingleListingInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.EditSingleListing;
-    } & ParsedEditSingleListingInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.BuySingleListingT22;
-    } & ParsedBuySingleListingT22Instruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.ListT22;
-    } & ParsedListT22Instruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.DelistT22;
-    } & ParsedDelistT22Instruction<TProgram>);
+    } & ParsedDetachPoolFromSharedEscrowInstruction<TProgram>);

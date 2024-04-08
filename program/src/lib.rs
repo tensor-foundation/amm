@@ -165,46 +165,6 @@ pub mod amm_program {
         instructions::attach_detach_pool_shared_escrow::detach_handler(ctx, lamports)
     }
 
-    pub fn list<'info>(
-        ctx: Context<'_, '_, '_, 'info, List<'info>>,
-        price: u64,
-        authorization_data: Option<AuthorizationDataLocal>,
-        rules_acc_present: bool,
-    ) -> Result<()> {
-        instructions::list::process_list(ctx, price, authorization_data, rules_acc_present)
-    }
-
-    pub fn delist<'info>(
-        ctx: Context<'_, '_, '_, 'info, Delist<'info>>,
-        authorization_data: Option<AuthorizationDataLocal>,
-        rules_acc_present: bool,
-    ) -> Result<()> {
-        instructions::delist::process_delist(ctx, authorization_data, rules_acc_present)
-    }
-
-    pub fn buy_single_listing<'info>(
-        ctx: Context<'_, '_, '_, 'info, BuySingleListing<'info>>,
-        max_price: u64,
-        rules_acc_present: bool,
-        authorization_data: Option<AuthorizationDataLocal>,
-        optional_royalty_pct: Option<u16>,
-    ) -> Result<()> {
-        instructions::buy_single_listing::process_buy_single_listing(
-            ctx,
-            max_price,
-            rules_acc_present,
-            authorization_data,
-            optional_royalty_pct,
-        )
-    }
-
-    pub fn edit_single_listing<'info>(
-        ctx: Context<'_, '_, '_, 'info, EditSingleListing<'info>>,
-        price: u64,
-    ) -> Result<()> {
-        instructions::edit_single_listing::process_edit_single_listing(ctx, price)
-    }
-
     // pub fn withdraw_mm_fee<'info>(
     //     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     //     lamports: u64,
@@ -285,24 +245,6 @@ pub mod amm_program {
     // ) -> Result<()> {
     //     instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
     // }
-
-    pub fn buy_single_listing_t22<'info>(
-        ctx: Context<'_, '_, '_, 'info, BuySingleListingT22<'info>>,
-        max_price: u64,
-    ) -> Result<()> {
-        instructions::t22_buy_single_listing::process_buy_single_listing_t22(ctx, max_price)
-    }
-
-    pub fn list_t22<'info>(
-        ctx: Context<'_, '_, '_, 'info, ListT22<'info>>,
-        price: u64,
-    ) -> Result<()> {
-        instructions::t22_list::process_list_t22(ctx, price)
-    }
-
-    pub fn delist_t22<'info>(ctx: Context<'_, '_, '_, 'info, DelistT22<'info>>) -> Result<()> {
-        instructions::t22_delist::process_delist_t22(ctx)
-    }
 
     //-------------------------------//
     // WNS instructions              //

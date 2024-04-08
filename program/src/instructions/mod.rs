@@ -8,7 +8,6 @@ pub mod edit_pool;
 pub mod sell_nft_token_pool;
 pub mod sell_nft_trade_pool;
 pub mod shared_escrow;
-pub mod single_listing;
 pub mod t22_buy_nft;
 pub mod t22_deposit_nft;
 pub mod t22_sell_nft_token_pool;
