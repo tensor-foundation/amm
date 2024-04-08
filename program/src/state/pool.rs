@@ -74,6 +74,9 @@ pub struct Pool {
     pub config: PoolConfig,
     pub owner: Pubkey,
     pub whitelist: Pubkey,
+    // Store the rent payer, if different from the owner so they can be refunded
+    // without signing when the pool is closed.
+    pub rent_payer: Option<Pubkey>,
     pub currency: Option<Pubkey>,
 
     /// How many times a taker has SOLD into the pool
@@ -84,15 +87,15 @@ pub struct Pool {
 
     pub stats: PoolStats,
 
-    /// If an escrow account present, means it's a shared-escrow pool (currently bids only)
+    /// If an escrow account is present, means it's a shared-escrow pool
     pub shared_escrow: Option<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: Option<Pubkey>,
-    /// Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity
-    // Ideally would use an option here, but not enough space w/o migrating pools, hence 0 = no restriction
+    /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+
     // (!) make sure aligns with last number in SIZE
-    // pub _reserved: [u8; 0],
+    pub _reserved: [u8; 100],
 }
 
 pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {

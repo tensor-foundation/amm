@@ -20,13 +20,16 @@ use crate::{error::ErrorCode, *};
 /// owner of the NFT. The seller is the owner of the NFT and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
+    /// If no external rent payer, this should be seller.
+    #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
-    #[account(mut)]
     pub seller: Signer<'info>,
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
@@ -74,7 +77,7 @@ pub struct SellNftTradePool<'info> {
         /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[account(
         init_if_needed,
-        payer = seller,
+        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -90,7 +93,7 @@ pub struct SellNftTradePool<'info> {
 
     #[account(
         init,
-        payer = seller,
+        payer = rent_payer,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -214,7 +217,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.seller.to_account_info(),
-            payer: &ctx.accounts.seller.to_account_info(),
+            payer: &ctx.accounts.rent_payer.to_account_info(),
             source_ata: &ctx.accounts.seller_token_account,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),

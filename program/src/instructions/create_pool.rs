@@ -22,14 +22,15 @@ pub struct CreatePoolArgs {
 #[derive(Accounts)]
 #[instruction(args: CreatePoolArgs)]
 pub struct CreatePool<'info> {
-    // Signers
     #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
     pub owner: Signer<'info>,
 
     // PDA accounts
     #[account(
         init,
-        payer = owner,
+        payer = rent_payer,
         space = POOL_SIZE,
         seeds = [
             b"pool",
@@ -102,6 +103,11 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.identifier = args.identifier;
+    pool.rent_payer = if ctx.accounts.rent_payer.key() == ctx.accounts.owner.key() {
+        None
+    } else {
+        Some(ctx.accounts.rent_payer.key())
+    };
 
     pool.taker_buy_count = 0;
     pool.taker_sell_count = 0;

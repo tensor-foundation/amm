@@ -16,8 +16,10 @@ use crate::{error::ErrorCode, *};
 /// Allows a pool owner to deposit an asset into Trade or NFT pool.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
-    /// The owner of the pool and the NFT.
     #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
+    /// The owner of the pool and the NFT.
     pub owner: Signer<'info>,
 
     #[account(
@@ -53,7 +55,7 @@ pub struct DepositNft<'info> {
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
         init, // TODO: clarify this in design review <-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = owner,
+        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -70,7 +72,7 @@ pub struct DepositNft<'info> {
     /// The NFT receipt account denoting that an NFT has been deposited into a pool.
     #[account(
         init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = owner,
+        payer = rent_payer,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -194,7 +196,7 @@ pub fn process_deposit_nft(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.owner.to_account_info(),
-            payer: &ctx.accounts.owner.to_account_info(),
+            payer: &ctx.accounts.rent_payer.to_account_info(),
             source_ata: &ctx.accounts.owner_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),

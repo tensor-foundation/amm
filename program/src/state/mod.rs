@@ -145,6 +145,7 @@ mod tests {
                 expires_at: 0,
                 owner: Pubkey::default(),
                 cosigner: Some(Pubkey::default()),
+                rent_payer: None,
                 whitelist: Pubkey::default(),
                 identifier: [0; 32],
                 config: PoolConfig {
@@ -162,7 +163,7 @@ mod tests {
                 currency: Some(Pubkey::default()),
                 shared_escrow: None,
                 max_taker_sell_count: 10,
-                // _reserved: [0; 4],
+                _reserved: [0; 100],
             }
         }
     }

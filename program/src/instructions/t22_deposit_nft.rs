@@ -16,6 +16,13 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
+    #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
+    /// CHECK: has_one = owner in pool
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
     #[account(
         mut,
         seeds = [
@@ -66,7 +73,7 @@ pub struct DepositNftT22<'info> {
 
     #[account(
         init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = owner,
+        payer = rent_payer,
         seeds=[
             b"nft_receipt".as_ref(),
             nft_mint.key().as_ref(),
@@ -76,10 +83,6 @@ pub struct DepositNftT22<'info> {
         space = DEPOSIT_RECEIPT_SIZE,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// CHECK: has_one = owner in pool
-    #[account(mut)]
-    pub owner: Signer<'info>,
 
     pub token_program: Program<'info, Token2022>,
 
@@ -129,7 +132,7 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
             token_info: &ctx.accounts.nft_escrow,
             mint: &ctx.accounts.nft_mint.to_account_info(),
             authority: &ctx.accounts.nft_escrow_owner.to_account_info(),
-            payer: &ctx.accounts.owner,
+            payer: &ctx.accounts.rent_payer,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             signer_seeds: &[
