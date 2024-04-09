@@ -154,7 +154,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     feeVault,
     pool,
     whitelist,
-    sellerTokenAccount: sellerAta,
+    sellerAta,
     poolAta,
     mint,
     metadata,

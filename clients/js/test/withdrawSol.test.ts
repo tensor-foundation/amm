@@ -149,7 +149,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     feeVault,
     pool,
     whitelist,
-    sellerTokenAccount: sellerAta,
+    sellerAta,
     poolAta,
     mint,
     metadata,

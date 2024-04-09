@@ -137,34 +137,6 @@ pub fn assert_decode_mint_proof_v2(
     Ok(mint_proof)
 }
 
-// #[inline(never)]
-// pub fn verify_whitelist(
-//     whitelist: &Account<WhitelistV2>,
-//     mint_proof: &UncheckedAccount,
-//     nft_mint: &InterfaceAccount<Mint>,
-//     nft_metadata: Option<&UncheckedAccount>,
-// ) -> Result<()> {
-//     //prioritize merkle tree if proof present
-//     if whitelist.root_hash != ZERO_ARRAY {
-//         let mint_proof = assert_decode_mint_proof(whitelist, nft_mint, mint_proof)?;
-//         let leaf = anchor_lang::solana_program::keccak::hash(nft_mint.key().as_ref());
-//         let proof = &mut mint_proof.proof.to_vec();
-//         proof.truncate(mint_proof.proof_len as usize);
-//         whitelist.verify_whitelist(
-//             None,
-//             Some(FullMerkleProof {
-//                 proof: proof.clone(),
-//                 leaf: leaf.0,
-//             }),
-//         )
-//     } else if let Some(nft_metadata) = nft_metadata {
-//         let metadata = &assert_decode_metadata(&nft_mint.key(), nft_metadata)?;
-//         whitelist.verify_whitelist(Some(metadata), None)
-//     } else {
-//         throw_err!(ErrorCode::BadMintProof);
-//     }
-// }
-
 /// Shared accounts between the two sell ixs.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
@@ -182,6 +154,7 @@ pub struct SellNftShared<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
+        // Why close the pool??
         close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -233,18 +206,6 @@ pub struct SellNftShared<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 }
-
-// impl<'info> SellNftShared<'info> {
-//     pub fn verify_whitelist(&self) -> Result<()> {
-//         verify_whitelist(
-//                 &self.whitelist,
-//                 &self.mint_proof,
-//                 &self.nft_mint,
-//                 Some(&self.nft_metadata),
-//             )
-//         Ok(())
-//     }
-// }
 
 /// Shared accounts between the two sell T22 ixs.
 #[derive(Accounts)]
@@ -299,13 +260,6 @@ pub struct SellNftSharedT22<'info> {
 
     #[account(mut)]
     pub seller: Signer<'info>,
-}
-
-impl<'info> SellNftSharedT22<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        // verify_whitelist(&self.whitelist, &self.mint_proof, &self.nft_mint, None)
-        Ok(())
-    }
 }
 
 #[derive(Accounts)]

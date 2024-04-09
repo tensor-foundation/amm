@@ -62,7 +62,7 @@ export type SellNftTokenPoolInstruction<
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountMintProof extends string | IAccountMeta<string> = string,
-  TAccountSellerTokenAccount extends string | IAccountMeta<string> = string,
+  TAccountSellerAta extends string | IAccountMeta<string> = string,
   TAccountOwnerAta extends string | IAccountMeta<string> = string,
   TAccountPoolAta extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
@@ -117,9 +117,9 @@ export type SellNftTokenPoolInstruction<
       TAccountMintProof extends string
         ? ReadonlyAccount<TAccountMintProof>
         : TAccountMintProof,
-      TAccountSellerTokenAccount extends string
-        ? WritableAccount<TAccountSellerTokenAccount>
-        : TAccountSellerTokenAccount,
+      TAccountSellerAta extends string
+        ? WritableAccount<TAccountSellerAta>
+        : TAccountSellerAta,
       TAccountOwnerAta extends string
         ? WritableAccount<TAccountOwnerAta>
         : TAccountOwnerAta,
@@ -238,7 +238,7 @@ export type SellNftTokenPoolInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
-  TAccountSellerTokenAccount extends string = string,
+  TAccountSellerAta extends string = string,
   TAccountOwnerAta extends string = string,
   TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
@@ -279,11 +279,8 @@ export type SellNftTokenPoolInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  /**
-   * The token account of the NFT for the seller's wallet.
-   * Typically, this should be an ATA for the mint and seller wallet.
-   */
-  sellerTokenAccount: Address<TAccountSellerTokenAccount>;
+  /** The token account of the NFT for the seller's wallet. */
+  sellerAta: Address<TAccountSellerAta>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
   ownerAta: Address<TAccountOwnerAta>;
   /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
@@ -341,7 +338,7 @@ export function getSellNftTokenPoolInstruction<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
-  TAccountSellerTokenAccount extends string,
+  TAccountSellerAta extends string,
   TAccountOwnerAta extends string,
   TAccountPoolAta extends string,
   TAccountMint extends string,
@@ -369,7 +366,7 @@ export function getSellNftTokenPoolInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSellerTokenAccount,
+    TAccountSellerAta,
     TAccountOwnerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -398,7 +395,7 @@ export function getSellNftTokenPoolInstruction<
   TAccountPool,
   TAccountWhitelist,
   TAccountMintProof,
-  TAccountSellerTokenAccount,
+  TAccountSellerAta,
   TAccountOwnerAta,
   TAccountPoolAta,
   TAccountMint,
@@ -430,10 +427,7 @@ export function getSellNftTokenPoolInstruction<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
-    sellerTokenAccount: {
-      value: input.sellerTokenAccount ?? null,
-      isWritable: true,
-    },
+    sellerAta: { value: input.sellerAta ?? null, isWritable: true },
     ownerAta: { value: input.ownerAta ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
@@ -513,7 +507,7 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
-      getAccountMeta(accounts.sellerTokenAccount),
+      getAccountMeta(accounts.sellerAta),
       getAccountMeta(accounts.ownerAta),
       getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
@@ -547,7 +541,7 @@ export function getSellNftTokenPoolInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSellerTokenAccount,
+    TAccountSellerAta,
     TAccountOwnerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -600,12 +594,8 @@ export type ParsedSellNftTokenPoolInstruction<
      */
 
     mintProof?: TAccountMetas[6] | undefined;
-    /**
-     * The token account of the NFT for the seller's wallet.
-     * Typically, this should be an ATA for the mint and seller wallet.
-     */
-
-    sellerTokenAccount: TAccountMetas[7];
+    /** The token account of the NFT for the seller's wallet. */
+    sellerAta: TAccountMetas[7];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
     ownerAta: TAccountMetas[8];
     /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
@@ -688,7 +678,7 @@ export function parseSellNftTokenPoolInstruction<
       pool: getNextAccount(),
       whitelist: getNextAccount(),
       mintProof: getNextOptionalAccount(),
-      sellerTokenAccount: getNextAccount(),
+      sellerAta: getNextAccount(),
       ownerAta: getNextAccount(),
       poolAta: getNextAccount(),
       mint: getNextAccount(),

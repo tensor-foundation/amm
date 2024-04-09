@@ -3,9 +3,11 @@
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Token2022, TokenAccount, TransferChecked},
+    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
 };
+use solana_program::keccak;
 use tensor_toolbox::{token_2022::t22_validate_mint, transfer_lamports_from_pda};
+use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
@@ -13,15 +15,87 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
-    shared: SellNftSharedT22<'info>,
+        /// If no external rent_payer, this should be set to the seller.
+    #[account(
+        mut,
+        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
+    )]
+    pub rent_payer: Signer<'info>,
 
+    /// CHECK: has_one = owner in pool (owner is the buyer)
+    #[account(mut)]
+    pub owner: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub seller: Signer<'info>,
+
+    /// CHECK: Seeds checked here, account has no state.
+    #[account(
+        mut,
+        seeds = [
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+        ],
+        bump
+    )]
+    pub fee_vault: UncheckedAccount<'info>,
+
+    #[account(mut,
+        seeds = [
+            b"pool",
+            owner.key().as_ref(),
+            pool.identifier.as_ref(),
+        ],
+        bump = pool.bump[0],
+        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
+    )]
+    pub pool: Box<Account<'info, Pool>>,
+
+    /// Needed for pool seeds derivation, also checked via has_one on pool
+    #[account(
+        seeds = [&whitelist.uuid],
+        bump,
+        seeds::program = tensor_whitelist::ID
+    )]
+    pub whitelist: Box<Account<'info, WhitelistV2>>,
+
+    /// CHECK: seeds below + assert_decode_mint_proof
+    #[account(
+        seeds = [
+            b"mint_proof".as_ref(),
+            mint.key().as_ref(),
+            whitelist.key().as_ref(),
+        ],
+        bump,
+        seeds::program = tensor_whitelist::ID
+    )]
+    pub mint_proof: UncheckedAccount<'info>,
+
+    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
+    /// The mint account of the NFT being sold.
+    #[account(
+        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
+    )]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The ATA of the NFT for the seller's wallet.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = seller
+    )]
+    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
         init_if_needed,
-        payer = shared.seller,
-        associated_token::mint = shared.nft_mint,
-        associated_token::authority = shared.owner,
+        payer = rent_payer,
+        associated_token::mint = mint,
+        associated_token::authority = owner,
     )]
-    pub owner_ata_acc: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token2022>,
 
@@ -43,43 +117,61 @@ pub struct SellNftTokenPoolT22<'info> {
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
     fn validate(&self) -> Result<()> {
-        match self.shared.pool.config.pool_type {
+        match self.pool.config.pool_type {
             PoolType::Token => (),
             _ => {
                 throw_err!(ErrorCode::WrongPoolType);
             }
         }
-        if self.shared.pool.version != CURRENT_POOL_VERSION {
+        if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }
 
-        self.shared.pool.taker_allowed_to_sell()?;
+        self.pool.taker_allowed_to_sell()?;
 
         Ok(())
     }
 }
 
-#[access_control(ctx.accounts.shared.verify_whitelist(); ctx.accounts.validate())]
+impl<'info> SellNftTokenPoolT22<'info> {
+    pub fn verify_whitelist(&self) -> Result<()> {
+            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
+
+            let leaf = keccak::hash(self.mint.key().as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            let full_merkle_proof = Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            });
+
+        // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
+        self.whitelist
+            .verify(None, None, full_merkle_proof)
+    }
+}
+
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_t22_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,
 ) -> Result<()> {
-    let pool = &ctx.accounts.shared.pool;
+    let pool = &ctx.accounts.pool;
 
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.shared.nft_mint.to_account_info())?;
+    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
 
     let transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.shared.nft_seller_acc.to_account_info(),
-            to: ctx.accounts.owner_ata_acc.to_account_info(),
-            authority: ctx.accounts.shared.seller.to_account_info(),
-            mint: ctx.accounts.shared.nft_mint.to_account_info(),
+            from: ctx.accounts.seller_ata.to_account_info(),
+            to: ctx.accounts.owner_ata.to_account_info(),
+            authority: ctx.accounts.seller.to_account_info(),
+            mint: ctx.accounts.mint.to_account_info(),
         },
     );
 
@@ -88,7 +180,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
     if pool.cosigner.is_some() {
         let cosigner = next_account_info(remaining_accounts)?;
-        if ctx.accounts.shared.pool.cosigner.as_ref() != Some(cosigner.key) {
+        if ctx.accounts.pool.cosigner.as_ref() != Some(cosigner.key) {
             throw_err!(ErrorCode::BadCosigner);
         }
         if !cosigner.is_signer {
@@ -129,23 +221,19 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         Some(stored_shared_escrow_account) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow_account,
-                &ctx.accounts.shared.owner.to_account_info(),
+                &ctx.accounts.owner.to_account_info(),
             )?;
             if *ctx.accounts.shared_escrow_account.key != *stored_shared_escrow_account {
                 throw_err!(ErrorCode::BadSharedEscrow);
             }
             ctx.accounts.shared_escrow_account.to_account_info()
         }
-        None => ctx.accounts.shared.pool.to_account_info(),
+        None => ctx.accounts.pool.to_account_info(),
     };
 
     // transfer fees
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    transfer_lamports_from_pda(
-        &from,
-        &ctx.accounts.shared.fee_vault.to_account_info(),
-        tswap_fee,
-    )?;
+    transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
         &from,
         &ctx.accounts.taker_broker.to_account_info(),
@@ -159,14 +247,14 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // (!) maker rebate already taken out of this amount
     transfer_lamports_from_pda(
         &from,
-        &ctx.accounts.shared.seller.to_account_info(),
+        &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
 
     // --------------------------------------- accounting
 
     //update pool accounting
-    let pool = &mut ctx.accounts.shared.pool;
+    let pool = &mut ctx.accounts.pool;
     pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;

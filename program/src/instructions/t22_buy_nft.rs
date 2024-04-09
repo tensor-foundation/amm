@@ -7,7 +7,7 @@ use anchor_spl::{
     },
 };
 use tensor_toolbox::{token_2022::t22_validate_mint, transfer_lamports_from_pda};
-use tensor_whitelist::{self, Whitelist};
+use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
@@ -29,9 +29,16 @@ pub struct BuyNftT22<'info> {
 
     pub buyer: Signer<'info>,
 
-    //degenerate: fee_acc now === TSwap, keeping around to preserve backwards compatibility
-    /// CHECK: has_one = fee_vault in tswap
-    #[account(mut)]
+    /// CHECK: Seeds checked here, account has no state.
+    #[account(
+        mut,
+        seeds = [
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            &mint.key().as_ref().last().unwrap().to_le_bytes(),
+        ],
+        bump
+    )]
     pub fee_vault: UncheckedAccount<'info>,
 
     #[account(
@@ -53,56 +60,44 @@ pub struct BuyNftT22<'info> {
         bump,
         seeds::program = tensor_whitelist::ID
     )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
+    pub whitelist: Box<Account<'info, WhitelistV2>>,
 
+    /// The ATA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
         payer = rent_payer,
-        associated_token::mint = nft_mint,
+        associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
-    pub nft_buyer_acc: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub buyer_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The ATA of the pool, where the NFT will be escrowed.
+    #[account(
+        init, // TODO: clarify this in design review <-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
+        payer = rent_payer,
+        associated_token::mint = mint,
+        associated_token::authority = pool,
+    )]
+    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        constraint = nft_mint.key() == nft_escrow.mint @ ErrorCode::WrongMint,
-        constraint = nft_mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == buyer_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
-    pub nft_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// CHECK: seeds checked so must be Tamm PDA
-    #[account(mut,
-    seeds = [
-        b"nft_owner",
-        nft_mint.key().as_ref(),
-        ],
-        bump
-    )]
-    pub nft_escrow_owner: AccountInfo<'info>,
-
-    /// Implicitly checked via transfer. Will fail if wrong account.
-    /// This is closed below (dest = owner)
-    #[account(
-        mut,
-        seeds=[
-            b"nft_escrow".as_ref(),
-            nft_mint.key().as_ref(),
-        ],
-        bump,
-        token::mint = nft_mint, token::authority = nft_escrow_owner,
-    )]
-    pub nft_escrow: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
         seeds=[
             b"nft_receipt".as_ref(),
-            nft_mint.key().as_ref(),
+            mint.key().as_ref(),
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
         //can't buy an NFT that's associated with a different pool
         // TODO: check this constraint replaces the old one sufficiently
-        constraint = nft_receipt.mint == nft_mint.key() && nft_receipt.pool == nft_escrow.key() @ ErrorCode::WrongMint,
+        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -122,13 +117,13 @@ pub struct BuyNftT22<'info> {
 }
 
 impl<'info> BuyNftT22<'info> {
-    fn close_nft_escrow_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.nft_escrow.to_account_info(),
+                account: self.pool_ata.to_account_info(),
                 destination: self.owner.to_account_info(),
-                authority: self.nft_escrow_owner.to_account_info(),
+                authority: self.pool.to_account_info(),
             },
         )
     }
@@ -169,9 +164,10 @@ pub fn process_t22_buy_nft<'info, 'b>(
 ) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.nft_mint.to_account_info())?;
+    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
+    let owner_pubkey = ctx.accounts.owner.key();
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
@@ -199,23 +195,22 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     // transfer the NFT
 
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        b"pool",
+        owner_pubkey.as_ref(),
+        pool.identifier.as_ref(),
+        &[pool.bump[0]],
+    ]];
+
     let transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.nft_escrow.to_account_info(),
-            to: ctx.accounts.nft_buyer_acc.to_account_info(),
-            authority: ctx.accounts.nft_escrow_owner.to_account_info(),
-            mint: ctx.accounts.nft_mint.to_account_info(),
+            from: ctx.accounts.pool_ata.to_account_info(),
+            to: ctx.accounts.buyer_ata.to_account_info(),
+            authority: ctx.accounts.pool.to_account_info(),
+            mint: ctx.accounts.mint.to_account_info(),
         },
     );
-
-    let nft_mint_pubkey = ctx.accounts.nft_mint.key();
-
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"nft_owner",
-        nft_mint_pubkey.as_ref(),
-        &[ctx.bumps.nft_escrow_owner],
-    ]];
 
     transfer_checked(
         transfer_cpi.with_signer(signer_seeds),
@@ -276,11 +271,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // --------------------------------------- accounting
 
     // close nft escrow account
-    token_interface::close_account(
-        ctx.accounts
-            .close_nft_escrow_ctx()
-            .with_signer(signer_seeds),
-    )?;
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
