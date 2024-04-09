@@ -194,6 +194,7 @@ pub async fn setup_default_pool<'a>(
         .pool(pool)
         .whitelist(whitelist)
         .identifier(identifier.to_bytes())
+        .currency_mint(Pubkey::default())
         .config(config.clone())
         .order_type(0)
         .instruction();

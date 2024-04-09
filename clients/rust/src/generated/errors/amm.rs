@@ -133,6 +133,9 @@ pub enum AmmError {
     /// 12040 (0x2F08) - Wrong rent payer
     #[error("Wrong rent payer")]
     WrongRentPayer,
+    /// 12041 (0x2F09) - SPL tokens not supported
+    #[error("SPL tokens not supported")]
+    SplTokensNotSupported,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

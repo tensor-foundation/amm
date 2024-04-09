@@ -86,6 +86,7 @@ impl CreatePoolInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreatePoolInstructionArgs {
     pub identifier: [u8; 32],
+    pub currency_mint: Pubkey,
     pub config: PoolConfig,
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
@@ -110,6 +111,7 @@ pub struct CreatePoolBuilder {
     whitelist: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     identifier: Option<[u8; 32]>,
+    currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
@@ -154,6 +156,11 @@ impl CreatePoolBuilder {
     #[inline(always)]
     pub fn identifier(&mut self, identifier: [u8; 32]) -> &mut Self {
         self.identifier = Some(identifier);
+        self
+    }
+    #[inline(always)]
+    pub fn currency_mint(&mut self, currency_mint: Pubkey) -> &mut Self {
+        self.currency_mint = Some(currency_mint);
         self
     }
     #[inline(always)]
@@ -217,6 +224,10 @@ impl CreatePoolBuilder {
         };
         let args = CreatePoolInstructionArgs {
             identifier: self.identifier.clone().expect("identifier is not set"),
+            currency_mint: self
+                .currency_mint
+                .clone()
+                .expect("currency_mint is not set"),
             config: self.config.clone().expect("config is not set"),
             cosigner: self.cosigner.clone(),
             order_type: self.order_type.clone().expect("order_type is not set"),
@@ -388,6 +399,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             whitelist: None,
             system_program: None,
             identifier: None,
+            currency_mint: None,
             config: None,
             cosigner: None,
             order_type: None,
@@ -436,6 +448,11 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn identifier(&mut self, identifier: [u8; 32]) -> &mut Self {
         self.instruction.identifier = Some(identifier);
+        self
+    }
+    #[inline(always)]
+    pub fn currency_mint(&mut self, currency_mint: Pubkey) -> &mut Self {
+        self.instruction.currency_mint = Some(currency_mint);
         self
     }
     #[inline(always)]
@@ -513,6 +530,11 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .identifier
                 .clone()
                 .expect("identifier is not set"),
+            currency_mint: self
+                .instruction
+                .currency_mint
+                .clone()
+                .expect("currency_mint is not set"),
             config: self.instruction.config.clone().expect("config is not set"),
             cosigner: self.instruction.cosigner.clone(),
             order_type: self
@@ -555,6 +577,7 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     identifier: Option<[u8; 32]>,
+    currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
