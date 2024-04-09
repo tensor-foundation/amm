@@ -22,13 +22,16 @@ use crate::{error::ErrorCode, utils::send_pnft, *};
 /// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
+    /// If no external rent_payer, this should be set to the seller.
+    #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
-    #[account(mut)]
     pub seller: Signer<'info>,
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
@@ -76,7 +79,7 @@ pub struct SellNftTokenPool<'info> {
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
         init_if_needed,
-        payer = seller,
+        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
@@ -85,7 +88,7 @@ pub struct SellNftTokenPool<'info> {
     /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[account(
         init_if_needed,
-        payer = seller,
+        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -255,12 +258,13 @@ pub fn process_sell_nft_token_pool<'info>(
         None
     };
 
+    let rent_payer = &ctx.accounts.rent_payer.to_account_info();
     let seller = &ctx.accounts.seller.to_account_info();
     let dest_owner = &ctx.accounts.pool.to_account_info();
 
     let pnft_args = Box::new(PnftTransferArgs {
         authority_and_owner: seller,
-        payer: seller,
+        payer: rent_payer,
         source_ata: &ctx.accounts.seller_token_account,
         dest_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
         dest_owner,
@@ -296,7 +300,7 @@ pub fn process_sell_nft_token_pool<'info>(
         Some(signer_seeds),
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.seller.to_account_info(),
+            payer: &ctx.accounts.rent_payer.to_account_info(),
             source_ata: &ctx.accounts.pool_ata,
             dest_ata: &ctx.accounts.owner_ata,
             dest_owner: &ctx.accounts.owner.to_account_info(),

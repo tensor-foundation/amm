@@ -164,4 +164,8 @@ pub enum ErrorCode {
     // 6039 | 0x1797
     #[msg("Pool must keep minimum rent balance")]
     PoolKeepAlive,
+
+    // 6040 | 0x1798
+    #[msg("Wrong rent payer")]
+    WrongRentPayer,
 }

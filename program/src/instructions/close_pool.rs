@@ -5,8 +5,11 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
-    /// CHECK: has_one = owner in pool
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
+    pub rent_payer: UncheckedAccount<'info>,
+
+    /// CHECK: has_one = owner in pool
     pub owner: Signer<'info>,
 
     #[account(mut,
@@ -17,7 +20,6 @@ pub struct ClosePool<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner @ ErrorCode::WrongAuthority,
-        close = owner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -38,7 +40,25 @@ impl<'info> Validate<'info> for ClosePool<'info> {
     }
 }
 
-#[access_control(_ctx.accounts.validate())]
-pub fn process_close_pool<'info>(_ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
+#[access_control(ctx.accounts.validate())]
+pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
+    // Must close manually because cannot do this logic in the accounts macro.
+
+    let pool = &ctx.accounts.pool;
+    let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
+
+    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
+    // return the funds to the owner.
+    let recipient = if let Some(rent_payer) = pool.rent_payer {
+        if rent_payer != *rent_payer_info.key {
+            throw_err!(ErrorCode::WrongRentPayer);
+        }
+        rent_payer_info
+    } else {
+        ctx.accounts.owner.to_account_info()
+    };
+
+    pool.close(recipient)?;
+
     Ok(())
 }

@@ -16,6 +16,16 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
+    /// If no external rent payer, this should be the buyer.
+    #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
+    /// CHECK: has_one = owner in pool (owner is the seller)
+    #[account(mut)]
+    pub owner: UncheckedAccount<'info>,
+
+    pub buyer: Signer<'info>,
+
     //degenerate: fee_acc now === TSwap, keeping around to preserve backwards compatibility
     /// CHECK: has_one = fee_vault in tswap
     #[account(mut)]
@@ -44,7 +54,7 @@ pub struct BuyNftT22<'info> {
 
     #[account(
         init_if_needed,
-        payer = buyer,
+        payer = rent_payer,
         associated_token::mint = nft_mint,
         associated_token::authority = buyer,
     )]
@@ -87,19 +97,11 @@ pub struct BuyNftT22<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        close = owner,
         //can't buy an NFT that's associated with a different pool
         // TODO: check this constraint replaces the old one sufficiently
         constraint = nft_receipt.mint == nft_mint.key() && nft_receipt.pool == nft_escrow.key() @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// CHECK: has_one = owner in pool (owner is the seller)
-    #[account(mut)]
-    pub owner: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub buyer: Signer<'info>,
 
     pub token_program: Program<'info, Token2022>,
 
@@ -290,6 +292,21 @@ pub fn process_t22_buy_nft<'info, 'b>(
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
+
+    let nft_deposit_receipt = &ctx.accounts.nft_receipt;
+    let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
+
+    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
+    // return the funds to the owner.
+    let recipient = if let Some(rent_payer) = pool.rent_payer {
+        if rent_payer != *rent_payer_info.key {
+            throw_err!(ErrorCode::WrongRentPayer);
+        }
+        rent_payer_info
+    } else {
+        ctx.accounts.owner.to_account_info()
+    };
+    nft_deposit_receipt.close(recipient)?;
 
     Ok(())
 }

@@ -15,6 +15,10 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Allows a Trade or NFT pool owner to withdraw an NFT from the pool.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
+    /// If no external rent payer, set this to the owner.
+    #[account(mut)]
+    pub rent_payer: Signer<'info>,
+
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -37,7 +41,7 @@ pub struct WithdrawNft<'info> {
     /// The ATA of the owner, where the NFT will be transferred to as a result of this action.
     #[account(
         init_if_needed,
-        payer = owner,
+        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
@@ -190,7 +194,7 @@ pub fn process_withdraw_nft<'info>(
         Some(signer_seeds),
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.owner.to_account_info(),
+            payer: &ctx.accounts.rent_payer.to_account_info(),
             source_ata: &ctx.accounts.pool_ata,
             dest_ata: &ctx.accounts.owner_ata,
             dest_owner: &ctx.accounts.owner,

@@ -9,18 +9,20 @@ use crate::{constants::*, error::ErrorCode};
 // (!) INCLUSIVE of discriminator (8 bytes)
 #[constant]
 #[allow(clippy::identity_op)]
-pub const POOL_SIZE: usize = 8 + (3 * 1)
+pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + 32 // identifier
         + 8  // created_at
         + 8  // updated_at
         + 8  // expires_at
         + (2 * 1) + (2 * 8) + 1 + 3 //pool config
-        + (4 * 32) + 1 // owner, whitelist, sol_escrow, currency
+        + (2 * 32) // owner, whitelist
+        + (2 * (1 + 32)) // rent_payer, currency
         + (3 * 4)  // taker_sell_count, taker_buy_count, nfts_held
         + (2 * 4) + 8 //pool stats
         + 32 + 1   // shared escrow Option
         + 32 + 1   // cosigner Option
-        + 4; // max_taker_sell_count
+        + 4 // max_taker_sell_count
+        + 100; // _reserved
 
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,6 +76,9 @@ pub struct Pool {
     pub config: PoolConfig,
     pub owner: Pubkey,
     pub whitelist: Pubkey,
+    // Store the rent payer, if different from the owner so they can be refunded
+    // without signing when the pool is closed.
+    pub rent_payer: Option<Pubkey>,
     pub currency: Option<Pubkey>,
 
     /// How many times a taker has SOLD into the pool
@@ -84,15 +89,15 @@ pub struct Pool {
 
     pub stats: PoolStats,
 
-    /// If an escrow account present, means it's a shared-escrow pool (currently bids only)
+    /// If an escrow account is present, means it's a shared-escrow pool
     pub shared_escrow: Option<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: Option<Pubkey>,
-    /// Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity
-    // Ideally would use an option here, but not enough space w/o migrating pools, hence 0 = no restriction
+    /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+
     // (!) make sure aligns with last number in SIZE
-    // pub _reserved: [u8; 0],
+    pub _reserved: [u8; 100],
 }
 
 pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
