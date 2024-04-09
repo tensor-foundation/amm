@@ -30,8 +30,7 @@ pub struct SellNftTokenPool {
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: solana_program::pubkey::Pubkey,
+    pub seller_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     pub owner_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
@@ -119,7 +118,7 @@ impl SellNftTokenPool {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.seller_token_account,
+            self.seller_ata,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -245,7 +244,7 @@ pub struct SellNftTokenPoolInstructionArgs {
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
 ///   6. `[optional]` mint_proof
-///   7. `[writable]` seller_token_account
+///   7. `[writable]` seller_ata
 ///   8. `[writable]` owner_ata
 ///   9. `[writable]` pool_ata
 ///   10. `[]` mint
@@ -273,7 +272,7 @@ pub struct SellNftTokenPoolBuilder {
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
-    seller_token_account: Option<solana_program::pubkey::Pubkey>,
+    seller_ata: Option<solana_program::pubkey::Pubkey>,
     owner_ata: Option<solana_program::pubkey::Pubkey>,
     pool_ata: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
@@ -351,13 +350,9 @@ impl SellNftTokenPoolBuilder {
         self
     }
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
     #[inline(always)]
-    pub fn seller_token_account(
-        &mut self,
-        seller_token_account: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.seller_token_account = Some(seller_token_account);
+    pub fn seller_ata(&mut self, seller_ata: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.seller_ata = Some(seller_ata);
         self
     }
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
@@ -546,9 +541,7 @@ impl SellNftTokenPoolBuilder {
                 pool: self.pool.expect("pool is not set"),
                 whitelist: self.whitelist.expect("whitelist is not set"),
                 mint_proof: self.mint_proof,
-                seller_token_account: self
-                    .seller_token_account
-                    .expect("seller_token_account is not set"),
+                seller_ata: self.seller_ata.expect("seller_ata is not set"),
                 owner_ata: self.owner_ata.expect("owner_ata is not set"),
                 pool_ata: self.pool_ata.expect("pool_ata is not set"),
                 mint: self.mint.expect("mint is not set"),
@@ -619,8 +612,7 @@ pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
@@ -684,8 +676,7 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
@@ -743,7 +734,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             pool: accounts.pool,
             whitelist: accounts.whitelist,
             mint_proof: accounts.mint_proof,
-            seller_token_account: accounts.seller_token_account,
+            seller_ata: accounts.seller_ata,
             owner_ata: accounts.owner_ata,
             pool_ata: accounts.pool_ata,
             mint: accounts.mint,
@@ -835,7 +826,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.seller_token_account.key,
+            *self.seller_ata.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -944,7 +935,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
         if let Some(mint_proof) = self.mint_proof {
             account_infos.push(mint_proof.clone());
         }
-        account_infos.push(self.seller_token_account.clone());
+        account_infos.push(self.seller_ata.clone());
         account_infos.push(self.owner_ata.clone());
         account_infos.push(self.pool_ata.clone());
         account_infos.push(self.mint.clone());
@@ -988,7 +979,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
 ///   6. `[optional]` mint_proof
-///   7. `[writable]` seller_token_account
+///   7. `[writable]` seller_ata
 ///   8. `[writable]` owner_ata
 ///   9. `[writable]` pool_ata
 ///   10. `[]` mint
@@ -1022,7 +1013,7 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
             pool: None,
             whitelist: None,
             mint_proof: None,
-            seller_token_account: None,
+            seller_ata: None,
             owner_ata: None,
             pool_ata: None,
             mint: None,
@@ -1111,13 +1102,12 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self
     }
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
     #[inline(always)]
-    pub fn seller_token_account(
+    pub fn seller_ata(
         &mut self,
-        seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+        seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.seller_token_account = Some(seller_token_account);
+        self.instruction.seller_ata = Some(seller_ata);
         self
     }
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
@@ -1376,10 +1366,7 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
 
             mint_proof: self.instruction.mint_proof,
 
-            seller_token_account: self
-                .instruction
-                .seller_token_account
-                .expect("seller_token_account is not set"),
+            seller_ata: self.instruction.seller_ata.expect("seller_ata is not set"),
 
             owner_ata: self.instruction.owner_ata.expect("owner_ata is not set"),
 
@@ -1467,7 +1454,7 @@ struct SellNftTokenPoolCpiBuilderInstruction<'a, 'b> {
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    seller_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    seller_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,

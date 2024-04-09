@@ -29,13 +29,12 @@ pub struct SellNftTradePool {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
-    /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: solana_program::pubkey::Pubkey,
-
-    pub pool_ata: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
+    /// The token account of the NFT for the seller's wallet.
+    pub seller_ata: solana_program::pubkey::Pubkey,
+
+    pub pool_ata: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
 
@@ -118,16 +117,16 @@ impl SellNftTradePool {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mint, false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.seller_token_account,
+            self.seller_ata,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool_ata,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.metadata,
@@ -244,9 +243,9 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
 ///   6. `[optional]` mint_proof
-///   7. `[writable]` seller_token_account
-///   8. `[writable]` pool_ata
-///   9. `[]` mint
+///   7. `[]` mint
+///   8. `[writable]` seller_ata
+///   9. `[writable]` pool_ata
 ///   10. `[writable]` metadata
 ///   11. `[writable]` nft_receipt
 ///   12. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
@@ -272,9 +271,9 @@ pub struct SellNftTradePoolBuilder {
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
-    seller_token_account: Option<solana_program::pubkey::Pubkey>,
-    pool_ata: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
+    seller_ata: Option<solana_program::pubkey::Pubkey>,
+    pool_ata: Option<solana_program::pubkey::Pubkey>,
     metadata: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
@@ -349,25 +348,21 @@ impl SellNftTradePoolBuilder {
         self.mint_proof = mint_proof;
         self
     }
-    /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
+    /// The mint account of the NFT being sold.
     #[inline(always)]
-    pub fn seller_token_account(
-        &mut self,
-        seller_token_account: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.seller_token_account = Some(seller_token_account);
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint = Some(mint);
+        self
+    }
+    /// The token account of the NFT for the seller's wallet.
+    #[inline(always)]
+    pub fn seller_ata(&mut self, seller_ata: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.seller_ata = Some(seller_ata);
         self
     }
     #[inline(always)]
     pub fn pool_ata(&mut self, pool_ata: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool_ata = Some(pool_ata);
-        self
-    }
-    /// The mint account of the NFT being sold.
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.mint = Some(mint);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -536,11 +531,9 @@ impl SellNftTradePoolBuilder {
                 pool: self.pool.expect("pool is not set"),
                 whitelist: self.whitelist.expect("whitelist is not set"),
                 mint_proof: self.mint_proof,
-                seller_token_account: self
-                    .seller_token_account
-                    .expect("seller_token_account is not set"),
-                pool_ata: self.pool_ata.expect("pool_ata is not set"),
                 mint: self.mint.expect("mint is not set"),
+                seller_ata: self.seller_ata.expect("seller_ata is not set"),
+                pool_ata: self.pool_ata.expect("pool_ata is not set"),
                 metadata: self.metadata.expect("metadata is not set"),
                 nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
                 token_program: self.token_program.unwrap_or(solana_program::pubkey!(
@@ -608,13 +601,12 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The token account of the NFT for the seller's wallet.
+    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -673,13 +665,12 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The token account of the NFT for the seller's wallet.
+    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -733,9 +724,9 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             pool: accounts.pool,
             whitelist: accounts.whitelist,
             mint_proof: accounts.mint_proof,
-            seller_token_account: accounts.seller_token_account,
-            pool_ata: accounts.pool_ata,
             mint: accounts.mint,
+            seller_ata: accounts.seller_ata,
+            pool_ata: accounts.pool_ata,
             metadata: accounts.metadata,
             nft_receipt: accounts.nft_receipt,
             token_program: accounts.token_program,
@@ -824,16 +815,16 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mint.key,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.seller_token_account.key,
+            *self.seller_ata.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool_ata.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -934,9 +925,9 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         if let Some(mint_proof) = self.mint_proof {
             account_infos.push(mint_proof.clone());
         }
-        account_infos.push(self.seller_token_account.clone());
-        account_infos.push(self.pool_ata.clone());
         account_infos.push(self.mint.clone());
+        account_infos.push(self.seller_ata.clone());
+        account_infos.push(self.pool_ata.clone());
         account_infos.push(self.metadata.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.token_program.clone());
@@ -978,9 +969,9 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
 ///   6. `[optional]` mint_proof
-///   7. `[writable]` seller_token_account
-///   8. `[writable]` pool_ata
-///   9. `[]` mint
+///   7. `[]` mint
+///   8. `[writable]` seller_ata
+///   9. `[writable]` pool_ata
 ///   10. `[writable]` metadata
 ///   11. `[writable]` nft_receipt
 ///   12. `[]` token_program
@@ -1012,9 +1003,9 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             pool: None,
             whitelist: None,
             mint_proof: None,
-            seller_token_account: None,
-            pool_ata: None,
             mint: None,
+            seller_ata: None,
+            pool_ata: None,
             metadata: None,
             nft_receipt: None,
             token_program: None,
@@ -1100,14 +1091,19 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.mint_proof = mint_proof;
         self
     }
-    /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
+    /// The mint account of the NFT being sold.
     #[inline(always)]
-    pub fn seller_token_account(
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.mint = Some(mint);
+        self
+    }
+    /// The token account of the NFT for the seller's wallet.
+    #[inline(always)]
+    pub fn seller_ata(
         &mut self,
-        seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
+        seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.seller_token_account = Some(seller_token_account);
+        self.instruction.seller_ata = Some(seller_ata);
         self
     }
     #[inline(always)]
@@ -1116,12 +1112,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.pool_ata = Some(pool_ata);
-        self
-    }
-    /// The mint account of the NFT being sold.
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -1356,14 +1346,11 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
 
             mint_proof: self.instruction.mint_proof,
 
-            seller_token_account: self
-                .instruction
-                .seller_token_account
-                .expect("seller_token_account is not set"),
+            mint: self.instruction.mint.expect("mint is not set"),
+
+            seller_ata: self.instruction.seller_ata.expect("seller_ata is not set"),
 
             pool_ata: self.instruction.pool_ata.expect("pool_ata is not set"),
-
-            mint: self.instruction.mint.expect("mint is not set"),
 
             metadata: self.instruction.metadata.expect("metadata is not set"),
 
@@ -1447,9 +1434,9 @@ struct SellNftTradePoolCpiBuilderInstruction<'a, 'b> {
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    seller_token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    seller_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

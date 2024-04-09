@@ -440,6 +440,11 @@
           ]
         },
         {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "ownerAta",
           "isMut": true,
           "isSigner": false,
@@ -454,11 +459,6 @@
           "docs": [
             "The ATA of the pool, where the NFT token is escrowed."
           ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "nftReceipt",
@@ -877,12 +877,11 @@
           ]
         },
         {
-          "name": "sellerTokenAccount",
+          "name": "sellerAta",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account of the NFT for the seller's wallet.",
-            "Typically, this should be an ATA for the mint and seller wallet."
+            "The token account of the NFT for the seller's wallet."
           ]
         },
         {
@@ -1120,26 +1119,25 @@
           ]
         },
         {
-          "name": "sellerTokenAccount",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The token account of the NFT for the seller's wallet.",
-            "Typically, this should be an ATA for the mint and seller wallet."
-          ]
-        },
-        {
-          "name": "poolAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "mint",
           "isMut": false,
           "isSigner": false,
           "docs": [
             "The mint account of the NFT being sold."
           ]
+        },
+        {
+          "name": "sellerAta",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The token account of the NFT for the seller's wallet."
+          ]
+        },
+        {
+          "name": "poolAta",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "metadata",

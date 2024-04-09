@@ -52,9 +52,9 @@ export type WithdrawNftInstruction<
     | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountOwnerAta extends string | IAccountMeta<string> = string,
   TAccountPoolAta extends string | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
@@ -94,15 +94,15 @@ export type WithdrawNftInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountOwnerAta extends string
         ? WritableAccount<TAccountOwnerAta>
         : TAccountOwnerAta,
       TAccountPoolAta extends string
         ? WritableAccount<TAccountPoolAta>
         : TAccountPoolAta,
-      TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
-        : TAccountMint,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -196,9 +196,9 @@ export type WithdrawNftInput<
   TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
+  TAccountMint extends string = string,
   TAccountOwnerAta extends string = string,
   TAccountPoolAta extends string = string,
-  TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -219,11 +219,11 @@ export type WithdrawNftInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
   pool: Address<TAccountPool>;
+  mint: Address<TAccountMint>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
   ownerAta: Address<TAccountOwnerAta>;
   /** The ATA of the pool, where the NFT token is escrowed. */
   poolAta: Address<TAccountPoolAta>;
-  mint: Address<TAccountMint>;
   nftReceipt: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
@@ -250,9 +250,9 @@ export function getWithdrawNftInstruction<
   TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
+  TAccountMint extends string,
   TAccountOwnerAta extends string,
   TAccountPoolAta extends string,
-  TAccountMint extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -271,9 +271,9 @@ export function getWithdrawNftInstruction<
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
+    TAccountMint,
     TAccountOwnerAta,
     TAccountPoolAta,
-    TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -293,9 +293,9 @@ export function getWithdrawNftInstruction<
   TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
+  TAccountMint,
   TAccountOwnerAta,
   TAccountPoolAta,
-  TAccountMint,
   TAccountNftReceipt,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -318,9 +318,9 @@ export function getWithdrawNftInstruction<
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
     ownerAta: { value: input.ownerAta ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: true },
-    mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
@@ -387,9 +387,9 @@ export function getWithdrawNftInstruction<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.ownerAta),
       getAccountMeta(accounts.poolAta),
-      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
@@ -413,9 +413,9 @@ export function getWithdrawNftInstruction<
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
+    TAccountMint,
     TAccountOwnerAta,
     TAccountPoolAta,
-    TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -446,11 +446,11 @@ export type ParsedWithdrawNftInstruction<
     owner: TAccountMetas[1];
     /** The pool from which the NFT will be withdrawn. */
     pool: TAccountMetas[2];
+    mint: TAccountMetas[3];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
-    ownerAta: TAccountMetas[3];
+    ownerAta: TAccountMetas[4];
     /** The ATA of the pool, where the NFT token is escrowed. */
-    poolAta: TAccountMetas[4];
-    mint: TAccountMetas[5];
+    poolAta: TAccountMetas[5];
     nftReceipt: TAccountMetas[6];
     tokenProgram: TAccountMetas[7];
     associatedTokenProgram: TAccountMetas[8];
@@ -497,9 +497,9 @@ export function parseWithdrawNftInstruction<
       rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
+      mint: getNextAccount(),
       ownerAta: getNextAccount(),
       poolAta: getNextAccount(),
-      mint: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
