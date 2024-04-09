@@ -168,4 +168,8 @@ pub enum ErrorCode {
     // 6040 | 0x1798
     #[msg("Wrong rent payer")]
     WrongRentPayer,
+
+    // 6041 | 0x1799
+    #[msg("SPL tokens not supported")]
+    SplTokensNotSupported,
 }

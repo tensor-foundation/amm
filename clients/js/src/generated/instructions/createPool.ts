@@ -94,6 +94,7 @@ export type CreatePoolInstruction<
 export type CreatePoolInstructionData = {
   discriminator: Array<number>;
   identifier: Uint8Array;
+  currencyMint: Address;
   config: PoolConfig;
   cosigner: Option<Address>;
   orderType: number;
@@ -103,6 +104,7 @@ export type CreatePoolInstructionData = {
 
 export type CreatePoolInstructionDataArgs = {
   identifier: Uint8Array;
+  currencyMint: Address;
   config: PoolConfigArgs;
   cosigner: OptionOrNullable<Address>;
   orderType: number;
@@ -115,6 +117,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['identifier', getBytesEncoder({ size: 32 })],
+      ['currencyMint', getAddressEncoder()],
       ['config', getPoolConfigEncoder()],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
@@ -132,6 +135,7 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['identifier', getBytesDecoder({ size: 32 })],
+    ['currencyMint', getAddressDecoder()],
     ['config', getPoolConfigDecoder()],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
@@ -165,6 +169,7 @@ export type CreatePoolInput<
   whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
   identifier: CreatePoolInstructionDataArgs['identifier'];
+  currencyMint: CreatePoolInstructionDataArgs['currencyMint'];
   config: CreatePoolInstructionDataArgs['config'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
   orderType: CreatePoolInstructionDataArgs['orderType'];

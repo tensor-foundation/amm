@@ -89,6 +89,8 @@ export const enum AmmProgramErrorCode {
   POOL_KEEP_ALIVE = 0x2f07, // 12039
   /** WrongRentPayer: Wrong rent payer */
   WRONG_RENT_PAYER = 0x2f08, // 12040
+  /** SplTokensNotSupported: SPL tokens not supported */
+  SPL_TOKENS_NOT_SUPPORTED = 0x2f09, // 12041
 }
 
 export class AmmProgramError extends Error {
@@ -272,6 +274,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.WRONG_RENT_PAYER]: [
       'WrongRentPayer',
       `Wrong rent payer`,
+    ],
+    [AmmProgramErrorCode.SPL_TOKENS_NOT_SUPPORTED]: [
+      'SplTokensNotSupported',
+      `SPL tokens not supported`,
     ],
   };
 }

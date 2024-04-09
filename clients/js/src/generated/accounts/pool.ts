@@ -43,6 +43,8 @@ import {
   getStructEncoder,
   getU32Decoder,
   getU32Encoder,
+  getU64Decoder,
+  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
@@ -87,7 +89,9 @@ export type PoolAccountData = {
   owner: Address;
   whitelist: Address;
   rentPayer: Option<Address>;
-  currency: Option<Address>;
+  currencyMint: Address;
+  /** The amount of currency held in the pool */
+  currencyAmount: bigint;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -120,7 +124,9 @@ export type PoolAccountDataArgs = {
   owner: Address;
   whitelist: Address;
   rentPayer: OptionOrNullable<Address>;
-  currency: OptionOrNullable<Address>;
+  currencyMint: Address;
+  /** The amount of currency held in the pool */
+  currencyAmount: number | bigint;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -150,7 +156,8 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
       ['rentPayer', getOptionEncoder(getAddressEncoder())],
-      ['currency', getOptionEncoder(getAddressEncoder())],
+      ['currencyMint', getAddressEncoder()],
+      ['currencyAmount', getU64Encoder()],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
       ['nftsHeld', getU32Encoder()],
@@ -180,7 +187,8 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
     ['rentPayer', getOptionDecoder(getAddressDecoder())],
-    ['currency', getOptionDecoder(getAddressDecoder())],
+    ['currencyMint', getAddressDecoder()],
+    ['currencyAmount', getU64Decoder()],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['nftsHeld', getU32Decoder()],

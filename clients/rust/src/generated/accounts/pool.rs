@@ -39,7 +39,13 @@ pub struct Pool {
     )]
     pub whitelist: Pubkey,
     pub rent_payer: Option<Pubkey>,
-    pub currency: Option<Pubkey>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub currency_mint: Pubkey,
+    /// The amount of currency held in the pool
+    pub currency_amount: u64,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
     /// How many times a taker has BOUGHT from the pool

@@ -12,10 +12,12 @@ use crate::{
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct CreatePoolArgs {
     pub identifier: [u8; 32],
-    config: PoolConfig,
-    cosigner: Option<Pubkey>,
-    order_type: u8,
-    max_taker_sell_count: Option<u32>,
+    // Here to support future SPL mints, contract enforces this is the native mint currently
+    pub currency_mint: Pubkey,
+    pub config: PoolConfig,
+    pub cosigner: Option<Pubkey>,
+    pub order_type: u8,
+    pub max_taker_sell_count: Option<u32>,
     pub expiration_timestamp: Option<i64>,
 }
 
@@ -109,6 +111,9 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     } else {
         Some(ctx.accounts.rent_payer.key())
     };
+    // Only SOL currently supported
+    pool.currency_mint = Pubkey::default();
+    pool.currency_amount = 0;
 
     pool.taker_buy_count = 0;
     pool.taker_sell_count = 0;
