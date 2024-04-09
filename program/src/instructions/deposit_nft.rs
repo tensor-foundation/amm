@@ -16,6 +16,7 @@ use crate::{error::ErrorCode, *};
 /// Allows a pool owner to deposit an asset into Trade or NFT pool.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 

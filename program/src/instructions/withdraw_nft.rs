@@ -15,6 +15,7 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Allows a Trade or NFT pool owner to withdraw an NFT from the pool.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 

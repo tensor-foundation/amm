@@ -5,6 +5,7 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 

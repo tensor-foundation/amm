@@ -22,6 +22,7 @@ pub struct CreatePoolArgs {
 #[derive(Accounts)]
 #[instruction(args: CreatePoolArgs)]
 pub struct CreatePool<'info> {
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 

@@ -18,6 +18,7 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Allows a buyer to purchase an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
+    /// If no external rent payer, set this to the buyer.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 

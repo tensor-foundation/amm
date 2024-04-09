@@ -16,6 +16,7 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
+    /// If no external rent payer, set this to the owner.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 
