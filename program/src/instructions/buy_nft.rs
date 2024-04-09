@@ -19,7 +19,10 @@ use self::constants::CURRENT_POOL_VERSION;
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
     /// If no external rent payer, set this to the buyer.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()) == pool.rent_payer,
+    )]
     pub rent_payer: Signer<'info>,
 
     /// Owner is the pool owner who created the pool and the nominal owner of the 
