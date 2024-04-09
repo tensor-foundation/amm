@@ -77,7 +77,6 @@ pub struct SellNftTradePool<'info> {
     #[account(mut, token::mint = mint, token::authority = seller)]
     pub seller_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-        /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[account(
         init_if_needed,
         payer = rent_payer,
