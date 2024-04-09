@@ -38,6 +38,13 @@ pub struct WithdrawNft<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    #[account(
+        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
+    )]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
     /// The ATA of the owner, where the NFT will be transferred to as a result of this action.
     #[account(
         init_if_needed,
@@ -54,13 +61,6 @@ pub struct WithdrawNft<'info> {
         associated_token::authority = pool,
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    #[account(
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,

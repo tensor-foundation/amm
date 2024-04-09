@@ -75,9 +75,12 @@ pub struct SellNftTokenPool<'info> {
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    #[account(mut, token::mint = mint, token::authority = seller)]
-    pub seller_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = seller
+    )]
+    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
@@ -272,7 +275,7 @@ pub fn process_sell_nft_token_pool<'info>(
     let pnft_args = Box::new(PnftTransferArgs {
         authority_and_owner: seller,
         payer: rent_payer,
-        source_ata: &ctx.accounts.seller_token_account,
+        source_ata: &ctx.accounts.seller_ata,
         dest_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
         dest_owner,
         nft_mint: &ctx.accounts.mint,

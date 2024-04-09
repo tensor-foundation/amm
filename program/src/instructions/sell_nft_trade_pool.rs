@@ -72,10 +72,20 @@ pub struct SellNftTradePool<'info> {
     /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
-        /// The token account of the NFT for the seller's wallet.
-    /// Typically, this should be an ATA for the mint and seller wallet.
-    #[account(mut, token::mint = mint, token::authority = seller)]
-    pub seller_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// The mint account of the NFT being sold.
+    #[account(
+        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+    )]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The token account of the NFT for the seller's wallet.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = seller
+    )]
+    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -84,9 +94,6 @@ pub struct SellNftTradePool<'info> {
         associated_token::authority = pool,
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The mint account of the NFT being sold.
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
     ///  CHECK: seeds and ownership are checked in assert_decode_metadata.
@@ -220,7 +227,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.seller.to_account_info(),
             payer: &ctx.accounts.rent_payer.to_account_info(),
-            source_ata: &ctx.accounts.seller_token_account,
+            source_ata: &ctx.accounts.seller_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),
             nft_mint: &ctx.accounts.mint,

@@ -63,7 +63,10 @@ pub struct DepositNftT22<'info> {
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
-    /// CHECK: seed in nft_escrow & nft_receipt
+    #[account(
+        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The ATA of the owner, where the NFT will be transferred from.
