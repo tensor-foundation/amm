@@ -146,7 +146,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
-    rentPayer: owner,
+    rentPayer: nftOwner,
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
