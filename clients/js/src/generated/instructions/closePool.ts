@@ -26,8 +26,8 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
+  ReadonlySignerAccount,
   WritableAccount,
-  WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
@@ -35,6 +35,9 @@ import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 
 export type ClosePoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountRentPayer extends
+    | string
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
@@ -45,8 +48,11 @@ export type ClosePoolInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
+      TAccountRentPayer extends string
+        ? WritableAccount<TAccountRentPayer>
+        : TAccountRentPayer,
       TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner> &
+        ? ReadonlySignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
@@ -92,23 +98,33 @@ export function getClosePoolInstructionDataCodec(): Codec<
 }
 
 export type ClosePoolInput<
+  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** If no external rent payer, set this to the owner. */
+  rentPayer?: Address<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
 export function getClosePoolInstruction<
+  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountSystemProgram extends string,
 >(
-  input: ClosePoolInput<TAccountOwner, TAccountPool, TAccountSystemProgram>
+  input: ClosePoolInput<
+    TAccountRentPayer,
+    TAccountOwner,
+    TAccountPool,
+    TAccountSystemProgram
+  >
 ): ClosePoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
+  TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountSystemProgram
@@ -118,7 +134,8 @@ export function getClosePoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -128,6 +145,10 @@ export function getClosePoolInstruction<
   >;
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value =
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -136,6 +157,7 @@ export function getClosePoolInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.systemProgram),
@@ -144,6 +166,7 @@ export function getClosePoolInstruction<
     data: getClosePoolInstructionDataEncoder().encode({}),
   } as ClosePoolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
+    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountSystemProgram
@@ -158,9 +181,11 @@ export type ParsedClosePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    owner: TAccountMetas[0];
-    pool: TAccountMetas[1];
-    systemProgram: TAccountMetas[2];
+    /** If no external rent payer, set this to the owner. */
+    rentPayer: TAccountMetas[0];
+    owner: TAccountMetas[1];
+    pool: TAccountMetas[2];
+    systemProgram: TAccountMetas[3];
   };
   data: ClosePoolInstructionData;
 };
@@ -173,7 +198,7 @@ export function parseClosePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedClosePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -186,6 +211,7 @@ export function parseClosePoolInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       systemProgram: getNextAccount(),

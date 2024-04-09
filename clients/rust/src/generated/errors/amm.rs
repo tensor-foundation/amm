@@ -130,6 +130,9 @@ pub enum AmmError {
     /// 12039 (0x2F07) - Pool must keep minimum rent balance
     #[error("Pool must keep minimum rent balance")]
     PoolKeepAlive,
+    /// 12040 (0x2F08) - Wrong rent payer
+    #[error("Wrong rent payer")]
+    WrongRentPayer,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

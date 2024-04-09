@@ -40,6 +40,7 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
+  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -55,6 +56,9 @@ import {
 
 export type CreatePoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TAccountRentPayer extends
+    | string
+    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -66,8 +70,12 @@ export type CreatePoolInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
+      TAccountRentPayer extends string
+        ? WritableSignerAccount<TAccountRentPayer> &
+            IAccountSignerMeta<TAccountRentPayer>
+        : TAccountRentPayer,
       TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner> &
+        ? ReadonlySignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
@@ -143,11 +151,14 @@ export function getCreatePoolInstructionDataCodec(): Codec<
 }
 
 export type CreatePoolInput<
+  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** If no external rent payer, set this to the owner. */
+  rentPayer?: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation / will be stored inside pool */
@@ -162,12 +173,14 @@ export type CreatePoolInput<
 };
 
 export function getCreatePoolInstruction<
+  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountSystemProgram extends string,
 >(
   input: CreatePoolInput<
+    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -175,6 +188,7 @@ export function getCreatePoolInstruction<
   >
 ): CreatePoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
+  TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
@@ -185,7 +199,8 @@ export function getCreatePoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
@@ -199,6 +214,10 @@ export function getCreatePoolInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value =
+      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -207,6 +226,7 @@ export function getCreatePoolInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -218,6 +238,7 @@ export function getCreatePoolInstruction<
     ),
   } as CreatePoolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
+    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -233,11 +254,13 @@ export type ParsedCreatePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    owner: TAccountMetas[0];
-    pool: TAccountMetas[1];
+    /** If no external rent payer, set this to the owner. */
+    rentPayer: TAccountMetas[0];
+    owner: TAccountMetas[1];
+    pool: TAccountMetas[2];
     /** Needed for pool seeds derivation / will be stored inside pool */
-    whitelist: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    whitelist: TAccountMetas[3];
+    systemProgram: TAccountMetas[4];
   };
   data: CreatePoolInstructionData;
 };
@@ -250,7 +273,7 @@ export function parseCreatePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedCreatePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 5) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -263,6 +286,7 @@ export function parseCreatePoolInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),

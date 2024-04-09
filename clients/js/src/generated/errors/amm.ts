@@ -87,6 +87,8 @@ export const enum AmmProgramErrorCode {
   STARTING_PRICE_TOO_SMALL = 0x2f06, // 12038
   /** PoolKeepAlive: Pool must keep minimum rent balance */
   POOL_KEEP_ALIVE = 0x2f07, // 12039
+  /** WrongRentPayer: Wrong rent payer */
+  WRONG_RENT_PAYER = 0x2f08, // 12040
 }
 
 export class AmmProgramError extends Error {
@@ -266,6 +268,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.POOL_KEEP_ALIVE]: [
       'PoolKeepAlive',
       `Pool must keep minimum rent balance`,
+    ],
+    [AmmProgramErrorCode.WRONG_RENT_PAYER]: [
+      'WrongRentPayer',
+      `Wrong rent payer`,
     ],
   };
 }

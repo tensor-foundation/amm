@@ -10,6 +10,9 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct ClosePool {
+    /// If no external rent payer, set this to the owner.
+    pub rent_payer: solana_program::pubkey::Pubkey,
+
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
@@ -26,8 +29,12 @@ impl ClosePool {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
+            self.rent_payer,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -65,11 +72,13 @@ impl ClosePoolInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` pool
-///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   0. `[writable, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   1. `[signer]` owner
+///   2. `[writable]` pool
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct ClosePoolBuilder {
+    rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
@@ -79,6 +88,13 @@ pub struct ClosePoolBuilder {
 impl ClosePoolBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
+    /// If no external rent payer, set this to the owner.
+    #[inline(always)]
+    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.rent_payer = Some(rent_payer);
+        self
     }
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -117,6 +133,9 @@ impl ClosePoolBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = ClosePool {
+            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
+                "SysvarRent111111111111111111111111111111111"
+            )),
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             system_program: self
@@ -130,6 +149,9 @@ impl ClosePoolBuilder {
 
 /// `close_pool` CPI accounts.
 pub struct ClosePoolCpiAccounts<'a, 'b> {
+    /// If no external rent payer, set this to the owner.
+    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
@@ -141,6 +163,8 @@ pub struct ClosePoolCpiAccounts<'a, 'b> {
 pub struct ClosePoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// If no external rent payer, set this to the owner.
+    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -156,6 +180,7 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
+            rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             pool: accounts.pool,
             system_program: accounts.system_program,
@@ -194,8 +219,12 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.rent_payer.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             true,
         ));
@@ -221,8 +250,9 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
+        account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.system_program.clone());
@@ -242,9 +272,10 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` pool
-///   2. `[]` system_program
+///   0. `[writable]` rent_payer
+///   1. `[signer]` owner
+///   2. `[writable]` pool
+///   3. `[]` system_program
 pub struct ClosePoolCpiBuilder<'a, 'b> {
     instruction: Box<ClosePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -253,12 +284,22 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(ClosePoolCpiBuilderInstruction {
             __program: program,
+            rent_payer: None,
             owner: None,
             pool: None,
             system_program: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
+    }
+    /// If no external rent payer, set this to the owner.
+    #[inline(always)]
+    pub fn rent_payer(
+        &mut self,
+        rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.rent_payer = Some(rent_payer);
+        self
     }
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
@@ -322,6 +363,8 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         let instruction = ClosePoolCpi {
             __program: self.instruction.__program,
 
+            rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
+
             owner: self.instruction.owner.expect("owner is not set"),
 
             pool: self.instruction.pool.expect("pool is not set"),
@@ -340,6 +383,7 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
 
 struct ClosePoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
+    rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

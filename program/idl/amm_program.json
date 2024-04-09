@@ -74,7 +74,7 @@
       "type": {
         "defined": "usize"
       },
-      "value": "8 + (3 * 1) + 32 + 8 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (4 * 32) + 1 + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4"
+      "value": "8 + (2 * 1) + 32 + 8 + 8 + 8 + (2 * 1) + (2 * 8) + 1 + 3 + (2 * 32) + (2 * (1 + 32)) + (3 * 4) + (2 * 4) + 8 + 32 + 1 + 32 + 1 + 4 + 100"
     },
     {
       "name": "SHARED_ESCROW_SIZE",
@@ -129,8 +129,16 @@
       "name": "createPool",
       "accounts": [
         {
-          "name": "owner",
+          "name": "rentPayer",
           "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent payer, set this to the owner."
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -207,8 +215,16 @@
       "name": "closePool",
       "accounts": [
         {
-          "name": "owner",
+          "name": "rentPayer",
           "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "If no external rent payer, set this to the owner."
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -228,8 +244,16 @@
       "name": "depositNft",
       "accounts": [
         {
-          "name": "owner",
+          "name": "rentPayer",
           "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent payer, set this to the owner."
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
           "isSigner": true,
           "docs": [
             "The owner of the pool and the NFT."
@@ -391,6 +415,14 @@
     {
       "name": "withdrawNft",
       "accounts": [
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent payer, set this to the owner."
+          ]
+        },
         {
           "name": "owner",
           "isMut": true,
@@ -591,8 +623,16 @@
       "name": "buyNft",
       "accounts": [
         {
-          "name": "owner",
+          "name": "rentPayer",
           "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent payer, set this to the buyer."
+          ]
+        },
+        {
+          "name": "owner",
+          "isMut": false,
           "isSigner": false,
           "docs": [
             "Owner is the pool owner who created the pool and the nominal owner of the",
@@ -779,6 +819,14 @@
       "name": "sellNftTokenPool",
       "accounts": [
         {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent_payer, this should be set to the seller."
+          ]
+        },
+        {
           "name": "owner",
           "isMut": true,
           "isSigner": false,
@@ -788,7 +836,7 @@
         },
         {
           "name": "seller",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
@@ -1014,6 +1062,14 @@
       "name": "sellNftTradePool",
       "accounts": [
         {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "If no external rent payer, this should be seller."
+          ]
+        },
+        {
           "name": "owner",
           "isMut": true,
           "isSigner": false,
@@ -1023,7 +1079,7 @@
         },
         {
           "name": "seller",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true,
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
@@ -1490,6 +1546,12 @@
             "type": "publicKey"
           },
           {
+            "name": "rentPayer",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
             "name": "currency",
             "type": {
               "option": "publicKey"
@@ -1522,7 +1584,7 @@
           {
             "name": "sharedEscrow",
             "docs": [
-              "If an escrow account present, means it's a shared-escrow pool (currently bids only)"
+              "If an escrow account is present, means it's a shared-escrow pool"
             ],
             "type": {
               "option": "publicKey"
@@ -1540,9 +1602,18 @@
           {
             "name": "maxTakerSellCount",
             "docs": [
-              "Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity"
+              "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya"
             ],
             "type": "u32"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                100
+              ]
+            }
           }
         ]
       }
@@ -2159,6 +2230,11 @@
       "code": 12039,
       "name": "PoolKeepAlive",
       "msg": "Pool must keep minimum rent balance"
+    },
+    {
+      "code": 12040,
+      "name": "WrongRentPayer",
+      "msg": "Wrong rent payer"
     }
   ],
   "metadata": {
