@@ -216,7 +216,7 @@
       "accounts": [
         {
           "name": "rentPayer",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
             "If no external rent payer, set this to the owner."
@@ -224,7 +224,7 @@
         },
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {

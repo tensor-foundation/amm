@@ -49,6 +49,7 @@ async fn create_pool() {
     let TestPool { pool, config, .. } = setup_default_pool(
         &mut context,
         TestPoolInputs {
+            payer: &update_authority_signer,
             owner: &update_authority_signer,
             whitelist,
             ..Default::default()
@@ -99,6 +100,7 @@ async fn close_pool() {
     let TestPool { pool, config, .. } = setup_default_pool(
         &mut context,
         TestPoolInputs {
+            payer: &update_authority_signer,
             owner: &update_authority_signer,
             whitelist,
             ..Default::default()
@@ -119,6 +121,7 @@ async fn close_pool() {
 
     // When the pool is closed
     let ix = ClosePool {
+        rent_payer: update_authority,
         pool,
         owner: update_authority,
         system_program: system_program::id(),
@@ -169,6 +172,7 @@ async fn edit_pool() {
     let TestPool { pool, config, .. } = setup_default_pool(
         &mut context,
         TestPoolInputs {
+            payer: &update_authority_signer,
             owner: &update_authority_signer,
             whitelist,
             ..Default::default()

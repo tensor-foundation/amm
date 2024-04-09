@@ -179,6 +179,7 @@ export interface CreatePoolParams {
   client: Client;
   whitelist: Address;
   owner: KeyPairSigner;
+  payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
   identifier?: Uint8Array;
   config?: PoolConfig;
@@ -201,6 +202,7 @@ export async function createPool({
   client,
   whitelist,
   owner,
+  payer = owner,
   cosigner,
   identifier,
   config,
@@ -229,6 +231,7 @@ export async function createPool({
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
+    rentPayer: payer,
     owner,
     pool,
     whitelist,
@@ -253,6 +256,7 @@ export async function createPoolThrows({
   client,
   whitelist,
   owner,
+  payer = owner,
   cosigner,
   identifier,
   config,
@@ -288,6 +292,7 @@ export async function createPoolThrows({
 
   // When we create a new account.
   const createPoolIx = getCreatePoolInstruction({
+    rentPayer: payer,
     owner,
     pool,
     whitelist,
@@ -332,6 +337,7 @@ type CreatePoolAndWhitelistThrowsParams = Omit<
 export async function createPoolAndWhitelist({
   client,
   owner,
+  payer = owner,
   cosigner,
   identifier,
   config,
@@ -367,6 +373,7 @@ export async function createPoolAndWhitelist({
   return await createPool({
     client,
     whitelist,
+    payer,
     owner,
     cosigner,
     identifier,
@@ -376,6 +383,7 @@ export async function createPoolAndWhitelist({
 
 export async function createPoolAndWhitelistThrows({
   client,
+
   owner,
   cosigner,
   identifier,

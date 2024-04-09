@@ -132,6 +132,7 @@ pub struct TestPool {
 
 #[derive(Debug)]
 pub struct TestPoolInputs<'a> {
+    pub payer: &'a Keypair,
     pub owner: &'a Keypair,
     pub identifier: Pubkey,
     pub whitelist: Pubkey,
@@ -146,6 +147,7 @@ pub struct TestPoolInputs<'a> {
 impl<'a> Default for TestPoolInputs<'a> {
     fn default() -> Self {
         Self {
+            payer: &TEST_OWNER,
             owner: &TEST_OWNER,
             identifier: Pubkey::new_unique(),
             whitelist: Pubkey::new_unique(),
@@ -164,6 +166,7 @@ pub async fn setup_default_pool<'a>(
     inputs: TestPoolInputs<'a>,
 ) -> TestPool {
     let TestPoolInputs {
+        payer,
         owner,
         identifier,
         whitelist,
@@ -186,6 +189,7 @@ pub async fn setup_default_pool<'a>(
     };
 
     let ix = CreatePoolBuilder::new()
+        .rent_payer(payer.pubkey())
         .owner(owner.pubkey())
         .pool(pool)
         .whitelist(whitelist)
@@ -199,7 +203,7 @@ pub async fn setup_default_pool<'a>(
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&context.payer.pubkey()),
-        &[&context.payer, &owner],
+        &[&context.payer, &owner, &payer],
         context.last_blockhash,
     );
     context.banks_client.process_transaction(tx).await.unwrap();

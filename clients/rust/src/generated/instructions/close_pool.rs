@@ -30,11 +30,11 @@ impl ClosePool {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.rent_payer,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -72,8 +72,8 @@ impl ClosePoolInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
-///   1. `[signer]` owner
+///   0. `[optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
@@ -220,11 +220,11 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.rent_payer.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
         ));
@@ -272,8 +272,8 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` rent_payer
-///   1. `[signer]` owner
+///   0. `[]` rent_payer
+///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` system_program
 pub struct ClosePoolCpiBuilder<'a, 'b> {
