@@ -16,11 +16,6 @@ pub mod t22_withdraw_nft;
 pub mod withdraw_mm_fees;
 pub mod withdraw_nft;
 pub mod withdraw_sol;
-pub mod wns_buy_nft;
-pub mod wns_deposit_nft;
-pub mod wns_sell_nft_token_pool;
-pub mod wns_sell_nft_trade_pool;
-pub mod wns_withdraw_nft;
 
 pub use admin::*;
 pub use buy_nft::*;
@@ -41,11 +36,6 @@ pub use t22_withdraw_nft::*;
 pub use withdraw_mm_fees::*;
 pub use withdraw_nft::*;
 pub use withdraw_sol::*;
-// pub use wns_buy_nft::*;
-// pub use wns_deposit_nft::*;
-// pub use wns_sell_nft_token_pool::*;
-// pub use wns_sell_nft_trade_pool::*;
-// pub use wns_withdraw_nft::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount};

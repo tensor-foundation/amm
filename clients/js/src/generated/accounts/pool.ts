@@ -86,6 +86,7 @@ export type PoolAccountData = {
   config: PoolConfig;
   owner: Address;
   whitelist: Address;
+  rentPayer: Option<Address>;
   currency: Option<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
@@ -93,12 +94,13 @@ export type PoolAccountData = {
   takerBuyCount: number;
   nftsHeld: number;
   stats: PoolStats;
-  /** If an escrow account present, means it's a shared-escrow pool (currently bids only) */
+  /** If an escrow account is present, means it's a shared-escrow pool */
   sharedEscrow: Option<Address>;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: Option<Address>;
-  /** Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity */
+  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
+  reserved: Array<number>;
 };
 
 export type PoolAccountDataArgs = {
@@ -117,6 +119,7 @@ export type PoolAccountDataArgs = {
   config: PoolConfigArgs;
   owner: Address;
   whitelist: Address;
+  rentPayer: OptionOrNullable<Address>;
   currency: OptionOrNullable<Address>;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
@@ -124,12 +127,13 @@ export type PoolAccountDataArgs = {
   takerBuyCount: number;
   nftsHeld: number;
   stats: PoolStatsArgs;
-  /** If an escrow account present, means it's a shared-escrow pool (currently bids only) */
+  /** If an escrow account is present, means it's a shared-escrow pool */
   sharedEscrow: OptionOrNullable<Address>;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: OptionOrNullable<Address>;
-  /** Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity */
+  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
+  reserved: Array<number>;
 };
 
 export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
@@ -145,6 +149,7 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['config', getPoolConfigEncoder()],
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
+      ['rentPayer', getOptionEncoder(getAddressEncoder())],
       ['currency', getOptionEncoder(getAddressEncoder())],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
@@ -153,6 +158,7 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['maxTakerSellCount', getU32Encoder()],
+      ['reserved', getArrayEncoder(getU8Encoder(), { size: 100 })],
     ]),
     (value) => ({
       ...value,
@@ -173,6 +179,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['config', getPoolConfigDecoder()],
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
+    ['rentPayer', getOptionDecoder(getAddressDecoder())],
     ['currency', getOptionDecoder(getAddressDecoder())],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
@@ -181,6 +188,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['maxTakerSellCount', getU32Decoder()],
+    ['reserved', getArrayDecoder(getU8Decoder(), { size: 100 })],
   ]);
 }
 

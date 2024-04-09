@@ -38,6 +38,7 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub whitelist: Pubkey,
+    pub rent_payer: Option<Pubkey>,
     pub currency: Option<Pubkey>,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
@@ -45,12 +46,14 @@ pub struct Pool {
     pub taker_buy_count: u32,
     pub nfts_held: u32,
     pub stats: PoolStats,
-    /// If an escrow account present, means it's a shared-escrow pool (currently bids only)
+    /// If an escrow account is present, means it's a shared-escrow pool
     pub shared_escrow: Option<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: Option<Pubkey>,
-    /// Limit how many buys a pool can execute - useful for cross-shared escrow, else keeps buying into infinity
+    /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+    #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
+    pub reserved: [u8; 100],
 }
 
 impl Pool {
