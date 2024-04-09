@@ -21,7 +21,10 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
     /// If no external rent payer, this should be seller.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
+    )]
     pub rent_payer: Signer<'info>,
 
     /// The owner of the pool and the buyer/recipient of the NFT.

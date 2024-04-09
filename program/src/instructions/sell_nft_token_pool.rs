@@ -23,7 +23,10 @@ use crate::{error::ErrorCode, utils::send_pnft, *};
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
     /// If no external rent_payer, this should be set to the seller.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
+    )]
     pub rent_payer: Signer<'info>,
 
     /// The owner of the pool and the buyer/recipient of the NFT.

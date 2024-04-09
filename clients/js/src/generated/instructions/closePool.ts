@@ -26,8 +26,8 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  ReadonlySignerAccount,
   WritableAccount,
+  WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
@@ -49,10 +49,10 @@ export type ClosePoolInstruction<
   IInstructionWithAccounts<
     [
       TAccountRentPayer extends string
-        ? WritableAccount<TAccountRentPayer>
+        ? ReadonlyAccount<TAccountRentPayer>
         : TAccountRentPayer,
       TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner> &
+        ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
@@ -134,8 +134,8 @@ export function getClosePoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: false },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };

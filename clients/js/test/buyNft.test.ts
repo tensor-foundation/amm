@@ -148,6 +148,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
+    rentPayer: nftOwner, // seller
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
@@ -203,6 +204,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Buy NFT from pool
   const buyNftIx = getBuyNftInstruction({
+    rentPayer: buyer,
     owner: owner.address,
     buyer,
     feeVault,

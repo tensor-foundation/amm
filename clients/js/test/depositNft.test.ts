@@ -98,6 +98,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Deposit NFT
   const depositNftIx = getDepositNftInstruction({
+    rentPayer: owner,
     owner,
     pool,
     whitelist,

@@ -17,7 +17,10 @@ use crate::{error::ErrorCode, *};
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
     /// If no external rent payer, this should be the buyer.
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()) == pool.rent_payer,
+    )]
     pub rent_payer: Signer<'info>,
 
     /// CHECK: has_one = owner in pool (owner is the seller)
