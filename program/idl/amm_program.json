@@ -1131,10 +1131,7 @@
         {
           "name": "poolAta",
           "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale."
-          ]
+          "isSigner": false
         },
         {
           "name": "mint",

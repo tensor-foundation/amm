@@ -60,6 +60,7 @@ pub struct SellNftTokenPoolT22<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
+    /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
             b"mint_proof".as_ref(),

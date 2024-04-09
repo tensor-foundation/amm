@@ -289,7 +289,6 @@ export type SellNftTradePoolInput<
    * Typically, this should be an ATA for the mint and seller wallet.
    */
   sellerTokenAccount: Address<TAccountSellerTokenAccount>;
-  /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
   poolAta: Address<TAccountPoolAta>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
@@ -606,7 +605,6 @@ export type ParsedSellNftTradePoolInstruction<
      */
 
     sellerTokenAccount: TAccountMetas[7];
-    /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
     poolAta: TAccountMetas[8];
     /** The mint account of the NFT being sold. */
     mint: TAccountMetas[9];

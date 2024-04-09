@@ -32,7 +32,7 @@ pub struct SellNftTradePool {
     /// The token account of the NFT for the seller's wallet.
     /// Typically, this should be an ATA for the mint and seller wallet.
     pub seller_token_account: solana_program::pubkey::Pubkey,
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
+
     pub pool_ata: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
@@ -359,7 +359,6 @@ impl SellNftTradePoolBuilder {
         self.seller_token_account = Some(seller_token_account);
         self
     }
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[inline(always)]
     pub fn pool_ata(&mut self, pool_ata: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool_ata = Some(pool_ata);
@@ -612,7 +611,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     /// The token account of the NFT for the seller's wallet.
     /// Typically, this should be an ATA for the mint and seller wallet.
     pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
+
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -677,7 +676,7 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     /// The token account of the NFT for the seller's wallet.
     /// Typically, this should be an ATA for the mint and seller wallet.
     pub seller_token_account: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
+
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1111,7 +1110,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.seller_token_account = Some(seller_token_account);
         self
     }
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[inline(always)]
     pub fn pool_ata(
         &mut self,
