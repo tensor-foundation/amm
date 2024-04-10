@@ -25,6 +25,7 @@ import {
   ParsedDetachPoolFromSharedEscrowInstruction,
   ParsedEditPoolInstruction,
   ParsedInitSharedEscrowAccountInstruction,
+  ParsedLogInstruction,
   ParsedReallocPoolInstruction,
   ParsedSellNftTokenPoolInstruction,
   ParsedSellNftTradePoolInstruction,
@@ -84,6 +85,7 @@ export function identifyAmmAccount(
 }
 
 export enum AmmInstruction {
+  Log,
   ReallocPool,
   CreatePool,
   EditPool,
@@ -108,6 +110,9 @@ export function identifyAmmInstruction(
 ): AmmInstruction {
   const data =
     instruction instanceof Uint8Array ? instruction : instruction.data;
+  if (memcmp(data, new Uint8Array([141, 230, 214, 242, 9, 209, 207, 170]), 0)) {
+    return AmmInstruction.Log;
+  }
   if (memcmp(data, new Uint8Array([114, 128, 37, 167, 71, 227, 40, 178]), 0)) {
     return AmmInstruction.ReallocPool;
   }
@@ -173,6 +178,7 @@ export function identifyAmmInstruction(
 export type ParsedAmmInstruction<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
 > =
+  | ({ instructionType: AmmInstruction.Log } & ParsedLogInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.ReallocPool;
     } & ParsedReallocPoolInstruction<TProgram>)

@@ -18,6 +18,10 @@ pub mod amm_program {
     // admin instructions            //
     //-------------------------------//
 
+    pub fn log(ctx: Context<Log>, event: Vec<u8>) -> Result<()> {
+        log::log(ctx, &event)
+    }
+
     // pub fn init_update_tswap(ctx: Context<InitUpdateTSwap>, config: TSwapConfig) -> Result<()> {
     //     instructions::admin::init_update_tswap::process_init_update_tswap(ctx, config)
     // }

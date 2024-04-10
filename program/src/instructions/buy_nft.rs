@@ -76,7 +76,7 @@ pub struct BuyNft<'info> {
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ata: InterfaceAccount<'info, TokenAccount>,
 
     /// The mint account of the NFT. It should be the mint account common 
     /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
@@ -85,7 +85,7 @@ pub struct BuyNft<'info> {
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     /// The Token Metadata metadata account of the NFT.
     ///  CHECK: seeds and ownership are checked in assert_decode_metadata.
@@ -160,6 +160,14 @@ pub struct BuyNft<'info> {
     /// CHECK: need checks specified
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
+
+    /// The AMM program account--used for self-CPI logging.
+    /// CHECK: address constraint is checked here
+    #[account(
+        address = crate::ID,
+    )]
+    pub program: UncheckedAccount<'info>,
+
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
@@ -218,6 +226,13 @@ pub fn process_buy_nft<'info, 'b>(
     let pool = &ctx.accounts.pool;
     let owner_pubkey = ctx.accounts.owner.key();
 
+            let signer_seeds: &[&[&[u8]]] = &[&[
+        b"pool",
+        owner_pubkey.as_ref(),
+        pool.identifier.as_ref(),
+        &[pool.bump[0]],
+    ]];
+
     let metadata =
         &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 
@@ -230,14 +245,29 @@ pub fn process_buy_nft<'info, 'b>(
     } = calc_fees_rebates(current_price)?;
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
+
+
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    emit!(BuySellEvent {
+    let event = BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
         mm_fee: 0, //record in sell_trade ix for parsing
         creators_fee,
-    });
+    };
+
+    // Log event
+    {
+        let inner_data = event.data();
+        let ix_data: Vec<u8> = LOG_IX_TAG.into_iter().chain(inner_data.into_iter()).collect();
+        let ix = anchor_lang::solana_program::instruction::Instruction::new_with_bytes(crate::ID, &ix_data, vec![anchor_lang::solana_program::instruction::AccountMeta::new_readonly(pool.key(), true)]);
+        anchor_lang::solana_program::program::invoke_signed(
+                    &ix,
+                    &[ctx.accounts.pool.to_account_info()],
+                    signer_seeds,
+                )
+                .map_err(anchor_lang::error::Error::from)?;
+    }
 
     if current_price > max_price {
         throw_err!(ErrorCode::PriceMismatch);
@@ -252,12 +282,7 @@ pub fn process_buy_nft<'info, 'b>(
         None
     };
 
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"pool",
-        owner_pubkey.as_ref(),
-        pool.identifier.as_ref(),
-        &[pool.bump[0]],
-    ]];
+
 
     send_pnft(
         Some(signer_seeds),

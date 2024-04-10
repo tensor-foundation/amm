@@ -93,6 +93,22 @@
   ],
   "instructions": [
     {
+      "name": "log",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "event",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "reallocPool",
       "accounts": [
         {
@@ -787,6 +803,14 @@
           "docs": [
             "The taker broker account that receives the taker fees.",
             "TODO: optional account? what checks?"
+          ]
+        },
+        {
+          "name": "program",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The AMM program account--used for self-CPI logging."
           ]
         }
       ],
@@ -1902,6 +1926,17 @@
       }
     },
     {
+      "name": "EventType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "BuySell"
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolType",
       "type": {
         "kind": "enum",
@@ -2004,22 +2039,22 @@
         {
           "name": "currentPrice",
           "type": "u64",
-          "index": true
+          "index": false
         },
         {
           "name": "tswapFee",
           "type": "u64",
-          "index": true
+          "index": false
         },
         {
           "name": "mmFee",
           "type": "u64",
-          "index": true
+          "index": false
         },
         {
           "name": "creatorsFee",
           "type": "u64",
-          "index": true
+          "index": false
         }
       ]
     },

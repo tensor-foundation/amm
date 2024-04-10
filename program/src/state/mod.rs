@@ -1,8 +1,10 @@
+pub mod event;
 pub mod nft_deposit_receipt;
 pub mod pool;
 pub mod shared_escrow;
 pub mod single_listing;
 
+pub use event::*;
 pub use nft_deposit_receipt::*;
 pub use pool::*;
 pub use shared_escrow::*;
@@ -27,16 +29,36 @@ pub struct FeeVault {}
 
 // --------------------------------------- events
 
+// Sha256(global:log)[..8]
+pub const LOG_IX_TAG: [u8; 8] = [141, 230, 214, 242, 9, 209, 207, 170];
+
 #[event]
 pub struct BuySellEvent {
-    #[index]
     pub current_price: u64,
-    #[index]
     pub tswap_fee: u64,
-    #[index]
     pub mm_fee: u64,
-    #[index]
     pub creators_fee: u64,
+}
+
+impl BuySellEvent {
+    const LEN: usize = std::mem::size_of::<u64>() * 4;
+    const TYPE: u8 = EventType::BuySell as u8;
+}
+
+impl Event for BuySellEvent {
+    fn data(&self) -> Vec<u8> {
+        let mut data = Vec::with_capacity(Self::LEN);
+        // This should be more efficient than serializing the struct and
+        // using try_to_vec() because we know the size of the data.
+        // If we want to generalize this via a macro, we could impl
+        // BorshSerialize for the provided event type and use try_to_vec() instead.
+        data.push(Self::TYPE);
+        data.extend_from_slice(&self.current_price.to_le_bytes());
+        data.extend_from_slice(&self.tswap_fee.to_le_bytes());
+        data.extend_from_slice(&self.mm_fee.to_le_bytes());
+        data.extend_from_slice(&self.creators_fee.to_le_bytes());
+        data
+    }
 }
 
 #[event]
