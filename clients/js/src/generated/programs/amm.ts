@@ -16,10 +16,12 @@ import {
 import {
   ParsedAttachPoolToSharedEscrowInstruction,
   ParsedBuyNftInstruction,
+  ParsedBuyNftT22Instruction,
   ParsedClosePoolInstruction,
   ParsedCloseSharedEscrowAccountInstruction,
   ParsedCreatePoolInstruction,
   ParsedDepositNftInstruction,
+  ParsedDepositNftT22Instruction,
   ParsedDepositSharedEscrowAccountInstruction,
   ParsedDepositSolInstruction,
   ParsedDetachPoolFromSharedEscrowInstruction,
@@ -27,9 +29,16 @@ import {
   ParsedInitSharedEscrowAccountInstruction,
   ParsedReallocPoolInstruction,
   ParsedSellNftTokenPoolInstruction,
+  ParsedSellNftTokenPoolT22Instruction,
   ParsedSellNftTradePoolInstruction,
+  ParsedSellNftTradePoolT22Instruction,
+  ParsedWithdrawMmFeeInstruction,
   ParsedWithdrawNftInstruction,
+  ParsedWithdrawNftT22Instruction,
   ParsedWithdrawSharedEscrowAccountInstruction,
+  ParsedWithdrawSharedEscrowCpiInstruction,
+  ParsedWithdrawSharedEscrowCpiTcompInstruction,
+  ParsedWithdrawSharedEscrowCpiTlockInstruction,
   ParsedWithdrawSolInstruction,
 } from '../instructions';
 import { memcmp } from '../shared';
@@ -101,6 +110,15 @@ export enum AmmInstruction {
   WithdrawSharedEscrowAccount,
   AttachPoolToSharedEscrow,
   DetachPoolFromSharedEscrow,
+  WithdrawMmFee,
+  WithdrawSharedEscrowCpi,
+  WithdrawSharedEscrowCpiTcomp,
+  WithdrawSharedEscrowCpiTlock,
+  BuyNftT22,
+  DepositNftT22,
+  SellNftTokenPoolT22,
+  SellNftTradePoolT22,
+  WithdrawNftT22,
 }
 
 export function identifyAmmInstruction(
@@ -165,6 +183,35 @@ export function identifyAmmInstruction(
   if (memcmp(data, new Uint8Array([32, 130, 53, 4, 37, 115, 52, 51]), 0)) {
     return AmmInstruction.DetachPoolFromSharedEscrow;
   }
+  if (
+    memcmp(data, new Uint8Array([54, 150, 129, 126, 135, 205, 149, 120]), 0)
+  ) {
+    return AmmInstruction.WithdrawMmFee;
+  }
+  if (memcmp(data, new Uint8Array([37, 206, 177, 145, 161, 243, 21, 162]), 0)) {
+    return AmmInstruction.WithdrawSharedEscrowCpi;
+  }
+  if (memcmp(data, new Uint8Array([12, 99, 156, 209, 4, 149, 96, 232]), 0)) {
+    return AmmInstruction.WithdrawSharedEscrowCpiTcomp;
+  }
+  if (memcmp(data, new Uint8Array([5, 242, 176, 14, 221, 3, 185, 71]), 0)) {
+    return AmmInstruction.WithdrawSharedEscrowCpiTlock;
+  }
+  if (memcmp(data, new Uint8Array([155, 219, 126, 245, 170, 199, 51, 79]), 0)) {
+    return AmmInstruction.BuyNftT22;
+  }
+  if (memcmp(data, new Uint8Array([208, 34, 6, 147, 95, 218, 49, 160]), 0)) {
+    return AmmInstruction.DepositNftT22;
+  }
+  if (memcmp(data, new Uint8Array([149, 234, 31, 103, 26, 36, 166, 49]), 0)) {
+    return AmmInstruction.SellNftTokenPoolT22;
+  }
+  if (memcmp(data, new Uint8Array([124, 145, 23, 52, 72, 113, 85, 9]), 0)) {
+    return AmmInstruction.SellNftTradePoolT22;
+  }
+  if (memcmp(data, new Uint8Array([112, 55, 80, 231, 181, 190, 92, 12]), 0)) {
+    return AmmInstruction.WithdrawNftT22;
+  }
   throw new Error(
     'The provided instruction could not be identified as a amm instruction.'
   );
@@ -223,4 +270,31 @@ export type ParsedAmmInstruction<
     } & ParsedAttachPoolToSharedEscrowInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.DetachPoolFromSharedEscrow;
-    } & ParsedDetachPoolFromSharedEscrowInstruction<TProgram>);
+    } & ParsedDetachPoolFromSharedEscrowInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawMmFee;
+    } & ParsedWithdrawMmFeeInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawSharedEscrowCpi;
+    } & ParsedWithdrawSharedEscrowCpiInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawSharedEscrowCpiTcomp;
+    } & ParsedWithdrawSharedEscrowCpiTcompInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawSharedEscrowCpiTlock;
+    } & ParsedWithdrawSharedEscrowCpiTlockInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.BuyNftT22;
+    } & ParsedBuyNftT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.DepositNftT22;
+    } & ParsedDepositNftT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.SellNftTokenPoolT22;
+    } & ParsedSellNftTokenPoolT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.SellNftTradePoolT22;
+    } & ParsedSellNftTradePoolT22Instruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.WithdrawNftT22;
+    } & ParsedWithdrawNftT22Instruction<TProgram>);

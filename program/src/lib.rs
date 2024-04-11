@@ -18,17 +18,11 @@ pub mod amm_program {
     // admin instructions            //
     //-------------------------------//
 
-    // pub fn init_update_tswap(ctx: Context<InitUpdateTSwap>, config: TSwapConfig) -> Result<()> {
-    //     instructions::admin::init_update_tswap::process_init_update_tswap(ctx, config)
-    // }
-
     pub fn realloc_pool(ctx: Context<ReallocPool>, _config: PoolConfig) -> Result<()> {
         instructions::admin::realloc_pool::process_realloc_pool(ctx)
     }
 
-    // pub fn withdraw_tswap_fees(ctx: Context<WithdrawTswapFees>, amount: u64) -> Result<()> {
-    //     instructions::admin::withdraw_tswap_fees::process_withdraw_tswap_fees(ctx, amount)
-    // }
+    // **Ix to collect fees from sharded fee accounts**
 
     //-------------------------------//
     // "standard" instructions       //
@@ -165,84 +159,84 @@ pub mod amm_program {
         instructions::attach_detach_pool_shared_escrow::detach_handler(ctx, lamports)
     }
 
-    // pub fn withdraw_mm_fee<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::withdraw_mm_fees::process_withdraw_mm_fees(ctx, lamports)
-    // }
+    pub fn withdraw_mm_fee<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::withdraw_mm_fees::process_withdraw_mm_fees(ctx, lamports)
+    }
 
-    // pub fn withdraw_shared_escrow_account_cpi(
-    //     ctx: Context<WithdrawMarginAccountCpi>,
-    //     _bump: u8,
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::withdraw_shared_escrow_account_from_tbid::process_withdraw_shared_escrow_account_from_tbid(
-    //         ctx, lamports,
-    //     )
-    // }
+    pub fn withdraw_shared_escrow_cpi(
+        ctx: Context<WithdrawSharedEscrowCpi>,
+        _bump: u8,
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::withdraw_shared_escrow_from_tbid::process_withdraw_shared_escrow_from_tbid(
+            ctx, lamports,
+        )
+    }
 
-    // pub fn withdraw_shared_escrow_account_cpi_tcomp(
-    //     ctx: Context<WithdrawMarginAccountCpiTcomp>,
-    //     _bump: u8,
-    //     _bid_id: Pubkey,
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::withdraw_shared_escrow_account_from_tcomp::process_withdraw_shared_escrow_account_from_tcomp(
-    //         ctx, lamports,
-    //     )
-    // }
+    pub fn withdraw_shared_escrow_cpi_tcomp(
+        ctx: Context<WithdrawSharedEscrowCpiTcomp>,
+        _bump: u8,
+        _bid_id: Pubkey,
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::withdraw_shared_escrow_from_tcomp::process_withdraw_shared_escrow_from_tcomp(
+            ctx, lamports,
+        )
+    }
 
-    // pub fn withdraw_shared_escrow_account_cpi_tlock(
-    //     ctx: Context<WithdrawMarginAccountCpiTLock>,
-    //     _bump: u8,
-    //     _order_id: [u8; 32],
-    //     lamports: u64,
-    // ) -> Result<()> {
-    //     instructions::withdraw_shared_escrow_account_from_tlock::process_withdraw_shared_escrow_account_from_tlock(
-    //         ctx, lamports,
-    //     )
-    // }
+    pub fn withdraw_shared_escrow_cpi_tlock(
+        ctx: Context<WithdrawSharedEscrowCpiTLock>,
+        _bump: u8,
+        _order_id: [u8; 32],
+        lamports: u64,
+    ) -> Result<()> {
+        instructions::withdraw_shared_escrow_from_tlock::process_withdraw_shared_escrow_from_tlock(
+            ctx, lamports,
+        )
+    }
 
     //-------------------------------//
     // Token 2022 instructions       //
     //-------------------------------//
 
-    // pub fn buy_nft_t22<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
-    //     _config: PoolConfig,
-    //     max_price: u64,
-    // ) -> Result<()> {
-    //     instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_price)
-    // }
+    pub fn buy_nft_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
+        _config: PoolConfig,
+        max_price: u64,
+    ) -> Result<()> {
+        instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_price)
+    }
 
-    // pub fn deposit_nft_t22<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
-    //     _config: PoolConfig,
-    // ) -> Result<()> {
-    //     instructions::t22_deposit_nft::process_t22_deposit_nft(ctx)
-    // }
+    pub fn deposit_nft_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
+        _config: PoolConfig,
+    ) -> Result<()> {
+        instructions::t22_deposit_nft::process_t22_deposit_nft(ctx)
+    }
 
-    // pub fn sell_nft_token_pool_t22<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
-    //     _config: PoolConfig,
-    //     min_price: u64,
-    // ) -> Result<()> {
-    //     instructions::t22_sell_nft_token_pool::process_t22_sell_nft_token_pool(ctx, min_price)
-    // }
+    pub fn sell_nft_token_pool_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
+        _config: PoolConfig,
+        min_price: u64,
+    ) -> Result<()> {
+        instructions::t22_sell_nft_token_pool::process_t22_sell_nft_token_pool(ctx, min_price)
+    }
 
-    // pub fn sell_nft_trade_pool_t22<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, SellNftTradePoolT22<'info>>,
-    //     _config: PoolConfig,
-    //     min_price: u64,
-    // ) -> Result<()> {
-    //     instructions::t22_sell_nft_trade_pool::process_sell_nft_trade_pool(ctx, min_price)
-    // }
+    pub fn sell_nft_trade_pool_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTradePoolT22<'info>>,
+        _config: PoolConfig,
+        min_price: u64,
+    ) -> Result<()> {
+        instructions::t22_sell_nft_trade_pool::process_sell_nft_trade_pool(ctx, min_price)
+    }
 
-    // pub fn withdraw_nft_t22<'info>(
-    //     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
-    //     _config: PoolConfig,
-    // ) -> Result<()> {
-    //     instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
-    // }
+    pub fn withdraw_nft_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
+        _config: PoolConfig,
+    ) -> Result<()> {
+        instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
+    }
 }
