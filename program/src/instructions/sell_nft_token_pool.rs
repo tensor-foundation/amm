@@ -183,6 +183,8 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
 
+    pub maker_broker: Option<UncheckedAccount<'info>>,
+
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,

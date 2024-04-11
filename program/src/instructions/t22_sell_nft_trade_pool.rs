@@ -126,6 +126,8 @@ pub struct SellNftTradePoolT22<'info> {
     /// CHECK: checked in handler
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
+
+    pub maker_broker: Option<UncheckedAccount<'info>>,
 }
 
 impl<'info> Validate<'info> for SellNftTradePoolT22<'info> {

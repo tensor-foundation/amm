@@ -114,6 +114,8 @@ pub struct BuyNftT22<'info> {
     /// CHECK:
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
+
+    pub maker_broker: Option<UncheckedAccount<'info>>,
 }
 
 impl<'info> BuyNftT22<'info> {

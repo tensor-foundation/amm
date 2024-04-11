@@ -160,6 +160,9 @@ pub struct BuyNft<'info> {
     /// CHECK: need checks specified
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
+
+    pub maker_broker: Option<UncheckedAccount<'info>>,
+
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
