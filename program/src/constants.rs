@@ -42,6 +42,5 @@ pub const SNIPE_MIN_FEE: u64 = 10000000;
 #[constant]
 pub const SNIPE_PROFIT_SHARE_BPS: u16 = 2000;
 
-// TODO currently disabled
 #[constant]
 pub const TAKER_BROKER_PCT: u64 = 0;

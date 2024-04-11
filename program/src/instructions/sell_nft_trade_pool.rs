@@ -6,11 +6,12 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
+use solana_program::keccak;
 use tensor_toolbox::{
     assert_decode_metadata, send_pnft, transfer_creators_fee, transfer_lamports_from_pda,
     CreatorFeeMode, FromAcc, PnftTransferArgs,
 };
-use tensor_whitelist::WhitelistV2;
+use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
@@ -186,6 +187,29 @@ pub struct SellNftTradePool<'info> {
     // optional 0 to N creator accounts.
 }
 
+impl<'info> SellNftTradePool<'info> {
+    pub fn verify_whitelist(&self) -> Result<()> {
+        let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;
+
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, mint_proof)?;
+
+            let leaf = keccak::hash(self.mint.key().as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            None
+        };
+
+        self.whitelist
+            .verify(metadata.collection, metadata.creators, full_merkle_proof)
+    }
+}
+
 impl<'info> Validate<'info> for SellNftTradePool<'info> {
     fn validate(&self) -> Result<()> {
         match self.pool.config.pool_type {
@@ -204,8 +228,7 @@ impl<'info> Validate<'info> for SellNftTradePool<'info> {
     }
 }
 
-// TODO: add access control
-// #[access_control(ctx.accounts.shared.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_sell_nft_trade_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
     // Min vs exact so we can add slippage later.

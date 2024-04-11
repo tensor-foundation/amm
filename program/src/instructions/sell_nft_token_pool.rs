@@ -178,7 +178,6 @@ pub struct SellNftTokenPool<'info> {
     pub shared_escrow: UncheckedAccount<'info>,
 
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     /// CHECK: need checks specified
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,

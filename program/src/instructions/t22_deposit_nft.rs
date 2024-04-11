@@ -79,7 +79,7 @@ pub struct DepositNftT22<'info> {
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
-        init, // TODO: clarify this in design review <-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
+        init,
         payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,

@@ -207,7 +207,6 @@ impl<'info> Validate<'info> for BuyNft<'info> {
     }
 }
 
-// TODO: Disable proofs for now until tx size limits increase. This is fine since we validate proof on deposit/sell.
 #[access_control(ctx.accounts.validate())]
 pub fn process_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,

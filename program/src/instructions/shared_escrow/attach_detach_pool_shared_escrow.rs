@@ -30,7 +30,6 @@ pub struct AttachDetachPoolSharedEscrow<'info> {
         bump = pool.bump[0],
         has_one = owner,
         // can only deposit SOL into Token pool
-        // TODO: if we decide to add Trade pool, need to update sell_nft_to_trade_pool.rs and buy_nft.rs w/ logic related to shared_escrow
         constraint = pool.config.pool_type == PoolType::Token || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,

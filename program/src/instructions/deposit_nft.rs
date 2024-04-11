@@ -92,9 +92,6 @@ pub struct DepositNft<'info> {
     /// CHECK: assert_decode_metadata checks seeds, owner, and key
     pub metadata: UncheckedAccount<'info>,
 
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
     /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
