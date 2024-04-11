@@ -59,7 +59,6 @@ pub struct BuyNft {
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: solana_program::pubkey::Pubkey,
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     pub taker_broker: solana_program::pubkey::Pubkey,
 
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
@@ -427,7 +426,6 @@ impl BuyNftBuilder {
         self
     }
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     #[inline(always)]
     pub fn taker_broker(&mut self, taker_broker: solana_program::pubkey::Pubkey) -> &mut Self {
         self.taker_broker = Some(taker_broker);
@@ -593,7 +591,6 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -651,7 +648,6 @@ pub struct BuyNftCpi<'a, 'b> {
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1135,7 +1131,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self
     }
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     #[inline(always)]
     pub fn taker_broker(
         &mut self,

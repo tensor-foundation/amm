@@ -316,10 +316,7 @@ export type SellNftTradePoolInput<
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow: Address<TAccountSharedEscrow>;
-  /**
-   * The taker broker account that receives the taker fees.
-   * TODO: optional account? what checks?
-   */
+  /** The taker broker account that receives the taker fees. */
   takerBroker: Address<TAccountTakerBroker>;
   makerBroker?: Address<TAccountMakerBroker>;
   /**
@@ -632,11 +629,7 @@ export type ParsedSellNftTradePoolInstruction<
     authRules: TAccountMetas[22];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
     sharedEscrow: TAccountMetas[23];
-    /**
-     * The taker broker account that receives the taker fees.
-     * TODO: optional account? what checks?
-     */
-
+    /** The taker broker account that receives the taker fees. */
     takerBroker: TAccountMetas[24];
     makerBroker?: TAccountMetas[25] | undefined;
     /**

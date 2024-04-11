@@ -241,11 +241,6 @@ export type DepositNftInput<
   rent?: Address<TAccountRent>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
-  /**
-   * TODO: we can actually deserialize here with a MintProofV2 type
-   * but may not be worth it since assert_decode_mint_proof checks
-   * seeds, mint, whitelist, and key
-   */
   mintProof?: Address<TAccountMintProof>;
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
@@ -495,12 +490,6 @@ export type ParsedDepositNftInstruction<
     rent: TAccountMetas[10];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[11];
-    /**
-     * TODO: we can actually deserialize here with a MintProofV2 type
-     * but may not be worth it since assert_decode_mint_proof checks
-     * seeds, mint, whitelist, and key
-     */
-
     mintProof?: TAccountMetas[12] | undefined;
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[13];

@@ -156,8 +156,8 @@ pub struct BuyNft<'info> {
     pub shared_escrow: UncheckedAccount<'info>,
 
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
     /// CHECK: need checks specified
+    // TODO: optional account? what checks?
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
 

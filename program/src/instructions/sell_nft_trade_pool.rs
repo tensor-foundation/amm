@@ -17,7 +17,7 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
-/// Sells an NFT into a two-sided ("Trade") pool, where the pool is the buyer and ends up as the 
+/// Sells an NFT into a two-sided ("Trade") pool, where the pool is the buyer and ends up as the
 /// owner of the NFT. The seller is the owner of the NFT and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
@@ -37,14 +37,13 @@ pub struct SellNftTradePool<'info> {
     pub seller: Signer<'info>,
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
-
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
         seeds = [
             b"fee_vault",
             // Use the last byte of the mint as the fee shard number
-            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+            &mint.key().as_ref().last().unwrap().to_le_bytes(),
         ],
         bump
     )]
@@ -172,7 +171,7 @@ pub struct SellNftTradePool<'info> {
     pub shared_escrow: UncheckedAccount<'info>,
 
     /// The taker broker account that receives the taker fees.
-    /// TODO: optional account? what checks?
+    // TODO: optional account? what checks?
     /// CHECK: need checks specified
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
@@ -182,7 +181,6 @@ pub struct SellNftTradePool<'info> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
-
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
@@ -271,10 +269,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         },
     )?;
 
-    let metadata = &assert_decode_metadata(
-        &ctx.accounts.mint.key(),
-        &ctx.accounts.metadata,
-    )?;
+    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
@@ -326,11 +321,7 @@ pub fn process_sell_nft_trade_pool<'info>(
 
     // transfer fees
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    transfer_lamports_from_pda(
-        &from,
-        &ctx.accounts.fee_vault.to_account_info(),
-        tswap_fee,
-    )?;
+    transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
         &from,
         &ctx.accounts.taker_broker.to_account_info(),

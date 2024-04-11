@@ -36,9 +36,7 @@ pub struct DepositNft {
     pub rent: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
+
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata edition account of the NFT.
     pub edition: solana_program::pubkey::Pubkey,
@@ -320,9 +318,6 @@ impl DepositNftBuilder {
         self
     }
     /// `[optional account]`
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
     #[inline(always)]
     pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
         self.mint_proof = mint_proof;
@@ -495,9 +490,7 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
+
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata edition account of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
@@ -546,9 +539,7 @@ pub struct DepositNftCpi<'a, 'b> {
     pub rent: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
+
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata edition account of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
@@ -933,9 +924,6 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// TODO: we can actually deserialize here with a MintProofV2 type
-    /// but may not be worth it since assert_decode_mint_proof checks
-    /// seeds, mint, whitelist, and key
     #[inline(always)]
     pub fn mint_proof(
         &mut self,

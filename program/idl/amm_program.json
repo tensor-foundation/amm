@@ -332,12 +332,7 @@
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
-          "isOptional": true,
-          "docs": [
-            "TODO: we can actually deserialize here with a MintProofV2 type",
-            "but may not be worth it since assert_decode_mint_proof checks",
-            "seeds, mint, whitelist, and key"
-          ]
+          "isOptional": true
         },
         {
           "name": "edition",
@@ -785,8 +780,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The taker broker account that receives the taker fees.",
-            "TODO: optional account? what checks?"
+            "The taker broker account that receives the taker fees."
           ]
         },
         {
@@ -1023,8 +1017,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The taker broker account that receives the taker fees.",
-            "TODO: optional account? what checks?"
+            "The taker broker account that receives the taker fees."
           ]
         },
         {
@@ -1250,8 +1243,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The taker broker account that receives the taker fees.",
-            "TODO: optional account? what checks?"
+            "The taker broker account that receives the taker fees."
           ]
         },
         {
