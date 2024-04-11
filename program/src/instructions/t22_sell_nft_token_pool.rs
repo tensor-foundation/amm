@@ -110,6 +110,9 @@ pub struct SellNftTokenPoolT22<'info> {
     /// CHECK:
     #[account(mut)]
     pub taker_broker: UncheckedAccount<'info>,
+
+    pub maker_broker: Option<UncheckedAccount<'info>>,
+
     // remaining accounts:
     // CHECK: 1)is signer, 2)cosigner stored on tswap
     // 1. optional co-signer (will be drawn first if necessary)
