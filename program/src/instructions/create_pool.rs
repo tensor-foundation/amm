@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct CreatePoolArgs {
-    pub identifier: [u8; 32],
+    pub pool_id: [u8; 32],
     // Here to support future SPL mints, contract enforces this is the native mint currently
     pub currency_mint: Pubkey,
     pub config: PoolConfig,
@@ -38,7 +38,7 @@ pub struct CreatePool<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            args.identifier.as_ref(),
+            args.pool_id.as_ref(),
         ],
         bump
     )]
@@ -105,15 +105,16 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
-    pool.identifier = args.identifier;
+    pool.pool_id = args.pool_id;
+    // Refactor for nullable pubkey, just store rent payer directly without checking
     pool.rent_payer = if ctx.accounts.rent_payer.key() == ctx.accounts.owner.key() {
         None
     } else {
         Some(ctx.accounts.rent_payer.key())
     };
     // Only SOL currently supported
-    pool.currency_mint = Pubkey::default();
-    pool.currency_amount = 0;
+    pool.currency = Pubkey::default();
+    pool.amount = 0;
 
     pool.taker_buy_count = 0;
     pool.taker_sell_count = 0;
@@ -128,7 +129,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     let timestamp = Clock::get()?.unix_timestamp;
     pool.created_at = timestamp;
     pool.updated_at = timestamp;
-    pool.expires_at = args.expiration_timestamp.unwrap_or(0);
+    pool.expiry = args.expiration_timestamp.unwrap_or(0);
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {
         pool.max_taker_sell_count = max_taker_sell_count;

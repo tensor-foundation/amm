@@ -20,14 +20,13 @@ pub struct Pool {
     /// Bump seed for the pool PDA.
     pub bump: [u8; 1],
     /// Owner-chosen identifier for the pool
-    pub identifier: [u8; 32],
+    pub pool_id: [u8; 32],
     /// Unix timestamp of the pool creation, in seconds.
     pub created_at: i64,
     /// Unix timestamp of the last time the pool has been updated, in seconds.
     pub updated_at: i64,
     /// Unix timestamp of when the pool expires, in seconds.
-    pub expires_at: i64,
-    pub config: PoolConfig,
+    pub expiry: i64,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -43,9 +42,9 @@ pub struct Pool {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub currency_mint: Pubkey,
+    pub currency: Pubkey,
     /// The amount of currency held in the pool
-    pub currency_amount: u64,
+    pub amount: u64,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
     /// How many times a taker has BOUGHT from the pool
@@ -58,6 +57,7 @@ pub struct Pool {
     pub cosigner: Option<Pubkey>,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+    pub config: PoolConfig,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub reserved: [u8; 100],
 }

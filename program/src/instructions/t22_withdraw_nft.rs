@@ -32,7 +32,7 @@ pub struct WithdrawNftT22<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = whitelist, has_one = owner,
@@ -140,7 +140,7 @@ pub fn process_t22_withdraw_nft<'info>(
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"pool",
         owner_pubkey.as_ref(),
-        pool.identifier.as_ref(),
+        pool.pool_id.as_ref(),
         &[pool.bump[0]],
     ]];
 

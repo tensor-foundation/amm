@@ -93,7 +93,7 @@ export type CreatePoolInstruction<
 
 export type CreatePoolInstructionData = {
   discriminator: Array<number>;
-  identifier: Uint8Array;
+  poolId: Uint8Array;
   currencyMint: Address;
   config: PoolConfig;
   cosigner: Option<Address>;
@@ -103,7 +103,7 @@ export type CreatePoolInstructionData = {
 };
 
 export type CreatePoolInstructionDataArgs = {
-  identifier: Uint8Array;
+  poolId: Uint8Array;
   currencyMint: Address;
   config: PoolConfigArgs;
   cosigner: OptionOrNullable<Address>;
@@ -116,7 +116,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['identifier', getBytesEncoder({ size: 32 })],
+      ['poolId', getBytesEncoder({ size: 32 })],
       ['currencyMint', getAddressEncoder()],
       ['config', getPoolConfigEncoder()],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
@@ -134,7 +134,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
 export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['identifier', getBytesDecoder({ size: 32 })],
+    ['poolId', getBytesDecoder({ size: 32 })],
     ['currencyMint', getAddressDecoder()],
     ['config', getPoolConfigDecoder()],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
@@ -168,7 +168,7 @@ export type CreatePoolInput<
   /** Needed for pool seeds derivation / will be stored inside pool */
   whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
-  identifier: CreatePoolInstructionDataArgs['identifier'];
+  poolId: CreatePoolInstructionDataArgs['poolId'];
   currencyMint: CreatePoolInstructionDataArgs['currencyMint'];
   config: CreatePoolInstructionDataArgs['config'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];

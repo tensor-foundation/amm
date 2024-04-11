@@ -2174,7 +2174,7 @@
             }
           },
           {
-            "name": "identifier",
+            "name": "poolId",
             "docs": [
               "Owner-chosen identifier for the pool"
             ],
@@ -2200,17 +2200,11 @@
             "type": "i64"
           },
           {
-            "name": "expiresAt",
+            "name": "expiry",
             "docs": [
               "Unix timestamp of when the pool expires, in seconds."
             ],
             "type": "i64"
-          },
-          {
-            "name": "config",
-            "type": {
-              "defined": "PoolConfig"
-            }
           },
           {
             "name": "owner",
@@ -2227,11 +2221,11 @@
             }
           },
           {
-            "name": "currencyMint",
+            "name": "currency",
             "type": "publicKey"
           },
           {
-            "name": "currencyAmount",
+            "name": "amount",
             "docs": [
               "The amount of currency held in the pool"
             ],
@@ -2285,6 +2279,12 @@
               "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya"
             ],
             "type": "u32"
+          },
+          {
+            "name": "config",
+            "type": {
+              "defined": "PoolConfig"
+            }
           },
           {
             "name": "reserved",
@@ -2404,7 +2404,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "identifier",
+            "name": "poolId",
             "type": {
               "array": [
                 "u8",

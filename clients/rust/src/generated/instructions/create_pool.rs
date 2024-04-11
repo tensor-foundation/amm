@@ -85,7 +85,7 @@ impl CreatePoolInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreatePoolInstructionArgs {
-    pub identifier: [u8; 32],
+    pub pool_id: [u8; 32],
     pub currency_mint: Pubkey,
     pub config: PoolConfig,
     pub cosigner: Option<Pubkey>,
@@ -110,7 +110,7 @@ pub struct CreatePoolBuilder {
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    identifier: Option<[u8; 32]>,
+    pool_id: Option<[u8; 32]>,
     currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
@@ -154,8 +154,8 @@ impl CreatePoolBuilder {
         self
     }
     #[inline(always)]
-    pub fn identifier(&mut self, identifier: [u8; 32]) -> &mut Self {
-        self.identifier = Some(identifier);
+    pub fn pool_id(&mut self, pool_id: [u8; 32]) -> &mut Self {
+        self.pool_id = Some(pool_id);
         self
     }
     #[inline(always)]
@@ -223,7 +223,7 @@ impl CreatePoolBuilder {
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = CreatePoolInstructionArgs {
-            identifier: self.identifier.clone().expect("identifier is not set"),
+            pool_id: self.pool_id.clone().expect("pool_id is not set"),
             currency_mint: self
                 .currency_mint
                 .clone()
@@ -398,7 +398,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             pool: None,
             whitelist: None,
             system_program: None,
-            identifier: None,
+            pool_id: None,
             currency_mint: None,
             config: None,
             cosigner: None,
@@ -446,8 +446,8 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn identifier(&mut self, identifier: [u8; 32]) -> &mut Self {
-        self.instruction.identifier = Some(identifier);
+    pub fn pool_id(&mut self, pool_id: [u8; 32]) -> &mut Self {
+        self.instruction.pool_id = Some(pool_id);
         self
     }
     #[inline(always)]
@@ -525,11 +525,11 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = CreatePoolInstructionArgs {
-            identifier: self
+            pool_id: self
                 .instruction
-                .identifier
+                .pool_id
                 .clone()
-                .expect("identifier is not set"),
+                .expect("pool_id is not set"),
             currency_mint: self
                 .instruction
                 .currency_mint
@@ -576,7 +576,7 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    identifier: Option<[u8; 32]>,
+    pool_id: Option<[u8; 32]>,
     currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,

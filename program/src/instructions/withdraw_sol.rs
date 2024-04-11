@@ -17,7 +17,7 @@ pub struct WithdrawSol<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,

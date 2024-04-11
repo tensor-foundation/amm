@@ -150,7 +150,7 @@ pub struct SellNftShared<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
@@ -220,7 +220,7 @@ pub struct SellNftSharedT22<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
