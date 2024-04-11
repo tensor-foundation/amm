@@ -86,7 +86,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
 
   t.assert(createdAtDifference >= 0n && createdAtDifference <= 10n);
   t.assert(updatedAtDifference >= 0n && updatedAtDifference <= 10n);
-  t.assert(poolAccount.data.expiresAt === 0n);
+  t.assert(poolAccount.data.expiry === 0n);
 });
 
 test('it cannot init exponential pool with 100% delta', async (t) => {

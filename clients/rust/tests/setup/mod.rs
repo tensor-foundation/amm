@@ -126,7 +126,7 @@ pub async fn setup_default_whitelist<'a>(
 
 pub struct TestPool {
     pub pool: Pubkey,
-    pub identifier: Pubkey,
+    pub pool_id: Pubkey,
     pub config: PoolConfig,
 }
 
@@ -134,7 +134,7 @@ pub struct TestPool {
 pub struct TestPoolInputs<'a> {
     pub payer: &'a Keypair,
     pub owner: &'a Keypair,
-    pub identifier: Pubkey,
+    pub pool_id: Pubkey,
     pub whitelist: Pubkey,
     pub pool_type: Option<PoolType>,
     pub curve_type: Option<CurveType>,
@@ -149,7 +149,7 @@ impl<'a> Default for TestPoolInputs<'a> {
         Self {
             payer: &TEST_OWNER,
             owner: &TEST_OWNER,
-            identifier: Pubkey::new_unique(),
+            pool_id: Pubkey::new_unique(),
             whitelist: Pubkey::new_unique(),
             pool_type: None,
             curve_type: None,
@@ -168,7 +168,7 @@ pub async fn setup_default_pool<'a>(
     let TestPoolInputs {
         payer,
         owner,
-        identifier,
+        pool_id,
         whitelist,
         pool_type,
         curve_type,
@@ -178,7 +178,7 @@ pub async fn setup_default_pool<'a>(
         mm_fee_bps,
     } = inputs;
 
-    let pool = Pool::find_pda(&owner.pubkey(), identifier.to_bytes()).0;
+    let pool = Pool::find_pda(&owner.pubkey(), pool_id.to_bytes()).0;
     let config = PoolConfig {
         pool_type: pool_type.unwrap_or(PoolType::Token),
         curve_type: curve_type.unwrap_or(CurveType::Linear),
@@ -193,7 +193,7 @@ pub async fn setup_default_pool<'a>(
         .owner(owner.pubkey())
         .pool(pool)
         .whitelist(whitelist)
-        .identifier(identifier.to_bytes())
+        .pool_id(pool_id.to_bytes())
         .currency_mint(Pubkey::default())
         .config(config.clone())
         .order_type(0)
@@ -211,7 +211,7 @@ pub async fn setup_default_pool<'a>(
 
     TestPool {
         pool,
-        identifier,
+        pool_id,
         config,
     }
 }

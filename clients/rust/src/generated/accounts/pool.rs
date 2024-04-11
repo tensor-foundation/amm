@@ -69,23 +69,23 @@ impl Pool {
     ///
     ///   0. `Pool::PREFIX`
     ///   1. owner (`Pubkey`)
-    ///   2. identifier (`[u8; 32]`)
+    ///   2. pool_id (`[u8; 32]`)
     pub const PREFIX: &'static [u8] = "pool".as_bytes();
 
     pub fn create_pda(
         owner: Pubkey,
-        identifier: [u8; 32],
+        pool_id: [u8; 32],
         bump: u8,
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
-            &["pool".as_bytes(), owner.as_ref(), &identifier, &[bump]],
+            &["pool".as_bytes(), owner.as_ref(), &pool_id, &[bump]],
             &crate::AMM_ID,
         )
     }
 
-    pub fn find_pda(owner: &Pubkey, identifier: [u8; 32]) -> (solana_program::pubkey::Pubkey, u8) {
+    pub fn find_pda(owner: &Pubkey, pool_id: [u8; 32]) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
-            &["pool".as_bytes(), owner.as_ref(), &identifier],
+            &["pool".as_bytes(), owner.as_ref(), &pool_id],
             &crate::AMM_ID,
         )
     }
