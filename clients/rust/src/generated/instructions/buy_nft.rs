@@ -61,6 +61,8 @@ pub struct BuyNft {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: solana_program::pubkey::Pubkey,
+
+    pub maker_broker: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl BuyNft {
@@ -76,7 +78,7 @@ impl BuyNft {
         args: BuyNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.rent_payer,
             true,
@@ -164,6 +166,17 @@ impl BuyNft {
             self.taker_broker,
             false,
         ));
+        if let Some(maker_broker) = self.maker_broker {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                maker_broker,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = BuyNftInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -226,6 +239,7 @@ pub struct BuyNftInstructionArgs {
 ///   20. `[]` auth_rules
 ///   21. `[writable]` shared_escrow
 ///   22. `[writable]` taker_broker
+///   23. `[optional]` maker_broker
 #[derive(Default)]
 pub struct BuyNftBuilder {
     rent_payer: Option<solana_program::pubkey::Pubkey>,
@@ -251,6 +265,7 @@ pub struct BuyNftBuilder {
     auth_rules: Option<solana_program::pubkey::Pubkey>,
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
+    maker_broker: Option<solana_program::pubkey::Pubkey>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,
@@ -418,6 +433,15 @@ impl BuyNftBuilder {
         self.taker_broker = Some(taker_broker);
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn maker_broker(
+        &mut self,
+        maker_broker: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.maker_broker = maker_broker;
+        self
+    }
     #[inline(always)]
     pub fn max_price(&mut self, max_price: u64) -> &mut Self {
         self.max_price = Some(max_price);
@@ -503,6 +527,7 @@ impl BuyNftBuilder {
                 auth_rules: self.auth_rules.expect("auth_rules is not set"),
                 shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
                 taker_broker: self.taker_broker.expect("taker_broker is not set"),
+                maker_broker: self.maker_broker,
             };
         let args = BuyNftInstructionArgs {
             max_price: self.max_price.clone().expect("max_price is not set"),
@@ -570,6 +595,8 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `buy_nft` CPI instruction.
@@ -626,6 +653,8 @@ pub struct BuyNftCpi<'a, 'b> {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: BuyNftInstructionArgs,
 }
@@ -661,6 +690,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             auth_rules: accounts.auth_rules,
             shared_escrow: accounts.shared_escrow,
             taker_broker: accounts.taker_broker,
+            maker_broker: accounts.maker_broker,
             __args: args,
         }
     }
@@ -697,7 +727,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.rent_payer.key,
             true,
@@ -790,6 +820,17 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             *self.taker_broker.key,
             false,
         ));
+        if let Some(maker_broker) = self.maker_broker {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *maker_broker.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -806,7 +847,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(23 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
@@ -831,6 +872,9 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
         account_infos.push(self.auth_rules.clone());
         account_infos.push(self.shared_escrow.clone());
         account_infos.push(self.taker_broker.clone());
+        if let Some(maker_broker) = self.maker_broker {
+            account_infos.push(maker_broker.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -870,6 +914,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
 ///   20. `[]` auth_rules
 ///   21. `[writable]` shared_escrow
 ///   22. `[writable]` taker_broker
+///   23. `[optional]` maker_broker
 pub struct BuyNftCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -901,6 +946,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             auth_rules: None,
             shared_escrow: None,
             taker_broker: None,
+            maker_broker: None,
             max_price: None,
             rules_acc_present: None,
             authorization_data: None,
@@ -1098,6 +1144,15 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.taker_broker = Some(taker_broker);
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn maker_broker(
+        &mut self,
+        maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.maker_broker = maker_broker;
+        self
+    }
     #[inline(always)]
     pub fn max_price(&mut self, max_price: u64) -> &mut Self {
         self.instruction.max_price = Some(max_price);
@@ -1256,6 +1311,8 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
                 .instruction
                 .taker_broker
                 .expect("taker_broker is not set"),
+
+            maker_broker: self.instruction.maker_broker,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1290,6 +1347,7 @@ struct BuyNftCpiBuilderInstruction<'a, 'b> {
     auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,

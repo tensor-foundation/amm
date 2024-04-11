@@ -788,6 +788,12 @@
             "The taker broker account that receives the taker fees.",
             "TODO: optional account? what checks?"
           ]
+        },
+        {
+          "name": "makerBroker",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -1022,6 +1028,12 @@
           ]
         },
         {
+          "name": "makerBroker",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "cosigner",
           "isMut": false,
           "isSigner": true,
@@ -1241,6 +1253,12 @@
             "The taker broker account that receives the taker fees.",
             "TODO: optional account? what checks?"
           ]
+        },
+        {
+          "name": "makerBroker",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "cosigner",

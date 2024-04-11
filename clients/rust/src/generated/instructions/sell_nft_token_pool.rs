@@ -66,6 +66,8 @@ pub struct SellNftTokenPool {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: solana_program::pubkey::Pubkey,
+
+    pub maker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
@@ -84,7 +86,7 @@ impl SellNftTokenPool {
         args: SellNftTokenPoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.rent_payer,
             true,
@@ -188,6 +190,17 @@ impl SellNftTokenPool {
             self.taker_broker,
             false,
         ));
+        if let Some(maker_broker) = self.maker_broker {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                maker_broker,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         if let Some(cosigner) = self.cosigner {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 cosigner, true,
@@ -262,7 +275,8 @@ pub struct SellNftTokenPoolInstructionArgs {
 ///   22. `[]` auth_rules
 ///   23. `[writable]` shared_escrow
 ///   24. `[writable]` taker_broker
-///   25. `[signer, optional]` cosigner
+///   25. `[optional]` maker_broker
+///   26. `[signer, optional]` cosigner
 #[derive(Default)]
 pub struct SellNftTokenPoolBuilder {
     rent_payer: Option<solana_program::pubkey::Pubkey>,
@@ -290,6 +304,7 @@ pub struct SellNftTokenPoolBuilder {
     auth_rules: Option<solana_program::pubkey::Pubkey>,
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
+    maker_broker: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,
@@ -481,6 +496,15 @@ impl SellNftTokenPoolBuilder {
         self
     }
     /// `[optional account]`
+    #[inline(always)]
+    pub fn maker_broker(
+        &mut self,
+        maker_broker: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.maker_broker = maker_broker;
+        self
+    }
+    /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     #[inline(always)]
@@ -575,6 +599,7 @@ impl SellNftTokenPoolBuilder {
                 auth_rules: self.auth_rules.expect("auth_rules is not set"),
                 shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
                 taker_broker: self.taker_broker.expect("taker_broker is not set"),
+                maker_broker: self.maker_broker,
                 cosigner: self.cosigner,
             };
         let args = SellNftTokenPoolInstructionArgs {
@@ -648,6 +673,8 @@ pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -712,6 +739,8 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
     /// The taker broker account that receives the taker fees.
     /// TODO: optional account? what checks?
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -752,6 +781,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             auth_rules: accounts.auth_rules,
             shared_escrow: accounts.shared_escrow,
             taker_broker: accounts.taker_broker,
+            maker_broker: accounts.maker_broker,
             cosigner: accounts.cosigner,
             __args: args,
         }
@@ -789,7 +819,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.rent_payer.key,
             true,
@@ -897,6 +927,17 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             *self.taker_broker.key,
             false,
         ));
+        if let Some(maker_broker) = self.maker_broker {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *maker_broker.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         if let Some(cosigner) = self.cosigner {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *cosigner.key,
@@ -924,7 +965,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(26 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(27 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
@@ -953,6 +994,9 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
         account_infos.push(self.auth_rules.clone());
         account_infos.push(self.shared_escrow.clone());
         account_infos.push(self.taker_broker.clone());
+        if let Some(maker_broker) = self.maker_broker {
+            account_infos.push(maker_broker.clone());
+        }
         if let Some(cosigner) = self.cosigner {
             account_infos.push(cosigner.clone());
         }
@@ -997,7 +1041,8 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
 ///   22. `[]` auth_rules
 ///   23. `[writable]` shared_escrow
 ///   24. `[writable]` taker_broker
-///   25. `[signer, optional]` cosigner
+///   25. `[optional]` maker_broker
+///   26. `[signer, optional]` cosigner
 pub struct SellNftTokenPoolCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTokenPoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1031,6 +1076,7 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
             auth_rules: None,
             shared_escrow: None,
             taker_broker: None,
+            maker_broker: None,
             cosigner: None,
             min_price: None,
             rules_acc_present: None,
@@ -1262,6 +1308,15 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
+    #[inline(always)]
+    pub fn maker_broker(
+        &mut self,
+        maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.maker_broker = maker_broker;
+        self
+    }
+    /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     #[inline(always)]
@@ -1435,6 +1490,8 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
                 .taker_broker
                 .expect("taker_broker is not set"),
 
+            maker_broker: self.instruction.maker_broker,
+
             cosigner: self.instruction.cosigner,
             __args: args,
         };
@@ -1472,6 +1529,7 @@ struct SellNftTokenPoolCpiBuilderInstruction<'a, 'b> {
     auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,

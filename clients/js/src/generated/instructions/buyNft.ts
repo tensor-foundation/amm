@@ -87,6 +87,7 @@ export type BuyNftInstruction<
   TAccountAuthRules extends string | IAccountMeta<string> = string,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
+  TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -163,6 +164,9 @@ export type BuyNftInstruction<
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
+      TAccountMakerBroker extends string
+        ? ReadonlyAccount<TAccountMakerBroker>
+        : TAccountMakerBroker,
       ...TRemainingAccounts,
     ]
   >;
@@ -242,6 +246,7 @@ export type BuyNftInput<
   TAccountAuthRules extends string = string,
   TAccountSharedEscrow extends string = string,
   TAccountTakerBroker extends string = string,
+  TAccountMakerBroker extends string = string,
 > = {
   /** If no external rent payer, set this to the buyer. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
@@ -292,6 +297,7 @@ export type BuyNftInput<
    * TODO: optional account? what checks?
    */
   takerBroker: Address<TAccountTakerBroker>;
+  makerBroker?: Address<TAccountMakerBroker>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   rulesAccPresent: BuyNftInstructionDataArgs['rulesAccPresent'];
   authorizationData: BuyNftInstructionDataArgs['authorizationData'];
@@ -323,6 +329,7 @@ export function getBuyNftInstruction<
   TAccountAuthRules extends string,
   TAccountSharedEscrow extends string,
   TAccountTakerBroker extends string,
+  TAccountMakerBroker extends string,
 >(
   input: BuyNftInput<
     TAccountRentPayer,
@@ -347,7 +354,8 @@ export function getBuyNftInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker
+    TAccountTakerBroker,
+    TAccountMakerBroker
   >
 ): BuyNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -373,7 +381,8 @@ export function getBuyNftInstruction<
   TAccountAuthorizationRulesProgram,
   TAccountAuthRules,
   TAccountSharedEscrow,
-  TAccountTakerBroker
+  TAccountTakerBroker,
+  TAccountMakerBroker
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -415,6 +424,7 @@ export function getBuyNftInstruction<
     authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -481,6 +491,7 @@ export function getBuyNftInstruction<
       getAccountMeta(accounts.authRules),
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.takerBroker),
+      getAccountMeta(accounts.makerBroker),
       ...remainingAccounts,
     ],
     programAddress,
@@ -511,7 +522,8 @@ export function getBuyNftInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker
+    TAccountTakerBroker,
+    TAccountMakerBroker
   >;
 
   return instruction;
@@ -575,6 +587,7 @@ export type ParsedBuyNftInstruction<
      */
 
     takerBroker: TAccountMetas[22];
+    makerBroker?: TAccountMetas[23] | undefined;
   };
   data: BuyNftInstructionData;
 };
@@ -587,7 +600,7 @@ export function parseBuyNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 23) {
+  if (instruction.accounts.length < 24) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -596,6 +609,12 @@ export function parseBuyNftInstruction<
     const accountMeta = instruction.accounts![accountIndex]!;
     accountIndex += 1;
     return accountMeta;
+  };
+  const getNextOptionalAccount = () => {
+    const accountMeta = getNextAccount();
+    return accountMeta.address === AMM_PROGRAM_ADDRESS
+      ? undefined
+      : accountMeta;
   };
   return {
     programAddress: instruction.programAddress,
@@ -623,6 +642,7 @@ export function parseBuyNftInstruction<
       authRules: getNextAccount(),
       sharedEscrow: getNextAccount(),
       takerBroker: getNextAccount(),
+      makerBroker: getNextOptionalAccount(),
     },
     data: getBuyNftInstructionDataDecoder().decode(instruction.data),
   };
