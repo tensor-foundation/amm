@@ -28,7 +28,7 @@ pub struct DepositNft<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = whitelist, has_one = owner,
@@ -55,7 +55,7 @@ pub struct DepositNft<'info> {
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
-        init, // TODO: clarify this in design review <-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
+        init_if_needed,
         payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,
@@ -131,7 +131,6 @@ pub struct DepositNft<'info> {
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    // TODO: try to go back to ProgNftShared, if Kinobi can support it
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]

@@ -22,7 +22,7 @@ pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + (2 * 4) + 8 //pool stats
         + 32 + 1   // shared escrow Option
         + 32 + 1   // cosigner Option
-        + 4 // max_taker_sell_count
+        + 4        // max_taker_sell_count
         + 100; // _reserved
 
 #[repr(u8)]
@@ -65,25 +65,24 @@ pub struct Pool {
     /// Bump seed for the pool PDA.
     pub bump: [u8; 1],
     /// Owner-chosen identifier for the pool
-    pub identifier: [u8; 32],
+    pub pool_id: [u8; 32],
 
     /// Unix timestamp of the pool creation, in seconds.
     pub created_at: i64,
     /// Unix timestamp of the last time the pool has been updated, in seconds.
     pub updated_at: i64,
     /// Unix timestamp of when the pool expires, in seconds.
-    pub expires_at: i64,
+    pub expiry: i64,
 
-    pub config: PoolConfig,
     pub owner: Pubkey,
     pub whitelist: Pubkey,
     // Store the rent payer, if different from the owner so they can be refunded
     // without signing when the pool is closed.
     pub rent_payer: Option<Pubkey>,
     // Default Pubkey is SOL, otherwise SPL token mint
-    pub currency_mint: Pubkey,
+    pub currency: Pubkey,
     /// The amount of currency held in the pool
-    pub currency_amount: u64,
+    pub amount: u64,
 
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
@@ -99,6 +98,8 @@ pub struct Pool {
     pub cosigner: Option<Pubkey>,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+
+    pub config: PoolConfig,
 
     // (!) make sure aligns with last number in SIZE
     pub _reserved: [u8; 100],

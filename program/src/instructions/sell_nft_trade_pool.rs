@@ -36,7 +36,6 @@ pub struct SellNftTradePool<'info> {
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: Signer<'info>,
 
-    // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,

@@ -20,14 +20,13 @@ pub struct Pool {
     /// Bump seed for the pool PDA.
     pub bump: [u8; 1],
     /// Owner-chosen identifier for the pool
-    pub identifier: [u8; 32],
+    pub pool_id: [u8; 32],
     /// Unix timestamp of the pool creation, in seconds.
     pub created_at: i64,
     /// Unix timestamp of the last time the pool has been updated, in seconds.
     pub updated_at: i64,
     /// Unix timestamp of when the pool expires, in seconds.
-    pub expires_at: i64,
-    pub config: PoolConfig,
+    pub expiry: i64,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -43,9 +42,9 @@ pub struct Pool {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub currency_mint: Pubkey,
+    pub currency: Pubkey,
     /// The amount of currency held in the pool
-    pub currency_amount: u64,
+    pub amount: u64,
     /// How many times a taker has SOLD into the pool
     pub taker_sell_count: u32,
     /// How many times a taker has BOUGHT from the pool
@@ -58,6 +57,7 @@ pub struct Pool {
     pub cosigner: Option<Pubkey>,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
+    pub config: PoolConfig,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub reserved: [u8; 100],
 }
@@ -69,23 +69,23 @@ impl Pool {
     ///
     ///   0. `Pool::PREFIX`
     ///   1. owner (`Pubkey`)
-    ///   2. identifier (`[u8; 32]`)
+    ///   2. pool_id (`[u8; 32]`)
     pub const PREFIX: &'static [u8] = "pool".as_bytes();
 
     pub fn create_pda(
         owner: Pubkey,
-        identifier: [u8; 32],
+        pool_id: [u8; 32],
         bump: u8,
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
-            &["pool".as_bytes(), owner.as_ref(), &identifier, &[bump]],
+            &["pool".as_bytes(), owner.as_ref(), &pool_id, &[bump]],
             &crate::AMM_ID,
         )
     }
 
-    pub fn find_pda(owner: &Pubkey, identifier: [u8; 32]) -> (solana_program::pubkey::Pubkey, u8) {
+    pub fn find_pda(owner: &Pubkey, pool_id: [u8; 32]) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
-            &["pool".as_bytes(), owner.as_ref(), &identifier],
+            &["pool".as_bytes(), owner.as_ref(), &pool_id],
             &crate::AMM_ID,
         )
     }

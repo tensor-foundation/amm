@@ -17,8 +17,8 @@ import { getBytesEncoder, getStringEncoder } from '@solana/codecs';
 export type PoolSeeds = {
   /** The address of the pool owner */
   owner: Address;
-  /** Pool unique identifier */
-  identifier: Uint8Array;
+  /** Pool unique ID */
+  poolId: Uint8Array;
 };
 
 export async function findPoolPda(
@@ -33,7 +33,7 @@ export async function findPoolPda(
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('pool'),
       getAddressEncoder().encode(seeds.owner),
-      getBytesEncoder({ size: 32 }).encode(seeds.identifier),
+      getBytesEncoder({ size: 32 }).encode(seeds.poolId),
     ],
   });
 }

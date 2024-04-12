@@ -181,7 +181,7 @@ export interface CreatePoolParams {
   owner: KeyPairSigner;
   payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
-  identifier?: Uint8Array;
+  poolId?: Uint8Array;
   config?: PoolConfig;
 }
 
@@ -194,7 +194,7 @@ export interface CreatePoolReturns {
   pool: Address;
   owner: KeyPairSigner;
   cosigner: KeyPairSigner | undefined;
-  identifier: Uint8Array;
+  poolId: Uint8Array;
   whitelist: Address;
 }
 
@@ -204,13 +204,13 @@ export async function createPool({
   owner,
   payer = owner,
   cosigner,
-  identifier,
+  poolId,
   config,
 }: CreatePoolParams): Promise<CreatePoolReturns> {
   // Pool values
 
-  if (identifier === undefined) {
-    identifier = Uint8Array.from({ length: 32 }, () => 1);
+  if (poolId === undefined) {
+    poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
 
   if (config === undefined) {
@@ -226,7 +226,7 @@ export async function createPool({
 
   const [pool] = await findPoolPda({
     owner: owner.address,
-    identifier,
+    poolId,
   });
 
   // When we create a new account.
@@ -235,7 +235,7 @@ export async function createPool({
     owner,
     pool,
     whitelist,
-    identifier,
+    poolId,
     currencyMint: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
@@ -250,7 +250,7 @@ export async function createPool({
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  return { pool, owner, cosigner, identifier, whitelist };
+  return { pool, owner, cosigner, poolId, whitelist };
 }
 
 export async function createPoolThrows({
@@ -259,7 +259,7 @@ export async function createPoolThrows({
   owner,
   payer = owner,
   cosigner,
-  identifier,
+  poolId,
   config,
   t,
   code,
@@ -271,8 +271,8 @@ export async function createPoolThrows({
   if (cosigner === undefined) {
     cosigner = await generateKeyPairSigner();
   }
-  if (identifier === undefined) {
-    identifier = Uint8Array.from({ length: 32 }, () => 1);
+  if (poolId === undefined) {
+    poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
 
   if (config === undefined) {
@@ -288,7 +288,7 @@ export async function createPoolThrows({
 
   const [pool] = await findPoolPda({
     owner: owner.address,
-    identifier,
+    poolId,
   });
 
   // When we create a new account.
@@ -297,7 +297,7 @@ export async function createPoolThrows({
     owner,
     pool,
     whitelist,
-    identifier,
+    poolId,
     currencyMint: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
@@ -341,7 +341,7 @@ export async function createPoolAndWhitelist({
   owner,
   payer = owner,
   cosigner,
-  identifier,
+  poolId,
   config,
 }: CreatePoolAndWhitelistParams) {
   const updateAuthority = await generateKeyPairSignerWithSol(client);
@@ -355,8 +355,8 @@ export async function createPoolAndWhitelist({
   if (cosigner === undefined) {
     cosigner = await generateKeyPairSigner();
   }
-  if (identifier === undefined) {
-    identifier = Uint8Array.from({ length: 32 }, () => 1);
+  if (poolId === undefined) {
+    poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
 
   // Setup a basic whitelist to use with the pool.
@@ -378,7 +378,7 @@ export async function createPoolAndWhitelist({
     payer,
     owner,
     cosigner,
-    identifier,
+    poolId,
     config,
   });
 }
@@ -388,7 +388,7 @@ export async function createPoolAndWhitelistThrows({
 
   owner,
   cosigner,
-  identifier,
+  poolId,
   config,
   t,
   code,
@@ -417,8 +417,8 @@ export async function createPoolAndWhitelistThrows({
   if (cosigner === undefined) {
     cosigner = await generateKeyPairSigner();
   }
-  if (identifier === undefined) {
-    identifier = Uint8Array.from({ length: 32 }, () => 1);
+  if (poolId === undefined) {
+    poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
 
   return await createPoolThrows({
@@ -426,7 +426,7 @@ export async function createPoolAndWhitelistThrows({
     whitelist,
     owner,
     cosigner,
-    identifier,
+    poolId,
     config,
     t,
     code,

@@ -301,7 +301,7 @@ pub fn process_sell_nft_token_pool<'info>(
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"pool",
         owner_pubkey.as_ref(),
-        pool.identifier.as_ref(),
+        pool.pool_id.as_ref(),
         &[pool.bump[0]],
     ]];
 
@@ -333,31 +333,6 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // close temp pool ata account, so it's not dangling
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
-
-    // TODO: remove?
-    // USING DELEGATE (PAUSE TO NOT RELY ON DELEGATE RULE)
-    // send_pnft(
-    //     &ctx.accounts.shared.seller.to_account_info(),
-    //     &ctx.accounts.shared.seller.to_account_info(),
-    //     &ctx.accounts.shared.nft_seller_acc,
-    //     &ctx.accounts.owner_ata_acc,
-    //     &ctx.accounts.shared.owner.to_account_info(),
-    //     &ctx.accounts.shared.nft_mint,
-    //     &ctx.accounts.shared.nft_metadata,
-    //     &ctx.accounts.nft_edition,
-    //     &ctx.accounts.system_program,
-    //     &ctx.accounts.token_program,
-    //     &ctx.accounts.associated_token_program,
-    //     &ctx.accounts.pnft_shared.instructions,
-    //     &ctx.accounts.owner_token_record,
-    //     &ctx.accounts.dest_token_record,
-    //     &ctx.accounts.pnft_shared.authorization_rules_program,
-    //     auth_rules,
-    //     authorization_data
-    //         .map(|authorization_data| AuthorizationData::try_from(authorization_data).unwrap()),
-    //     Some(&ctx.accounts.nft_escrow_owner),
-    //     Some(&ctx.accounts.nft_escrow_owner.to_account_info()),
-    // )?;
 
     // --------------------------------------- end pnft
 

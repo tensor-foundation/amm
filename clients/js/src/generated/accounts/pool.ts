@@ -78,20 +78,19 @@ export type PoolAccountData = {
   /** Bump seed for the pool PDA. */
   bump: Array<number>;
   /** Owner-chosen identifier for the pool */
-  identifier: Uint8Array;
+  poolId: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
   createdAt: bigint;
   /** Unix timestamp of the last time the pool has been updated, in seconds. */
   updatedAt: bigint;
   /** Unix timestamp of when the pool expires, in seconds. */
-  expiresAt: bigint;
-  config: PoolConfig;
+  expiry: bigint;
   owner: Address;
   whitelist: Address;
   rentPayer: Option<Address>;
-  currencyMint: Address;
+  currency: Address;
   /** The amount of currency held in the pool */
-  currencyAmount: bigint;
+  amount: bigint;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -104,6 +103,7 @@ export type PoolAccountData = {
   cosigner: Option<Address>;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
+  config: PoolConfig;
   reserved: Array<number>;
 };
 
@@ -113,20 +113,19 @@ export type PoolAccountDataArgs = {
   /** Bump seed for the pool PDA. */
   bump: Array<number>;
   /** Owner-chosen identifier for the pool */
-  identifier: Uint8Array;
+  poolId: Uint8Array;
   /** Unix timestamp of the pool creation, in seconds. */
   createdAt: number | bigint;
   /** Unix timestamp of the last time the pool has been updated, in seconds. */
   updatedAt: number | bigint;
   /** Unix timestamp of when the pool expires, in seconds. */
-  expiresAt: number | bigint;
-  config: PoolConfigArgs;
+  expiry: number | bigint;
   owner: Address;
   whitelist: Address;
   rentPayer: OptionOrNullable<Address>;
-  currencyMint: Address;
+  currency: Address;
   /** The amount of currency held in the pool */
-  currencyAmount: number | bigint;
+  amount: number | bigint;
   /** How many times a taker has SOLD into the pool */
   takerSellCount: number;
   /** How many times a taker has BOUGHT from the pool */
@@ -139,6 +138,7 @@ export type PoolAccountDataArgs = {
   cosigner: OptionOrNullable<Address>;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
+  config: PoolConfigArgs;
   reserved: Array<number>;
 };
 
@@ -148,16 +148,15 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['version', getU8Encoder()],
       ['bump', getArrayEncoder(getU8Encoder(), { size: 1 })],
-      ['identifier', getBytesEncoder({ size: 32 })],
+      ['poolId', getBytesEncoder({ size: 32 })],
       ['createdAt', getI64Encoder()],
       ['updatedAt', getI64Encoder()],
-      ['expiresAt', getI64Encoder()],
-      ['config', getPoolConfigEncoder()],
+      ['expiry', getI64Encoder()],
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
       ['rentPayer', getOptionEncoder(getAddressEncoder())],
-      ['currencyMint', getAddressEncoder()],
-      ['currencyAmount', getU64Encoder()],
+      ['currency', getAddressEncoder()],
+      ['amount', getU64Encoder()],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
       ['nftsHeld', getU32Encoder()],
@@ -165,6 +164,7 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['maxTakerSellCount', getU32Encoder()],
+      ['config', getPoolConfigEncoder()],
       ['reserved', getArrayEncoder(getU8Encoder(), { size: 100 })],
     ]),
     (value) => ({
@@ -179,16 +179,15 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['version', getU8Decoder()],
     ['bump', getArrayDecoder(getU8Decoder(), { size: 1 })],
-    ['identifier', getBytesDecoder({ size: 32 })],
+    ['poolId', getBytesDecoder({ size: 32 })],
     ['createdAt', getI64Decoder()],
     ['updatedAt', getI64Decoder()],
-    ['expiresAt', getI64Decoder()],
-    ['config', getPoolConfigDecoder()],
+    ['expiry', getI64Decoder()],
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
     ['rentPayer', getOptionDecoder(getAddressDecoder())],
-    ['currencyMint', getAddressDecoder()],
-    ['currencyAmount', getU64Decoder()],
+    ['currency', getAddressDecoder()],
+    ['amount', getU64Decoder()],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['nftsHeld', getU32Decoder()],
@@ -196,6 +195,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['maxTakerSellCount', getU32Decoder()],
+    ['config', getPoolConfigDecoder()],
     ['reserved', getArrayDecoder(getU8Decoder(), { size: 100 })],
   ]);
 }

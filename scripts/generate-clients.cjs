@@ -28,9 +28,9 @@ kinobi.update(
           "The address of the pool owner"
         ),
         k.variablePdaSeedNode(
-          "identifier",
+          "pool_id",
           k.bytesTypeNode(k.fixedSizeNode(32)),
-          "Pool unique identifier"
+          "Pool unique ID"
         )
       ]
     },

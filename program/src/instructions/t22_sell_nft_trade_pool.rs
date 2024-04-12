@@ -50,7 +50,7 @@ pub struct SellNftTradePoolT22<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
@@ -219,8 +219,6 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     //
-    // TODO: This needs to be updated once there is a "standard" way to determine
-    // royalties on T22
     emit!(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,

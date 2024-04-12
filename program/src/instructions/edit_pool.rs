@@ -20,7 +20,7 @@ pub struct EditPool<'info> {
         seeds = [
             b"pool",
             owner.key().as_ref(),
-            pool.identifier.as_ref(),
+            pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
         has_one = owner,
@@ -92,15 +92,12 @@ pub fn process_edit_pool(
         pool.config = new_config;
     }
 
-    // TODO: get clarification on the comment below this line.
-    //need to be able to adjust this boolean when broad order <--> narrow (trait specific)
     if let Some(cosigner) = cosigner {
         //currently bids only
         if pool.config.pool_type != PoolType::Token {
             throw_err!(ErrorCode::WrongPoolType);
         }
-        // TODO?: if we want the owner to be able to set the cosigner to None
-        // we can change this to a toggle type.
+        // TODO: we can change this to a toggle type.
         pool.cosigner = Some(cosigner);
     }
 
