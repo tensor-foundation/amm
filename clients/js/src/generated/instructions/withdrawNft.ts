@@ -213,7 +213,6 @@ export type WithdrawNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
-  /** If no external rent payer, set this to the owner. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
   /** The owner of the pool and will receive the NFT at the owner_ata account. */
   owner: TransactionSigner<TAccountOwner>;
@@ -440,7 +439,6 @@ export type ParsedWithdrawNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, set this to the owner. */
     rentPayer: TAccountMetas[0];
     /** The owner of the pool and will receive the NFT at the owner_ata account. */
     owner: TAccountMetas[1];

@@ -161,7 +161,6 @@ export type CreatePoolInput<
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** If no external rent payer, set this to the owner. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
@@ -259,7 +258,6 @@ export type ParsedCreatePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, set this to the owner. */
     rentPayer: TAccountMetas[0];
     owner: TAccountMetas[1];
     pool: TAccountMetas[2];

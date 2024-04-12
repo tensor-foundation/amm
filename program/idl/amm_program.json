@@ -131,10 +131,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -217,10 +214,7 @@
         {
           "name": "rentPayer",
           "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": false
         },
         {
           "name": "owner",
@@ -246,10 +240,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -408,15 +399,35 @@
       ]
     },
     {
+      "name": "feeCrank",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Fee collection authority"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "accountSeeds",
+          "type": {
+            "vec": {
+              "defined": "FeeSeeds"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "withdrawNft",
       "accounts": [
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -620,10 +631,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the buyer."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -821,10 +829,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent_payer, this should be set to the seller."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -1068,10 +1073,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, this should be seller."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -2448,6 +2450,22 @@
       }
     },
     {
+      "name": "FeeSeeds",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolConfig",
       "type": {
         "kind": "struct",
@@ -2924,6 +2942,11 @@
       "code": 12041,
       "name": "SplTokensNotSupported",
       "msg": "SPL tokens not supported"
+    },
+    {
+      "code": 12042,
+      "name": "InvalidFeeCrank",
+      "msg": "Invalid fee crank"
     }
   ],
   "metadata": {

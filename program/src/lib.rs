@@ -52,6 +52,13 @@ pub mod amm_program {
         instructions::deposit_nft::process_deposit_nft(ctx, authorization_data)
     }
 
+    pub fn fee_crank<'info>(
+        ctx: Context<'_, '_, '_, 'info, FeeCrank<'info>>,
+        account_seeds: Vec<FeeSeeds>,
+    ) -> Result<()> {
+        instructions::fee_crank::process_fee_crank(ctx, &account_seeds)
+    }
+
     pub fn withdraw_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
         authorization_data: Option<AuthorizationDataLocal>,

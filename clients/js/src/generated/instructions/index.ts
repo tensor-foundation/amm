@@ -18,6 +18,7 @@ export * from './depositSharedEscrowAccount';
 export * from './depositSol';
 export * from './detachPoolFromSharedEscrow';
 export * from './editPool';
+export * from './feeCrank';
 export * from './initSharedEscrowAccount';
 export * from './reallocPool';
 export * from './sellNftTokenPool';

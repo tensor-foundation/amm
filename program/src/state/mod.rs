@@ -10,7 +10,17 @@ pub use single_listing::*;
 
 use anchor_lang::prelude::*;
 use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofInfo, SeedsVec};
+use solana_program::pubkey;
 use std::collections::HashMap;
+
+pub const FEE_AUTHORITY: Pubkey = if cfg!(feature = "test-sbf") {
+    pubkey!("BqMRzhK8q9chhdBA4vex7hvG7pVsHnRLu8cxvYydKMii")
+} else {
+    // TODO: plugin in proper value here.
+    pubkey!("11111111111111111111111111111111")
+};
+
+pub const FEE_KEEP_ALIVE_LAMPORTS: u64 = 890880;
 
 #[derive(Accounts)]
 pub struct DummyCtx<'info> {

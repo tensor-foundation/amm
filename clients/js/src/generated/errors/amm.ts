@@ -91,6 +91,8 @@ export const enum AmmProgramErrorCode {
   WRONG_RENT_PAYER = 0x2f08, // 12040
   /** SplTokensNotSupported: SPL tokens not supported */
   SPL_TOKENS_NOT_SUPPORTED = 0x2f09, // 12041
+  /** InvalidFeeCrank: Invalid fee crank */
+  INVALID_FEE_CRANK = 0x2f0a, // 12042
 }
 
 export class AmmProgramError extends Error {
@@ -278,6 +280,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.SPL_TOKENS_NOT_SUPPORTED]: [
       'SplTokensNotSupported',
       `SPL tokens not supported`,
+    ],
+    [AmmProgramErrorCode.INVALID_FEE_CRANK]: [
+      'InvalidFeeCrank',
+      `Invalid fee crank`,
     ],
   };
 }

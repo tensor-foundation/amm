@@ -172,4 +172,8 @@ pub enum ErrorCode {
     // 6041 | 0x1799
     #[msg("SPL tokens not supported")]
     SplTokensNotSupported,
+
+    // 6042 | 0x179a
+    #[msg("Invalid fee crank")]
+    InvalidFeeCrank,
 }

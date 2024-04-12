@@ -218,7 +218,6 @@ export type DepositNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
-  /** If no external rent payer, set this to the owner. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
@@ -466,7 +465,6 @@ export type ParsedDepositNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, set this to the owner. */
     rentPayer: TAccountMetas[0];
     /** The owner of the pool and the NFT. */
     owner: TAccountMetas[1];

@@ -33,6 +33,7 @@ import {
   getU8Encoder,
   mapEncoder,
 } from '@solana/codecs';
+import { FeeVaultSeeds, findFeeVaultPda } from '../pdas';
 
 export type FeeVault<TAddress extends string = string> = Account<
   FeeVaultAccountData,
@@ -131,4 +132,24 @@ export async function fetchAllMaybeFeeVault(
 
 export function getFeeVaultSize(): number {
   return 8;
+}
+
+export async function fetchFeeVaultFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: FeeVaultSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<FeeVault> {
+  const maybeAccount = await fetchMaybeFeeVaultFromSeeds(rpc, seeds, config);
+  assertAccountExists(maybeAccount);
+  return maybeAccount;
+}
+
+export async function fetchMaybeFeeVaultFromSeeds(
+  rpc: Parameters<typeof fetchEncodedAccount>[0],
+  seeds: FeeVaultSeeds,
+  config: FetchAccountConfig & { programAddress?: Address } = {}
+): Promise<MaybeFeeVault> {
+  const { programAddress, ...fetchConfig } = config;
+  const [address] = await findFeeVaultPda(seeds, { programAddress });
+  return await fetchMaybeFeeVault(rpc, address, fetchConfig);
 }

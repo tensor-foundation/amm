@@ -248,7 +248,6 @@ export type BuyNftInput<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  /** If no external rent payer, set this to the buyer. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
   /**
    * Owner is the pool owner who created the pool and the nominal owner of the
@@ -532,7 +531,6 @@ export type ParsedBuyNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, set this to the buyer. */
     rentPayer: TAccountMetas[0];
     /**
      * Owner is the pool owner who created the pool and the nominal owner of the

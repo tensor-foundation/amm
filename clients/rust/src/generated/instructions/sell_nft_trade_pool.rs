@@ -11,7 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct SellNftTradePool {
-    /// If no external rent payer, this should be seller.
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: solana_program::pubkey::Pubkey,
@@ -316,7 +315,6 @@ impl SellNftTradePoolBuilder {
         Self::default()
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    /// If no external rent payer, this should be seller.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -606,7 +604,6 @@ impl SellNftTradePoolBuilder {
 
 /// `sell_nft_trade_pool` CPI accounts.
 pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
-    /// If no external rent payer, this should be seller.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -671,7 +668,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
 pub struct SellNftTradePoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// If no external rent payer, this should be seller.
+
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1072,7 +1069,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    /// If no external rent payer, this should be seller.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,
