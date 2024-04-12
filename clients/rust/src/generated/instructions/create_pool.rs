@@ -85,8 +85,8 @@ impl CreatePoolInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreatePoolInstructionArgs {
     pub pool_id: [u8; 32],
-    pub currency_mint: Pubkey,
     pub config: PoolConfig,
+    pub currency: Pubkey,
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
@@ -110,8 +110,8 @@ pub struct CreatePoolBuilder {
     whitelist: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     pool_id: Option<[u8; 32]>,
-    currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
+    currency: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
@@ -157,13 +157,13 @@ impl CreatePoolBuilder {
         self
     }
     #[inline(always)]
-    pub fn currency_mint(&mut self, currency_mint: Pubkey) -> &mut Self {
-        self.currency_mint = Some(currency_mint);
+    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
+        self.config = Some(config);
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
+    pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
+        self.currency = Some(currency);
         self
     }
     /// `[optional argument]`
@@ -222,11 +222,8 @@ impl CreatePoolBuilder {
         };
         let args = CreatePoolInstructionArgs {
             pool_id: self.pool_id.clone().expect("pool_id is not set"),
-            currency_mint: self
-                .currency_mint
-                .clone()
-                .expect("currency_mint is not set"),
             config: self.config.clone().expect("config is not set"),
+            currency: self.currency.clone().expect("currency is not set"),
             cosigner: self.cosigner.clone(),
             order_type: self.order_type.clone().expect("order_type is not set"),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
@@ -396,8 +393,8 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             whitelist: None,
             system_program: None,
             pool_id: None,
-            currency_mint: None,
             config: None,
+            currency: None,
             cosigner: None,
             order_type: None,
             max_taker_sell_count: None,
@@ -447,13 +444,13 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn currency_mint(&mut self, currency_mint: Pubkey) -> &mut Self {
-        self.instruction.currency_mint = Some(currency_mint);
+    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
+        self.instruction.config = Some(config);
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
+    pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
+        self.instruction.currency = Some(currency);
         self
     }
     /// `[optional argument]`
@@ -526,12 +523,12 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .pool_id
                 .clone()
                 .expect("pool_id is not set"),
-            currency_mint: self
-                .instruction
-                .currency_mint
-                .clone()
-                .expect("currency_mint is not set"),
             config: self.instruction.config.clone().expect("config is not set"),
+            currency: self
+                .instruction
+                .currency
+                .clone()
+                .expect("currency is not set"),
             cosigner: self.instruction.cosigner.clone(),
             order_type: self
                 .instruction
@@ -573,8 +570,8 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_id: Option<[u8; 32]>,
-    currency_mint: Option<Pubkey>,
     config: Option<PoolConfig>,
+    currency: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,

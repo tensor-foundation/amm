@@ -17,6 +17,8 @@ use tensor_whitelist::{
 };
 
 pub const ONE_SOL_LAMPORTS: u64 = 1_000_000_000;
+pub const ONE_WEEK: u64 = 60 * 60 * 24 * 7;
+pub const ONE_YEAR: u64 = ONE_WEEK * 52;
 
 lazy_static::lazy_static! {
     pub static ref TEST_OWNER: Keypair = Keypair::new();
@@ -142,6 +144,7 @@ pub struct TestPoolInputs<'a> {
     pub delta: Option<u64>,
     pub mm_compound_fees: Option<bool>,
     pub mm_fee_bps: Option<u16>,
+    pub expire_in_sec: Option<u64>,
 }
 
 impl<'a> Default for TestPoolInputs<'a> {
@@ -157,6 +160,7 @@ impl<'a> Default for TestPoolInputs<'a> {
             delta: None,
             mm_compound_fees: None,
             mm_fee_bps: None,
+            expire_in_sec: None,
         }
     }
 }
@@ -176,6 +180,7 @@ pub async fn setup_default_pool<'a>(
         delta,
         mm_compound_fees,
         mm_fee_bps,
+        expire_in_sec,
     } = inputs;
 
     let pool = Pool::find_pda(&owner.pubkey(), pool_id.to_bytes()).0;
@@ -188,16 +193,22 @@ pub async fn setup_default_pool<'a>(
         mm_fee_bps,
     };
 
-    let ix = CreatePoolBuilder::new()
+    let mut builder = CreatePoolBuilder::new();
+    builder
         .rent_payer(payer.pubkey())
         .owner(owner.pubkey())
         .pool(pool)
         .whitelist(whitelist)
         .pool_id(pool_id.to_bytes())
-        .currency_mint(Pubkey::default())
+        .currency(Pubkey::default())
         .config(config.clone())
-        .order_type(0)
-        .instruction();
+        .order_type(0);
+
+    if let Some(expire_in_sec) = expire_in_sec {
+        builder.expire_in_sec(expire_in_sec);
+    }
+
+    let ix = builder.instruction();
 
     // When we create a new account.
 

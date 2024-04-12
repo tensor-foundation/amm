@@ -2404,14 +2404,14 @@
             }
           },
           {
-            "name": "currencyMint",
-            "type": "publicKey"
-          },
-          {
             "name": "config",
             "type": {
               "defined": "PoolConfig"
             }
+          },
+          {
+            "name": "currency",
+            "type": "publicKey"
           },
           {
             "name": "cosigner",

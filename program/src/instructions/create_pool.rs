@@ -12,9 +12,9 @@ use crate::{
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct CreatePoolArgs {
     pub pool_id: [u8; 32],
-    // Here to support future SPL mints, contract enforces this is the native mint currently
-    pub currency_mint: Pubkey,
     pub config: PoolConfig,
+    // Here to support future SPL mints, contract enforces this is the native mint currently
+    pub currency: Pubkey,
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,

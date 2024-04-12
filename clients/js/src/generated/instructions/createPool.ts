@@ -94,8 +94,8 @@ export type CreatePoolInstruction<
 export type CreatePoolInstructionData = {
   discriminator: Array<number>;
   poolId: Uint8Array;
-  currencyMint: Address;
   config: PoolConfig;
+  currency: Address;
   cosigner: Option<Address>;
   orderType: number;
   maxTakerSellCount: Option<number>;
@@ -104,8 +104,8 @@ export type CreatePoolInstructionData = {
 
 export type CreatePoolInstructionDataArgs = {
   poolId: Uint8Array;
-  currencyMint: Address;
   config: PoolConfigArgs;
+  currency: Address;
   cosigner: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
@@ -117,8 +117,8 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['poolId', getBytesEncoder({ size: 32 })],
-      ['currencyMint', getAddressEncoder()],
       ['config', getPoolConfigEncoder()],
+      ['currency', getAddressEncoder()],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
@@ -135,8 +135,8 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['poolId', getBytesDecoder({ size: 32 })],
-    ['currencyMint', getAddressDecoder()],
     ['config', getPoolConfigDecoder()],
+    ['currency', getAddressDecoder()],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
@@ -168,8 +168,8 @@ export type CreatePoolInput<
   whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
   poolId: CreatePoolInstructionDataArgs['poolId'];
-  currencyMint: CreatePoolInstructionDataArgs['currencyMint'];
   config: CreatePoolInstructionDataArgs['config'];
+  currency: CreatePoolInstructionDataArgs['currency'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
