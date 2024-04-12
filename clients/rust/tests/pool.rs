@@ -207,6 +207,7 @@ async fn edit_pool() {
         new_config: Some(new_config.clone()),
         cosigner: None,
         max_taker_sell_count: None,
+        expire_in_sec: None,
     });
 
     let tx = Transaction::new_signed_with_payer(

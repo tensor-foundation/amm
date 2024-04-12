@@ -10,7 +10,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct ClosePool {
-    /// If no external rent payer, set this to the owner.
     pub rent_payer: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
@@ -90,7 +89,6 @@ impl ClosePoolBuilder {
         Self::default()
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    /// If no external rent payer, set this to the owner.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -149,7 +147,6 @@ impl ClosePoolBuilder {
 
 /// `close_pool` CPI accounts.
 pub struct ClosePoolCpiAccounts<'a, 'b> {
-    /// If no external rent payer, set this to the owner.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -163,7 +160,7 @@ pub struct ClosePoolCpiAccounts<'a, 'b> {
 pub struct ClosePoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// If no external rent payer, set this to the owner.
+
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -292,7 +289,6 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    /// If no external rent payer, set this to the owner.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,

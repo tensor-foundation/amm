@@ -12,6 +12,8 @@ use anchor_lang::prelude::*;
 use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofInfo, SeedsVec};
 use std::collections::HashMap;
 
+pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60; // 1 year, 31,536,000 seconds
+
 #[derive(Accounts)]
 pub struct DummyCtx<'info> {
     //have to have 1 entry in order for lifetime arg to be used (else complains during CPI into tensorswap)

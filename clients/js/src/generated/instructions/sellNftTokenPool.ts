@@ -263,7 +263,6 @@ export type SellNftTokenPoolInput<
   TAccountMakerBroker extends string = string,
   TAccountCosigner extends string = string,
 > = {
-  /** If no external rent_payer, this should be set to the seller. */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
@@ -580,7 +579,6 @@ export type ParsedSellNftTokenPoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent_payer, this should be set to the seller. */
     rentPayer: TAccountMetas[0];
     /** The owner of the pool and the buyer/recipient of the NFT. */
     owner: TAccountMetas[1];

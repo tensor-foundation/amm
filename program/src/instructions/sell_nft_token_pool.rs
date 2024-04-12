@@ -54,6 +54,7 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut,
         has_one = whitelist @ ErrorCode::BadWhitelist,
         constraint = pool.config.pool_type == PoolType::Token @ ErrorCode::WrongPoolType,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 

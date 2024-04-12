@@ -6,7 +6,7 @@ use crate::{
     constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
     error::ErrorCode,
     state::{Pool, PoolConfig, POOL_SIZE},
-    CurveType, PoolStats, PoolType,
+    CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct CreatePoolArgs {
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
-    pub expiration_timestamp: Option<i64>,
+    pub expire_in_sec: Option<u64>,
 }
 
 #[derive(Accounts)]
@@ -126,9 +126,29 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.shared_escrow = None;
 
     let timestamp = Clock::get()?.unix_timestamp;
+
+    let expiry = match args.expire_in_sec {
+        Some(expire_in_sec) => {
+            // Convert the user's u64 seconds offset to i64 for timestamp math.
+            let expire_in_i64 =
+                try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
+            // Ensure the expiry is not too far in the future.
+            require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
+
+            // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
+            timestamp
+                .checked_add(expire_in_i64)
+                .ok_or(ErrorCode::ArithmeticError)?
+        }
+        // No expiry provided, set to the maximum allowed value.
+        None => timestamp
+            .checked_add(MAX_EXPIRY_SEC)
+            .ok_or(ErrorCode::ArithmeticError)?,
+    };
+
     pool.created_at = timestamp;
     pool.updated_at = timestamp;
-    pool.expiry = args.expiration_timestamp.unwrap_or(0);
+    pool.expiry = expiry;
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {
         pool.max_taker_sell_count = max_taker_sell_count;

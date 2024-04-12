@@ -6,30 +6,16 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-import {
-  Address,
-  getAddressDecoder,
-  getAddressEncoder,
-} from '@solana/addresses';
+import { Address } from '@solana/addresses';
 import {
   Codec,
   Decoder,
   Encoder,
-  Option,
-  OptionOrNullable,
   combineCodec,
   getArrayDecoder,
   getArrayEncoder,
-  getBytesDecoder,
-  getBytesEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU32Decoder,
-  getU32Encoder,
-  getU64Decoder,
-  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
@@ -40,28 +26,18 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  ReadonlySignerAccount,
   WritableAccount,
-  WritableSignerAccount,
 } from '@solana/instructions';
-import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
-export type CreatePoolInstruction<
+export type CloseExpiredPoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountRentPayer extends
     | string
     | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -71,19 +47,14 @@ export type CreatePoolInstruction<
   IInstructionWithAccounts<
     [
       TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
+        ? ReadonlyAccount<TAccountRentPayer>
         : TAccountRentPayer,
       TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner> &
-            IAccountSignerMeta<TAccountOwner>
+        ? WritableAccount<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountWhitelist extends string
-        ? ReadonlyAccount<TAccountWhitelist>
-        : TAccountWhitelist,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -91,111 +62,67 @@ export type CreatePoolInstruction<
     ]
   >;
 
-export type CreatePoolInstructionData = {
-  discriminator: Array<number>;
-  poolId: Uint8Array;
-  currencyMint: Address;
-  config: PoolConfig;
-  cosigner: Option<Address>;
-  orderType: number;
-  maxTakerSellCount: Option<number>;
-  expireInSec: Option<bigint>;
-};
+export type CloseExpiredPoolInstructionData = { discriminator: Array<number> };
 
-export type CreatePoolInstructionDataArgs = {
-  poolId: Uint8Array;
-  currencyMint: Address;
-  config: PoolConfigArgs;
-  cosigner: OptionOrNullable<Address>;
-  orderType: number;
-  maxTakerSellCount: OptionOrNullable<number>;
-  expireInSec: OptionOrNullable<number | bigint>;
-};
+export type CloseExpiredPoolInstructionDataArgs = {};
 
-export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstructionDataArgs> {
+export function getCloseExpiredPoolInstructionDataEncoder(): Encoder<CloseExpiredPoolInstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['poolId', getBytesEncoder({ size: 32 })],
-      ['currencyMint', getAddressEncoder()],
-      ['config', getPoolConfigEncoder()],
-      ['cosigner', getOptionEncoder(getAddressEncoder())],
-      ['orderType', getU8Encoder()],
-      ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
-      ['expireInSec', getOptionEncoder(getU64Encoder())],
     ]),
     (value) => ({
       ...value,
-      discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
+      discriminator: [108, 212, 233, 53, 132, 83, 63, 219],
     })
   );
 }
 
-export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstructionData> {
+export function getCloseExpiredPoolInstructionDataDecoder(): Decoder<CloseExpiredPoolInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['poolId', getBytesDecoder({ size: 32 })],
-    ['currencyMint', getAddressDecoder()],
-    ['config', getPoolConfigDecoder()],
-    ['cosigner', getOptionDecoder(getAddressDecoder())],
-    ['orderType', getU8Decoder()],
-    ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
-    ['expireInSec', getOptionDecoder(getU64Decoder())],
   ]);
 }
 
-export function getCreatePoolInstructionDataCodec(): Codec<
-  CreatePoolInstructionDataArgs,
-  CreatePoolInstructionData
+export function getCloseExpiredPoolInstructionDataCodec(): Codec<
+  CloseExpiredPoolInstructionDataArgs,
+  CloseExpiredPoolInstructionData
 > {
   return combineCodec(
-    getCreatePoolInstructionDataEncoder(),
-    getCreatePoolInstructionDataDecoder()
+    getCloseExpiredPoolInstructionDataEncoder(),
+    getCloseExpiredPoolInstructionDataDecoder()
   );
 }
 
-export type CreatePoolInput<
+export type CloseExpiredPoolInput<
   TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
-  TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
-  owner: TransactionSigner<TAccountOwner>;
+  rentPayer?: Address<TAccountRentPayer>;
+  owner: Address<TAccountOwner>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation / will be stored inside pool */
-  whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
-  poolId: CreatePoolInstructionDataArgs['poolId'];
-  currencyMint: CreatePoolInstructionDataArgs['currencyMint'];
-  config: CreatePoolInstructionDataArgs['config'];
-  cosigner: CreatePoolInstructionDataArgs['cosigner'];
-  orderType: CreatePoolInstructionDataArgs['orderType'];
-  maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
-  expireInSec: CreatePoolInstructionDataArgs['expireInSec'];
 };
 
-export function getCreatePoolInstruction<
+export function getCloseExpiredPoolInstruction<
   TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
-  TAccountWhitelist extends string,
   TAccountSystemProgram extends string,
 >(
-  input: CreatePoolInput<
+  input: CloseExpiredPoolInput<
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
-    TAccountWhitelist,
     TAccountSystemProgram
   >
-): CreatePoolInstruction<
+): CloseExpiredPoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
-  TAccountWhitelist,
   TAccountSystemProgram
 > {
   // Program address.
@@ -203,19 +130,15 @@ export function getCreatePoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: false },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    whitelist: { value: input.whitelist ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
-
-  // Original args.
-  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.rentPayer.value) {
@@ -233,26 +156,22 @@ export function getCreatePoolInstruction<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getCreatePoolInstructionDataEncoder().encode(
-      args as CreatePoolInstructionDataArgs
-    ),
-  } as CreatePoolInstruction<
+    data: getCloseExpiredPoolInstructionDataEncoder().encode({}),
+  } as CloseExpiredPoolInstruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
-    TAccountWhitelist,
     TAccountSystemProgram
   >;
 
   return instruction;
 }
 
-export type ParsedCreatePoolInstruction<
+export type ParsedCloseExpiredPoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
@@ -261,22 +180,20 @@ export type ParsedCreatePoolInstruction<
     rentPayer: TAccountMetas[0];
     owner: TAccountMetas[1];
     pool: TAccountMetas[2];
-    /** Needed for pool seeds derivation / will be stored inside pool */
-    whitelist: TAccountMetas[3];
-    systemProgram: TAccountMetas[4];
+    systemProgram: TAccountMetas[3];
   };
-  data: CreatePoolInstructionData;
+  data: CloseExpiredPoolInstructionData;
 };
 
-export function parseCreatePoolInstruction<
+export function parseCloseExpiredPoolInstruction<
   TProgram extends string,
   TAccountMetas extends readonly IAccountMeta[],
 >(
   instruction: IInstruction<TProgram> &
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
-): ParsedCreatePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+): ParsedCloseExpiredPoolInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -292,9 +209,8 @@ export function parseCreatePoolInstruction<
       rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
-      whitelist: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCreatePoolInstructionDataDecoder().decode(instruction.data),
+    data: getCloseExpiredPoolInstructionDataDecoder().decode(instruction.data),
   };
 }

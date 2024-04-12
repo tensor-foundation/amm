@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod buy_nft;
+pub mod close_expired_pool;
 pub mod close_pool;
 pub mod create_pool;
 pub mod deposit_nft;
@@ -19,6 +20,7 @@ pub mod withdraw_sol;
 
 pub use admin::*;
 pub use buy_nft::*;
+pub use close_expired_pool::*;
 pub use close_pool::*;
 pub use create_pool::*;
 pub use deposit_nft::*;
