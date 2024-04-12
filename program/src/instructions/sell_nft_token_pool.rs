@@ -22,11 +22,7 @@ use crate::{error::ErrorCode, utils::send_pnft, *};
 /// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
-    /// If no external rent_payer, this should be set to the seller.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
-    )]
+    #[account(mut)]
     pub rent_payer: Signer<'info>,
 
     /// The owner of the pool and the buyer/recipient of the NFT.
