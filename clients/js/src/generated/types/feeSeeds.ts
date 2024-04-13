@@ -17,20 +17,20 @@ import {
   getU8Encoder,
 } from '@solana/codecs';
 
-export type FeeSeeds = { index: number; bump: number };
+export type FeeSeeds = { shard: number; bump: number };
 
 export type FeeSeedsArgs = FeeSeeds;
 
 export function getFeeSeedsEncoder(): Encoder<FeeSeedsArgs> {
   return getStructEncoder([
-    ['index', getU8Encoder()],
+    ['shard', getU8Encoder()],
     ['bump', getU8Encoder()],
   ]);
 }
 
 export function getFeeSeedsDecoder(): Decoder<FeeSeeds> {
   return getStructDecoder([
-    ['index', getU8Decoder()],
+    ['shard', getU8Decoder()],
     ['bump', getU8Decoder()],
   ]);
 }

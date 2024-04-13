@@ -89,6 +89,11 @@
         "defined": "usize"
       },
       "value": "8 + (32 * 2) + 8 + 1 + 64"
+    },
+    {
+      "name": "FEE_VAULT_NUM",
+      "type": "u8",
+      "value": "4"
     }
   ],
   "instructions": [
@@ -2460,7 +2465,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
+            "name": "shard",
             "type": "u8"
           },
           {

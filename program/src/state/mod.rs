@@ -22,6 +22,9 @@ pub const FEE_AUTHORITY: Pubkey = if cfg!(feature = "test-sbf") {
 
 pub const FEE_KEEP_ALIVE_LAMPORTS: u64 = 890880;
 
+#[constant]
+pub const FEE_VAULT_NUM: u8 = 4;
+
 #[derive(Accounts)]
 pub struct DummyCtx<'info> {
     //have to have 1 entry in order for lifetime arg to be used (else complains during CPI into tensorswap)

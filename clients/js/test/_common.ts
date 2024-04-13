@@ -40,6 +40,7 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   CurveType,
+  FEE_VAULT_NUM,
   PoolConfig,
   PoolType,
   findNftDepositReceiptPda,
@@ -482,7 +483,7 @@ export type MintAndSellParams = {
 export type MintAndSellReturn = {
   mint: Address;
   feeVault: Address;
-  index: number;
+  shard: number;
   bump: number;
 };
 
@@ -504,12 +505,13 @@ export async function mintAndSellIntoPool({
   // Last byte of mint address is the fee vault shard number.
   const mintBytes = bs58.decode(mint);
   const lastByte = mintBytes[mintBytes.length - 1];
+  const feeShard = lastByte % FEE_VAULT_NUM;
 
   const [feeVault, bump] = await getProgramDerivedAddress({
     programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
+      getU8Encoder().encode(feeShard),
     ],
   });
 
@@ -582,5 +584,5 @@ export async function mintAndSellIntoPool({
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  return { mint, feeVault, index: lastByte, bump };
+  return { mint, feeVault, shard: feeShard, bump };
 }

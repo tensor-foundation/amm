@@ -317,3 +317,11 @@ pub fn send_pnft(
         token_interface::transfer_checked(*ctx, 1, 0)
     }
 }
+
+#[macro_export]
+macro_rules! shard_num {
+    ($mint:expr) => {
+        &(*$mint.key().as_ref().last().unwrap() % FEE_VAULT_NUM).to_le_bytes()
+    };
+    () => {};
+}

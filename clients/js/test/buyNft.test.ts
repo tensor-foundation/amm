@@ -38,6 +38,7 @@ import {
   PoolConfig,
   getSellNftTradePoolInstruction,
   getBuyNftInstruction,
+  FEE_VAULT_NUM,
 } from '../src/index.js';
 import {
   DEFAULT_PUBKEY,
@@ -108,12 +109,13 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   // Last byte of mint address is the fee vault shard number.
   const mintBytes = bs58.decode(mint);
   const lastByte = mintBytes[mintBytes.length - 1];
+  const feeShard = lastByte % FEE_VAULT_NUM;
 
   const [feeVault] = await getProgramDerivedAddress({
     programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
+      getU8Encoder().encode(feeShard),
     ],
   });
 
