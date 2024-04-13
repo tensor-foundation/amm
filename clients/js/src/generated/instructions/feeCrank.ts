@@ -21,10 +21,12 @@ import {
   mapEncoder,
 } from '@solana/codecs';
 import {
+  AccountRole,
   IAccountMeta,
   IInstruction,
   IInstructionWithAccounts,
   IInstructionWithData,
+  ReadonlyAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
@@ -40,6 +42,9 @@ import {
 export type FeeCrankInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountAuthority extends string | IAccountMeta<string> = string,
+  TAccountSystemProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -49,22 +54,25 @@ export type FeeCrankInstruction<
         ? WritableSignerAccount<TAccountAuthority> &
             IAccountSignerMeta<TAccountAuthority>
         : TAccountAuthority,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
 
 export type FeeCrankInstructionData = {
   discriminator: Array<number>;
-  accountSeeds: Array<FeeSeeds>;
+  feeSeeds: Array<FeeSeeds>;
 };
 
-export type FeeCrankInstructionDataArgs = { accountSeeds: Array<FeeSeedsArgs> };
+export type FeeCrankInstructionDataArgs = { feeSeeds: Array<FeeSeedsArgs> };
 
 export function getFeeCrankInstructionDataEncoder(): Encoder<FeeCrankInstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['accountSeeds', getArrayEncoder(getFeeSeedsEncoder())],
+      ['feeSeeds', getArrayEncoder(getFeeSeedsEncoder())],
     ]),
     (value) => ({
       ...value,
@@ -76,7 +84,7 @@ export function getFeeCrankInstructionDataEncoder(): Encoder<FeeCrankInstruction
 export function getFeeCrankInstructionDataDecoder(): Decoder<FeeCrankInstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['accountSeeds', getArrayDecoder(getFeeSeedsDecoder())],
+    ['feeSeeds', getArrayDecoder(getFeeSeedsDecoder())],
   ]);
 }
 
@@ -90,21 +98,34 @@ export function getFeeCrankInstructionDataCodec(): Codec<
   );
 }
 
-export type FeeCrankInput<TAccountAuthority extends string = string> = {
+export type FeeCrankInput<
+  TAccountAuthority extends string = string,
+  TAccountSystemProgram extends string = string,
+> = {
   /** Fee collection authority */
   authority: TransactionSigner<TAccountAuthority>;
-  accountSeeds: FeeCrankInstructionDataArgs['accountSeeds'];
+  systemProgram?: Address<TAccountSystemProgram>;
+  feeSeeds: FeeCrankInstructionDataArgs['feeSeeds'];
+  feeAccounts: Array<Address>;
 };
 
-export function getFeeCrankInstruction<TAccountAuthority extends string>(
-  input: FeeCrankInput<TAccountAuthority>
-): FeeCrankInstruction<typeof AMM_PROGRAM_ADDRESS, TAccountAuthority> {
+export function getFeeCrankInstruction<
+  TAccountAuthority extends string,
+  TAccountSystemProgram extends string,
+>(
+  input: FeeCrankInput<TAccountAuthority, TAccountSystemProgram>
+): FeeCrankInstruction<
+  typeof AMM_PROGRAM_ADDRESS,
+  TAccountAuthority,
+  TAccountSystemProgram
+> {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
     authority: { value: input.authority ?? null, isWritable: true },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -114,14 +135,34 @@ export function getFeeCrankInstruction<TAccountAuthority extends string>(
   // Original args.
   const args = { ...input };
 
+  // Resolve default values.
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.feeAccounts.map((address) => ({
+    address,
+    role: AccountRole.WRITABLE,
+  }));
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
-    accounts: [getAccountMeta(accounts.authority)],
+    accounts: [
+      getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.systemProgram),
+      ...remainingAccounts,
+    ],
     programAddress,
     data: getFeeCrankInstructionDataEncoder().encode(
       args as FeeCrankInstructionDataArgs
     ),
-  } as FeeCrankInstruction<typeof AMM_PROGRAM_ADDRESS, TAccountAuthority>;
+  } as FeeCrankInstruction<
+    typeof AMM_PROGRAM_ADDRESS,
+    TAccountAuthority,
+    TAccountSystemProgram
+  >;
 
   return instruction;
 }
@@ -134,6 +175,7 @@ export type ParsedFeeCrankInstruction<
   accounts: {
     /** Fee collection authority */
     authority: TAccountMetas[0];
+    systemProgram: TAccountMetas[1];
   };
   data: FeeCrankInstructionData;
 };
@@ -146,7 +188,7 @@ export function parseFeeCrankInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedFeeCrankInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 1) {
+  if (instruction.accounts.length < 2) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -160,6 +202,7 @@ export function parseFeeCrankInstruction<
     programAddress: instruction.programAddress,
     accounts: {
       authority: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getFeeCrankInstructionDataDecoder().decode(instruction.data),
   };

@@ -21,11 +21,18 @@ import {
   getProgramDerivedAddress,
   getAddressEncoder,
   Base64EncodedDataResponse,
+  getStringEncoder,
+  getU8Encoder,
+  airdropFactory,
+  lamports,
 } from '@solana/web3.js';
 import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
+  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+  SYSVARS_INSTRUCTIONS,
   TOKEN_PROGRAM_ID,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -35,15 +42,29 @@ import {
   CurveType,
   PoolConfig,
   PoolType,
+  findNftDepositReceiptPda,
   findPoolPda,
   getCreatePoolInstruction,
+  getSellNftTradePoolInstruction,
 } from '../src/index.js';
+import {
+  createDefaultNft,
+  findTokenRecordPda,
+} from '@tensor-foundation/toolkit-token-metadata';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
 export const DEFAULT_DELTA = 1000n;
+
+export const ZERO_ACCOUNT_RENT_LAMPORTS = 890880n;
+export const ONE_SOL = 1_000_000_000n;
+
+export function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export type AtaSeeds = {
   /** The address of the owner of the associated token account */
@@ -448,4 +469,118 @@ export function getTokenOwner(data: Base64EncodedDataResponse): Address {
     buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
   );
   return address(base58string);
+}
+
+export type MintAndSellParams = {
+  client: Client;
+  pool: Address;
+  whitelist: Address;
+  poolOwner: KeyPairSigner;
+  nftOwner: KeyPairSigner;
+};
+
+export type MintAndSellReturn = {
+  mint: Address;
+  feeVault: Address;
+  index: number;
+  bump: number;
+};
+
+export async function mintAndSellIntoPool({
+  client,
+  pool,
+  whitelist,
+  poolOwner,
+  nftOwner,
+}: MintAndSellParams) {
+  // Mint NFT
+  const { mint, metadata, masterEdition } = await createDefaultNft(
+    client,
+    nftOwner,
+    nftOwner,
+    nftOwner
+  );
+
+  // Last byte of mint address is the fee vault shard number.
+  const mintBytes = bs58.decode(mint);
+  const lastByte = mintBytes[mintBytes.length - 1];
+
+  const [feeVault, bump] = await getProgramDerivedAddress({
+    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
+    seeds: [
+      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
+      getU8Encoder().encode(lastByte),
+    ],
+  });
+
+  const feeVaultBalance = (await client.rpc.getBalance(feeVault).send()).value;
+
+  if (feeVaultBalance === 0n) {
+    // Fund fee vault with min rent lamports.
+    await airdropFactory(client)({
+      recipientAddress: feeVault,
+      lamports: lamports(890880n),
+      commitment: 'confirmed',
+    });
+  }
+
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
+
+  const [sellerTokenRecord] = await findTokenRecordPda({
+    mint,
+    token: sellerAta,
+  });
+  const [poolTokenRecord] = await findTokenRecordPda({
+    mint,
+    token: poolAta,
+  });
+
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+
+  const minPrice = 900_000n;
+
+  // Sell NFT into pool
+  const sellNftIx = getSellNftTradePoolInstruction({
+    rentPayer: nftOwner, // seller
+    owner: poolOwner.address, // pool owner
+    seller: nftOwner, // nft owner--the seller
+    feeVault,
+    pool,
+    whitelist,
+    sellerAta,
+    poolAta,
+    mint,
+    metadata,
+    edition: masterEdition,
+    sellerTokenRecord,
+    poolTokenRecord,
+    nftReceipt,
+    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+    instructions: SYSVARS_INSTRUCTIONS,
+    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
+    authRules: DEFAULT_PUBKEY,
+    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
+    takerBroker: poolOwner.address, // No taker broker so we put a dummy here for now
+    minPrice,
+    rulesAccPresent: false,
+    authorizationData: none(),
+    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
+    optionalRoyaltyPct: none(),
+    // Remaining accounts
+    creators: [nftOwner.address],
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner.address),
+    (tx) => appendTransactionInstruction(computeIx, tx),
+    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+  );
+
+  return { mint, feeVault, index: lastByte, bump };
 }

@@ -15,6 +15,7 @@
     "noUnusedParameters": true,
     "outDir": "./dist",
     "preserveWatchOutput": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext"

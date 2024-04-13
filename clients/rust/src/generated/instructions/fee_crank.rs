@@ -13,6 +13,8 @@ use borsh::BorshSerialize;
 pub struct FeeCrank {
     /// Fee collection authority
     pub authority: solana_program::pubkey::Pubkey,
+
+    pub system_program: solana_program::pubkey::Pubkey,
 }
 
 impl FeeCrank {
@@ -28,10 +30,14 @@ impl FeeCrank {
         args: FeeCrankInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(1 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.authority,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.system_program,
+            false,
         ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = FeeCrankInstructionData::new().try_to_vec().unwrap();
@@ -62,7 +68,7 @@ impl FeeCrankInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FeeCrankInstructionArgs {
-    pub account_seeds: Vec<FeeSeeds>,
+    pub fee_seeds: Vec<FeeSeeds>,
 }
 
 /// Instruction builder for `FeeCrank`.
@@ -70,10 +76,12 @@ pub struct FeeCrankInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` authority
+///   1. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct FeeCrankBuilder {
     authority: Option<solana_program::pubkey::Pubkey>,
-    account_seeds: Option<Vec<FeeSeeds>>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
+    fee_seeds: Option<Vec<FeeSeeds>>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -87,9 +95,15 @@ impl FeeCrankBuilder {
         self.authority = Some(authority);
         self
     }
+    /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn account_seeds(&mut self, account_seeds: Vec<FeeSeeds>) -> &mut Self {
-        self.account_seeds = Some(account_seeds);
+    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
+        self
+    }
+    #[inline(always)]
+    pub fn fee_seeds(&mut self, fee_seeds: Vec<FeeSeeds>) -> &mut Self {
+        self.fee_seeds = Some(fee_seeds);
         self
     }
     /// Add an aditional account to the instruction.
@@ -114,12 +128,12 @@ impl FeeCrankBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = FeeCrank {
             authority: self.authority.expect("authority is not set"),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = FeeCrankInstructionArgs {
-            account_seeds: self
-                .account_seeds
-                .clone()
-                .expect("account_seeds is not set"),
+            fee_seeds: self.fee_seeds.clone().expect("fee_seeds is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -130,6 +144,8 @@ impl FeeCrankBuilder {
 pub struct FeeCrankCpiAccounts<'a, 'b> {
     /// Fee collection authority
     pub authority: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `fee_crank` CPI instruction.
@@ -138,6 +154,8 @@ pub struct FeeCrankCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
     /// Fee collection authority
     pub authority: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: FeeCrankInstructionArgs,
 }
@@ -151,6 +169,7 @@ impl<'a, 'b> FeeCrankCpi<'a, 'b> {
         Self {
             __program: program,
             authority: accounts.authority,
+            system_program: accounts.system_program,
             __args: args,
         }
     }
@@ -187,10 +206,14 @@ impl<'a, 'b> FeeCrankCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(1 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.authority.key,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.system_program.key,
+            false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
@@ -208,9 +231,10 @@ impl<'a, 'b> FeeCrankCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(1 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(2 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.authority.clone());
+        account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -228,6 +252,7 @@ impl<'a, 'b> FeeCrankCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` authority
+///   1. `[]` system_program
 pub struct FeeCrankCpiBuilder<'a, 'b> {
     instruction: Box<FeeCrankCpiBuilderInstruction<'a, 'b>>,
 }
@@ -237,7 +262,8 @@ impl<'a, 'b> FeeCrankCpiBuilder<'a, 'b> {
         let instruction = Box::new(FeeCrankCpiBuilderInstruction {
             __program: program,
             authority: None,
-            account_seeds: None,
+            system_program: None,
+            fee_seeds: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -252,8 +278,16 @@ impl<'a, 'b> FeeCrankCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn account_seeds(&mut self, account_seeds: Vec<FeeSeeds>) -> &mut Self {
-        self.instruction.account_seeds = Some(account_seeds);
+    pub fn system_program(
+        &mut self,
+        system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.system_program = Some(system_program);
+        self
+    }
+    #[inline(always)]
+    pub fn fee_seeds(&mut self, fee_seeds: Vec<FeeSeeds>) -> &mut Self {
+        self.instruction.fee_seeds = Some(fee_seeds);
         self
     }
     /// Add an additional account to the instruction.
@@ -298,16 +332,21 @@ impl<'a, 'b> FeeCrankCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = FeeCrankInstructionArgs {
-            account_seeds: self
+            fee_seeds: self
                 .instruction
-                .account_seeds
+                .fee_seeds
                 .clone()
-                .expect("account_seeds is not set"),
+                .expect("fee_seeds is not set"),
         };
         let instruction = FeeCrankCpi {
             __program: self.instruction.__program,
 
             authority: self.instruction.authority.expect("authority is not set"),
+
+            system_program: self
+                .instruction
+                .system_program
+                .expect("system_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -320,7 +359,8 @@ impl<'a, 'b> FeeCrankCpiBuilder<'a, 'b> {
 struct FeeCrankCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    account_seeds: Option<Vec<FeeSeeds>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    fee_seeds: Option<Vec<FeeSeeds>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

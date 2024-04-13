@@ -102,6 +102,15 @@ kinobi.update(
           isWritable: true
         })
       ]
+    },
+    feeCrank: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("feeAccounts"), {
+          isOptional: false,
+          isSigner: false,
+          isWritable: true
+        })
+      ]
     }
   })
 );

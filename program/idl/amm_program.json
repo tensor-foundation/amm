@@ -408,11 +408,16 @@
           "docs": [
             "Fee collection authority"
           ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
         {
-          "name": "accountSeeds",
+          "name": "feeSeeds",
           "type": {
             "vec": {
               "defined": "FeeSeeds"

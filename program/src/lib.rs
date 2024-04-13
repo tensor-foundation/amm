@@ -54,9 +54,9 @@ pub mod amm_program {
 
     pub fn fee_crank<'info>(
         ctx: Context<'_, '_, '_, 'info, FeeCrank<'info>>,
-        account_seeds: Vec<FeeSeeds>,
+        fee_seeds: Vec<FeeSeeds>,
     ) -> Result<()> {
-        instructions::fee_crank::process_fee_crank(ctx, &account_seeds)
+        instructions::fee_crank::process_fee_crank(ctx, &fee_seeds)
     }
 
     pub fn withdraw_nft<'info>(
