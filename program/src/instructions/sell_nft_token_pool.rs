@@ -18,7 +18,7 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, utils::send_pnft, *};
 
-/// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before 
+/// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
 /// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
@@ -34,14 +34,13 @@ pub struct SellNftTokenPool<'info> {
     pub seller: Signer<'info>,
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
-
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
         seeds = [
             b"fee_vault",
             // Use the last byte of the mint as the fee shard number
-            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+            &mint.key().as_ref().last().unwrap().to_le_bytes(),
         ],
         bump
     )]
@@ -116,7 +115,6 @@ pub struct SellNftTokenPool<'info> {
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
-
     /// The Token Metadata edition account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
@@ -396,7 +394,7 @@ pub fn process_sell_nft_token_pool<'info>(
 
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
-    // transfer royalties   
+    // transfer royalties
     msg!("Transferring royalties");
     let actual_creators_fee = transfer_creators_fee(
         &metadata
