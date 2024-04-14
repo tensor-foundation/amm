@@ -91,6 +91,12 @@ export const enum AmmProgramErrorCode {
   WRONG_RENT_PAYER = 0x2f08, // 12040
   /** SplTokensNotSupported: SPL tokens not supported */
   SPL_TOKENS_NOT_SUPPORTED = 0x2f09, // 12041
+  /** ExpiryTooLarge: Expiry too large */
+  EXPIRY_TOO_LARGE = 0x2f0a, // 12042
+  /** ExpiredPool: Expired Pool */
+  EXPIRED_POOL = 0x2f0b, // 12043
+  /** PoolNotExpired: Pool not expired */
+  POOL_NOT_EXPIRED = 0x2f0c, // 12044
 }
 
 export class AmmProgramError extends Error {
@@ -278,6 +284,15 @@ if (__DEV__) {
     [AmmProgramErrorCode.SPL_TOKENS_NOT_SUPPORTED]: [
       'SplTokensNotSupported',
       `SPL tokens not supported`,
+    ],
+    [AmmProgramErrorCode.EXPIRY_TOO_LARGE]: [
+      'ExpiryTooLarge',
+      `Expiry too large`,
+    ],
+    [AmmProgramErrorCode.EXPIRED_POOL]: ['ExpiredPool', `Expired Pool`],
+    [AmmProgramErrorCode.POOL_NOT_EXPIRED]: [
+      'PoolNotExpired',
+      `Pool not expired`,
     ],
   };
 }

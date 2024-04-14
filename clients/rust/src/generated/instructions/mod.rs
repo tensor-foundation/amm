@@ -8,6 +8,7 @@
 pub(crate) mod r#attach_pool_to_shared_escrow;
 pub(crate) mod r#buy_nft;
 pub(crate) mod r#buy_nft_t22;
+pub(crate) mod r#close_expired_pool;
 pub(crate) mod r#close_pool;
 pub(crate) mod r#close_shared_escrow_account;
 pub(crate) mod r#create_pool;
@@ -35,6 +36,7 @@ pub(crate) mod r#withdraw_sol;
 pub use self::r#attach_pool_to_shared_escrow::*;
 pub use self::r#buy_nft::*;
 pub use self::r#buy_nft_t22::*;
+pub use self::r#close_expired_pool::*;
 pub use self::r#close_pool::*;
 pub use self::r#close_shared_escrow_account::*;
 pub use self::r#create_pool::*;

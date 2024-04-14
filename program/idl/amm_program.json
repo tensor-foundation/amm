@@ -131,10 +131,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -190,23 +187,9 @@
       ],
       "args": [
         {
-          "name": "newConfig",
+          "name": "args",
           "type": {
-            "option": {
-              "defined": "PoolConfig"
-            }
-          }
-        },
-        {
-          "name": "cosigner",
-          "type": {
-            "option": "publicKey"
-          }
-        },
-        {
-          "name": "maxTakerSellCount",
-          "type": {
-            "option": "u32"
+            "defined": "EditPoolArgs"
           }
         }
       ]
@@ -217,10 +200,7 @@
         {
           "name": "rentPayer",
           "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": false
         },
         {
           "name": "owner",
@@ -241,15 +221,38 @@
       "args": []
     },
     {
+      "name": "closeExpiredPool",
+      "accounts": [
+        {
+          "name": "rentPayer",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "depositNft",
       "accounts": [
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -413,10 +416,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -620,10 +620,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the buyer."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -821,10 +818,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent_payer, this should be set to the seller."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -1068,10 +1062,7 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, this should be seller."
-          ]
+          "isSigner": true
         },
         {
           "name": "owner",
@@ -2413,14 +2404,14 @@
             }
           },
           {
-            "name": "currencyMint",
-            "type": "publicKey"
-          },
-          {
             "name": "config",
             "type": {
               "defined": "PoolConfig"
             }
+          },
+          {
+            "name": "currency",
+            "type": "publicKey"
           },
           {
             "name": "cosigner",
@@ -2439,9 +2430,43 @@
             }
           },
           {
-            "name": "expirationTimestamp",
+            "name": "expireInSec",
             "type": {
-              "option": "i64"
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EditPoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newConfig",
+            "type": {
+              "option": {
+                "defined": "PoolConfig"
+              }
+            }
+          },
+          {
+            "name": "cosigner",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "expireInSec",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "maxTakerSellCount",
+            "type": {
+              "option": "u32"
             }
           }
         ]
@@ -2924,6 +2949,21 @@
       "code": 12041,
       "name": "SplTokensNotSupported",
       "msg": "SPL tokens not supported"
+    },
+    {
+      "code": 12042,
+      "name": "ExpiryTooLarge",
+      "msg": "Expiry too large"
+    },
+    {
+      "code": 12043,
+      "name": "ExpiredPool",
+      "msg": "Expired Pool"
+    },
+    {
+      "code": 12044,
+      "name": "PoolNotExpired",
+      "msg": "Pool not expired"
     }
   ],
   "metadata": {

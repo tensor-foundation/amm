@@ -20,8 +20,8 @@ pub struct WithdrawSol<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
+        has_one = owner,
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
-        has_one = owner
     )]
     pub pool: Box<Account<'info, Pool>>,
 

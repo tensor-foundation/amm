@@ -103,7 +103,6 @@ export type ClosePoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** If no external rent payer, set this to the owner. */
   rentPayer?: Address<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
@@ -181,7 +180,6 @@ export type ParsedClosePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, set this to the owner. */
     rentPayer: TAccountMetas[0];
     owner: TAccountMetas[1];
     pool: TAccountMetas[2];

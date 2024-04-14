@@ -44,6 +44,8 @@ export const DEFAULT_PUBKEY: Address = address(
 );
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
 export const DEFAULT_DELTA = 1000n;
+export const ONE_WEEK = 60 * 60 * 24 * 7;
+export const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export type AtaSeeds = {
   /** The address of the owner of the associated token account */
@@ -183,6 +185,7 @@ export interface CreatePoolParams {
   cosigner?: KeyPairSigner;
   poolId?: Uint8Array;
   config?: PoolConfig;
+  expireInSec?: number;
 }
 
 export interface CreatePoolThrowsParams extends CreatePoolParams {
@@ -206,6 +209,7 @@ export async function createPool({
   cosigner,
   poolId,
   config,
+  expireInSec,
 }: CreatePoolParams): Promise<CreatePoolReturns> {
   // Pool values
 
@@ -236,12 +240,12 @@ export async function createPool({
     pool,
     whitelist,
     poolId,
-    currencyMint: DEFAULT_PUBKEY,
+    currency: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     orderType: 0,
-    expirationTimestamp: null,
+    expireInSec: expireInSec ?? null,
   });
 
   await pipe(
@@ -298,12 +302,12 @@ export async function createPoolThrows({
     pool,
     whitelist,
     poolId,
-    currencyMint: DEFAULT_PUBKEY,
+    currency: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
     cosigner: some(cosigner.address),
     orderType: 0,
-    expirationTimestamp: null,
+    expireInSec: null,
   });
 
   const promise = pipe(

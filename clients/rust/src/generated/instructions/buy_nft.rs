@@ -11,7 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct BuyNft {
-    /// If no external rent payer, set this to the buyer.
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
@@ -277,7 +276,6 @@ impl BuyNftBuilder {
         Self::default()
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    /// If no external rent payer, set this to the buyer.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -543,7 +541,6 @@ impl BuyNftBuilder {
 
 /// `buy_nft` CPI accounts.
 pub struct BuyNftCpiAccounts<'a, 'b> {
-    /// If no external rent payer, set this to the buyer.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
@@ -600,7 +597,7 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
 pub struct BuyNftCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// If no external rent payer, set this to the buyer.
+
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
@@ -951,7 +948,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    /// If no external rent payer, set this to the buyer.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,

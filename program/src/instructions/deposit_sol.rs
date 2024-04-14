@@ -23,6 +23,7 @@ pub struct DepositSol<'info> {
         has_one = owner, has_one = whitelist,
         // can only deposit SOL into Token/Trade pool
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 

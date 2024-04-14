@@ -12,8 +12,16 @@ macro_rules! unwrap_opt_or_return_ok {
     };
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct EditPoolArgs {
+    new_config: Option<PoolConfig>,
+    pub cosigner: Option<Pubkey>,
+    pub expire_in_sec: Option<u64>,
+    max_taker_sell_count: Option<u32>,
+}
+
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
+#[instruction(args: EditPoolArgs)]
 pub struct EditPool<'info> {
     #[account(
         mut,
@@ -24,6 +32,7 @@ pub struct EditPool<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -79,20 +88,15 @@ impl<'info> EditPool<'info> {
     }
 }
 
-#[access_control(ctx.accounts.validate(); ctx.accounts.validate_pool_type(new_config))]
-pub fn process_edit_pool(
-    ctx: Context<EditPool>,
-    new_config: Option<PoolConfig>,
-    cosigner: Option<Pubkey>,
-    max_taker_sell_count: Option<u32>,
-) -> Result<()> {
+#[access_control(ctx.accounts.validate(); ctx.accounts.validate_pool_type(args.new_config))]
+pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 
-    if let Some(new_config) = new_config {
+    if let Some(new_config) = args.new_config {
         pool.config = new_config;
     }
 
-    if let Some(cosigner) = cosigner {
+    if let Some(cosigner) = args.cosigner {
         //currently bids only
         if pool.config.pool_type != PoolType::Token {
             throw_err!(ErrorCode::WrongPoolType);
@@ -101,9 +105,26 @@ pub fn process_edit_pool(
         pool.cosigner = Some(cosigner);
     }
 
-    if let Some(max_taker_sell_count) = max_taker_sell_count {
+    if let Some(max_taker_sell_count) = args.max_taker_sell_count {
         pool.valid_max_sell_count(max_taker_sell_count)?;
         pool.max_taker_sell_count = max_taker_sell_count;
+    }
+
+    let timestamp = Clock::get()?.unix_timestamp;
+
+    // If the user passes in a new expiry value, set it to that.
+    // None, in this case means no change, instead of max value like it does in create_pool.
+    if let Some(expire_in_sec) = args.expire_in_sec {
+        // Convert the user's u64 seconds offset to i64 for timestamp math.
+        let expire_in_i64 = try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
+
+        // Ensure the expiry is not too far in the future.
+        require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
+
+        // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
+        pool.expiry = timestamp
+            .checked_add(expire_in_i64)
+            .ok_or(ErrorCode::ArithmeticError)?;
     }
 
     Ok(())

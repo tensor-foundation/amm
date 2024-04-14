@@ -26,6 +26,8 @@ import {
   getStructEncoder,
   getU32Decoder,
   getU32Encoder,
+  getU64Decoder,
+  getU64Encoder,
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
@@ -79,12 +81,14 @@ export type EditPoolInstructionData = {
   discriminator: Array<number>;
   newConfig: Option<PoolConfig>;
   cosigner: Option<Address>;
+  expireInSec: Option<bigint>;
   maxTakerSellCount: Option<number>;
 };
 
 export type EditPoolInstructionDataArgs = {
   newConfig: OptionOrNullable<PoolConfigArgs>;
   cosigner: OptionOrNullable<Address>;
+  expireInSec: OptionOrNullable<number | bigint>;
   maxTakerSellCount: OptionOrNullable<number>;
 };
 
@@ -94,6 +98,7 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['newConfig', getOptionEncoder(getPoolConfigEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
+      ['expireInSec', getOptionEncoder(getU64Encoder())],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
     ]),
     (value) => ({ ...value, discriminator: [50, 174, 34, 36, 3, 166, 29, 204] })
@@ -105,6 +110,7 @@ export function getEditPoolInstructionDataDecoder(): Decoder<EditPoolInstruction
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['newConfig', getOptionDecoder(getPoolConfigDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
+    ['expireInSec', getOptionDecoder(getU64Decoder())],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
   ]);
 }
@@ -129,6 +135,7 @@ export type EditPoolInput<
   systemProgram?: Address<TAccountSystemProgram>;
   newConfig: EditPoolInstructionDataArgs['newConfig'];
   cosigner: EditPoolInstructionDataArgs['cosigner'];
+  expireInSec: EditPoolInstructionDataArgs['expireInSec'];
   maxTakerSellCount: EditPoolInstructionDataArgs['maxTakerSellCount'];
 };
 

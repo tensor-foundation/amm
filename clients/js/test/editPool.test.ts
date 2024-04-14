@@ -1,6 +1,6 @@
 import test from 'ava';
 import { generateKeyPairSigner } from '@solana/signers';
-import { none } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   Mode,
   WhitelistV2,
@@ -8,12 +8,14 @@ import {
 } from '@tensor-foundation/whitelist';
 import {
   createDefaultSolanaClient,
+  createDefaultTransaction,
   generateKeyPairSignerWithSol,
+  signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Pool, fetchPool } from '../src/index.js';
-import { createPool, createWhitelistV2 } from './_common.js';
+import { fetchPool, getEditPoolInstruction } from '../src/index.js';
+import { ONE_WEEK, createPool, createWhitelistV2 } from './_common.js';
 
-test('it can create a pool w/ correct timestamps', async (t) => {
+test('it can edit a pool w/ a new expiry date', async (t) => {
   const client = createDefaultSolanaClient();
   const updateAuthority = await generateKeyPairSignerWithSol(client);
   const freezeAuthority = (await generateKeyPairSigner()).address;
@@ -51,34 +53,29 @@ test('it can create a pool w/ correct timestamps', async (t) => {
     client,
     whitelist,
     owner: updateAuthority,
+    expireInSec: ONE_WEEK,
   });
 
-  const expectedTimestampSecs = BigInt(Math.floor(Date.now() / 1000));
+  const editPoolIx = getEditPoolInstruction({
+    owner: updateAuthority,
+    pool,
+    expireInSec: 2 * ONE_WEEK,
+    newConfig: null,
+    cosigner: null,
+    maxTakerSellCount: null,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, updateAuthority.address),
+    (tx) => appendTransactionInstruction(editPoolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
 
   const poolAccount = await fetchPool(client.rpc, pool);
-  // Then an account was created with the correct data.
-  t.like(poolAccount, <Pool>(<unknown>{
-    address: pool,
-    data: {
-      config: {
-        poolType: 0,
-        curveType: 0,
-        startingPrice: 1n,
-        delta: 1n,
-        mmCompoundFees: false,
-        mmFeeBps: none(),
-      },
-    },
-  }));
 
-  // Should be within 10 seconds of the expected timestamp.
-  // Might have to update this for a wider drift.
-  const createdAtDifference =
-    expectedTimestampSecs - poolAccount.data.createdAt;
-  const updatedAtDifference =
-    expectedTimestampSecs - poolAccount.data.updatedAt;
+  const expectedTimestampSecs = BigInt(Math.floor(Date.now() / 1000));
+  const expiryDifference =
+    poolAccount.data.expiry - (expectedTimestampSecs + BigInt(2 * ONE_WEEK));
 
-  t.assert(createdAtDifference >= 0n && createdAtDifference <= 10n);
-  t.assert(updatedAtDifference >= 0n && updatedAtDifference <= 10n);
-  t.assert(poolAccount.data.expiry === 0n);
+  t.assert(expiryDifference < 10n && expiryDifference > -10n);
 });

@@ -74,6 +74,7 @@ impl EditPoolInstructionData {
 pub struct EditPoolInstructionArgs {
     pub new_config: Option<PoolConfig>,
     pub cosigner: Option<Pubkey>,
+    pub expire_in_sec: Option<u64>,
     pub max_taker_sell_count: Option<u32>,
 }
 
@@ -91,6 +92,7 @@ pub struct EditPoolBuilder {
     system_program: Option<solana_program::pubkey::Pubkey>,
     new_config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
+    expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -129,6 +131,12 @@ impl EditPoolBuilder {
     }
     /// `[optional argument]`
     #[inline(always)]
+    pub fn expire_in_sec(&mut self, expire_in_sec: u64) -> &mut Self {
+        self.expire_in_sec = Some(expire_in_sec);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
     pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
         self.max_taker_sell_count = Some(max_taker_sell_count);
         self
@@ -163,6 +171,7 @@ impl EditPoolBuilder {
         let args = EditPoolInstructionArgs {
             new_config: self.new_config.clone(),
             cosigner: self.cosigner.clone(),
+            expire_in_sec: self.expire_in_sec.clone(),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
         };
 
@@ -306,6 +315,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
             system_program: None,
             new_config: None,
             cosigner: None,
+            expire_in_sec: None,
             max_taker_sell_count: None,
             __remaining_accounts: Vec::new(),
         });
@@ -339,6 +349,12 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn cosigner(&mut self, cosigner: Pubkey) -> &mut Self {
         self.instruction.cosigner = Some(cosigner);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn expire_in_sec(&mut self, expire_in_sec: u64) -> &mut Self {
+        self.instruction.expire_in_sec = Some(expire_in_sec);
         self
     }
     /// `[optional argument]`
@@ -391,6 +407,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
         let args = EditPoolInstructionArgs {
             new_config: self.instruction.new_config.clone(),
             cosigner: self.instruction.cosigner.clone(),
+            expire_in_sec: self.instruction.expire_in_sec.clone(),
             max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
         };
         let instruction = EditPoolCpi {
@@ -420,6 +437,7 @@ struct EditPoolCpiBuilderInstruction<'a, 'b> {
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     new_config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
+    expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
