@@ -174,6 +174,18 @@ pub enum ErrorCode {
     SplTokensNotSupported,
 
     // 6042 | 0x179a
+    #[msg("Expiry too large")]
+    ExpiryTooLarge,
+
+    // 6043 | 0x179b
+    #[msg("Expired Pool")]
+    ExpiredPool,
+
+    // 6044 | 0x179c
+    #[msg("Pool not expired")]
+    PoolNotExpired,
+
+    // 6042 | 0x179a
     #[msg("Invalid fee crank")]
     InvalidFeeCrank,
 }

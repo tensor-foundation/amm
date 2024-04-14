@@ -49,6 +49,7 @@ pub struct SellNftTokenPoolT22<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 

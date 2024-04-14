@@ -136,7 +136,16 @@ pub enum AmmError {
     /// 12041 (0x2F09) - SPL tokens not supported
     #[error("SPL tokens not supported")]
     SplTokensNotSupported,
-    /// 12042 (0x2F0A) - Invalid fee crank
+    /// 12042 (0x2F0A) - Expiry too large
+    #[error("Expiry too large")]
+    ExpiryTooLarge,
+    /// 12043 (0x2F0B) - Expired Pool
+    #[error("Expired Pool")]
+    ExpiredPool,
+    /// 12044 (0x2F0C) - Pool not expired
+    #[error("Pool not expired")]
+    PoolNotExpired,
+    /// 12045 (0x2F0D) - Invalid fee crank
     #[error("Invalid fee crank")]
     InvalidFeeCrank,
 }

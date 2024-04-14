@@ -187,23 +187,9 @@
       ],
       "args": [
         {
-          "name": "newConfig",
+          "name": "args",
           "type": {
-            "option": {
-              "defined": "PoolConfig"
-            }
-          }
-        },
-        {
-          "name": "cosigner",
-          "type": {
-            "option": "publicKey"
-          }
-        },
-        {
-          "name": "maxTakerSellCount",
-          "type": {
-            "option": "u32"
+            "defined": "EditPoolArgs"
           }
         }
       ]
@@ -220,6 +206,32 @@
           "name": "owner",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeExpiredPool",
+      "accounts": [
+        {
+          "name": "rentPayer",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "pool",
@@ -2420,14 +2432,14 @@
             }
           },
           {
-            "name": "currencyMint",
-            "type": "publicKey"
-          },
-          {
             "name": "config",
             "type": {
               "defined": "PoolConfig"
             }
+          },
+          {
+            "name": "currency",
+            "type": "publicKey"
           },
           {
             "name": "cosigner",
@@ -2446,9 +2458,43 @@
             }
           },
           {
-            "name": "expirationTimestamp",
+            "name": "expireInSec",
             "type": {
-              "option": "i64"
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EditPoolArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "newConfig",
+            "type": {
+              "option": {
+                "defined": "PoolConfig"
+              }
+            }
+          },
+          {
+            "name": "cosigner",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "expireInSec",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "maxTakerSellCount",
+            "type": {
+              "option": "u32"
             }
           }
         ]
@@ -2950,6 +2996,21 @@
     },
     {
       "code": 12042,
+      "name": "ExpiryTooLarge",
+      "msg": "Expiry too large"
+    },
+    {
+      "code": 12043,
+      "name": "ExpiredPool",
+      "msg": "Expired Pool"
+    },
+    {
+      "code": 12044,
+      "name": "PoolNotExpired",
+      "msg": "Pool not expired"
+    },
+    {
+      "code": 12045,
       "name": "InvalidFeeCrank",
       "msg": "Invalid fee crank"
     }

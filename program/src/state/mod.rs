@@ -13,6 +13,8 @@ use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofIn
 use solana_program::pubkey;
 use std::collections::HashMap;
 
+pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60; // 1 year, 31,536,000 seconds
+
 pub const FEE_AUTHORITY: Pubkey = if cfg!(feature = "test-sbf") {
     pubkey!("BqMRzhK8q9chhdBA4vex7hvG7pVsHnRLu8cxvYydKMii")
 } else {

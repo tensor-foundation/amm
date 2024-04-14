@@ -5,60 +5,46 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_program::pubkey::Pubkey;
 
 /// Accounts.
-pub struct CreatePool {
+pub struct CloseExpiredPool {
     pub rent_payer: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl CreatePool {
-    pub fn instruction(
-        &self,
-        args: CreatePoolInstructionArgs,
-    ) -> solana_program::instruction::Instruction {
-        self.instruction_with_remaining_accounts(args, &[])
+impl CloseExpiredPool {
+    pub fn instruction(&self) -> solana_program::instruction::Instruction {
+        self.instruction_with_remaining_accounts(&[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: CreatePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.owner, true,
+            self.rent_payer,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.owner, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.whitelist,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = CreatePoolInstructionData::new().try_to_vec().unwrap();
-        let mut args = args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = CloseExpiredPoolInstructionData::new().try_to_vec().unwrap();
 
         solana_program::instruction::Instruction {
             program_id: crate::AMM_ID,
@@ -69,57 +55,36 @@ impl CreatePool {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct CreatePoolInstructionData {
+struct CloseExpiredPoolInstructionData {
     discriminator: [u8; 8],
 }
 
-impl CreatePoolInstructionData {
+impl CloseExpiredPoolInstructionData {
     fn new() -> Self {
         Self {
-            discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
+            discriminator: [108, 212, 233, 53, 132, 83, 63, 219],
         }
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct CreatePoolInstructionArgs {
-    pub pool_id: [u8; 32],
-    pub config: PoolConfig,
-    pub currency: Pubkey,
-    pub cosigner: Option<Pubkey>,
-    pub order_type: u8,
-    pub max_taker_sell_count: Option<u32>,
-    pub expire_in_sec: Option<u64>,
-}
-
-/// Instruction builder for `CreatePool`.
+/// Instruction builder for `CloseExpiredPool`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
-///   1. `[signer]` owner
+///   0. `[optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   1. `[writable]` owner
 ///   2. `[writable]` pool
-///   3. `[]` whitelist
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
-pub struct CreatePoolBuilder {
+pub struct CloseExpiredPoolBuilder {
     rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
-    whitelist: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    pool_id: Option<[u8; 32]>,
-    config: Option<PoolConfig>,
-    currency: Option<Pubkey>,
-    cosigner: Option<Pubkey>,
-    order_type: Option<u8>,
-    max_taker_sell_count: Option<u32>,
-    expire_in_sec: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl CreatePoolBuilder {
+impl CloseExpiredPoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -139,54 +104,10 @@ impl CreatePoolBuilder {
         self.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.whitelist = Some(whitelist);
-        self
-    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_id(&mut self, pool_id: [u8; 32]) -> &mut Self {
-        self.pool_id = Some(pool_id);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
-        self.currency = Some(currency);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn cosigner(&mut self, cosigner: Pubkey) -> &mut Self {
-        self.cosigner = Some(cosigner);
-        self
-    }
-    #[inline(always)]
-    pub fn order_type(&mut self, order_type: u8) -> &mut Self {
-        self.order_type = Some(order_type);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
-        self.max_taker_sell_count = Some(max_taker_sell_count);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn expire_in_sec(&mut self, expire_in_sec: u64) -> &mut Self {
-        self.expire_in_sec = Some(expire_in_sec);
         self
     }
     /// Add an aditional account to the instruction.
@@ -209,46 +130,34 @@ impl CreatePoolBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = CreatePool {
+        let accounts = CloseExpiredPool {
             rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
                 "SysvarRent111111111111111111111111111111111"
             )),
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
-            whitelist: self.whitelist.expect("whitelist is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = CreatePoolInstructionArgs {
-            pool_id: self.pool_id.clone().expect("pool_id is not set"),
-            config: self.config.clone().expect("config is not set"),
-            currency: self.currency.clone().expect("currency is not set"),
-            cosigner: self.cosigner.clone(),
-            order_type: self.order_type.clone().expect("order_type is not set"),
-            max_taker_sell_count: self.max_taker_sell_count.clone(),
-            expire_in_sec: self.expire_in_sec.clone(),
-        };
 
-        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
-/// `create_pool` CPI accounts.
-pub struct CreatePoolCpiAccounts<'a, 'b> {
+/// `close_expired_pool` CPI accounts.
+pub struct CloseExpiredPoolCpiAccounts<'a, 'b> {
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `create_pool` CPI instruction.
-pub struct CreatePoolCpi<'a, 'b> {
+/// `close_expired_pool` CPI instruction.
+pub struct CloseExpiredPoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -257,28 +166,21 @@ pub struct CreatePoolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation / will be stored inside pool
-    pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The arguments for the instruction.
-    pub __args: CreatePoolInstructionArgs,
 }
 
-impl<'a, 'b> CreatePoolCpi<'a, 'b> {
+impl<'a, 'b> CloseExpiredPoolCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: CreatePoolCpiAccounts<'a, 'b>,
-        args: CreatePoolInstructionArgs,
+        accounts: CloseExpiredPoolCpiAccounts<'a, 'b>,
     ) -> Self {
         Self {
             __program: program,
             rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             pool: accounts.pool,
-            whitelist: accounts.whitelist,
             system_program: accounts.system_program,
-            __args: args,
         }
     }
     #[inline(always)]
@@ -314,21 +216,17 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.rent_payer.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
-            true,
+            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.pool.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.whitelist.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -342,21 +240,18 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = CreatePoolInstructionData::new().try_to_vec().unwrap();
-        let mut args = self.__args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = CloseExpiredPoolInstructionData::new().try_to_vec().unwrap();
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::AMM_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(4 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
-        account_infos.push(self.whitelist.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -370,35 +265,26 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `CreatePool` via CPI.
+/// Instruction builder for `CloseExpiredPool` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[signer]` owner
+///   0. `[]` rent_payer
+///   1. `[writable]` owner
 ///   2. `[writable]` pool
-///   3. `[]` whitelist
-///   4. `[]` system_program
-pub struct CreatePoolCpiBuilder<'a, 'b> {
-    instruction: Box<CreatePoolCpiBuilderInstruction<'a, 'b>>,
+///   3. `[]` system_program
+pub struct CloseExpiredPoolCpiBuilder<'a, 'b> {
+    instruction: Box<CloseExpiredPoolCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
+impl<'a, 'b> CloseExpiredPoolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(CreatePoolCpiBuilderInstruction {
+        let instruction = Box::new(CloseExpiredPoolCpiBuilderInstruction {
             __program: program,
             rent_payer: None,
             owner: None,
             pool: None,
-            whitelist: None,
             system_program: None,
-            pool_id: None,
-            config: None,
-            currency: None,
-            cosigner: None,
-            order_type: None,
-            max_taker_sell_count: None,
-            expire_in_sec: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -421,59 +307,12 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation / will be stored inside pool
-    #[inline(always)]
-    pub fn whitelist(
-        &mut self,
-        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.whitelist = Some(whitelist);
-        self
-    }
     #[inline(always)]
     pub fn system_program(
         &mut self,
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_id(&mut self, pool_id: [u8; 32]) -> &mut Self {
-        self.instruction.pool_id = Some(pool_id);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
-    }
-    #[inline(always)]
-    pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
-        self.instruction.currency = Some(currency);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn cosigner(&mut self, cosigner: Pubkey) -> &mut Self {
-        self.instruction.cosigner = Some(cosigner);
-        self
-    }
-    #[inline(always)]
-    pub fn order_type(&mut self, order_type: u8) -> &mut Self {
-        self.instruction.order_type = Some(order_type);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
-        self.instruction.max_taker_sell_count = Some(max_taker_sell_count);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn expire_in_sec(&mut self, expire_in_sec: u64) -> &mut Self {
-        self.instruction.expire_in_sec = Some(expire_in_sec);
         self
     }
     /// Add an additional account to the instruction.
@@ -517,28 +356,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = CreatePoolInstructionArgs {
-            pool_id: self
-                .instruction
-                .pool_id
-                .clone()
-                .expect("pool_id is not set"),
-            config: self.instruction.config.clone().expect("config is not set"),
-            currency: self
-                .instruction
-                .currency
-                .clone()
-                .expect("currency is not set"),
-            cosigner: self.instruction.cosigner.clone(),
-            order_type: self
-                .instruction
-                .order_type
-                .clone()
-                .expect("order_type is not set"),
-            max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
-            expire_in_sec: self.instruction.expire_in_sec.clone(),
-        };
-        let instruction = CreatePoolCpi {
+        let instruction = CloseExpiredPoolCpi {
             __program: self.instruction.__program,
 
             rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
@@ -547,13 +365,10 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
-            whitelist: self.instruction.whitelist.expect("whitelist is not set"),
-
             system_program: self
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -562,20 +377,12 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
     }
 }
 
-struct CreatePoolCpiBuilderInstruction<'a, 'b> {
+struct CloseExpiredPoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pool_id: Option<[u8; 32]>,
-    config: Option<PoolConfig>,
-    currency: Option<Pubkey>,
-    cosigner: Option<Pubkey>,
-    order_type: Option<u8>,
-    max_taker_sell_count: Option<u32>,
-    expire_in_sec: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

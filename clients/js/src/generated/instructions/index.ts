@@ -9,6 +9,7 @@
 export * from './attachPoolToSharedEscrow';
 export * from './buyNft';
 export * from './buyNftT22';
+export * from './closeExpiredPool';
 export * from './closePool';
 export * from './closeSharedEscrowAccount';
 export * from './createPool';

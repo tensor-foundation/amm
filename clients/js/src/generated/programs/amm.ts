@@ -17,6 +17,7 @@ import {
   ParsedAttachPoolToSharedEscrowInstruction,
   ParsedBuyNftInstruction,
   ParsedBuyNftT22Instruction,
+  ParsedCloseExpiredPoolInstruction,
   ParsedClosePoolInstruction,
   ParsedCloseSharedEscrowAccountInstruction,
   ParsedCreatePoolInstruction,
@@ -98,6 +99,7 @@ export enum AmmInstruction {
   CreatePool,
   EditPool,
   ClosePool,
+  CloseExpiredPool,
   DepositNft,
   FeeCrank,
   WithdrawNft,
@@ -141,6 +143,9 @@ export function identifyAmmInstruction(
   }
   if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
     return AmmInstruction.ClosePool;
+  }
+  if (memcmp(data, new Uint8Array([108, 212, 233, 53, 132, 83, 63, 219]), 0)) {
+    return AmmInstruction.CloseExpiredPool;
   }
   if (memcmp(data, new Uint8Array([93, 226, 132, 166, 141, 9, 48, 101]), 0)) {
     return AmmInstruction.DepositNft;
@@ -239,6 +244,9 @@ export type ParsedAmmInstruction<
   | ({
       instructionType: AmmInstruction.ClosePool;
     } & ParsedClosePoolInstruction<TProgram>)
+  | ({
+      instructionType: AmmInstruction.CloseExpiredPool;
+    } & ParsedCloseExpiredPoolInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.DepositNft;
     } & ParsedDepositNftInstruction<TProgram>)
