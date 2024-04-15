@@ -107,7 +107,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
 
   for (let i = 0; i < numMints; i++) {
     // Mint and sell
-    const { feeVault, index, bump } = await mintAndSellIntoPool({
+    const { feeVault, shard, bump } = await mintAndSellIntoPool({
       client,
       pool,
       whitelist,
@@ -117,7 +117,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
 
     feeAccounts.push(feeVault);
     feeSeeds.push({
-      index,
+      shard,
       bump,
     });
   }

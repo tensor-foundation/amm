@@ -586,5 +586,5 @@ export async function mintAndSellIntoPool({
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  return { mint, feeVault, index: lastByte, bump };
+  return { mint, feeVault, shard: lastByte, bump };
 }

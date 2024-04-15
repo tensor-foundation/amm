@@ -38,7 +38,7 @@ pub struct SellNftTradePool<'info> {
         seeds = [
             b"fee_vault",
             // Use the last byte of the mint as the fee shard number
-            &mint.key().as_ref().last().unwrap().to_le_bytes(),
+            shard_num!(mint),
         ],
         bump
     )]

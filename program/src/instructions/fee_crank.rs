@@ -7,7 +7,7 @@ use crate::{error::ErrorCode, FDN_TREASURY, FEE_KEEP_ALIVE_LAMPORTS};
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct FeeSeeds {
-    pub index: u8,
+    pub shard: u8,
     pub bump: u8,
 }
 
@@ -47,10 +47,10 @@ pub fn process_fee_crank<'info>(
     // Iterate over fee accounts and passed in seeds and collect fees
     for (account, fee_seeds) in zip(fee_accounts, seeds) {
         // Collect fees
-        let index = fee_seeds.index.to_le_bytes();
+        let shard = fee_seeds.shard.to_le_bytes();
         let bump = fee_seeds.bump.to_be_bytes();
 
-        let signers_seeds: &[&[&[u8]]] = &[&[b"fee_vault", &index, &bump]];
+        let signers_seeds: &[&[&[u8]]] = &[&[b"fee_vault", &shard, &bump]];
 
         let lamports = account
             .lamports()

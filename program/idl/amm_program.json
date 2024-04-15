@@ -2506,7 +2506,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
+            "name": "shard",
             "type": "u8"
           },
           {
