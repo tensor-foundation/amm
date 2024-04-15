@@ -411,6 +411,34 @@
       ]
     },
     {
+      "name": "feeCrank",
+      "accounts": [
+        {
+          "name": "treasury",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Fee destination account"
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "feeSeeds",
+          "type": {
+            "vec": {
+              "defined": "FeeSeeds"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "withdrawNft",
       "accounts": [
         {
@@ -2473,6 +2501,22 @@
       }
     },
     {
+      "name": "FeeSeeds",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shard",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolConfig",
       "type": {
         "kind": "struct",
@@ -2964,6 +3008,11 @@
       "code": 12044,
       "name": "PoolNotExpired",
       "msg": "Pool not expired"
+    },
+    {
+      "code": 12045,
+      "name": "InvalidFeeCrank",
+      "msg": "Invalid fee crank"
     }
   ],
   "metadata": {

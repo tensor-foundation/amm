@@ -6,6 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
+export * from './feeVault';
 export * from './nftDepositReceipt';
 export * from './pool';
 export * from './sharedEscrow';

@@ -15,7 +15,7 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
-        /// If no external rent_payer, this should be set to the seller.
+    /// If no external rent_payer, this should be set to the seller.
     #[account(
         mut,
         constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
@@ -35,7 +35,7 @@ pub struct SellNftTokenPoolT22<'info> {
         seeds = [
             b"fee_vault",
             // Use the last byte of the mint as the fee shard number
-            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+            shard_num!(mint),
         ],
         bump
     )]
@@ -113,7 +113,6 @@ pub struct SellNftTokenPoolT22<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
-
     // remaining accounts:
     // CHECK: 1)is signer, 2)cosigner stored on tswap
     // 1. optional co-signer (will be drawn first if necessary)
@@ -139,19 +138,19 @@ impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
 
 impl<'info> SellNftTokenPoolT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
+        let mint_proof =
+            assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
 
-            let leaf = keccak::hash(self.mint.key().as_ref());
-            let proof = &mut mint_proof.proof.to_vec();
-            proof.truncate(mint_proof.proof_len as usize);
-            let full_merkle_proof = Some(FullMerkleProof {
-                leaf: leaf.0,
-                proof: proof.clone(),
-            });
+        let leaf = keccak::hash(self.mint.key().as_ref());
+        let proof = &mut mint_proof.proof.to_vec();
+        proof.truncate(mint_proof.proof_len as usize);
+        let full_merkle_proof = Some(FullMerkleProof {
+            leaf: leaf.0,
+            proof: proof.clone(),
+        });
 
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
-        self.whitelist
-            .verify(None, None, full_merkle_proof)
+        self.whitelist.verify(None, None, full_merkle_proof)
     }
 }
 

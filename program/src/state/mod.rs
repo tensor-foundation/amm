@@ -10,9 +10,15 @@ pub use single_listing::*;
 
 use anchor_lang::prelude::*;
 use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofInfo, SeedsVec};
+use solana_program::pubkey;
 use std::collections::HashMap;
 
 pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60; // 1 year, 31,536,000 seconds
+
+// TODO: replace with actual treasury address.
+pub const FDN_TREASURY: Pubkey = pubkey!("Hnozy7VdXR1ua2FZQyvxRgoCbn2dnpVZh3vZN9BMzDea");
+
+pub const FEE_KEEP_ALIVE_LAMPORTS: u64 = 890880;
 
 #[derive(Accounts)]
 pub struct DummyCtx<'info> {

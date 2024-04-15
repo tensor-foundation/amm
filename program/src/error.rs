@@ -184,4 +184,8 @@ pub enum ErrorCode {
     // 6044 | 0x179c
     #[msg("Pool not expired")]
     PoolNotExpired,
+
+    // 6042 | 0x179a
+    #[msg("Invalid fee crank")]
+    InvalidFeeCrank,
 }

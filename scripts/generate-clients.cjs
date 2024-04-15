@@ -59,6 +59,16 @@ kinobi.update(
         ),
         k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
       ]
+    },
+    feeVault: {
+      seeds: [
+        k.constantPdaSeedNodeFromString("fee_vault"),
+        k.variablePdaSeedNode(
+          "index",
+          k.bytesTypeNode(k.fixedSizeNode(1)),
+          "The fee vault index"
+        )
+      ]
     }
   })
 );
@@ -88,6 +98,15 @@ kinobi.update(
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
+          isSigner: false,
+          isWritable: true
+        })
+      ]
+    },
+    feeCrank: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("feeAccounts"), {
+          isOptional: false,
           isSigner: false,
           isWritable: true
         })

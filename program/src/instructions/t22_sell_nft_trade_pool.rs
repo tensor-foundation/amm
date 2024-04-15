@@ -1,9 +1,10 @@
 //! User selling an NFT into a Trade pool
 //! We separate this from Token pool since the NFT will go into an NFT escrow w/ a receipt.
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
-use anchor_spl::{associated_token::AssociatedToken, token_interface::{
-    transfer_checked, Mint, Token2022, TokenAccount, TransferChecked,
-}};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
+};
 use solana_program::keccak;
 use tensor_toolbox::{
     token_2022::{
@@ -40,7 +41,7 @@ pub struct SellNftTradePoolT22<'info> {
         seeds = [
             b"fee_vault",
             // Use the last byte of the mint as the fee shard number
-            &mint.key().as_ref().last().unwrap().to_le_bytes(), 
+            shard_num!(mint),
         ],
         bump
     )]

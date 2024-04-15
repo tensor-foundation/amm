@@ -9,6 +9,7 @@
 export * from './authorizationDataLocal';
 export * from './curveType';
 export * from './direction';
+export * from './feeSeeds';
 export * from './payloadTypeLocal';
 export * from './poolConfig';
 export * from './poolStats';

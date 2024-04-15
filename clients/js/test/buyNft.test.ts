@@ -124,6 +124,9 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     commitment: 'confirmed',
   });
 
+  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
   const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
@@ -202,6 +205,11 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(tokenAmount === 1n);
   t.assert(tokenOwner === pool);
 
+  // Fee vault balance increases.
+  const postSaleFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  t.assert(postSaleFeeVaultBalance > startingFeeVaultBalance);
+
   // Buy NFT from pool
   const buyNftIx = getBuyNftInstruction({
     rentPayer: buyer,
@@ -250,4 +258,9 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   t.assert(postBuyTokenAmount === 1n);
   t.assert(postBuyTokenOwner === buyer.address);
+
+  // Fee vault balance increases.
+  const postBuyFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  t.assert(postBuyFeeVaultBalance > postSaleFeeVaultBalance);
 });
