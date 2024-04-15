@@ -63,8 +63,7 @@ jobs:
       - name: Build programs
         shell: bash
         working-directory: scripts/program
-        # Build with the "test-sbf" feature so we can use test keypairs.
-        run: ./build.sh "--features test-sbf"
+        run: ./build.sh
         env:
           PROGRAMS: ${{ env.PROGRAMS }}
 

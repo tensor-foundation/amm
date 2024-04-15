@@ -27,9 +27,8 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  WritableSignerAccount,
+  WritableAccount,
 } from '@solana/instructions';
-import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
@@ -41,7 +40,7 @@ import {
 
 export type FeeCrankInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountAuthority extends string | IAccountMeta<string> = string,
+  TAccountTreasury extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -50,10 +49,9 @@ export type FeeCrankInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountAuthority extends string
-        ? WritableSignerAccount<TAccountAuthority> &
-            IAccountSignerMeta<TAccountAuthority>
-        : TAccountAuthority,
+      TAccountTreasury extends string
+        ? WritableAccount<TAccountTreasury>
+        : TAccountTreasury,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -99,24 +97,24 @@ export function getFeeCrankInstructionDataCodec(): Codec<
 }
 
 export type FeeCrankInput<
-  TAccountAuthority extends string = string,
+  TAccountTreasury extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** Fee collection authority */
-  authority: TransactionSigner<TAccountAuthority>;
+  /** Fee destination account */
+  treasury: Address<TAccountTreasury>;
   systemProgram?: Address<TAccountSystemProgram>;
   feeSeeds: FeeCrankInstructionDataArgs['feeSeeds'];
   feeAccounts: Array<Address>;
 };
 
 export function getFeeCrankInstruction<
-  TAccountAuthority extends string,
+  TAccountTreasury extends string,
   TAccountSystemProgram extends string,
 >(
-  input: FeeCrankInput<TAccountAuthority, TAccountSystemProgram>
+  input: FeeCrankInput<TAccountTreasury, TAccountSystemProgram>
 ): FeeCrankInstruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountAuthority,
+  TAccountTreasury,
   TAccountSystemProgram
 > {
   // Program address.
@@ -124,7 +122,7 @@ export function getFeeCrankInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    authority: { value: input.authority ?? null, isWritable: true },
+    treasury: { value: input.treasury ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -150,7 +148,7 @@ export function getFeeCrankInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.authority),
+      getAccountMeta(accounts.treasury),
       getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
     ],
@@ -160,7 +158,7 @@ export function getFeeCrankInstruction<
     ),
   } as FeeCrankInstruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountAuthority,
+    TAccountTreasury,
     TAccountSystemProgram
   >;
 
@@ -173,8 +171,8 @@ export type ParsedFeeCrankInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** Fee collection authority */
-    authority: TAccountMetas[0];
+    /** Fee destination account */
+    treasury: TAccountMetas[0];
     systemProgram: TAccountMetas[1];
   };
   data: FeeCrankInstructionData;
@@ -201,7 +199,7 @@ export function parseFeeCrankInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      authority: getNextAccount(),
+      treasury: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getFeeCrankInstructionDataDecoder().decode(instruction.data),

@@ -1,8 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "programs:build:prod": "./scripts/program/build.sh",
-    "programs:build:test": "./scripts/program/build.sh --features test-sbf",
+    "programs:build": "./scripts/program/build.sh",
     "programs:test": "RUST_LOG=error ./scripts/program/test.sh",
     "programs:debug": "./scripts/program/test.sh",
     "programs:clean": "./scripts/program/clean.sh",
@@ -12,8 +11,7 @@
     "generate": "pnpm generate:idls && pnpm generate:clients",
     "generate:idls": "node ./scripts/generate-idls.cjs",
     "generate:clients": "node ./scripts/generate-clients.cjs",
-    "refresh:prod": "pnpm validator:stop && pnpm programs:build:prod && pnpm generate && pnpm validator",
-    "refresh:test": "pnpm validator:stop && pnpm generate && pnpm programs:build:test && pnpm validator",
+    "refresh": "pnpm validator:stop && pnpm programs:build && pnpm generate && pnpm validator",
     "validator": "CI=1 amman start --config ./scripts/validator.cjs",
     "validator:restart": "pnpm validator:stop && pnpm validator",
     "validator:debug": "amman start --config ./scripts/validator.cjs",

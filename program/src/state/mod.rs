@@ -15,12 +15,8 @@ use std::collections::HashMap;
 
 pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60; // 1 year, 31,536,000 seconds
 
-pub const FEE_AUTHORITY: Pubkey = if cfg!(feature = "test-sbf") {
-    pubkey!("BqMRzhK8q9chhdBA4vex7hvG7pVsHnRLu8cxvYydKMii")
-} else {
-    // TODO: plugin in proper value here.
-    pubkey!("11111111111111111111111111111111")
-};
+// TODO: replace with actual treasury address.
+pub const FDN_TREASURY: Pubkey = pubkey!("Hnozy7VdXR1ua2FZQyvxRgoCbn2dnpVZh3vZN9BMzDea");
 
 pub const FEE_KEEP_ALIVE_LAMPORTS: u64 = 890880;
 

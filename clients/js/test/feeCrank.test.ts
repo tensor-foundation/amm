@@ -1,16 +1,17 @@
 import test from 'ava';
 import {} from '@solana/programs';
 import {
+  address,
   airdropFactory,
   appendTransactionInstruction,
   lamports,
   pipe,
+  setTransactionFeePayerSigner,
   some,
 } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
-  createKeyPairSigner,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
@@ -29,7 +30,6 @@ import {
   createWhitelistV2,
   mintAndSellIntoPool,
 } from './_common.js';
-import { readFileSync } from 'fs';
 
 test('it can collect fees from sharded fee accounts', async (t) => {
   // Need a longer timeout because of all the minting and nft selling we perform.
@@ -37,16 +37,12 @@ test('it can collect fees from sharded fee accounts', async (t) => {
 
   const client = createDefaultSolanaClient();
 
-  // Fee authority.
-  const feeAuthorityBytes = Buffer.from(
-    JSON.parse(
-      readFileSync('../rust/tests/fixtures/test-keypair.json').toString()
-    )
-  );
-  const feeAuthority = await createKeyPairSigner(feeAuthorityBytes);
+  const payer = await generateKeyPairSignerWithSol(client);
+
+  const fdnTreasury = address('Hnozy7VdXR1ua2FZQyvxRgoCbn2dnpVZh3vZN9BMzDea');
 
   await airdropFactory(client)({
-    recipientAddress: feeAuthority.address,
+    recipientAddress: fdnTreasury,
     lamports: lamports(ONE_SOL),
     commitment: 'confirmed',
   });
@@ -105,7 +101,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const numMints = 10;
+  const numMints = 6;
   const feeAccounts = [];
   const feeSeeds = [];
 
@@ -127,14 +123,15 @@ test('it can collect fees from sharded fee accounts', async (t) => {
   }
 
   const collectFeesIx = getFeeCrankInstruction({
-    authority: feeAuthority,
+    treasury: fdnTreasury,
     feeSeeds,
     // Remaining accounts
     feeAccounts,
   });
 
   await pipe(
-    await createDefaultTransaction(client, feeAuthority.address),
+    await createDefaultTransaction(client, payer.address),
+    (tx) => setTransactionFeePayerSigner(payer, tx),
     (tx) => appendTransactionInstruction(collectFeesIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
@@ -144,4 +141,8 @@ test('it can collect fees from sharded fee accounts', async (t) => {
     // Only keep-alive state bond left.
     t.assert(balance === ZERO_ACCOUNT_RENT_LAMPORTS);
   }
+
+  const treasuryBalance = (await client.rpc.getBalance(fdnTreasury).send())
+    .value;
+  t.assert(treasuryBalance > ONE_SOL);
 });

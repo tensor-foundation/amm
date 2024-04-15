@@ -414,11 +414,11 @@
       "name": "feeCrank",
       "accounts": [
         {
-          "name": "authority",
+          "name": "treasury",
           "isMut": true,
-          "isSigner": true,
+          "isSigner": false,
           "docs": [
-            "Fee collection authority"
+            "Fee destination account"
           ]
         },
         {

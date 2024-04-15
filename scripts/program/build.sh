@@ -11,8 +11,15 @@ if [ -z ${PROGRAMS+x} ]; then
     PROGRAMS="$(cat .github/.env | grep "PROGRAMS" | cut -d '=' -f 2)"
 fi
 
-# Allows passing commands to 'cargo build-sbf'.
+# default to input from the command-line
 ARGS=$*
+
+# command-line arguments override env variable
+if [ ! -z "$ARGS" ]; then
+    PROGRAMS="[\"${1}\"]"
+    shift
+    ARGS=$*
+fi
 
 PROGRAMS=$(echo ${PROGRAMS} | jq -c '.[]' | sed 's/"//g')
 WORKING_DIR=$(pwd)

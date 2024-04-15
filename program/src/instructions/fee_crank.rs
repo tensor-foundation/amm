@@ -3,7 +3,7 @@ use std::iter::zip;
 use anchor_lang::prelude::*;
 use solana_program::{program::invoke_signed, system_instruction};
 
-use crate::{error::ErrorCode, FEE_AUTHORITY, FEE_KEEP_ALIVE_LAMPORTS};
+use crate::{error::ErrorCode, FDN_TREASURY, FEE_KEEP_ALIVE_LAMPORTS};
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct FeeSeeds {
@@ -11,14 +11,17 @@ pub struct FeeSeeds {
     pub bump: u8,
 }
 
+/// Permissionless fee crank that collects fees from fee vault accounts and sends them
+/// to the Tensor Foundation treasury.
 #[derive(Accounts)]
 pub struct FeeCrank<'info> {
-    /// Fee collection authority
+    /// Fee destination account
+    /// CHECK: This is hard-coded to the Tensor Foundation's treasury account.
     #[account(
         mut,
-        address = FEE_AUTHORITY,
+        address = FDN_TREASURY,
     )]
-    pub authority: Signer<'info>,
+    pub treasury: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
     // n fee accounts in remaining accounts
@@ -30,8 +33,8 @@ pub fn process_fee_crank<'info>(
     ctx: Context<'_, '_, '_, 'info, FeeCrank<'info>>,
     seeds: &[FeeSeeds],
 ) -> Result<()> {
-    let authority = &ctx.accounts.authority.to_account_info();
-    let authority_pubkey = authority.key();
+    let treasury = &ctx.accounts.treasury.to_account_info();
+    let treasury_pubkey = treasury.key();
 
     let fee_accounts = ctx.remaining_accounts;
 
@@ -62,8 +65,8 @@ pub fn process_fee_crank<'info>(
 
         // Fee account is a "ghost PDA"--owned by the system program, so requires a system transfer.
         invoke_signed(
-            &system_instruction::transfer(&account.key(), &authority_pubkey, lamports),
-            &[account.clone(), authority.clone()],
+            &system_instruction::transfer(&account.key(), &treasury_pubkey, lamports),
+            &[account.clone(), treasury.clone()],
             signers_seeds,
         )?;
     }
