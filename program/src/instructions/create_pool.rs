@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use tensor_toolbox::NullableOption;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, try_or_err, Validate};
 
@@ -58,15 +59,15 @@ impl<'info> CreatePool<'info> {
     fn validate_pool_type(&self, config: PoolConfig) -> Result<()> {
         match config.pool_type {
             PoolType::NFT | PoolType::Token => {
-                if config.mm_fee_bps.is_some() {
+                if config.mm_fee_bps.value().is_some() {
                     throw_err!(ErrorCode::FeesNotAllowed);
                 }
             }
             PoolType::Trade => {
-                if config.mm_fee_bps.is_none() {
+                if config.mm_fee_bps.value().is_none() {
                     throw_err!(ErrorCode::MissingFees);
                 }
-                if config.mm_fee_bps.unwrap() > MAX_MM_FEES_BPS {
+                if *config.mm_fee_bps.value().unwrap() > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }
@@ -105,12 +106,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.pool_id = args.pool_id;
-    // Refactor for nullable pubkey, just store rent payer directly without checking
-    pool.rent_payer = if ctx.accounts.rent_payer.key() == ctx.accounts.owner.key() {
-        None
-    } else {
-        Some(ctx.accounts.rent_payer.key())
-    };
+    pool.rent_payer = NullableOption::new(ctx.accounts.rent_payer.key());
     // Only SOL currently supported
     pool.currency = Pubkey::default();
     pool.amount = 0;

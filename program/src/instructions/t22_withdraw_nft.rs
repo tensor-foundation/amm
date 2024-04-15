@@ -6,7 +6,7 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::token_2022::t22_validate_mint;
+use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, unwrap_int, Validate};
 
@@ -19,7 +19,7 @@ pub struct WithdrawNftT22<'info> {
     /// If no external rent_payer, this should be set to the owner.
     #[account(
         mut,
-        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()) == pool.rent_payer,
+        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
     )]
     pub rent_payer: Signer<'info>,
 
@@ -120,7 +120,7 @@ pub fn process_t22_withdraw_nft<'info>(
 ) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
 

@@ -8,8 +8,8 @@ use anchor_spl::{
 use solana_program::keccak;
 use tensor_toolbox::{
     token_2022::{
-        t22_validate_mint,
         token::{safe_initialize_token_account, InitializeTokenAccount},
+        validate_mint,
     },
     transfer_lamports_from_pda,
 };
@@ -24,7 +24,7 @@ pub struct SellNftTradePoolT22<'info> {
     /// If no external rent_payer, this should be set to the seller.
     #[account(
         mut,
-        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
+        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
     )]
     pub rent_payer: Signer<'info>,
 
@@ -178,7 +178,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
 
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // initialize escrow token account
 

@@ -51,8 +51,8 @@ pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info
     // return the funds to the owner.
 
     //  nullable pubkey will simplify this logic--might be able to move back to the accounts macro
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
+    let recipient = if let Some(rent_payer) = pool.rent_payer.value() {
+        if rent_payer != rent_payer_info.key {
             throw_err!(ErrorCode::WrongRentPayer);
         }
         rent_payer_info

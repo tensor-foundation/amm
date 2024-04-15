@@ -6,7 +6,7 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::{token_2022::t22_validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
@@ -19,7 +19,7 @@ pub struct BuyNftT22<'info> {
     /// If no external rent payer, this should be the buyer.
     #[account(
         mut,
-        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()) == pool.rent_payer,
+        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
     )]
     pub rent_payer: Signer<'info>,
 
@@ -166,7 +166,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
 ) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
     let owner_pubkey = ctx.accounts.owner.key();
@@ -294,8 +294,8 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
     // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
+    let recipient = if let Some(rent_payer) = pool.rent_payer.value() {
+        if rent_payer != rent_payer_info.key {
             throw_err!(ErrorCode::WrongRentPayer);
         }
         rent_payer_info

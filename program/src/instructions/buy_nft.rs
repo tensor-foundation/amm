@@ -22,6 +22,7 @@ pub struct BuyNft<'info> {
     pub rent_payer: Signer<'info>,
 
     /// Owner is the pool owner who created the pool and the nominal owner of the
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     /// CHECK: has_one = owner in pool (owner is the seller)
@@ -371,8 +372,8 @@ pub fn process_buy_nft<'info, 'b>(
 
     // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
     // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
+    let recipient = if let Some(rent_payer) = pool.rent_payer.value() {
+        if rent_payer != rent_payer_info.key {
             throw_err!(ErrorCode::WrongRentPayer);
         }
         rent_payer_info

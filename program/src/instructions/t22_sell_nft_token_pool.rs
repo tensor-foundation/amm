@@ -6,7 +6,7 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use solana_program::keccak;
-use tensor_toolbox::{token_2022::t22_validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
@@ -18,7 +18,7 @@ pub struct SellNftTokenPoolT22<'info> {
     /// If no external rent_payer, this should be set to the seller.
     #[account(
         mut,
-        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
+        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
     )]
     pub rent_payer: Signer<'info>,
 
@@ -164,7 +164,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
 
