@@ -13,6 +13,7 @@ use borsh::BorshSerialize;
 pub struct BuyNft {
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// Owner is the pool owner who created the pool and the nominal owner of the
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     pub owner: solana_program::pubkey::Pubkey,
@@ -282,6 +283,7 @@ impl BuyNftBuilder {
         self
     }
     /// Owner is the pool owner who created the pool and the nominal owner of the
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     #[inline(always)]
@@ -543,6 +545,7 @@ impl BuyNftBuilder {
 pub struct BuyNftCpiAccounts<'a, 'b> {
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Owner is the pool owner who created the pool and the nominal owner of the
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
@@ -599,6 +602,7 @@ pub struct BuyNftCpi<'a, 'b> {
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -956,6 +960,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.rent_payer = Some(rent_payer);
         self
     }
+    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.

@@ -59,15 +59,15 @@ impl<'info> CreatePool<'info> {
     fn validate_pool_type(&self, config: PoolConfig) -> Result<()> {
         match config.pool_type {
             PoolType::NFT | PoolType::Token => {
-                if config.mm_fee_bps.value().is_some() {
+                if config.mm_fee_bps.is_some() {
                     throw_err!(ErrorCode::FeesNotAllowed);
                 }
             }
             PoolType::Trade => {
-                if config.mm_fee_bps.value().is_none() {
+                if config.mm_fee_bps.is_none() {
                     throw_err!(ErrorCode::MissingFees);
                 }
-                if *config.mm_fee_bps.value().unwrap() > MAX_MM_FEES_BPS {
+                if config.mm_fee_bps.unwrap() > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }

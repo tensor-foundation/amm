@@ -62,15 +62,15 @@ impl<'info> EditPool<'info> {
 
         match new_config.pool_type {
             PoolType::NFT | PoolType::Token => {
-                if new_config.mm_fee_bps.value().is_some() {
+                if new_config.mm_fee_bps.is_some() {
                     throw_err!(ErrorCode::FeesNotAllowed);
                 }
             }
             PoolType::Trade => {
-                if new_config.mm_fee_bps.value().is_none() {
+                if new_config.mm_fee_bps.is_none() {
                     throw_err!(ErrorCode::MissingFees);
                 }
-                if *new_config.mm_fee_bps.value().unwrap() > MAX_MM_FEES_BPS {
+                if new_config.mm_fee_bps.unwrap() > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }
