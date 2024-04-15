@@ -1,5 +1,3 @@
-import test from 'ava';
-import {} from '@solana/programs';
 import {
   address,
   airdropFactory,
@@ -7,7 +5,6 @@ import {
   lamports,
   pipe,
   setTransactionFeePayerSigner,
-  some,
 } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
@@ -16,11 +13,12 @@ import {
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Mode } from '@tensor-foundation/whitelist';
+import test from 'ava';
 import {
-  PoolType,
   CurveType,
-  getDepositSolInstruction,
   PoolConfig,
+  PoolType,
+  getDepositSolInstruction,
   getFeeCrankInstruction,
 } from '../src/index.js';
 import {
@@ -69,7 +67,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: some(100),
+    mmFeeBps: 100,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.

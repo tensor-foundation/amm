@@ -1,32 +1,24 @@
-import '@solana/webcrypto-ed25519-polyfill';
-import { ExecutionContext } from 'ava';
-import bs58 from 'bs58';
-import {
-  Condition,
-  Mode,
-  findWhitelistV2Pda,
-  getCreateWhitelistV2Instruction,
-} from '@tensor-foundation/whitelist';
-import { v4 } from 'uuid';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
+import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
   Address,
-  pipe,
-  appendTransactionInstruction,
-  address,
-  none,
-  some,
-  isSolanaError,
-  SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  ProgramDerivedAddress,
-  getProgramDerivedAddress,
-  getAddressEncoder,
   Base64EncodedDataResponse,
+  ProgramDerivedAddress,
+  SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
+  address,
+  airdropFactory,
+  appendTransactionInstruction,
+  getAddressEncoder,
+  getProgramDerivedAddress,
   getStringEncoder,
   getU8Encoder,
-  airdropFactory,
+  isSolanaError,
   lamports,
+  none,
+  pipe,
+  some,
 } from '@solana/web3.js';
-import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
+import '@solana/webcrypto-ed25519-polyfill';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
@@ -39,6 +31,19 @@ import {
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
+  createDefaultNft,
+  findTokenRecordPda,
+} from '@tensor-foundation/toolkit-token-metadata';
+import {
+  Condition,
+  Mode,
+  findWhitelistV2Pda,
+  getCreateWhitelistV2Instruction,
+} from '@tensor-foundation/whitelist';
+import { ExecutionContext } from 'ava';
+import bs58 from 'bs58';
+import { v4 } from 'uuid';
+import {
   CurveType,
   PoolConfig,
   PoolType,
@@ -47,11 +52,6 @@ import {
   getCreatePoolInstruction,
   getSellNftTradePoolInstruction,
 } from '../src/index.js';
-import {
-  createDefaultNft,
-  findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -96,7 +96,7 @@ export const tradePoolConfig: PoolConfig = {
   startingPrice: LAMPORTS_PER_SOL,
   delta: DEFAULT_DELTA,
   mmCompoundFees: true,
-  mmFeeBps: none(),
+  mmFeeBps: null,
 };
 
 export interface CreateWhitelistParams {
@@ -245,7 +245,7 @@ export async function createPool({
       startingPrice: 1n,
       delta: 1n,
       mmCompoundFees: false,
-      mmFeeBps: none(),
+      mmFeeBps: null,
     };
   }
 
@@ -307,7 +307,7 @@ export async function createPoolThrows({
       startingPrice: 1n,
       delta: 1n,
       mmCompoundFees: false,
-      mmFeeBps: none(),
+      mmFeeBps: null,
     };
   }
 

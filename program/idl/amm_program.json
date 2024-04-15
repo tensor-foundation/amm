@@ -2552,7 +2552,7 @@
           {
             "name": "mmFeeBps",
             "type": {
-              "option": "u16"
+              "defined": "NullableOption<u16>"
             }
           }
         ]

@@ -122,29 +122,29 @@ kinobi.update(
 kinobi.update(
   k.bottomUpTransformerVisitor([
     {
-      select: "[programNode]amm",
+      select: "[definedTypeNode|structTypeNode|structFieldTypeNode]mmFeeBps",
       transform: (node) => {
-        k.assertIsNode(node, "programNode");
+        k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          accounts: [
-            ...node.accounts,
-            // override the nullable types on the pool account
-            k.accountNode({
-              name: "pool",
-              data: k.structTypeNode([
-                k.structFieldTypeNode({
-                  name: "rentPayer",
-                  type: k.definedTypeLinkNode("nullableAddress", "hooked"),
-                }),
-              ]),
-            }),
-          ],
+          type: k.definedTypeLinkNode("nullableU16", "hooked"),
+        };
+      },
+    },
+    {
+      select: "[accountNode|structTypeNode|structFieldTypeNode]rentPayer",
+      transform: (node) => {
+        k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
         };
       },
     },
   ]),
 );
+
+kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
 
 // Render JavaScript.
 const jsDir = path.join(clientDir, "js", "src", "generated");
@@ -152,11 +152,6 @@ const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
 kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
     prettier,
-    customAccountData: [
-      {
-        name: "pool",
-      },
-    ],
   }),
 );
 

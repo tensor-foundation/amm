@@ -722,7 +722,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4114279215a005bc675e386011e594e1d9b800918cea18fcadadcce864a2046b"
 dependencies = [
  "borsh-derive 0.10.3",
- "hashbrown 0.12.3",
+ "hashbrown 0.13.2",
 ]
 
 [[package]]
@@ -5295,7 +5295,7 @@ dependencies = [
 [[package]]
 name = "tensor-toolbox"
 version = "0.0.3"
-source = "git+ssh://git@github.com/tensor-foundation/toolbox.git#e5630888191a35baf13f6200cbdd8e506dbbfd1a"
+source = "git+ssh://git@github.com/tensor-foundation/toolbox.git#89eb7b5a01fd3ac185ca3d089aff9e548acc2746"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -5844,7 +5844,7 @@ dependencies = [
 [[package]]
 name = "vipers"
 version = "2.0.6"
-source = "git+ssh://git@github.com/tensor-foundation/toolbox.git#e5630888191a35baf13f6200cbdd8e506dbbfd1a"
+source = "git+ssh://git@github.com/tensor-foundation/toolbox.git#89eb7b5a01fd3ac185ca3d089aff9e548acc2746"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

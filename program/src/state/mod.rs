@@ -144,7 +144,7 @@ mod tests {
             delta: u64,
             taker_sell_count: u32,
             taker_buy_count: u32,
-            mm_fee_bps: Option<u16>,
+            mm_fee_bps: NullableOption<u16>,
         ) -> Self {
             Self {
                 version: 1,
@@ -189,7 +189,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             0,
             0,
-            Some(1000), //10%
+            NullableOption::new(1000), //10%
         );
 
         assert_eq!(
@@ -197,20 +197,20 @@ mod tests {
             LAMPORTS_PER_SOL / 10
         );
 
-        p.config.mm_fee_bps = Some(123);
+        p.config.mm_fee_bps = NullableOption::new(123);
         assert_eq!(
             p.calc_mm_fee(LAMPORTS_PER_SOL).unwrap(),
             LAMPORTS_PER_SOL * 123 / 10000
         );
 
         //if price too small, fee will start to look weird, but who cares at these levels
-        p.config.mm_fee_bps = Some(2499);
+        p.config.mm_fee_bps = NullableOption::new(2499);
         assert_eq!(p.calc_mm_fee(10).unwrap(), 2); //2.499 floored
 
-        p.config.mm_fee_bps = Some(2499);
+        p.config.mm_fee_bps = NullableOption::new(2499);
         assert_eq!(p.calc_mm_fee(100).unwrap(), 24); //24.99 floored
 
-        p.config.mm_fee_bps = Some(2499);
+        p.config.mm_fee_bps = NullableOption::new(2499);
         assert_eq!(p.calc_mm_fee(1000).unwrap(), 249); //249.9 floored
     }
 
@@ -223,7 +223,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
 
         assert_eq!(
@@ -246,7 +246,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
@@ -283,7 +283,7 @@ mod tests {
             delta,
             11,
             0,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Sell).unwrap();
     }
@@ -299,7 +299,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -316,7 +316,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
@@ -353,7 +353,7 @@ mod tests {
             delta,
             0,
             u32::MAX - 1, //get this to overflow
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -369,7 +369,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Sell).unwrap();
     }
@@ -386,7 +386,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         // NB: selling into the pool is always 1 delta lower than buying.
 
@@ -471,7 +471,7 @@ mod tests {
             delta,
             11,
             0,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -487,7 +487,7 @@ mod tests {
             delta,
             10, //10+1 tick for selling = overflow
             0,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Sell).unwrap();
     }
@@ -503,7 +503,7 @@ mod tests {
             delta,
             0,
             1, //just enough to overflow
-            None,
+            NullableOption::<u16>::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -511,7 +511,15 @@ mod tests {
     #[test]
     fn test_linear_trade_pool_sell_side_upper() {
         let delta = LAMPORTS_PER_SOL * 10_000_000_000;
-        let p = Pool::new(PoolType::Trade, CurveType::Linear, delta, delta, 0, 1, None);
+        let p = Pool::new(
+            PoolType::Trade,
+            CurveType::Linear,
+            delta,
+            delta,
+            0,
+            1,
+            NullableOption::none(),
+        );
         // This shouldn't oveflow for sell side (1 tick lower).
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), delta);
     }
@@ -544,7 +552,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
@@ -588,7 +596,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
@@ -630,7 +638,7 @@ mod tests {
             delta,
             0,
             u32::MAX - 1, // this will overflow
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -647,7 +655,7 @@ mod tests {
             delta,
             0,
             0,
-            None,
+            NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
         assert_eq!(
@@ -712,7 +720,7 @@ mod tests {
             delta,
             0, //get this to overflow
             1,
-            None,
+            NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -727,7 +735,7 @@ mod tests {
             delta,
             0,
             1,
-            None,
+            NullableOption::none(),
         );
         // 1 tick lower, should not panic.
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), u64::MAX - 1);

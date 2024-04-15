@@ -1,6 +1,4 @@
-import test from 'ava';
-import bs58 from 'bs58';
-import {} from '@solana/programs';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   Commitment,
   CompilableTransaction,
@@ -19,9 +17,7 @@ import {
   pipe,
   sendAndConfirmTransactionFactory,
   signTransactionWithSigners,
-  some,
 } from '@solana/web3.js';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
@@ -32,22 +28,24 @@ import {
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
 import {
   createDefaultNft,
   findTokenRecordPda,
 } from '@tensor-foundation/toolkit-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
+import test from 'ava';
+import bs58 from 'bs58';
 import {
+  CurveType,
   Pool,
+  PoolConfig,
+  PoolType,
   fetchMaybePool,
   fetchPool,
+  findNftDepositReceiptPda,
   getClosePoolInstruction,
   getDepositNftInstruction,
-  findNftDepositReceiptPda,
-  PoolType,
-  CurveType,
   getDepositSolInstruction,
-  PoolConfig,
   getSellNftTokenPoolInstruction,
   getSellNftTradePoolInstruction,
 } from '../src/index.js';
@@ -99,7 +97,7 @@ test('it can close a pool', async (t) => {
         startingPrice: 1n,
         delta: 1n,
         mmCompoundFees: false,
-        mmFeeBps: none(),
+        mmFeeBps: null,
       },
     },
   }));
@@ -132,7 +130,7 @@ test('close pool fails if nfts still deposited', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: some(100),
+    mmFeeBps: 100,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.
@@ -241,7 +239,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: none(),
+    mmFeeBps: null,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.
@@ -393,7 +391,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: some(100),
+    mmFeeBps: 100,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.

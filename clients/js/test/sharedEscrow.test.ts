@@ -1,11 +1,11 @@
-import test from 'ava';
-import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import test from 'ava';
 import {
   Pool,
   SharedEscrow,
@@ -35,7 +35,7 @@ test('it can create a pool and attach it to a shared escrow', async (t) => {
         startingPrice: 1n,
         delta: 1n,
         mmCompoundFees: false,
-        mmFeeBps: none(),
+        mmFeeBps: null,
       },
     },
   });

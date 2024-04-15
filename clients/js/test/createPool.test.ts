@@ -1,22 +1,22 @@
-import test from 'ava';
 import { generateKeyPairSigner } from '@solana/signers';
+import { Address } from '@solana/web3.js';
 import {
-  Condition,
-  Mode,
-  WhitelistV2,
-  fetchWhitelistV2,
-} from '@tensor-foundation/whitelist';
-import { Address, none, some } from '@solana/web3.js';
-import {
-  createDefaultSolanaClient,
-  generateKeyPairSignerWithSol,
+    createDefaultSolanaClient,
+    generateKeyPairSignerWithSol,
 } from '@tensor-foundation/test-helpers';
+import {
+    Condition,
+    Mode,
+    WhitelistV2,
+    fetchWhitelistV2,
+} from '@tensor-foundation/whitelist';
+import test from 'ava';
 import { CurveType, Pool, PoolType, fetchPool } from '../src/index.js';
 import {
-  createPool,
-  createPoolThrows,
-  createWhitelistV2,
-  tradePoolConfig,
+    createPool,
+    createPoolThrows,
+    createWhitelistV2,
+    tradePoolConfig,
 } from './_common.js';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
@@ -70,7 +70,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
         startingPrice: 1n,
         delta: 1n,
         mmCompoundFees: false,
-        mmFeeBps: none(),
+        mmFeeBps: null,
       },
     },
   }));
@@ -148,7 +148,7 @@ test('it can create a pool w/ a specific expiry time', async (t) => {
         startingPrice: 1n,
         delta: 1n,
         mmCompoundFees: false,
-        mmFeeBps: none(),
+        mmFeeBps: null,
       },
     },
   }));
@@ -263,7 +263,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
       delta: 10n,
       startingPrice: 1n,
       mmCompoundFees: false,
-      mmFeeBps: some(100), // this fee should not be allowed
+      mmFeeBps: 100, // this fee should not be allowed
     },
     t,
     // 0x2ef1 - 12017 DeltaTooLarge
@@ -312,7 +312,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
     owner: owner1,
     config: {
       ...tradePoolConfig,
-      mmFeeBps: some(9_900), // should succeed
+      mmFeeBps: 9_900, // should succeed
     },
   });
 
@@ -322,7 +322,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
     owner: owner2,
     config: {
       ...tradePoolConfig,
-      mmFeeBps: some(10_000), // too high, should fail
+      mmFeeBps: 10_000, // too high, should fail
     },
     t,
     code: 12007, // 0x2ef1 - 12007 FeesTooHigh

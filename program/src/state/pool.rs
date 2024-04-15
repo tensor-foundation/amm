@@ -48,7 +48,7 @@ pub struct PoolConfig {
     pub delta: u64,          //lamports pr bps
     /// Trade pools only
     pub mm_compound_fees: bool,
-    pub mm_fee_bps: Option<u16>,
+    pub mm_fee_bps: NullableOption<u16>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
@@ -161,7 +161,7 @@ impl Pool {
 
         let fee = unwrap_checked!({
             // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
-            (self.config.mm_fee_bps.unwrap_or(0) as u64)
+            (*self.config.mm_fee_bps.value().unwrap_or(&0) as u64)
                 .checked_mul(current_price)?
                 .checked_div(HUNDRED_PCT_BPS as u64)
         });

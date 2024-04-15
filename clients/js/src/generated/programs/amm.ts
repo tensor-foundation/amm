@@ -68,7 +68,6 @@ export enum AmmAccount {
   SharedEscrow,
   SingleListing,
   FeeVault,
-  Pool,
 }
 
 export function identifyAmmAccount(
