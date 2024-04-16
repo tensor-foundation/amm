@@ -301,7 +301,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     // --------------------------------------- SOL transfers
 
     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow,

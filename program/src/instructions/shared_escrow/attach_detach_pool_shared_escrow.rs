@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use tensor_toolbox::transfer_lamports_from_pda;
+use tensor_toolbox::{transfer_lamports_from_pda, NullableOption};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use crate::{
@@ -89,7 +89,7 @@ pub fn attach_handler(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> 
     let pool = &mut ctx.accounts.pool;
 
     // Already attached.
-    if pool.shared_escrow.is_some() {
+    if pool.shared_escrow.value().is_some() {
         throw_err!(ErrorCode::PoolOnSharedEscrow);
     }
 
@@ -101,7 +101,7 @@ pub fn attach_handler(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> 
 
     //update pool
     let pool = &mut ctx.accounts.pool;
-    pool.shared_escrow = Some(ctx.accounts.shared_escrow.key());
+    pool.shared_escrow = NullableOption::new(ctx.accounts.shared_escrow.key());
 
     //update shared_escrow
     let shared_escrow = &mut ctx.accounts.shared_escrow;
@@ -113,11 +113,11 @@ pub fn attach_handler(ctx: Context<AttachDetachPoolSharedEscrow>) -> Result<()> 
 #[access_control(ctx.accounts.validate())]
 pub fn detach_handler(ctx: Context<AttachDetachPoolSharedEscrow>, lamports: u64) -> Result<()> {
     // Already detached.
-    if ctx.accounts.pool.shared_escrow.is_none() {
+    if ctx.accounts.pool.shared_escrow.value().is_none() {
         throw_err!(ErrorCode::PoolNotOnSharedEscrow);
     }
     // Wrong shared escrow.
-    if ctx.accounts.shared_escrow.key() != ctx.accounts.pool.shared_escrow.unwrap() {
+    if ctx.accounts.shared_escrow.key() != *ctx.accounts.pool.shared_escrow.value().unwrap() {
         throw_err!(ErrorCode::BadSharedEscrow);
     }
 
@@ -126,7 +126,7 @@ pub fn detach_handler(ctx: Context<AttachDetachPoolSharedEscrow>, lamports: u64)
 
     //update pool
     let pool = &mut ctx.accounts.pool;
-    pool.shared_escrow = None;
+    pool.shared_escrow = NullableOption::none();
 
     //update shared_escrow
     let shared_escrow = &mut ctx.accounts.shared_escrow;

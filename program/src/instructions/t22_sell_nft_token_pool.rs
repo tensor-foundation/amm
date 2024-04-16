@@ -16,10 +16,7 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
     /// If no external rent_payer, this should be set to the seller.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
-    )]
+    #[account(mut)]
     pub rent_payer: Signer<'info>,
 
     /// CHECK: has_one = owner in pool (owner is the buyer)
@@ -181,9 +178,9 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
-    if pool.cosigner.is_some() {
+    if pool.cosigner.value().is_some() {
         let cosigner = next_account_info(remaining_accounts)?;
-        if ctx.accounts.pool.cosigner.as_ref() != Some(cosigner.key) {
+        if ctx.accounts.pool.cosigner.value() != Some(cosigner.key) {
             throw_err!(ErrorCode::BadCosigner);
         }
         if !cosigner.is_signer {
@@ -220,7 +217,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // --------------------------------------- SOL transfers
 
     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow_account) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow_account,

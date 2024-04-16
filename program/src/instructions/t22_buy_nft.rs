@@ -17,10 +17,7 @@ use crate::{error::ErrorCode, *};
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
     /// If no external rent payer, this should be the buyer.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
-    )]
+    #[account(mut)]
     pub rent_payer: Signer<'info>,
 
     /// CHECK: has_one = owner in pool (owner is the seller)
@@ -234,7 +231,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match &pool.shared_escrow {
+        PoolType::Trade => match pool.shared_escrow.value() {
             Some(stored_shared_escrow_account) => {
                 assert_decode_shared_escrow_account(
                     &ctx.accounts.shared_escrow_account,
@@ -292,17 +289,12 @@ pub fn process_t22_buy_nft<'info, 'b>(
     let nft_deposit_receipt = &ctx.accounts.nft_receipt;
     let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
 
-    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
-    // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer.value() {
-        if rent_payer != rent_payer_info.key {
-            throw_err!(ErrorCode::WrongRentPayer);
-        }
-        rent_payer_info
+    // The incoming rent payer account must match what's stored on the pool.
+    if pool.rent_payer == *rent_payer_info.key {
+        nft_deposit_receipt.close(rent_payer_info)?;
     } else {
-        ctx.accounts.owner.to_account_info()
+        throw_err!(ErrorCode::WrongRentPayer);
     };
-    nft_deposit_receipt.close(recipient)?;
 
     Ok(())
 }

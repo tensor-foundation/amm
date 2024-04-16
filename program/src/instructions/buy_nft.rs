@@ -294,13 +294,13 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match &pool.shared_escrow {
+        PoolType::Trade => match &pool.shared_escrow.value() {
             Some(stored_shared_escrow) => {
                 assert_decode_shared_escrow_account(
                     &ctx.accounts.shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
-                if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+                if ctx.accounts.shared_escrow.key != *stored_shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
                 ctx.accounts.shared_escrow.to_account_info()
@@ -370,17 +370,12 @@ pub fn process_buy_nft<'info, 'b>(
     let nft_deposit_receipt = &ctx.accounts.nft_receipt;
     let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
 
-    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
-    // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer.value() {
-        if rent_payer != rent_payer_info.key {
-            throw_err!(ErrorCode::WrongRentPayer);
-        }
-        rent_payer_info
+    // The incoming rent payer account must match what's stored on the pool.
+    if pool.rent_payer == *rent_payer_info.key {
+        nft_deposit_receipt.close(rent_payer_info)?;
     } else {
-        ctx.accounts.owner.to_account_info()
+        throw_err!(ErrorCode::WrongRentPayer);
     };
-    nft_deposit_receipt.close(recipient)?;
 
     Ok(())
 }

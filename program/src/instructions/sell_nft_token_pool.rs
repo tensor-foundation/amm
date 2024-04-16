@@ -332,9 +332,9 @@ pub fn process_sell_nft_token_pool<'info>(
     // --------------------------------------- end pnft
 
     // If the pool has a cosigner, the cosigner must be passed in, and must equal the pool's cosigner.
-    if let Some(cosigner) = pool.cosigner {
+    if let Some(cosigner) = pool.cosigner.value() {
         if ctx.accounts.cosigner.is_none()
-            || ctx.accounts.cosigner.as_ref().unwrap().key != &cosigner
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
         {
             throw_err!(ErrorCode::BadCosigner);
         }
@@ -368,7 +368,7 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // --------------------------------------- SOL transfers
     //decide where we're sending the money from - shared escrow (shared escrow pool) or the pool itself
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow,

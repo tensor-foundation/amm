@@ -17,10 +17,7 @@ use crate::{error::ErrorCode, *};
 #[instruction(config: PoolConfig)]
 pub struct WithdrawNftT22<'info> {
     /// If no external rent_payer, this should be set to the owner.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
-    )]
+    #[account(mut)]
     pub rent_payer: Signer<'info>,
 
     /// Tied to the pool because used to verify pool seeds

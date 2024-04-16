@@ -153,8 +153,8 @@ mod tests {
                 updated_at: 0,
                 expiry: 0,
                 owner: Pubkey::default(),
-                cosigner: Some(Pubkey::default()),
-                rent_payer: NullableOption::default(),
+                cosigner: NullableOption::none(),
+                rent_payer: Pubkey::default(),
                 whitelist: Pubkey::default(),
                 pool_id: [0; 32],
                 config: PoolConfig {
@@ -171,7 +171,7 @@ mod tests {
                 stats: PoolStats::default(),
                 currency: Pubkey::default(),
                 amount: 0,
-                shared_escrow: None,
+                shared_escrow: NullableOption::none(),
                 max_taker_sell_count: 10,
                 _reserved: [0; 100],
             }

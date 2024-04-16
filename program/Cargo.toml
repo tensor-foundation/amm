@@ -19,9 +19,10 @@ solana-program = "<1.18"
 spl-math = { version = "0.1.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 static_assertions = "1.1.0"
-tensor-toolbox = { version = "0.0.3", git = "ssh://git@github.com/tensor-foundation/toolbox.git", features = [
-    "token-2022",
-] }
+# tensor-toolbox = { version = "0.0.3", git = "ssh://git@github.com/tensor-foundation/toolbox.git", features = [
+#     "token-2022",
+# ] }
+tensor-toolbox = { path = "../../toolbox/toolbox", features = ["token-2022" ] }
 tensor_whitelist = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", features = [
     "cpi",
 ] }

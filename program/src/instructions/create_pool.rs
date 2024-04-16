@@ -106,7 +106,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.owner = ctx.accounts.owner.key();
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.pool_id = args.pool_id;
-    pool.rent_payer = NullableOption::new(ctx.accounts.rent_payer.key());
+    pool.rent_payer = ctx.accounts.rent_payer.key();
     // Only SOL currently supported
     pool.currency = Pubkey::default();
     pool.amount = 0;
@@ -117,9 +117,9 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.stats = PoolStats::default();
 
-    pool.cosigner = args.cosigner;
+    pool.cosigner = args.cosigner.into();
     //all pools start off without a shared escrow, and can be attached later
-    pool.shared_escrow = None;
+    pool.shared_escrow = NullableOption::none();
 
     let timestamp = Clock::get()?.unix_timestamp;
 

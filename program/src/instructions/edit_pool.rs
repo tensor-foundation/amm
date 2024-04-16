@@ -1,3 +1,4 @@
+use tensor_toolbox::NullableOption;
 use vipers::{throw_err, try_or_err, Validate};
 
 use self::constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS};
@@ -102,7 +103,7 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
             throw_err!(ErrorCode::WrongPoolType);
         }
         // TODO: we can change this to a toggle type.
-        pool.cosigner = Some(cosigner);
+        pool.cosigner = NullableOption::new(cosigner);
     }
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {

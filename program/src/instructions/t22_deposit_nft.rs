@@ -19,10 +19,7 @@ use crate::{error::ErrorCode, *};
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
     /// If no external rent payer, set this to the owner.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()).as_ref() == pool.rent_payer.value(),
-    )]
+    #[account(mut)]
     pub rent_payer: Signer<'info>,
 
     /// CHECK: has_one = owner in pool
