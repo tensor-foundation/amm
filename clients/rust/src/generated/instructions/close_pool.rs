@@ -71,7 +71,7 @@ impl ClosePoolInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   0. `[]` rent_payer
 ///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -88,7 +88,6 @@ impl ClosePoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -131,9 +130,7 @@ impl ClosePoolBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = ClosePool {
-            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
+            rent_payer: self.rent_payer.expect("rent_payer is not set"),
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             system_program: self

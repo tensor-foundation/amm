@@ -72,6 +72,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   // Create pool and whitelist
   const { pool, cosigner } = await createPool({
     client,
+    payer: buyer,
     whitelist,
     owner,
     config,

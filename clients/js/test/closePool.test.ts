@@ -91,6 +91,7 @@ test('it can close a pool', async (t) => {
   t.like(poolAccount, <Pool>(<unknown>{
     address: pool,
     data: {
+      rentPayer: owner.address,
       config: {
         poolType: 0,
         curveType: 0,
@@ -104,6 +105,7 @@ test('it can close a pool', async (t) => {
 
   // Close the pool
   const closePoolIx = getClosePoolInstruction({
+    rentPayer: owner.address,
     owner,
     pool,
   });
@@ -200,6 +202,7 @@ test('close pool fails if nfts still deposited', async (t) => {
 
   // Close pool
   const closePoolIx = getClosePoolInstruction({
+    rentPayer: owner.address,
     owner,
     pool,
   });
@@ -363,6 +366,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   // Close pool
   const closePoolIx = getClosePoolInstruction({
+    rentPayer: owner.address,
     owner,
     pool,
   });
@@ -515,6 +519,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
 
   // Close pool
   const closePoolIx = getClosePoolInstruction({
+    rentPayer: owner.address,
     owner,
     pool,
   });

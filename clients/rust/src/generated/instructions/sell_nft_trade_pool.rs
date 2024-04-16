@@ -247,7 +247,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
 ///   2. `[signer]` seller
 ///   3. `[writable]` fee_vault
@@ -314,7 +314,6 @@ impl SellNftTradePoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -542,9 +541,7 @@ impl SellNftTradePoolBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             SellNftTradePool {
-                rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
-                    "SysvarRent111111111111111111111111111111111"
-                )),
+                rent_payer: self.rent_payer.expect("rent_payer is not set"),
                 owner: self.owner.expect("owner is not set"),
                 seller: self.seller.expect("seller is not set"),
                 fee_vault: self.fee_vault.expect("fee_vault is not set"),

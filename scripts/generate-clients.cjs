@@ -122,6 +122,26 @@ kinobi.update(
 kinobi.update(
   k.bottomUpTransformerVisitor([
     {
+      select: "[accountNode|structTypeNode|structFieldTypeNode]SharedEscrow",
+      transform: (node) => {
+        // k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+        };
+      },
+    },
+    {
+      select: "[accountNode|structTypeNode|structFieldTypeNode]cosigner",
+      transform: (node) => {
+        k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+        };
+      },
+    },
+    {
       select: "[definedTypeNode|structTypeNode|structFieldTypeNode]mmFeeBps",
       transform: (node) => {
         k.assertIsNode(node, "structFieldTypeNode");
@@ -131,20 +151,11 @@ kinobi.update(
         };
       },
     },
-    {
-      select: "[accountNode|structTypeNode|structFieldTypeNode]rentPayer",
-      transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
-        return {
-          ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
-        };
-      },
-    },
   ]),
 );
 
-kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
+// Debug: print the AST.
+// kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
 
 // Render JavaScript.
 const jsDir = path.join(clientDir, "js", "src", "generated");

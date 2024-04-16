@@ -132,7 +132,7 @@ pub struct DepositNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   0. `[writable, signer]` rent_payer
 ///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` whitelist
@@ -166,7 +166,6 @@ impl DepositNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     /// If no external rent payer, set this to the owner.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -262,9 +261,7 @@ impl DepositNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = DepositNftT22 {
-            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
+            rent_payer: self.rent_payer.expect("rent_payer is not set"),
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),

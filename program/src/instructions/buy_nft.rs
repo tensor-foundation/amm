@@ -374,6 +374,8 @@ pub fn process_buy_nft<'info, 'b>(
     if pool.rent_payer == *rent_payer_info.key {
         nft_deposit_receipt.close(rent_payer_info)?;
     } else {
+        msg!("pool rent payer: {}", pool.rent_payer);
+        msg!("acccount rent payer: {}", rent_payer_info.key());
         throw_err!(ErrorCode::WrongRentPayer);
     };
 
