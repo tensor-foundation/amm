@@ -10,20 +10,17 @@ use crate::{constants::*, error::ErrorCode};
 #[constant]
 #[allow(clippy::identity_op)]
 pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
-        + 32 // identifier
-        + 8  // created_at
-        + 8  // updated_at
-        + 8  // expires_at
-        + (2 * 1) + (2 * 8) + 1 + 3 //pool config
-        + (2 * 32) // owner, whitelist
-        + (1 + 32) // rent_payer,
-        + (32 + 8) // currency and currency amount
-        + (3 * 4)  // taker_sell_count, taker_buy_count, nfts_held
-        + (2 * 4) + 8 //pool stats
-        + 32 + 1   // shared escrow Option
-        + 32 + 1   // cosigner Option
-        + 4        // max_taker_sell_count
-        + 100; // _reserved
+        + 32                             // identifier
+        + 8 * 3                          // created_at, updated_at, expiry
+        + (2 * 1) + (2 * 8) + 1 + 3      // pool config
+        + (3 * 32)                       // owner, whitelist, rent_payer
+        + (32 + 8)                       // currency and currency amount
+        + (3 * 4)                        // taker_sell_count, taker_buy_count, nfts_held
+        + (2 * 4) + 8                    // pool stats
+        + (2 * 32)                       // shared escrow, cosigner
+        + 4                              // max_taker_sell_count
+        + 100                            // _reserved
+        ;
 
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
