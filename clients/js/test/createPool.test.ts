@@ -1,22 +1,22 @@
 import { generateKeyPairSigner } from '@solana/signers';
 import { Address } from '@solana/web3.js';
 import {
-    createDefaultSolanaClient,
-    generateKeyPairSignerWithSol,
+  createDefaultSolanaClient,
+  generateKeyPairSignerWithSol,
 } from '@tensor-foundation/test-helpers';
 import {
-    Condition,
-    Mode,
-    WhitelistV2,
-    fetchWhitelistV2,
+  Condition,
+  Mode,
+  WhitelistV2,
+  fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import { CurveType, Pool, PoolType, fetchPool } from '../src/index.js';
 import {
-    createPool,
-    createPoolThrows,
-    createWhitelistV2,
-    tradePoolConfig,
+  createPool,
+  createPoolThrows,
+  createWhitelistV2,
+  tradePoolConfig,
 } from './_common.js';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
