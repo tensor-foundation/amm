@@ -122,17 +122,8 @@ kinobi.update(
 kinobi.update(
   k.bottomUpTransformerVisitor([
     {
-      select: "[accountNode|structTypeNode|structFieldTypeNode]SharedEscrow",
-      transform: (node) => {
-        // k.assertIsNode(node, "structFieldTypeNode");
-        return {
-          ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
-        };
-      },
-    },
-    {
-      select: "[accountNode|structTypeNode|structFieldTypeNode]cosigner",
+      select:
+        "[accountNode]pool.[structTypeNode].[structFieldTypeNode]sharedEscrow",
       transform: (node) => {
         k.assertIsNode(node, "structFieldTypeNode");
         return {
@@ -142,7 +133,19 @@ kinobi.update(
       },
     },
     {
-      select: "[definedTypeNode|structTypeNode|structFieldTypeNode]mmFeeBps",
+      select:
+        "[accountNode]pool.[structTypeNode].[structFieldTypeNode]cosigner",
+      transform: (node) => {
+        k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+        };
+      },
+    },
+    {
+      select:
+        "[definedTypeNode]poolConfig.[structTypeNode].[structFieldTypeNode]mmFeeBps",
       transform: (node) => {
         k.assertIsNode(node, "structFieldTypeNode");
         return {

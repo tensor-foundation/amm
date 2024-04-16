@@ -18,7 +18,7 @@ dependencies:
     specifier: ^2.0.0-preview
     version: 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
   '@solana/errors':
-    specifier: 2.0.0-preview.1.20240323070910.9370133e414bfa863517248d97905449e9a867eb
+    specifier: ^2.0.0-preview
     version: 2.0.0-preview.1.20240323070910.9370133e414bfa863517248d97905449e9a867eb
   '@solana/instructions':
     specifier: ^2.0.0-preview
