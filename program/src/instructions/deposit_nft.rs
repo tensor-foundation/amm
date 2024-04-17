@@ -2,7 +2,7 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
@@ -173,6 +173,17 @@ impl<'info> DepositNft<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.owner_ata.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
+                authority: self.owner.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for DepositNft<'info> {
@@ -212,6 +223,9 @@ pub fn process_deposit_nft(
             delegate: None,
         },
     )?;
+
+    // Close owner ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

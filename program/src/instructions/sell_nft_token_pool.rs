@@ -207,6 +207,17 @@ impl<'info> SellNftTokenPool<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for SellNftTokenPool<'info> {
@@ -422,6 +433,9 @@ pub fn process_sell_nft_token_pool<'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- accounting
 

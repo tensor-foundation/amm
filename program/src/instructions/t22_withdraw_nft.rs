@@ -90,7 +90,7 @@ pub struct WithdrawNftT22<'info> {
 }
 
 impl<'info> WithdrawNftT22<'info> {
-    fn close_pool_ata(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
@@ -147,8 +147,8 @@ pub fn process_t22_withdraw_nft<'info>(
         0, // decimals = 0
     )?;
 
-    // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata().with_signer(signer_seeds))?;
+    // close pool ATA
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

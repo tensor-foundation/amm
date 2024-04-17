@@ -3,7 +3,7 @@
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
@@ -202,6 +202,17 @@ impl<'info> SellNftTradePool<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for SellNftTradePool<'info> {
@@ -289,9 +300,6 @@ pub fn process_sell_nft_trade_pool<'info>(
     });
 
     // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
-    msg!("current_price: {}", current_price);
-    msg!("min_price: {}", min_price);
-    msg!("mm_fee: {}", mm_fee);
     if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
@@ -353,6 +361,8 @@ pub fn process_sell_nft_trade_pool<'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
+
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- accounting
 

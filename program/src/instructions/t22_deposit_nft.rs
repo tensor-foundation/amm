@@ -2,7 +2,9 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{
+        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
+    },
 };
 use solana_program::keccak;
 use tensor_toolbox::token_2022::{
@@ -120,6 +122,17 @@ impl<'info> DepositNftT22<'info> {
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
         self.whitelist.verify(None, None, full_merkle_proof)
     }
+
+    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.owner_ata.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
+                authority: self.owner.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for DepositNftT22<'info> {
@@ -165,6 +178,9 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     );
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+
+    // Close owner ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

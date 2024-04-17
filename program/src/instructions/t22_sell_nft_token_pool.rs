@@ -3,7 +3,9 @@
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{
+        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
+    },
 };
 use solana_program::keccak;
 use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
@@ -149,6 +151,17 @@ impl<'info> SellNftTokenPoolT22<'info> {
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
         self.whitelist.verify(None, None, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
@@ -250,6 +263,9 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- accounting
 

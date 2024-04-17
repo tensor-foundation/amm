@@ -148,7 +148,7 @@ impl<'info> WithdrawNft<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.rent_payer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
@@ -213,7 +213,7 @@ pub fn process_withdraw_nft<'info>(
         },
     )?;
 
-    // close nft escrow account
+    // close pool ATA
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool
