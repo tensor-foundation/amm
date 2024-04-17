@@ -281,6 +281,12 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // close nft escrow account
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+
     // --------------------------------------- SOL transfers
 
     // transfer fees
@@ -350,9 +356,6 @@ pub fn process_buy_nft<'info, 'b>(
     }
 
     // --------------------------------------- accounting
-
-    // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool accounting
     let pool = &mut ctx.accounts.pool;

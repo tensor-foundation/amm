@@ -190,6 +190,12 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
+
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
     if pool.cosigner.value().is_some() {
         let cosigner = next_account_info(remaining_accounts)?;
@@ -263,9 +269,6 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
-
-    // Close seller ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- accounting
 

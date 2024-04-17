@@ -277,6 +277,10 @@ pub fn process_sell_nft_trade_pool<'info>(
         },
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
+
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 
     let current_price = pool.current_price(TakerSide::Sell)?;
@@ -362,8 +366,6 @@ pub fn process_sell_nft_trade_pool<'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
-
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- accounting
 

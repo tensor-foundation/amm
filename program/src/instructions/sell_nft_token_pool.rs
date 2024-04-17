@@ -337,8 +337,14 @@ pub fn process_sell_nft_token_pool<'info>(
         },
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
     // close temp pool ata account, so it's not dangling
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- end pnft
 
@@ -394,9 +400,7 @@ pub fn process_sell_nft_token_pool<'info>(
     };
 
     // transfer fees
-    msg!("Transferring fees");
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    msg!("tswap fee: {}, broker fee: {}", tswap_fee, broker_fee);
     transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
         &from,
@@ -407,7 +411,6 @@ pub fn process_sell_nft_token_pool<'info>(
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
     // transfer royalties
-    msg!("Transferring royalties");
     let actual_creators_fee = transfer_creators_fee(
         &metadata
             .creators
@@ -427,20 +430,15 @@ pub fn process_sell_nft_token_pool<'info>(
     // transfer remainder to seller
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
     // (!) maker rebate already taken out of this amount
-    msg!("Transferring remainder to seller");
     transfer_lamports_from_pda(
         &from,
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
 
-    // Close seller ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
-
     // --------------------------------------- accounting
 
     //update pool accounting
-    msg!("Updating pool accounting");
     let pool = &mut ctx.accounts.pool;
     pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
