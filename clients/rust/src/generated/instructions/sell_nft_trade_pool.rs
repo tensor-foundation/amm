@@ -92,7 +92,7 @@ impl SellNftTradePool {
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.seller,
             true,
         ));
@@ -249,7 +249,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
-///   2. `[signer]` seller
+///   2. `[writable, signer]` seller
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
@@ -808,7 +808,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             *self.owner.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.seller.key,
             true,
         ));
@@ -998,7 +998,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
-///   2. `[signer]` seller
+///   2. `[writable, signer]` seller
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist

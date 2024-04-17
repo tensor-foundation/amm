@@ -30,7 +30,6 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -87,7 +86,7 @@ export type DepositNftInstruction<
             IAccountSignerMeta<TAccountRentPayer>
         : TAccountRentPayer,
       TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner> &
+        ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
@@ -333,7 +332,7 @@ export function getDepositNftInstruction<
   // Original accounts.
   const originalAccounts = {
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     ownerAta: { value: input.ownerAta ?? null, isWritable: true },

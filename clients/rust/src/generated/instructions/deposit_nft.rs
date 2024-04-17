@@ -73,7 +73,7 @@ impl DepositNft {
             self.rent_payer,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -192,7 +192,7 @@ pub struct DepositNftInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` rent_payer
-///   1. `[signer]` owner
+///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` whitelist
 ///   4. `[writable]` owner_ata
@@ -625,7 +625,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             *self.rent_payer.key,
             true,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
         ));
@@ -770,7 +770,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` rent_payer
-///   1. `[signer]` owner
+///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` whitelist
 ///   4. `[writable]` owner_ata

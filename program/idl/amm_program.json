@@ -256,7 +256,7 @@
         },
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true,
           "docs": [
             "The owner of the pool and the NFT."
@@ -1103,7 +1103,7 @@
         },
         {
           "name": "seller",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true,
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
@@ -1661,7 +1661,7 @@
         },
         {
           "name": "buyer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -1964,7 +1964,7 @@
         },
         {
           "name": "owner",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {

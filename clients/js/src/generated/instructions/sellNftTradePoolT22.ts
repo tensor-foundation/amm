@@ -74,7 +74,7 @@ export type SellNftTradePoolT22Instruction<
             IAccountSignerMeta<TAccountRentPayer>
         : TAccountRentPayer,
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountSeller extends string
         ? WritableSignerAccount<TAccountSeller> &
@@ -274,7 +274,7 @@ export function getSellNftTradePoolT22Instruction<
   // Original accounts.
   const originalAccounts = {
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     seller: { value: input.seller ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },

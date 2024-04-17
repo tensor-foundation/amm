@@ -28,7 +28,6 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -77,7 +76,7 @@ export type BuyNftT22Instruction<
         ? WritableAccount<TAccountOwner>
         : TAccountOwner,
       TAccountBuyer extends string
-        ? ReadonlySignerAccount<TAccountBuyer> &
+        ? WritableSignerAccount<TAccountBuyer> &
             IAccountSignerMeta<TAccountBuyer>
         : TAccountBuyer,
       TAccountFeeVault extends string
@@ -270,7 +269,7 @@ export function getBuyNftT22Instruction<
   const originalAccounts = {
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
-    buyer: { value: input.buyer ?? null, isWritable: false },
+    buyer: { value: input.buyer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },

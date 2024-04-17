@@ -28,7 +28,6 @@ pub struct SellNftTradePoolT22<'info> {
     pub rent_payer: Signer<'info>,
 
     /// CHECK: has_one = owner in pool (owner is the buyer)
-    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -103,7 +102,7 @@ pub struct SellNftTradePoolT22<'info> {
 
     #[account(
         init,
-        payer = rent_payer,
+        payer = seller,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),

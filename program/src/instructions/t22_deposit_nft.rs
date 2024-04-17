@@ -88,7 +88,7 @@ pub struct DepositNftT22<'info> {
 
     #[account(
         init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = rent_payer,
+        payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),

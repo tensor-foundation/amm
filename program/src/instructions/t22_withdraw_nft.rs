@@ -76,9 +76,9 @@ pub struct WithdrawNftT22<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        close = owner,
         //can't withdraw an NFT that's associated with a different pool
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

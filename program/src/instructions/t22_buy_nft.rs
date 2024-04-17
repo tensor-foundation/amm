@@ -24,6 +24,7 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    #[account(mut)]
     pub buyer: Signer<'info>,
 
     /// CHECK: Seeds checked here, account has no state.
@@ -96,6 +97,7 @@ pub struct BuyNftT22<'info> {
         //can't buy an NFT that's associated with a different pool
         // TODO: check this constraint replaces the old one sufficiently
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

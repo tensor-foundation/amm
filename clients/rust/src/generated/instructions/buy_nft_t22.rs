@@ -66,7 +66,7 @@ impl BuyNftT22 {
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.buyer, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -165,7 +165,7 @@ pub struct BuyNftT22InstructionArgs {
 ///
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
-///   2. `[signer]` buyer
+///   2. `[writable, signer]` buyer
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
@@ -512,7 +512,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             *self.owner.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.buyer.key,
             true,
         ));
@@ -629,7 +629,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
-///   2. `[signer]` buyer
+///   2. `[writable, signer]` buyer
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist

@@ -20,6 +20,7 @@ pub struct DepositNft<'info> {
     pub rent_payer: Signer<'info>,
 
     /// The owner of the pool and the NFT.
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     #[account(
@@ -73,7 +74,7 @@ pub struct DepositNft<'info> {
     /// The NFT receipt account denoting that an NFT has been deposited into a pool.
     #[account(
         init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = rent_payer,
+        payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),

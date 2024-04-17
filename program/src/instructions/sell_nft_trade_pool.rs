@@ -30,6 +30,7 @@ pub struct SellNftTradePool<'info> {
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    #[account(mut)]
     pub seller: Signer<'info>,
 
     /// CHECK: Seeds checked here, account has no state.
@@ -98,7 +99,7 @@ pub struct SellNftTradePool<'info> {
 
     #[account(
         init,
-        payer = rent_payer,
+        payer = seller,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
