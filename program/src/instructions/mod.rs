@@ -9,7 +9,6 @@ pub mod edit_pool;
 pub mod fee_crank;
 pub mod sell_nft_token_pool;
 pub mod sell_nft_trade_pool;
-pub mod shared_escrow;
 pub mod t22_buy_nft;
 pub mod t22_deposit_nft;
 pub mod t22_sell_nft_token_pool;
@@ -30,8 +29,8 @@ pub use edit_pool::*;
 pub use fee_crank::*;
 pub use sell_nft_token_pool::*;
 pub use sell_nft_trade_pool::*;
-pub use shared_escrow::*;
 pub use single_listing::*;
+use spl_token_metadata_interface::borsh::BorshDeserialize;
 pub use t22_buy_nft::*;
 pub use t22_deposit_nft::*;
 pub use t22_sell_nft_token_pool::*;
@@ -45,6 +44,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount};
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
+use tensor_escrow::accounts::MarginAccount;
+use tensor_toolbox::escrow::TSWAP_SINGLETON;
 use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked};
 
@@ -56,7 +57,12 @@ pub static MPL_TOKEN_AUTH_RULES_ID: Pubkey = pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZ
 pub fn shared_escrow_pda(owner: &Pubkey, nr: u16) -> (Pubkey, u8) {
     let program_id = &crate::id();
     Pubkey::find_program_address(
-        &[b"shared_escrow".as_ref(), owner.as_ref(), &nr.to_le_bytes()],
+        &[
+            b"margin".as_ref(),
+            owner.as_ref(),
+            TSWAP_SINGLETON.as_ref(),
+            &nr.to_le_bytes(),
+        ],
         program_id,
     )
 }
@@ -65,10 +71,10 @@ pub fn shared_escrow_pda(owner: &Pubkey, nr: u16) -> (Pubkey, u8) {
 pub fn assert_decode_shared_escrow_account<'info>(
     shared_escrow_account_info: &AccountInfo<'info>,
     owner: &AccountInfo<'info>,
-) -> Result<Box<SharedEscrow>> {
-    let mut data: &[u8] = &shared_escrow_account_info.try_borrow_data()?;
-    let shared_escrow_account: Box<SharedEscrow> =
-        Box::new(AccountDeserialize::try_deserialize(&mut data)?);
+) -> Result<Box<MarginAccount>> {
+    let data: &[u8] = &shared_escrow_account_info.try_borrow_data()?;
+    let shared_escrow_account: Box<MarginAccount> =
+        Box::new(BorshDeserialize::try_from_slice(data)?);
 
     let program_id = &crate::id();
     let (key, _) = shared_escrow_pda(&owner.key(), shared_escrow_account.nr);

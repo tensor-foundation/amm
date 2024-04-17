@@ -6,8 +6,8 @@ use anchor_spl::{
 };
 use solana_program::keccak;
 use tensor_toolbox::token_2022::{
-    t22_validate_mint,
     token::{safe_initialize_token_account, InitializeTokenAccount},
+    validate_mint,
 };
 use tensor_whitelist::{self, FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
@@ -138,7 +138,7 @@ impl<'info> Validate<'info> for DepositNftT22<'info> {
 pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // initialize token account
 
