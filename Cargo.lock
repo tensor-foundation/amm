@@ -147,6 +147,7 @@ dependencies = [
  "spl-math",
  "spl-token-metadata-interface",
  "static_assertions",
+ "tensor-escrow",
  "tensor-toolbox 0.0.3",
  "vipers 2.0.6 (git+ssh://git@github.com/tensor-foundation/toolbox.git)",
  "whitelist-program",
@@ -5274,6 +5275,18 @@ dependencies = [
  "fastrand",
  "rustix",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "tensor-escrow"
+version = "0.0.0"
+source = "git+ssh://git@github.com/tensor-foundation/escrow#596b4b2e83e6de0805df0b53cac0fa7efa888bc2"
+dependencies = [
+ "borsh 0.10.3",
+ "num-derive 0.3.3",
+ "num-traits",
+ "solana-program",
+ "thiserror",
 ]
 
 [[package]]
