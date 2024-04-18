@@ -56,9 +56,7 @@ import {
 
 export type CreatePoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -161,7 +159,7 @@ export type CreatePoolInput<
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
+  rentPayer: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation / will be stored inside pool */
@@ -218,10 +216,6 @@ export function getCreatePoolInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.rentPayer.value) {
-    accounts.rentPayer.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

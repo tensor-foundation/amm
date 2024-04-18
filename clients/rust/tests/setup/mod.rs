@@ -2,6 +2,7 @@ use amm::{
     accounts::Pool,
     instructions::CreatePoolBuilder,
     types::{CurveType, PoolConfig, PoolType},
+    NullableU16,
 };
 use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::{
@@ -143,7 +144,7 @@ pub struct TestPoolInputs<'a> {
     pub starting_price: Option<u64>,
     pub delta: Option<u64>,
     pub mm_compound_fees: Option<bool>,
-    pub mm_fee_bps: Option<u16>,
+    pub mm_fee_bps: NullableU16,
     pub expire_in_sec: Option<u64>,
 }
 
@@ -159,7 +160,7 @@ impl<'a> Default for TestPoolInputs<'a> {
             starting_price: None,
             delta: None,
             mm_compound_fees: None,
-            mm_fee_bps: None,
+            mm_fee_bps: NullableU16::none(),
             expire_in_sec: None,
         }
     }

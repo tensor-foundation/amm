@@ -35,7 +35,7 @@ impl<'info> Validate<'info> for CloseExpiredPool<'info> {
 
         //can't close a shared_escrow pool, need to detach first
         //this is needed because we need to reduce the counter on the escrow acc to be able to close it later
-        if self.pool.shared_escrow.is_some() {
+        if self.pool.shared_escrow.value().is_some() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())
@@ -51,20 +51,12 @@ pub fn process_close_expired_pool<'info>(
     let pool = &ctx.accounts.pool;
     let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
 
-    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
-    // return the funds to the owner.
-
-    //  nullable pubkey will simplify this logic--might be able to move back to the accounts macro
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
-            throw_err!(ErrorCode::WrongRentPayer);
-        }
-        rent_payer_info
+    // The incoming rent payer account must match what's stored on the pool.
+    if pool.rent_payer == *rent_payer_info.key {
+        pool.close(rent_payer_info)?;
     } else {
-        ctx.accounts.owner.to_account_info()
+        throw_err!(ErrorCode::WrongRentPayer);
     };
-
-    pool.close(recipient)?;
 
     Ok(())
 }

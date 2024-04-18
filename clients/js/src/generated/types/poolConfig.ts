@@ -10,17 +10,11 @@ import {
   Codec,
   Decoder,
   Encoder,
-  Option,
-  OptionOrNullable,
   combineCodec,
   getBooleanDecoder,
   getBooleanEncoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
-  getU16Decoder,
-  getU16Encoder,
   getU64Decoder,
   getU64Encoder,
 } from '@solana/codecs';
@@ -34,6 +28,12 @@ import {
   getPoolTypeDecoder,
   getPoolTypeEncoder,
 } from '.';
+import {
+  NullableU16,
+  NullableU16Args,
+  getNullableU16Decoder,
+  getNullableU16Encoder,
+} from '../../hooked';
 
 export type PoolConfig = {
   poolType: PoolType;
@@ -42,7 +42,7 @@ export type PoolConfig = {
   delta: bigint;
   /** Trade pools only */
   mmCompoundFees: boolean;
-  mmFeeBps: Option<number>;
+  mmFeeBps: NullableU16;
 };
 
 export type PoolConfigArgs = {
@@ -52,7 +52,7 @@ export type PoolConfigArgs = {
   delta: number | bigint;
   /** Trade pools only */
   mmCompoundFees: boolean;
-  mmFeeBps: OptionOrNullable<number>;
+  mmFeeBps: NullableU16Args;
 };
 
 export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
@@ -62,7 +62,7 @@ export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
     ['startingPrice', getU64Encoder()],
     ['delta', getU64Encoder()],
     ['mmCompoundFees', getBooleanEncoder()],
-    ['mmFeeBps', getOptionEncoder(getU16Encoder())],
+    ['mmFeeBps', getNullableU16Encoder()],
   ]);
 }
 
@@ -73,7 +73,7 @@ export function getPoolConfigDecoder(): Decoder<PoolConfig> {
     ['startingPrice', getU64Decoder()],
     ['delta', getU64Decoder()],
     ['mmCompoundFees', getBooleanDecoder()],
-    ['mmFeeBps', getOptionDecoder(getU16Decoder())],
+    ['mmFeeBps', getNullableU16Decoder()],
   ]);
 }
 

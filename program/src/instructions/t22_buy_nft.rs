@@ -6,7 +6,7 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::{token_2022::t22_validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
@@ -16,17 +16,11 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
-    /// If no external rent payer, this should be the buyer.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == buyer.key() || Some(rent_payer.key()) == pool.rent_payer,
-    )]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool (owner is the seller)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    #[account(mut)]
     pub buyer: Signer<'info>,
 
     /// CHECK: Seeds checked here, account has no state.
@@ -66,7 +60,7 @@ pub struct BuyNftT22<'info> {
     /// The ATA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
@@ -74,8 +68,6 @@ pub struct BuyNftT22<'info> {
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
-        init,
-        payer = rent_payer,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -99,6 +91,7 @@ pub struct BuyNftT22<'info> {
         //can't buy an NFT that's associated with a different pool
         // TODO: check this constraint replaces the old one sufficiently
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -125,7 +118,7 @@ impl<'info> BuyNftT22<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
@@ -166,7 +159,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
 ) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
     let owner_pubkey = ctx.accounts.owner.key();
@@ -220,6 +213,12 @@ pub fn process_t22_buy_nft<'info, 'b>(
         0, // decimals = 0
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // close nft escrow account
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+
     // --------------------------------------- SOL transfers
 
     // transfer fees
@@ -234,7 +233,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match &pool.shared_escrow {
+        PoolType::Trade => match pool.shared_escrow.value() {
             Some(stored_shared_escrow_account) => {
                 assert_decode_shared_escrow_account(
                     &ctx.accounts.shared_escrow_account,
@@ -272,9 +271,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     // --------------------------------------- accounting
 
-    // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
-
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
@@ -288,21 +284,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
-
-    let nft_deposit_receipt = &ctx.accounts.nft_receipt;
-    let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
-
-    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
-    // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
-            throw_err!(ErrorCode::WrongRentPayer);
-        }
-        rent_payer_info
-    } else {
-        ctx.accounts.owner.to_account_info()
-    };
-    nft_deposit_receipt.close(recipient)?;
 
     Ok(())
 }

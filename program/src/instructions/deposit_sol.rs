@@ -54,7 +54,7 @@ impl<'info> DepositSol<'info> {
 
 impl<'info> Validate<'info> for DepositSol<'info> {
     fn validate(&self) -> Result<()> {
-        if self.pool.shared_escrow.is_some() {
+        if self.pool.shared_escrow.value().is_some() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())

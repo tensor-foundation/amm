@@ -6,7 +6,7 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::token_2022::t22_validate_mint;
+use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, unwrap_int, Validate};
 
@@ -16,13 +16,6 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct WithdrawNftT22<'info> {
-    /// If no external rent_payer, this should be set to the owner.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()) == pool.rent_payer,
-    )]
-    pub rent_payer: Signer<'info>,
-
     /// Tied to the pool because used to verify pool seeds
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -57,7 +50,7 @@ pub struct WithdrawNftT22<'info> {
 
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
@@ -79,9 +72,9 @@ pub struct WithdrawNftT22<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        close = owner,
         //can't withdraw an NFT that's associated with a different pool
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -93,12 +86,12 @@ pub struct WithdrawNftT22<'info> {
 }
 
 impl<'info> WithdrawNftT22<'info> {
-    fn close_pool_ata(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.owner.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
@@ -120,7 +113,7 @@ pub fn process_t22_withdraw_nft<'info>(
 ) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
 
@@ -150,8 +143,8 @@ pub fn process_t22_withdraw_nft<'info>(
         0, // decimals = 0
     )?;
 
-    // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata().with_signer(signer_seeds))?;
+    // close pool ATA
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

@@ -1,11 +1,4 @@
-import test from 'ava';
-import {} from '@solana/programs';
-import {
-  appendTransactionInstruction,
-  none,
-  pipe,
-  some,
-} from '@solana/web3.js';
+import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
@@ -16,20 +9,21 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
 import {
   createDefaultNft,
   findTokenRecordPda,
 } from '@tensor-foundation/toolkit-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
+import test from 'ava';
 import {
+  CurveType,
+  NftDepositReceipt,
+  PoolConfig,
+  PoolType,
+  fetchNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
-  PoolType,
-  CurveType,
-  PoolConfig,
   getDepositNftInstruction,
-  fetchNftDepositReceipt,
-  NftDepositReceipt,
 } from '../src/index.js';
 import {
   DEFAULT_PUBKEY,
@@ -52,7 +46,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: some(100),
+    mmFeeBps: 100,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.
@@ -98,7 +92,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Deposit NFT
   const depositNftIx = getDepositNftInstruction({
-    rentPayer: owner,
     owner,
     pool,
     whitelist,

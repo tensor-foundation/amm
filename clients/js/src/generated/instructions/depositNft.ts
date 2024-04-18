@@ -30,7 +30,6 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
-  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -46,9 +45,6 @@ import {
 
 export type DepositNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -84,12 +80,8 @@ export type DepositNftInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
-        : TAccountRentPayer,
       TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner> &
+        ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountPool extends string
@@ -196,7 +188,6 @@ export function getDepositNftInstructionDataCodec(): Codec<
 }
 
 export type DepositNftInput<
-  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
@@ -218,7 +209,6 @@ export type DepositNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
@@ -260,7 +250,6 @@ export type DepositNftInput<
 };
 
 export function getDepositNftInstruction<
-  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
@@ -283,7 +272,6 @@ export function getDepositNftInstruction<
   TAccountAuthRules extends string,
 >(
   input: DepositNftInput<
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -307,7 +295,6 @@ export function getDepositNftInstruction<
   >
 ): DepositNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
@@ -334,8 +321,7 @@ export function getDepositNftInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     ownerAta: { value: input.ownerAta ?? null, isWritable: true },
@@ -377,10 +363,6 @@ export function getDepositNftInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.rentPayer.value) {
-    accounts.rentPayer.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -405,7 +387,6 @@ export function getDepositNftInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -433,7 +414,6 @@ export function getDepositNftInstruction<
     ),
   } as DepositNftInstruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -465,45 +445,44 @@ export type ParsedDepositNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    rentPayer: TAccountMetas[0];
     /** The owner of the pool and the NFT. */
-    owner: TAccountMetas[1];
-    pool: TAccountMetas[2];
+    owner: TAccountMetas[0];
+    pool: TAccountMetas[1];
     /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
-    whitelist: TAccountMetas[3];
+    whitelist: TAccountMetas[2];
     /** The ATA of the owner, where the NFT will be transferred from. */
-    ownerAta: TAccountMetas[4];
+    ownerAta: TAccountMetas[3];
     /** The ATA of the pool, where the NFT will be escrowed. */
-    poolAta: TAccountMetas[5];
+    poolAta: TAccountMetas[4];
     /**
      * The mint account of the NFT. It should be the mint account common
      * to the owner_ata and pool_ata.
      */
 
-    mint: TAccountMetas[6];
+    mint: TAccountMetas[5];
     /** The NFT receipt account denoting that an NFT has been deposited into a pool. */
-    nftReceipt: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    rent: TAccountMetas[10];
+    nftReceipt: TAccountMetas[6];
+    tokenProgram: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
+    rent: TAccountMetas[9];
     /** The Token Metadata metadata account of the NFT. */
-    metadata: TAccountMetas[11];
-    mintProof?: TAccountMetas[12] | undefined;
+    metadata: TAccountMetas[10];
+    mintProof?: TAccountMetas[11] | undefined;
     /** The Token Metadata edition account of the NFT. */
-    edition: TAccountMetas[13];
+    edition: TAccountMetas[12];
     /** The Token Metadata owner/buyer token record account of the NFT. */
-    ownerTokenRecord: TAccountMetas[14];
+    ownerTokenRecord: TAccountMetas[13];
     /** The Token Metadata pool token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[15];
-    associatedTokenProgram: TAccountMetas[16];
+    poolTokenRecord: TAccountMetas[14];
+    associatedTokenProgram: TAccountMetas[15];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[17];
+    tokenMetadataProgram: TAccountMetas[16];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[18];
+    instructions: TAccountMetas[17];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[19];
+    authorizationRulesProgram: TAccountMetas[18];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[20];
+    authRules: TAccountMetas[19];
   };
   data: DepositNftInstructionData;
 };
@@ -516,7 +495,7 @@ export function parseDepositNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedDepositNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 21) {
+  if (instruction.accounts.length < 20) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -535,7 +514,6 @@ export function parseDepositNftInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),

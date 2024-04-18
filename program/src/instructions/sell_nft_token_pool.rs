@@ -22,15 +22,13 @@ use crate::{error::ErrorCode, utils::send_pnft, *};
 /// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    #[account(mut)]
     pub seller: Signer<'info>,
 
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
@@ -81,7 +79,7 @@ pub struct SellNftTokenPool<'info> {
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
@@ -90,7 +88,7 @@ pub struct SellNftTokenPool<'info> {
     /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -207,6 +205,17 @@ impl<'info> SellNftTokenPool<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.seller.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for SellNftTokenPool<'info> {
@@ -264,13 +273,12 @@ pub fn process_sell_nft_token_pool<'info>(
         None
     };
 
-    let rent_payer = &ctx.accounts.rent_payer.to_account_info();
     let seller = &ctx.accounts.seller.to_account_info();
     let dest_owner = &ctx.accounts.pool.to_account_info();
 
     let pnft_args = Box::new(PnftTransferArgs {
         authority_and_owner: seller,
-        payer: rent_payer,
+        payer: seller,
         source_ata: &ctx.accounts.seller_ata,
         dest_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
         dest_owner,
@@ -306,7 +314,7 @@ pub fn process_sell_nft_token_pool<'info>(
         Some(signer_seeds),
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.seller.to_account_info(),
             source_ata: &ctx.accounts.pool_ata,
             dest_ata: &ctx.accounts.owner_ata,
             dest_owner: &ctx.accounts.owner.to_account_info(),
@@ -326,15 +334,21 @@ pub fn process_sell_nft_token_pool<'info>(
         },
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
     // close temp pool ata account, so it's not dangling
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- end pnft
 
     // If the pool has a cosigner, the cosigner must be passed in, and must equal the pool's cosigner.
-    if let Some(cosigner) = pool.cosigner {
+    if let Some(cosigner) = pool.cosigner.value() {
         if ctx.accounts.cosigner.is_none()
-            || ctx.accounts.cosigner.as_ref().unwrap().key != &cosigner
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
         {
             throw_err!(ErrorCode::BadCosigner);
         }
@@ -368,7 +382,7 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // --------------------------------------- SOL transfers
     //decide where we're sending the money from - shared escrow (shared escrow pool) or the pool itself
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow,
@@ -383,9 +397,7 @@ pub fn process_sell_nft_token_pool<'info>(
     };
 
     // transfer fees
-    msg!("Transferring fees");
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    msg!("tswap fee: {}, broker fee: {}", tswap_fee, broker_fee);
     transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
         &from,
@@ -396,7 +408,6 @@ pub fn process_sell_nft_token_pool<'info>(
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
     // transfer royalties
-    msg!("Transferring royalties");
     let actual_creators_fee = transfer_creators_fee(
         &metadata
             .creators
@@ -416,7 +427,6 @@ pub fn process_sell_nft_token_pool<'info>(
     // transfer remainder to seller
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
     // (!) maker rebate already taken out of this amount
-    msg!("Transferring remainder to seller");
     transfer_lamports_from_pda(
         &from,
         &ctx.accounts.seller.to_account_info(),
@@ -426,7 +436,6 @@ pub fn process_sell_nft_token_pool<'info>(
     // --------------------------------------- accounting
 
     //update pool accounting
-    msg!("Updating pool accounting");
     let pool = &mut ctx.accounts.pool;
     pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));

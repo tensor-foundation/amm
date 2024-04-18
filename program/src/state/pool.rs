@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::calc_creators_fee;
+use tensor_toolbox::{calc_creators_fee, NullableOption};
 use vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
@@ -10,20 +10,17 @@ use crate::{constants::*, error::ErrorCode};
 #[constant]
 #[allow(clippy::identity_op)]
 pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
-        + 32 // identifier
-        + 8  // created_at
-        + 8  // updated_at
-        + 8  // expires_at
-        + (2 * 1) + (2 * 8) + 1 + 3 //pool config
-        + (2 * 32) // owner, whitelist
-        + (1 + 32) // rent_payer,
-        + (32 + 8) // currency and currency amount
-        + (3 * 4)  // taker_sell_count, taker_buy_count, nfts_held
-        + (2 * 4) + 8 //pool stats
-        + 32 + 1   // shared escrow Option
-        + 32 + 1   // cosigner Option
-        + 4        // max_taker_sell_count
-        + 100; // _reserved
+        + 32                             // identifier
+        + 8 * 3                          // created_at, updated_at, expiry
+        + (2 * 1) + (2 * 8) + 1 + 3      // pool config
+        + (3 * 32)                       // owner, whitelist, rent_payer
+        + (32 + 8)                       // currency and currency amount
+        + (3 * 4)                        // taker_sell_count, taker_buy_count, nfts_held
+        + (2 * 4) + 8                    // pool stats
+        + (2 * 32)                       // shared escrow, cosigner
+        + 4                              // max_taker_sell_count
+        + 100                            // _reserved
+        ;
 
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,7 +45,7 @@ pub struct PoolConfig {
     pub delta: u64,          //lamports pr bps
     /// Trade pools only
     pub mm_compound_fees: bool,
-    pub mm_fee_bps: Option<u16>,
+    pub mm_fee_bps: NullableOption<u16>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
@@ -78,7 +75,7 @@ pub struct Pool {
     pub whitelist: Pubkey,
     // Store the rent payer, if different from the owner so they can be refunded
     // without signing when the pool is closed.
-    pub rent_payer: Option<Pubkey>,
+    pub rent_payer: Pubkey,
     // Default Pubkey is SOL, otherwise SPL token mint
     pub currency: Pubkey,
     /// The amount of currency held in the pool
@@ -93,9 +90,9 @@ pub struct Pool {
     pub stats: PoolStats,
 
     /// If an escrow account is present, means it's a shared-escrow pool
-    pub shared_escrow: Option<Pubkey>,
+    pub shared_escrow: NullableOption<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
-    pub cosigner: Option<Pubkey>,
+    pub cosigner: NullableOption<Pubkey>,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
 
@@ -118,7 +115,7 @@ pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
 impl Pool {
     pub fn taker_allowed_to_sell(&self) -> Result<()> {
         //0 indicates no restriction on buy count / if no shared_escrow, not relevant
-        if self.max_taker_sell_count == 0 || self.shared_escrow.is_none() {
+        if self.max_taker_sell_count == 0 || self.shared_escrow.value().is_none() {
             return Ok(());
         }
 
@@ -161,7 +158,7 @@ impl Pool {
 
         let fee = unwrap_checked!({
             // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
-            (self.config.mm_fee_bps.unwrap_or(0) as u64)
+            (*self.config.mm_fee_bps.value().unwrap_or(&0) as u64)
                 .checked_mul(current_price)?
                 .checked_div(HUNDRED_PCT_BPS as u64)
         });

@@ -2,12 +2,14 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{
+        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
+    },
 };
 use solana_program::keccak;
 use tensor_toolbox::token_2022::{
-    t22_validate_mint,
     token::{safe_initialize_token_account, InitializeTokenAccount},
+    validate_mint,
 };
 use tensor_whitelist::{self, FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
@@ -18,13 +20,6 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
-    /// If no external rent payer, set this to the owner.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == owner.key() || Some(rent_payer.key()) == pool.rent_payer,
-    )]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -80,16 +75,16 @@ pub struct DepositNftT22<'info> {
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
-        init,
-        payer = rent_payer,
+        init_if_needed,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = rent_payer,
+        init,
+        payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -123,6 +118,17 @@ impl<'info> DepositNftT22<'info> {
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
         self.whitelist.verify(None, None, full_merkle_proof)
     }
+
+    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.owner_ata.to_account_info(),
+                destination: self.owner.to_account_info(),
+                authority: self.owner.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for DepositNftT22<'info> {
@@ -138,7 +144,7 @@ impl<'info> Validate<'info> for DepositNftT22<'info> {
 pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // initialize token account
 
@@ -147,7 +153,7 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
             token_info: &ctx.accounts.pool_ata.to_account_info(),
             mint: &ctx.accounts.mint.to_account_info(),
             authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer,
+            payer: &ctx.accounts.owner,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             signer_seeds: &[],
@@ -168,6 +174,9 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     );
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+
+    // Close owner ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

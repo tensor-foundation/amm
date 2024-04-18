@@ -3,13 +3,15 @@
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{
+        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
+    },
 };
 use solana_program::keccak;
 use tensor_toolbox::{
     token_2022::{
-        t22_validate_mint,
         token::{safe_initialize_token_account, InitializeTokenAccount},
+        validate_mint,
     },
     transfer_lamports_from_pda,
 };
@@ -21,15 +23,7 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct SellNftTradePoolT22<'info> {
-    /// If no external rent_payer, this should be set to the seller.
-    #[account(
-        mut,
-        constraint = rent_payer.key() == seller.key() || Some(rent_payer.key()) == pool.rent_payer,
-    )]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool (owner is the buyer)
-    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -96,7 +90,8 @@ pub struct SellNftTradePoolT22<'info> {
     pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        mut,
+        init_if_needed,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -104,7 +99,7 @@ pub struct SellNftTradePoolT22<'info> {
 
     #[account(
         init,
-        payer = rent_payer,
+        payer = seller,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -166,6 +161,17 @@ impl<'info> SellNftTradePoolT22<'info> {
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
         self.whitelist.verify(None, None, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.seller.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
@@ -178,7 +184,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
 
     // validate mint account
 
-    t22_validate_mint(&ctx.accounts.mint.to_account_info())?;
+    validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // initialize escrow token account
 
@@ -187,7 +193,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             token_info: &ctx.accounts.pool_ata.to_account_info(),
             mint: &ctx.accounts.mint.to_account_info(),
             authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer,
+            payer: &ctx.accounts.seller,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             signer_seeds: &[],
@@ -208,6 +214,12 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     );
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
@@ -241,7 +253,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // --------------------------------------- SOL transfers
 
     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow_account) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow_account,

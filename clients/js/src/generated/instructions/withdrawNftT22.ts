@@ -41,9 +41,6 @@ import {
 
 export type WithdrawNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -63,10 +60,6 @@ export type WithdrawNftT22Instruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
-        : TAccountRentPayer,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
@@ -140,7 +133,6 @@ export function getWithdrawNftT22InstructionDataCodec(): Codec<
 }
 
 export type WithdrawNftT22Input<
-  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
@@ -152,8 +144,6 @@ export type WithdrawNftT22Input<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** If no external rent_payer, this should be set to the owner. */
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
   /** Tied to the pool because used to verify pool seeds */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
@@ -170,7 +160,6 @@ export type WithdrawNftT22Input<
 };
 
 export function getWithdrawNftT22Instruction<
-  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
@@ -183,7 +172,6 @@ export function getWithdrawNftT22Instruction<
   TAccountSystemProgram extends string,
 >(
   input: WithdrawNftT22Input<
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -197,7 +185,6 @@ export function getWithdrawNftT22Instruction<
   >
 ): WithdrawNftT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
@@ -214,7 +201,6 @@ export function getWithdrawNftT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
@@ -238,10 +224,6 @@ export function getWithdrawNftT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.rentPayer.value) {
-    accounts.rentPayer.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -254,7 +236,6 @@ export function getWithdrawNftT22Instruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -272,7 +253,6 @@ export function getWithdrawNftT22Instruction<
     ),
   } as WithdrawNftT22Instruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -294,20 +274,18 @@ export type ParsedWithdrawNftT22Instruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent_payer, this should be set to the owner. */
-    rentPayer: TAccountMetas[0];
     /** Tied to the pool because used to verify pool seeds */
-    owner: TAccountMetas[1];
-    pool: TAccountMetas[2];
-    whitelist: TAccountMetas[3];
-    mint: TAccountMetas[4];
-    ownerAta: TAccountMetas[5];
+    owner: TAccountMetas[0];
+    pool: TAccountMetas[1];
+    whitelist: TAccountMetas[2];
+    mint: TAccountMetas[3];
+    ownerAta: TAccountMetas[4];
     /** The ATA of the pool, where the NFT token is escrowed. */
-    poolAta: TAccountMetas[6];
-    nftReceipt: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    associatedTokenProgram: TAccountMetas[9];
-    systemProgram: TAccountMetas[10];
+    poolAta: TAccountMetas[5];
+    nftReceipt: TAccountMetas[6];
+    tokenProgram: TAccountMetas[7];
+    associatedTokenProgram: TAccountMetas[8];
+    systemProgram: TAccountMetas[9];
   };
   data: WithdrawNftT22InstructionData;
 };
@@ -320,7 +298,7 @@ export function parseWithdrawNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 10) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -333,7 +311,6 @@ export function parseWithdrawNftT22Instruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),

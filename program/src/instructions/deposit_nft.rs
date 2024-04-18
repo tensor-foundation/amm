@@ -2,7 +2,7 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
@@ -16,10 +16,8 @@ use crate::{error::ErrorCode, *};
 /// Allows a pool owner to deposit an asset into Trade or NFT pool.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// The owner of the pool and the NFT.
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     #[account(
@@ -30,7 +28,8 @@ pub struct DepositNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist, has_one = owner,
+        has_one = whitelist,
+        has_one = owner,
         // can only deposit to NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
@@ -56,7 +55,7 @@ pub struct DepositNft<'info> {
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -72,8 +71,8 @@ pub struct DepositNft<'info> {
 
     /// The NFT receipt account denoting that an NFT has been deposited into a pool.
     #[account(
-        init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
-        payer = rent_payer,
+        init,
+        payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -173,6 +172,17 @@ impl<'info> DepositNft<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.owner_ata.to_account_info(),
+                destination: self.owner.to_account_info(),
+                authority: self.owner.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for DepositNft<'info> {
@@ -193,7 +203,7 @@ pub fn process_deposit_nft(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.owner.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.owner.to_account_info(),
             source_ata: &ctx.accounts.owner_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),
@@ -212,6 +222,9 @@ pub fn process_deposit_nft(
             delegate: None,
         },
     )?;
+
+    // Close owner ATA to return rent to the owner.
+    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
 
     //update pool
     let pool = &mut ctx.accounts.pool;

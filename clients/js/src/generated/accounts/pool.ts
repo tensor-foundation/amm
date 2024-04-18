@@ -28,8 +28,6 @@ import {
   Codec,
   Decoder,
   Encoder,
-  Option,
-  OptionOrNullable,
   combineCodec,
   getArrayDecoder,
   getArrayEncoder,
@@ -37,8 +35,6 @@ import {
   getBytesEncoder,
   getI64Decoder,
   getI64Encoder,
-  getOptionDecoder,
-  getOptionEncoder,
   getStructDecoder,
   getStructEncoder,
   getU32Decoder,
@@ -49,6 +45,12 @@ import {
   getU8Encoder,
   mapEncoder,
 } from '@solana/codecs';
+import {
+  NullableAddress,
+  NullableAddressArgs,
+  getNullableAddressDecoder,
+  getNullableAddressEncoder,
+} from '../../hooked';
 import { PoolSeeds, findPoolPda } from '../pdas';
 import {
   PoolConfig,
@@ -87,7 +89,7 @@ export type PoolAccountData = {
   expiry: bigint;
   owner: Address;
   whitelist: Address;
-  rentPayer: Option<Address>;
+  rentPayer: Address;
   currency: Address;
   /** The amount of currency held in the pool */
   amount: bigint;
@@ -98,9 +100,9 @@ export type PoolAccountData = {
   nftsHeld: number;
   stats: PoolStats;
   /** If an escrow account is present, means it's a shared-escrow pool */
-  sharedEscrow: Option<Address>;
+  sharedEscrow: NullableAddress;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
-  cosigner: Option<Address>;
+  cosigner: NullableAddress;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfig;
@@ -122,7 +124,7 @@ export type PoolAccountDataArgs = {
   expiry: number | bigint;
   owner: Address;
   whitelist: Address;
-  rentPayer: OptionOrNullable<Address>;
+  rentPayer: Address;
   currency: Address;
   /** The amount of currency held in the pool */
   amount: number | bigint;
@@ -133,9 +135,9 @@ export type PoolAccountDataArgs = {
   nftsHeld: number;
   stats: PoolStatsArgs;
   /** If an escrow account is present, means it's a shared-escrow pool */
-  sharedEscrow: OptionOrNullable<Address>;
+  sharedEscrow: NullableAddressArgs;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
-  cosigner: OptionOrNullable<Address>;
+  cosigner: NullableAddressArgs;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfigArgs;
@@ -154,15 +156,15 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['expiry', getI64Encoder()],
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
-      ['rentPayer', getOptionEncoder(getAddressEncoder())],
+      ['rentPayer', getAddressEncoder()],
       ['currency', getAddressEncoder()],
       ['amount', getU64Encoder()],
       ['takerSellCount', getU32Encoder()],
       ['takerBuyCount', getU32Encoder()],
       ['nftsHeld', getU32Encoder()],
       ['stats', getPoolStatsEncoder()],
-      ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
-      ['cosigner', getOptionEncoder(getAddressEncoder())],
+      ['sharedEscrow', getNullableAddressEncoder()],
+      ['cosigner', getNullableAddressEncoder()],
       ['maxTakerSellCount', getU32Encoder()],
       ['config', getPoolConfigEncoder()],
       ['reserved', getArrayEncoder(getU8Encoder(), { size: 100 })],
@@ -185,15 +187,15 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['expiry', getI64Decoder()],
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
-    ['rentPayer', getOptionDecoder(getAddressDecoder())],
+    ['rentPayer', getAddressDecoder()],
     ['currency', getAddressDecoder()],
     ['amount', getU64Decoder()],
     ['takerSellCount', getU32Decoder()],
     ['takerBuyCount', getU32Decoder()],
     ['nftsHeld', getU32Decoder()],
     ['stats', getPoolStatsDecoder()],
-    ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
-    ['cosigner', getOptionDecoder(getAddressDecoder())],
+    ['sharedEscrow', getNullableAddressDecoder()],
+    ['cosigner', getNullableAddressDecoder()],
     ['maxTakerSellCount', getU32Decoder()],
     ['config', getPoolConfigDecoder()],
     ['reserved', getArrayDecoder(getU8Decoder(), { size: 100 })],
