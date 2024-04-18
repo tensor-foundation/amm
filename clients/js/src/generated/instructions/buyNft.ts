@@ -242,7 +242,6 @@ export type BuyNftInput<
 > = {
   /**
    * Owner is the pool owner who created the pool and the nominal owner of the
-   * Owner is the pool owner who created the pool and the nominal owner of the
    * escrowed NFT. In this transaction they are the seller, though the transfer
    * of the NFT is handled by the pool.
    */
@@ -514,7 +513,6 @@ export type ParsedBuyNftInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     /**
-     * Owner is the pool owner who created the pool and the nominal owner of the
      * Owner is the pool owner who created the pool and the nominal owner of the
      * escrowed NFT. In this transaction they are the seller, though the transfer
      * of the NFT is handled by the pool.

@@ -19,7 +19,6 @@ use self::constants::CURRENT_POOL_VERSION;
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
     /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     /// CHECK: has_one = owner in pool (owner is the seller)
@@ -168,7 +167,7 @@ impl<'info> BuyNft<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
@@ -210,7 +209,6 @@ pub fn process_buy_nft<'info, 'b>(
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
-    msg!("Buy NFT");
     let pool = &ctx.accounts.pool;
     let owner_pubkey = ctx.accounts.owner.key();
 

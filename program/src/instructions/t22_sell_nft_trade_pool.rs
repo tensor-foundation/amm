@@ -90,7 +90,8 @@ pub struct SellNftTradePoolT22<'info> {
     pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        mut,
+        init_if_needed,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]

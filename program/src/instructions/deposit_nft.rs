@@ -28,7 +28,8 @@ pub struct DepositNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist, has_one = owner,
+        has_one = whitelist,
+        has_one = owner,
         // can only deposit to NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
@@ -70,7 +71,7 @@ pub struct DepositNft<'info> {
 
     /// The NFT receipt account denoting that an NFT has been deposited into a pool.
     #[account(
-        init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
+        init,
         payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),

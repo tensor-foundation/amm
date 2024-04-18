@@ -87,7 +87,7 @@ export type BuyNftT22Instruction<
         ? WritableAccount<TAccountBuyerAta>
         : TAccountBuyerAta,
       TAccountPoolAta extends string
-        ? WritableAccount<TAccountPoolAta>
+        ? ReadonlyAccount<TAccountPoolAta>
         : TAccountPoolAta,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
@@ -262,7 +262,7 @@ export function getBuyNftT22Instruction<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     buyerAta: { value: input.buyerAta ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    poolAta: { value: input.poolAta ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },

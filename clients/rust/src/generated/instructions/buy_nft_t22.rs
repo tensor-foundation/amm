@@ -77,7 +77,7 @@ impl BuyNftT22 {
             self.buyer_ata,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.pool_ata,
             false,
         ));
@@ -162,7 +162,7 @@ pub struct BuyNftT22InstructionArgs {
 ///   3. `[writable]` pool
 ///   4. `[]` whitelist
 ///   5. `[writable]` buyer_ata
-///   6. `[writable]` pool_ata
+///   6. `[]` pool_ata
 ///   7. `[]` mint
 ///   8. `[writable]` nft_receipt
 ///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
@@ -506,7 +506,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             *self.buyer_ata.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.pool_ata.key,
             false,
         ));
@@ -606,7 +606,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///   3. `[writable]` pool
 ///   4. `[]` whitelist
 ///   5. `[writable]` buyer_ata
-///   6. `[writable]` pool_ata
+///   6. `[]` pool_ata
 ///   7. `[]` mint
 ///   8. `[writable]` nft_receipt
 ///   9. `[]` token_program

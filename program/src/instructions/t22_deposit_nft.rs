@@ -75,7 +75,7 @@ pub struct DepositNftT22<'info> {
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
-        init,
+        init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
@@ -83,7 +83,7 @@ pub struct DepositNftT22<'info> {
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
-        init, //<-- this HAS to be init, not init_if_needed for safety (else single listings and pool listings can get mixed)
+        init,
         payer = owner,
         seeds=[
             b"nft_receipt".as_ref(),

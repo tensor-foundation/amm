@@ -641,7 +641,6 @@
           "isSigner": false,
           "docs": [
             "Owner is the pool owner who created the pool and the nominal owner of the",
-            "Owner is the pool owner who created the pool and the nominal owner of the",
             "escrowed NFT. In this transaction they are the seller, though the transfer",
             "of the NFT is handled by the pool."
           ]
@@ -1659,7 +1658,7 @@
         },
         {
           "name": "poolAta",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
             "The ATA of the pool, where the NFT will be escrowed."
