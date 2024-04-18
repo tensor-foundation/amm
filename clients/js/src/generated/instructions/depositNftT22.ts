@@ -41,10 +41,6 @@ import {
 
 export type DepositNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-<<<<<<< HEAD
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
-=======
->>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -153,11 +149,6 @@ export type DepositNftT22Input<
   TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-<<<<<<< HEAD
-  /** If no external rent payer, set this to the owner. */
-  rentPayer: TransactionSigner<TAccountRentPayer>;
-=======
->>>>>>> main
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation, also checked via has_one on pool */

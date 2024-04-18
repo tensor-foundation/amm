@@ -45,7 +45,6 @@ import {
 
 export type DepositNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -210,7 +209,6 @@ export type DepositNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
-  rentPayer: TransactionSigner<TAccountRentPayer>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;

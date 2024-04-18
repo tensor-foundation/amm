@@ -41,10 +41,6 @@ import {
 
 export type WithdrawNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-<<<<<<< HEAD
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
-=======
->>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -148,11 +144,6 @@ export type WithdrawNftT22Input<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-<<<<<<< HEAD
-  /** If no external rent_payer, this should be set to the owner. */
-  rentPayer: TransactionSigner<TAccountRentPayer>;
-=======
->>>>>>> main
   /** Tied to the pool because used to verify pool seeds */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;

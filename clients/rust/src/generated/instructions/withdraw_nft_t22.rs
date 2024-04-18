@@ -120,19 +120,6 @@ pub struct WithdrawNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-<<<<<<< HEAD
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable, signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` whitelist
-///   4. `[]` mint
-///   5. `[writable]` owner_ata
-///   6. `[writable]` pool_ata
-///   7. `[writable]` nft_receipt
-///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   9. `[]` associated_token_program
-///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
-=======
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
@@ -143,7 +130,6 @@ pub struct WithdrawNftT22InstructionArgs {
 ///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   8. `[]` associated_token_program
 ///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
->>>>>>> main
 #[derive(Default)]
 pub struct WithdrawNftT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -164,15 +150,6 @@ impl WithdrawNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
-<<<<<<< HEAD
-    /// If no external rent_payer, this should be set to the owner.
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
-    }
-=======
->>>>>>> main
     /// Tied to the pool because used to verify pool seeds
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -256,10 +233,6 @@ impl WithdrawNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = WithdrawNftT22 {
-<<<<<<< HEAD
-            rent_payer: self.rent_payer.expect("rent_payer is not set"),
-=======
->>>>>>> main
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),

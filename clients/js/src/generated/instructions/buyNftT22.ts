@@ -43,7 +43,6 @@ import {
 
 export type BuyNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -178,8 +177,6 @@ export type BuyNftT22Input<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  /** If no external rent payer, this should be the buyer. */
-  rentPayer: TransactionSigner<TAccountRentPayer>;
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
   feeVault: Address<TAccountFeeVault>;

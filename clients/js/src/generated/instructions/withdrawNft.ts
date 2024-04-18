@@ -47,10 +47,6 @@ import {
 
 export type WithdrawNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-<<<<<<< HEAD
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
-=======
->>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
@@ -209,10 +205,6 @@ export type WithdrawNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
-<<<<<<< HEAD
-  rentPayer: TransactionSigner<TAccountRentPayer>;
-=======
->>>>>>> main
   /** The owner of the pool and will receive the NFT at the owner_ata account. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */

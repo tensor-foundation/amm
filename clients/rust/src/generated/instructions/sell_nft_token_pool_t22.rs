@@ -159,24 +159,6 @@ pub struct SellNftTokenPoolT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-<<<<<<< HEAD
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable]` owner
-///   2. `[writable, signer]` seller
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[]` whitelist
-///   6. `[]` mint_proof
-///   7. `[]` mint
-///   8. `[writable]` seller_ata
-///   9. `[writable]` owner_ata
-///   10. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   11. `[]` associated_token_program
-///   12. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   13. `[writable]` shared_escrow_account
-///   14. `[writable]` taker_broker
-///   15. `[optional]` maker_broker
-=======
 ///   0. `[writable]` owner
 ///   1. `[writable, signer]` seller
 ///   2. `[writable]` fee_vault
@@ -192,7 +174,6 @@ pub struct SellNftTokenPoolT22InstructionArgs {
 ///   12. `[writable]` shared_escrow_account
 ///   13. `[writable]` taker_broker
 ///   14. `[optional]` maker_broker
->>>>>>> main
 #[derive(Default)]
 pub struct SellNftTokenPoolT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -219,15 +200,6 @@ impl SellNftTokenPoolT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
-<<<<<<< HEAD
-    /// If no external rent_payer, this should be set to the seller.
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
-    }
-=======
->>>>>>> main
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
@@ -350,10 +322,6 @@ impl SellNftTokenPoolT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = SellNftTokenPoolT22 {
-<<<<<<< HEAD
-            rent_payer: self.rent_payer.expect("rent_payer is not set"),
-=======
->>>>>>> main
             owner: self.owner.expect("owner is not set"),
             seller: self.seller.expect("seller is not set"),
             fee_vault: self.fee_vault.expect("fee_vault is not set"),

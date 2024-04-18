@@ -43,10 +43,6 @@ import {
 
 export type SellNftTokenPoolT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-<<<<<<< HEAD
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
-=======
->>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSeller extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -181,11 +177,6 @@ export type SellNftTokenPoolT22Input<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-<<<<<<< HEAD
-  /** If no external rent_payer, this should be set to the seller. */
-  rentPayer: TransactionSigner<TAccountRentPayer>;
-=======
->>>>>>> main
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
   feeVault: Address<TAccountFeeVault>;

@@ -156,22 +156,21 @@ pub struct BuyNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
-///   1. `[writable]` owner
-///   2. `[signer]` buyer
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[]` whitelist
-///   6. `[writable]` buyer_ata
-///   7. `[writable]` pool_ata
-///   8. `[]` mint
-///   9. `[writable]` nft_receipt
-///   10. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   11. `[]` associated_token_program
-///   12. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   13. `[writable]` shared_escrow_account
-///   14. `[writable]` taker_broker
-///   15. `[optional]` maker_broker
+///   0. `[writable]` owner
+///   1. `[writable, signer]` buyer
+///   2. `[writable]` fee_vault
+///   3. `[writable]` pool
+///   4. `[]` whitelist
+///   5. `[writable]` buyer_ata
+///   6. `[]` pool_ata
+///   7. `[]` mint
+///   8. `[writable]` nft_receipt
+///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   10. `[]` associated_token_program
+///   11. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   12. `[writable]` shared_escrow_account
+///   13. `[writable]` taker_broker
+///   14. `[optional]` maker_broker
 #[derive(Default)]
 pub struct BuyNftT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -197,13 +196,6 @@ pub struct BuyNftT22Builder {
 impl BuyNftT22Builder {
     pub fn new() -> Self {
         Self::default()
-    }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    /// If no external rent payer, this should be the buyer.
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
     }
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -326,9 +318,6 @@ impl BuyNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = BuyNftT22 {
-            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
             owner: self.owner.expect("owner is not set"),
             buyer: self.buyer.expect("buyer is not set"),
             fee_vault: self.fee_vault.expect("fee_vault is not set"),

@@ -168,27 +168,6 @@ pub struct WithdrawNftInstructionArgs {
 ///
 /// ### Accounts:
 ///
-<<<<<<< HEAD
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable, signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` mint
-///   4. `[writable]` owner_ata
-///   5. `[writable]` pool_ata
-///   6. `[writable]` nft_receipt
-///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   8. `[]` associated_token_program
-///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   11. `[writable]` metadata
-///   12. `[]` edition
-///   13. `[writable]` owner_token_record
-///   14. `[writable]` pool_token_record
-///   15. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   16. `[]` instructions
-///   17. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   18. `[]` auth_rules
-=======
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` mint
@@ -207,7 +186,6 @@ pub struct WithdrawNftInstructionArgs {
 ///   15. `[]` instructions
 ///   16. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
 ///   17. `[]` auth_rules
->>>>>>> main
 #[derive(Default)]
 pub struct WithdrawNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -237,14 +215,6 @@ impl WithdrawNftBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-<<<<<<< HEAD
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
-    }
-=======
->>>>>>> main
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -397,10 +367,6 @@ impl WithdrawNftBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             WithdrawNft {
-<<<<<<< HEAD
-                rent_payer: self.rent_payer.expect("rent_payer is not set"),
-=======
->>>>>>> main
                 owner: self.owner.expect("owner is not set"),
                 pool: self.pool.expect("pool is not set"),
                 mint: self.mint.expect("mint is not set"),

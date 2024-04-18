@@ -242,35 +242,6 @@ pub struct SellNftTradePoolInstructionArgs {
 ///
 /// ### Accounts:
 ///
-<<<<<<< HEAD
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable]` owner
-///   2. `[signer]` seller
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[]` whitelist
-///   6. `[optional]` mint_proof
-///   7. `[]` mint
-///   8. `[writable]` seller_ata
-///   9. `[writable]` pool_ata
-///   10. `[writable]` metadata
-///   11. `[writable]` nft_receipt
-///   12. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   13. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   14. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   15. `[]` associated_token_program
-///   16. `[]` edition
-///   17. `[writable]` seller_token_record
-///   18. `[writable]` pool_token_record
-///   19. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   20. `[]` instructions
-///   21. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   22. `[]` auth_rules
-///   23. `[writable]` shared_escrow
-///   24. `[writable]` taker_broker
-///   25. `[optional]` maker_broker
-///   26. `[signer, optional]` cosigner
-=======
 ///   0. `[writable]` owner
 ///   1. `[writable, signer]` seller
 ///   2. `[writable]` fee_vault
@@ -297,7 +268,6 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   23. `[writable]` taker_broker
 ///   24. `[optional]` maker_broker
 ///   25. `[signer, optional]` cosigner
->>>>>>> main
 #[derive(Default)]
 pub struct SellNftTradePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -337,14 +307,6 @@ impl SellNftTradePoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-<<<<<<< HEAD
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
-    }
-=======
->>>>>>> main
     /// The owner of the pool and the buyer/recipient of the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -567,10 +529,6 @@ impl SellNftTradePoolBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             SellNftTradePool {
-<<<<<<< HEAD
-                rent_payer: self.rent_payer.expect("rent_payer is not set"),
-=======
->>>>>>> main
                 owner: self.owner.expect("owner is not set"),
                 seller: self.seller.expect("seller is not set"),
                 fee_vault: self.fee_vault.expect("fee_vault is not set"),

@@ -53,10 +53,6 @@ import {
 
 export type SellNftTokenPoolInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-<<<<<<< HEAD
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
-=======
->>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSeller extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -259,10 +255,6 @@ export type SellNftTokenPoolInput<
   TAccountMakerBroker extends string = string,
   TAccountCosigner extends string = string,
 > = {
-<<<<<<< HEAD
-  rentPayer: TransactionSigner<TAccountRentPayer>;
-=======
->>>>>>> main
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */

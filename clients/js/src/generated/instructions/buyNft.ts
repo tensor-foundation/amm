@@ -52,7 +52,6 @@ import {
 
 export type BuyNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -241,7 +240,6 @@ export type BuyNftInput<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  rentPayer: TransactionSigner<TAccountRentPayer>;
   /**
    * Owner is the pool owner who created the pool and the nominal owner of the
    * escrowed NFT. In this transaction they are the seller, though the transfer

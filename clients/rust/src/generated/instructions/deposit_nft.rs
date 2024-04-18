@@ -186,29 +186,6 @@ pub struct DepositNftInstructionArgs {
 ///
 /// ### Accounts:
 ///
-<<<<<<< HEAD
-///   0. `[writable, signer]` rent_payer
-///   1. `[signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` whitelist
-///   4. `[writable]` owner_ata
-///   5. `[writable]` pool_ata
-///   6. `[]` mint
-///   7. `[writable]` nft_receipt
-///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   11. `[]` metadata
-///   12. `[optional]` mint_proof
-///   13. `[]` edition
-///   14. `[]` owner_token_record
-///   15. `[writable]` pool_token_record
-///   16. `[]` associated_token_program
-///   17. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   18. `[]` instructions
-///   19. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   20. `[]` auth_rules
-=======
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
@@ -229,7 +206,6 @@ pub struct DepositNftInstructionArgs {
 ///   17. `[]` instructions
 ///   18. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
 ///   19. `[]` auth_rules
->>>>>>> main
 #[derive(Default)]
 pub struct DepositNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -260,14 +236,6 @@ impl DepositNftBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-<<<<<<< HEAD
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
-    }
-=======
->>>>>>> main
     /// The owner of the pool and the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -432,10 +400,6 @@ impl DepositNftBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             DepositNft {
-<<<<<<< HEAD
-                rent_payer: self.rent_payer.expect("rent_payer is not set"),
-=======
->>>>>>> main
                 owner: self.owner.expect("owner is not set"),
                 pool: self.pool.expect("pool is not set"),
                 whitelist: self.whitelist.expect("whitelist is not set"),
