@@ -11,7 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct WithdrawNft {
-    pub rent_payer: solana_program::pubkey::Pubkey,
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     pub owner: solana_program::pubkey::Pubkey,
     /// The pool from which the NFT will be withdrawn.
@@ -63,11 +62,7 @@ impl WithdrawNft {
         args: WithdrawNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
@@ -173,28 +168,26 @@ pub struct WithdrawNftInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable, signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` mint
-///   4. `[writable]` owner_ata
-///   5. `[writable]` pool_ata
-///   6. `[writable]` nft_receipt
-///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   8. `[]` associated_token_program
-///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   11. `[writable]` metadata
-///   12. `[]` edition
-///   13. `[writable]` owner_token_record
-///   14. `[writable]` pool_token_record
-///   15. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   16. `[]` instructions
-///   17. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   18. `[]` auth_rules
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` mint
+///   3. `[writable]` owner_ata
+///   4. `[writable]` pool_ata
+///   5. `[writable]` nft_receipt
+///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   7. `[]` associated_token_program
+///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   9. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   10. `[writable]` metadata
+///   11. `[]` edition
+///   12. `[writable]` owner_token_record
+///   13. `[writable]` pool_token_record
+///   14. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
+///   15. `[]` instructions
+///   16. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
+///   17. `[]` auth_rules
 #[derive(Default)]
 pub struct WithdrawNftBuilder {
-    rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
@@ -221,11 +214,6 @@ pub struct WithdrawNftBuilder {
 impl WithdrawNftBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-    #[inline(always)]
-    pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent_payer = Some(rent_payer);
-        self
     }
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     #[inline(always)]
@@ -379,7 +367,6 @@ impl WithdrawNftBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             WithdrawNft {
-                rent_payer: self.rent_payer.expect("rent_payer is not set"),
                 owner: self.owner.expect("owner is not set"),
                 pool: self.pool.expect("pool is not set"),
                 mint: self.mint.expect("mint is not set"),
@@ -429,7 +416,6 @@ impl WithdrawNftBuilder {
 
 /// `withdraw_nft` CPI accounts.
 pub struct WithdrawNftCpiAccounts<'a, 'b> {
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool from which the NFT will be withdrawn.
@@ -472,8 +458,6 @@ pub struct WithdrawNftCpiAccounts<'a, 'b> {
 pub struct WithdrawNftCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool from which the NFT will be withdrawn.
@@ -522,7 +506,6 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             pool: accounts.pool,
             mint: accounts.mint,
@@ -577,11 +560,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
@@ -670,9 +649,8 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(19 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(18 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.mint.clone());
@@ -707,25 +685,24 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable, signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` mint
-///   4. `[writable]` owner_ata
-///   5. `[writable]` pool_ata
-///   6. `[writable]` nft_receipt
-///   7. `[]` token_program
-///   8. `[]` associated_token_program
-///   9. `[]` system_program
-///   10. `[]` rent
-///   11. `[writable]` metadata
-///   12. `[]` edition
-///   13. `[writable]` owner_token_record
-///   14. `[writable]` pool_token_record
-///   15. `[]` token_metadata_program
-///   16. `[]` instructions
-///   17. `[]` authorization_rules_program
-///   18. `[]` auth_rules
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` mint
+///   3. `[writable]` owner_ata
+///   4. `[writable]` pool_ata
+///   5. `[writable]` nft_receipt
+///   6. `[]` token_program
+///   7. `[]` associated_token_program
+///   8. `[]` system_program
+///   9. `[]` rent
+///   10. `[writable]` metadata
+///   11. `[]` edition
+///   12. `[writable]` owner_token_record
+///   13. `[writable]` pool_token_record
+///   14. `[]` token_metadata_program
+///   15. `[]` instructions
+///   16. `[]` authorization_rules_program
+///   17. `[]` auth_rules
 pub struct WithdrawNftCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -734,7 +711,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(WithdrawNftCpiBuilderInstruction {
             __program: program,
-            rent_payer: None,
             owner: None,
             pool: None,
             mint: None,
@@ -758,14 +734,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn rent_payer(
-        &mut self,
-        rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_payer = Some(rent_payer);
-        self
     }
     /// The owner of the pool and will receive the NFT at the owner_ata account.
     #[inline(always)]
@@ -971,8 +939,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         let instruction = WithdrawNftCpi {
             __program: self.instruction.__program,
 
-            rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             pool: self.instruction.pool.expect("pool is not set"),
@@ -1046,7 +1012,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
 
 struct WithdrawNftCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,

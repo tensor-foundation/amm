@@ -21,9 +21,6 @@ use crate::{error::ErrorCode, *};
 /// owner of the NFT. The seller is the owner of the NFT and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
@@ -86,7 +83,7 @@ pub struct SellNftTradePool<'info> {
 
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -209,7 +206,7 @@ impl<'info> SellNftTradePool<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.seller_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
         )
@@ -257,7 +254,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.seller.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.seller.to_account_info(),
             source_ata: &ctx.accounts.seller_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),

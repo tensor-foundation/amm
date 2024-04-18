@@ -43,7 +43,6 @@ import {
 
 export type BuyNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -68,10 +67,6 @@ export type BuyNftT22Instruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
-        : TAccountRentPayer,
       TAccountOwner extends string
         ? WritableAccount<TAccountOwner>
         : TAccountOwner,
@@ -166,7 +161,6 @@ export function getBuyNftT22InstructionDataCodec(): Codec<
 }
 
 export type BuyNftT22Input<
-  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountBuyer extends string = string,
   TAccountFeeVault extends string = string,
@@ -183,8 +177,6 @@ export type BuyNftT22Input<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  /** If no external rent payer, this should be the buyer. */
-  rentPayer: TransactionSigner<TAccountRentPayer>;
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
   feeVault: Address<TAccountFeeVault>;
@@ -208,7 +200,6 @@ export type BuyNftT22Input<
 };
 
 export function getBuyNftT22Instruction<
-  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountBuyer extends string,
   TAccountFeeVault extends string,
@@ -226,7 +217,6 @@ export function getBuyNftT22Instruction<
   TAccountMakerBroker extends string,
 >(
   input: BuyNftT22Input<
-    TAccountRentPayer,
     TAccountOwner,
     TAccountBuyer,
     TAccountFeeVault,
@@ -245,7 +235,6 @@ export function getBuyNftT22Instruction<
   >
 ): BuyNftT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer,
   TAccountOwner,
   TAccountBuyer,
   TAccountFeeVault,
@@ -267,7 +256,6 @@ export function getBuyNftT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     buyer: { value: input.buyer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -311,7 +299,6 @@ export function getBuyNftT22Instruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.buyer),
       getAccountMeta(accounts.feeVault),
@@ -334,7 +321,6 @@ export function getBuyNftT22Instruction<
     ),
   } as BuyNftT22Instruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountRentPayer,
     TAccountOwner,
     TAccountBuyer,
     TAccountFeeVault,
@@ -361,26 +347,24 @@ export type ParsedBuyNftT22Instruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** If no external rent payer, this should be the buyer. */
-    rentPayer: TAccountMetas[0];
-    owner: TAccountMetas[1];
-    buyer: TAccountMetas[2];
-    feeVault: TAccountMetas[3];
-    pool: TAccountMetas[4];
+    owner: TAccountMetas[0];
+    buyer: TAccountMetas[1];
+    feeVault: TAccountMetas[2];
+    pool: TAccountMetas[3];
     /** Needed for pool seeds derivation, has_one = whitelist on pool */
-    whitelist: TAccountMetas[5];
+    whitelist: TAccountMetas[4];
     /** The ATA of the buyer, where the NFT will be transferred. */
-    buyerAta: TAccountMetas[6];
+    buyerAta: TAccountMetas[5];
     /** The ATA of the pool, where the NFT will be escrowed. */
-    poolAta: TAccountMetas[7];
-    mint: TAccountMetas[8];
-    nftReceipt: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
-    associatedTokenProgram: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    sharedEscrowAccount: TAccountMetas[13];
-    takerBroker: TAccountMetas[14];
-    makerBroker?: TAccountMetas[15] | undefined;
+    poolAta: TAccountMetas[6];
+    mint: TAccountMetas[7];
+    nftReceipt: TAccountMetas[8];
+    tokenProgram: TAccountMetas[9];
+    associatedTokenProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
+    sharedEscrowAccount: TAccountMetas[12];
+    takerBroker: TAccountMetas[13];
+    makerBroker?: TAccountMetas[14] | undefined;
   };
   data: BuyNftT22InstructionData;
 };
@@ -393,7 +377,7 @@ export function parseBuyNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 16) {
+  if (instruction.accounts.length < 15) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -412,7 +396,6 @@ export function parseBuyNftT22Instruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       buyer: getNextAccount(),
       feeVault: getNextAccount(),

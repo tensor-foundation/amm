@@ -102,7 +102,6 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
         if pool.config.pool_type != PoolType::Token {
             throw_err!(ErrorCode::WrongPoolType);
         }
-        // TODO: we can change this to a toggle type.
         pool.cosigner = NullableOption::new(cosigner);
     }
 

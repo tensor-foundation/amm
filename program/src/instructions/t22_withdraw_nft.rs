@@ -16,10 +16,6 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct WithdrawNftT22<'info> {
-    /// If no external rent_payer, this should be set to the owner.
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// Tied to the pool because used to verify pool seeds
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -54,7 +50,7 @@ pub struct WithdrawNftT22<'info> {
 
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
@@ -95,7 +91,7 @@ impl<'info> WithdrawNftT22<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.owner.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )

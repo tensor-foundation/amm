@@ -250,11 +250,6 @@
       "name": "depositNft",
       "accounts": [
         {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
           "name": "owner",
           "isMut": true,
           "isSigner": true,
@@ -441,11 +436,6 @@
     {
       "name": "withdrawNft",
       "accounts": [
-        {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true
-        },
         {
           "name": "owner",
           "isMut": true,
@@ -646,11 +636,6 @@
       "name": "buyNft",
       "accounts": [
         {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
           "name": "owner",
           "isMut": false,
           "isSigner": false,
@@ -845,11 +830,6 @@
       "name": "sellNftTokenPool",
       "accounts": [
         {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
           "name": "owner",
           "isMut": true,
           "isSigner": false,
@@ -859,7 +839,7 @@
         },
         {
           "name": "seller",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true,
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
@@ -1088,11 +1068,6 @@
     {
       "name": "sellNftTradePool",
       "accounts": [
-        {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true
-        },
         {
           "name": "owner",
           "isMut": true,
@@ -1647,14 +1622,6 @@
       "name": "buyNftT22",
       "accounts": [
         {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, this should be the buyer."
-          ]
-        },
-        {
           "name": "owner",
           "isMut": true,
           "isSigner": false
@@ -1757,14 +1724,6 @@
       "name": "depositNftT22",
       "accounts": [
         {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent payer, set this to the owner."
-          ]
-        },
-        {
           "name": "owner",
           "isMut": true,
           "isSigner": true
@@ -1841,14 +1800,6 @@
     {
       "name": "sellNftTokenPoolT22",
       "accounts": [
-        {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent_payer, this should be set to the seller."
-          ]
-        },
         {
           "name": "owner",
           "isMut": true,
@@ -1954,14 +1905,6 @@
     {
       "name": "sellNftTradePoolT22",
       "accounts": [
-        {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent_payer, this should be set to the seller."
-          ]
-        },
         {
           "name": "owner",
           "isMut": false,
@@ -2069,14 +2012,6 @@
     {
       "name": "withdrawNftT22",
       "accounts": [
-        {
-          "name": "rentPayer",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "If no external rent_payer, this should be set to the owner."
-          ]
-        },
         {
           "name": "owner",
           "isMut": true,

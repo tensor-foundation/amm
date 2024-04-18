@@ -23,10 +23,6 @@ use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
 pub struct SellNftTradePoolT22<'info> {
-    /// If no external rent_payer, this should be set to the seller.
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool (owner is the buyer)
     pub owner: UncheckedAccount<'info>,
 
@@ -170,7 +166,7 @@ impl<'info> SellNftTradePoolT22<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.seller_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
         )
@@ -196,7 +192,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             token_info: &ctx.accounts.pool_ata.to_account_info(),
             mint: &ctx.accounts.mint.to_account_info(),
             authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer,
+            payer: &ctx.accounts.seller,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             signer_seeds: &[],

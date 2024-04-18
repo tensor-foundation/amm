@@ -52,7 +52,6 @@ import {
 
 export type BuyNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -91,10 +90,6 @@ export type BuyNftInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
-        : TAccountRentPayer,
       TAccountOwner extends string
         ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
@@ -221,7 +216,6 @@ export function getBuyNftInstructionDataCodec(): Codec<
 }
 
 export type BuyNftInput<
-  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountBuyer extends string = string,
   TAccountFeeVault extends string = string,
@@ -246,7 +240,6 @@ export type BuyNftInput<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  rentPayer: TransactionSigner<TAccountRentPayer>;
   /**
    * Owner is the pool owner who created the pool and the nominal owner of the
    * Owner is the pool owner who created the pool and the nominal owner of the
@@ -301,7 +294,6 @@ export type BuyNftInput<
 };
 
 export function getBuyNftInstruction<
-  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountBuyer extends string,
   TAccountFeeVault extends string,
@@ -327,7 +319,6 @@ export function getBuyNftInstruction<
   TAccountMakerBroker extends string,
 >(
   input: BuyNftInput<
-    TAccountRentPayer,
     TAccountOwner,
     TAccountBuyer,
     TAccountFeeVault,
@@ -354,7 +345,6 @@ export function getBuyNftInstruction<
   >
 ): BuyNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer,
   TAccountOwner,
   TAccountBuyer,
   TAccountFeeVault,
@@ -384,7 +374,6 @@ export function getBuyNftInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: false },
     buyer: { value: input.buyer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -459,7 +448,6 @@ export function getBuyNftInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.buyer),
       getAccountMeta(accounts.feeVault),
@@ -491,7 +479,6 @@ export function getBuyNftInstruction<
     ),
   } as BuyNftInstruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountRentPayer,
     TAccountOwner,
     TAccountBuyer,
     TAccountFeeVault,
@@ -526,7 +513,6 @@ export type ParsedBuyNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    rentPayer: TAccountMetas[0];
     /**
      * Owner is the pool owner who created the pool and the nominal owner of the
      * Owner is the pool owner who created the pool and the nominal owner of the
@@ -534,47 +520,47 @@ export type ParsedBuyNftInstruction<
      * of the NFT is handled by the pool.
      */
 
-    owner: TAccountMetas[1];
+    owner: TAccountMetas[0];
     /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
-    buyer: TAccountMetas[2];
-    feeVault: TAccountMetas[3];
-    pool: TAccountMetas[4];
+    buyer: TAccountMetas[1];
+    feeVault: TAccountMetas[2];
+    pool: TAccountMetas[3];
     /** The ATA of the buyer, where the NFT will be transferred. */
-    buyerAta: TAccountMetas[5];
+    buyerAta: TAccountMetas[4];
     /** The ATA of the pool, where the NFT is held. */
-    poolAta: TAccountMetas[6];
+    poolAta: TAccountMetas[5];
     /**
      * The mint account of the NFT. It should be the mint account common
      * to the owner_ata, pool_ata and the mint stored in the nft receipt.
      */
 
-    mint: TAccountMetas[7];
+    mint: TAccountMetas[6];
     /** The Token Metadata metadata account of the NFT. */
-    metadata: TAccountMetas[8];
+    metadata: TAccountMetas[7];
     /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
-    nftReceipt: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
-    associatedTokenProgram: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    rent: TAccountMetas[13];
-    edition: TAccountMetas[14];
+    nftReceipt: TAccountMetas[8];
+    tokenProgram: TAccountMetas[9];
+    associatedTokenProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
+    rent: TAccountMetas[12];
+    edition: TAccountMetas[13];
     /** The Token Metadata token record for the pool. */
-    poolTokenRecord: TAccountMetas[15];
+    poolTokenRecord: TAccountMetas[14];
     /** The Token Metadata token record for the buyer. */
-    buyerTokenRecord: TAccountMetas[16];
+    buyerTokenRecord: TAccountMetas[15];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[17];
+    tokenMetadataProgram: TAccountMetas[16];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[18];
+    instructions: TAccountMetas[17];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[19];
+    authorizationRulesProgram: TAccountMetas[18];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[20];
+    authRules: TAccountMetas[19];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow: TAccountMetas[21];
+    sharedEscrow: TAccountMetas[20];
     /** The taker broker account that receives the taker fees. */
-    takerBroker: TAccountMetas[22];
-    makerBroker?: TAccountMetas[23] | undefined;
+    takerBroker: TAccountMetas[21];
+    makerBroker?: TAccountMetas[22] | undefined;
   };
   data: BuyNftInstructionData;
 };
@@ -587,7 +573,7 @@ export function parseBuyNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 24) {
+  if (instruction.accounts.length < 23) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -606,7 +592,6 @@ export function parseBuyNftInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       buyer: getNextAccount(),
       feeVault: getNextAccount(),

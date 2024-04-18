@@ -20,10 +20,6 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
-    /// If no external rent payer, set this to the owner.
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -80,7 +76,7 @@ pub struct DepositNftT22<'info> {
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
         init,
-        payer = rent_payer,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -128,7 +124,7 @@ impl<'info> DepositNftT22<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.owner_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.owner.to_account_info(),
                 authority: self.owner.to_account_info(),
             },
         )
@@ -157,7 +153,7 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
             token_info: &ctx.accounts.pool_ata.to_account_info(),
             mint: &ctx.accounts.mint.to_account_info(),
             authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer,
+            payer: &ctx.accounts.owner,
             system_program: &ctx.accounts.system_program,
             token_program: &ctx.accounts.token_program,
             signer_seeds: &[],

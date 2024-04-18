@@ -16,10 +16,6 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
-    /// If no external rent payer, this should be the buyer.
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// CHECK: has_one = owner in pool (owner is the seller)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
@@ -64,7 +60,7 @@ pub struct BuyNftT22<'info> {
     /// The ATA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
@@ -73,7 +69,7 @@ pub struct BuyNftT22<'info> {
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
         init,
-        payer = rent_payer,
+        payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -290,16 +286,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
-
-    let nft_deposit_receipt = &ctx.accounts.nft_receipt;
-    let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
-
-    // The incoming rent payer account must match what's stored on the pool.
-    if pool.rent_payer == *rent_payer_info.key {
-        nft_deposit_receipt.close(rent_payer_info)?;
-    } else {
-        throw_err!(ErrorCode::WrongRentPayer);
-    };
 
     Ok(())
 }

@@ -16,9 +16,6 @@ use crate::{error::ErrorCode, *};
 /// Allows a pool owner to deposit an asset into Trade or NFT pool.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// The owner of the pool and the NFT.
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -57,7 +54,7 @@ pub struct DepositNft<'info> {
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -180,7 +177,7 @@ impl<'info> DepositNft<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.owner_ata.to_account_info(),
-                destination: self.rent_payer.to_account_info(),
+                destination: self.owner.to_account_info(),
                 authority: self.owner.to_account_info(),
             },
         )
@@ -205,7 +202,7 @@ pub fn process_deposit_nft(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.owner.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.owner.to_account_info(),
             source_ata: &ctx.accounts.owner_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),
@@ -225,7 +222,7 @@ pub fn process_deposit_nft(
         },
     )?;
 
-    // Close owner ATA to return rent to the rent payer.
+    // Close owner ATA to return rent to the owner.
     token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
 
     //update pool
