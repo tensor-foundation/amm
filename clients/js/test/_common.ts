@@ -546,7 +546,6 @@ export async function mintAndSellIntoPool({
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
-    rentPayer: nftOwner, // seller
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,

@@ -174,7 +174,6 @@ test('close pool fails if nfts still deposited', async (t) => {
 
   // Deposit NFT1 into pool
   const depositNftIx = getDepositNftInstruction({
-    rentPayer: owner,
     owner,
     pool,
     whitelist,
@@ -322,7 +321,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTokenPoolInstruction({
-    rentPayer: nftOwner, // seller
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
@@ -476,7 +474,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
-    rentPayer: nftOwner, // seller
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
