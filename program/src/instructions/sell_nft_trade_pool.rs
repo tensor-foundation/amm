@@ -3,7 +3,7 @@
 //! (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
@@ -21,15 +21,13 @@ use crate::{error::ErrorCode, *};
 /// owner of the NFT. The seller is the owner of the NFT and receives the pool's current price in return.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    #[account(mut)]
     pub seller: Signer<'info>,
 
     /// CHECK: Seeds checked here, account has no state.
@@ -85,7 +83,7 @@ pub struct SellNftTradePool<'info> {
 
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
@@ -98,7 +96,7 @@ pub struct SellNftTradePool<'info> {
 
     #[account(
         init,
-        payer = rent_payer,
+        payer = seller,
         seeds=[
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
@@ -202,6 +200,17 @@ impl<'info> SellNftTradePool<'info> {
         self.whitelist
             .verify(metadata.collection, metadata.creators, full_merkle_proof)
     }
+
+    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.seller_ata.to_account_info(),
+                destination: self.seller.to_account_info(),
+                authority: self.seller.to_account_info(),
+            },
+        )
+    }
 }
 
 impl<'info> Validate<'info> for SellNftTradePool<'info> {
@@ -245,7 +254,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         None,
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.seller.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.seller.to_account_info(),
             source_ata: &ctx.accounts.seller_ata,
             dest_ata: &ctx.accounts.pool_ata,
             dest_owner: &ctx.accounts.pool.to_account_info(),
@@ -264,6 +273,10 @@ pub fn process_sell_nft_trade_pool<'info>(
             delegate: None,
         },
     )?;
+
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 
@@ -289,9 +302,6 @@ pub fn process_sell_nft_trade_pool<'info>(
     });
 
     // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
-    msg!("current_price: {}", current_price);
-    msg!("min_price: {}", min_price);
-    msg!("mm_fee: {}", mm_fee);
     if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
@@ -301,7 +311,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     // --------------------------------------- SOL transfers
 
     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
-    let from = match &pool.shared_escrow {
+    let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow) => {
             assert_decode_shared_escrow_account(
                 &ctx.accounts.shared_escrow,

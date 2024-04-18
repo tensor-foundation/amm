@@ -36,7 +36,7 @@ impl<'info> WithdrawSol<'info> {
 
 impl<'info> WithdrawSol<'info> {
     fn validate_sol_transfer(&self) -> Result<()> {
-        if self.pool.shared_escrow.is_some() {
+        if self.pool.shared_escrow.value().is_some() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())

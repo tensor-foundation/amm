@@ -7,6 +7,7 @@
 
 use crate::generated::types::CurveType;
 use crate::generated::types::PoolType;
+use crate::hooked::NullableU16;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -19,5 +20,5 @@ pub struct PoolConfig {
     pub delta: u64,
     /// Trade pools only
     pub mm_compound_fees: bool,
-    pub mm_fee_bps: Option<u16>,
+    pub mm_fee_bps: NullableU16,
 }

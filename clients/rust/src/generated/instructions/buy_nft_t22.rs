@@ -11,9 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct BuyNftT22 {
-    /// If no external rent payer, this should be the buyer.
-    pub rent_payer: solana_program::pubkey::Pubkey,
-
     pub owner: solana_program::pubkey::Pubkey,
 
     pub buyer: solana_program::pubkey::Pubkey,
@@ -58,15 +55,11 @@ impl BuyNftT22 {
         args: BuyNftT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.buyer, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -84,7 +77,7 @@ impl BuyNftT22 {
             self.buyer_ata,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.pool_ata,
             false,
         ));
@@ -163,7 +156,7 @@ pub struct BuyNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
+///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
 ///   1. `[writable]` owner
 ///   2. `[signer]` buyer
 ///   3. `[writable]` fee_vault
@@ -181,7 +174,6 @@ pub struct BuyNftT22InstructionArgs {
 ///   15. `[optional]` maker_broker
 #[derive(Default)]
 pub struct BuyNftT22Builder {
-    rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     buyer: Option<solana_program::pubkey::Pubkey>,
     fee_vault: Option<solana_program::pubkey::Pubkey>,
@@ -206,6 +198,7 @@ impl BuyNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     /// If no external rent payer, this should be the buyer.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -333,7 +326,9 @@ impl BuyNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = BuyNftT22 {
-            rent_payer: self.rent_payer.expect("rent_payer is not set"),
+            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
+                "SysvarRent111111111111111111111111111111111"
+            )),
             owner: self.owner.expect("owner is not set"),
             buyer: self.buyer.expect("buyer is not set"),
             fee_vault: self.fee_vault.expect("fee_vault is not set"),
@@ -369,9 +364,6 @@ impl BuyNftT22Builder {
 
 /// `buy_nft_t22` CPI accounts.
 pub struct BuyNftT22CpiAccounts<'a, 'b> {
-    /// If no external rent payer, this should be the buyer.
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
@@ -407,8 +399,6 @@ pub struct BuyNftT22CpiAccounts<'a, 'b> {
 pub struct BuyNftT22Cpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// If no external rent payer, this should be the buyer.
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -451,7 +441,6 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             buyer: accounts.buyer,
             fee_vault: accounts.fee_vault,
@@ -503,16 +492,12 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.buyer.key,
             true,
         ));
@@ -532,7 +517,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             *self.buyer_ata.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.pool_ata.key,
             false,
         ));
@@ -591,9 +576,8 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(16 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(15 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.buyer.clone());
         account_infos.push(self.fee_vault.clone());
@@ -627,22 +611,21 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable]` owner
-///   2. `[signer]` buyer
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[]` whitelist
-///   6. `[writable]` buyer_ata
-///   7. `[writable]` pool_ata
-///   8. `[]` mint
-///   9. `[writable]` nft_receipt
-///   10. `[]` token_program
-///   11. `[]` associated_token_program
-///   12. `[]` system_program
-///   13. `[writable]` shared_escrow_account
-///   14. `[writable]` taker_broker
-///   15. `[optional]` maker_broker
+///   0. `[writable]` owner
+///   1. `[writable, signer]` buyer
+///   2. `[writable]` fee_vault
+///   3. `[writable]` pool
+///   4. `[]` whitelist
+///   5. `[writable]` buyer_ata
+///   6. `[]` pool_ata
+///   7. `[]` mint
+///   8. `[writable]` nft_receipt
+///   9. `[]` token_program
+///   10. `[]` associated_token_program
+///   11. `[]` system_program
+///   12. `[writable]` shared_escrow_account
+///   13. `[writable]` taker_broker
+///   14. `[optional]` maker_broker
 pub struct BuyNftT22CpiBuilder<'a, 'b> {
     instruction: Box<BuyNftT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -651,7 +634,6 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(BuyNftT22CpiBuilderInstruction {
             __program: program,
-            rent_payer: None,
             owner: None,
             buyer: None,
             fee_vault: None,
@@ -672,15 +654,6 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// If no external rent payer, this should be the buyer.
-    #[inline(always)]
-    pub fn rent_payer(
-        &mut self,
-        rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_payer = Some(rent_payer);
-        self
     }
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
@@ -856,8 +829,6 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         let instruction = BuyNftT22Cpi {
             __program: self.instruction.__program,
 
-            rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             buyer: self.instruction.buyer.expect("buyer is not set"),
@@ -916,7 +887,6 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
 
 struct BuyNftT22CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     buyer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     fee_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,

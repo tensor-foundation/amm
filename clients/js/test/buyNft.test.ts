@@ -1,6 +1,4 @@
-import test from 'ava';
-import bs58 from 'bs58';
-import {} from '@solana/programs';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   address,
   airdropFactory,
@@ -11,9 +9,7 @@ import {
   lamports,
   none,
   pipe,
-  some,
 } from '@solana/web3.js';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
@@ -24,20 +20,22 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
 import {
   createDefaultNft,
   findTokenRecordPda,
 } from '@tensor-foundation/toolkit-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
+import test from 'ava';
+import bs58 from 'bs58';
 import {
+  CurveType,
+  PoolConfig,
+  PoolType,
   fetchPool,
   findNftDepositReceiptPda,
-  PoolType,
-  CurveType,
-  getDepositSolInstruction,
-  PoolConfig,
-  getSellNftTradePoolInstruction,
   getBuyNftInstruction,
+  getDepositSolInstruction,
+  getSellNftTradePoolInstruction,
 } from '../src/index.js';
 import {
   DEFAULT_PUBKEY,
@@ -61,7 +59,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     startingPrice: 1_000_000n,
     delta: 0n,
     mmCompoundFees: false,
-    mmFeeBps: some(100),
+    mmFeeBps: 100,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.
@@ -74,6 +72,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   // Create pool and whitelist
   const { pool, cosigner } = await createPool({
     client,
+    payer: buyer,
     whitelist,
     owner,
     config,
@@ -151,7 +150,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
-    rentPayer: nftOwner, // seller
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
@@ -212,7 +210,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Buy NFT from pool
   const buyNftIx = getBuyNftInstruction({
-    rentPayer: buyer,
     owner: owner.address,
     buyer,
     feeVault,

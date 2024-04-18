@@ -1,3 +1,4 @@
+use tensor_toolbox::NullableOption;
 use vipers::{throw_err, try_or_err, Validate};
 
 use self::constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS};
@@ -62,15 +63,15 @@ impl<'info> EditPool<'info> {
 
         match new_config.pool_type {
             PoolType::NFT | PoolType::Token => {
-                if new_config.mm_fee_bps.is_some() {
+                if new_config.mm_fee_bps.value().is_some() {
                     throw_err!(ErrorCode::FeesNotAllowed);
                 }
             }
             PoolType::Trade => {
-                if new_config.mm_fee_bps.is_none() {
+                if new_config.mm_fee_bps.value().is_none() {
                     throw_err!(ErrorCode::MissingFees);
                 }
-                if new_config.mm_fee_bps.unwrap() > MAX_MM_FEES_BPS {
+                if *new_config.mm_fee_bps.value().unwrap() > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }
@@ -101,8 +102,7 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
         if pool.config.pool_type != PoolType::Token {
             throw_err!(ErrorCode::WrongPoolType);
         }
-        // TODO: we can change this to a toggle type.
-        pool.cosigner = Some(cosigner);
+        pool.cosigner = NullableOption::new(cosigner);
     }
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {

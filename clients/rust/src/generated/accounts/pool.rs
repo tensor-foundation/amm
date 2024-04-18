@@ -7,6 +7,7 @@
 
 use crate::generated::types::PoolConfig;
 use crate::generated::types::PoolStats;
+use crate::hooked::NullableAddress;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -37,7 +38,11 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub whitelist: Pubkey,
-    pub rent_payer: Option<Pubkey>,
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
+    )]
+    pub rent_payer: Pubkey,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
@@ -52,9 +57,9 @@ pub struct Pool {
     pub nfts_held: u32,
     pub stats: PoolStats,
     /// If an escrow account is present, means it's a shared-escrow pool
-    pub shared_escrow: Option<Pubkey>,
+    pub shared_escrow: NullableAddress,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
-    pub cosigner: Option<Pubkey>,
+    pub cosigner: NullableAddress,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
     pub config: PoolConfig,

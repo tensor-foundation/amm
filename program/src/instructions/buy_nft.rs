@@ -18,9 +18,6 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Allows a buyer to purchase an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
-    #[account(mut)]
-    pub rent_payer: Signer<'info>,
-
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -60,7 +57,7 @@ pub struct BuyNft<'info> {
     /// The ATA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
-        payer = rent_payer,
+        payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
@@ -101,6 +98,7 @@ pub struct BuyNft<'info> {
         // redundant but extra safety
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
+        close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -169,7 +167,7 @@ impl<'info> BuyNft<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
@@ -211,7 +209,6 @@ pub fn process_buy_nft<'info, 'b>(
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
-    msg!("Buy NFT");
     let pool = &ctx.accounts.pool;
     let owner_pubkey = ctx.accounts.owner.key();
 
@@ -259,7 +256,7 @@ pub fn process_buy_nft<'info, 'b>(
         Some(signer_seeds),
         PnftTransferArgs {
             authority_and_owner: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.rent_payer.to_account_info(),
+            payer: &ctx.accounts.buyer.to_account_info(),
             source_ata: &ctx.accounts.pool_ata,
             dest_ata: &ctx.accounts.buyer_ata,
             dest_owner: &ctx.accounts.buyer,
@@ -279,6 +276,12 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // close nft escrow account
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+
     // --------------------------------------- SOL transfers
 
     // transfer fees
@@ -293,13 +296,13 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match &pool.shared_escrow {
+        PoolType::Trade => match &pool.shared_escrow.value() {
             Some(stored_shared_escrow) => {
                 assert_decode_shared_escrow_account(
                     &ctx.accounts.shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
-                if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+                if ctx.accounts.shared_escrow.key != *stored_shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
                 ctx.accounts.shared_escrow.to_account_info()
@@ -349,9 +352,6 @@ pub fn process_buy_nft<'info, 'b>(
 
     // --------------------------------------- accounting
 
-    // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
-
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
@@ -365,21 +365,6 @@ pub fn process_buy_nft<'info, 'b>(
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
-
-    let nft_deposit_receipt = &ctx.accounts.nft_receipt;
-    let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
-
-    // If there's a rent payer stored on the pool, the incoming rent payer account must match, otherwise
-    // return the funds to the owner.
-    let recipient = if let Some(rent_payer) = pool.rent_payer {
-        if rent_payer != *rent_payer_info.key {
-            throw_err!(ErrorCode::WrongRentPayer);
-        }
-        rent_payer_info
-    } else {
-        ctx.accounts.owner.to_account_info()
-    };
-    nft_deposit_receipt.close(recipient)?;
 
     Ok(())
 }

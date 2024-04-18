@@ -11,7 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct BuyNft {
-    pub rent_payer: solana_program::pubkey::Pubkey,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -76,11 +75,7 @@ impl BuyNft {
         args: BuyNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
@@ -214,6 +209,7 @@ pub struct BuyNftInstructionArgs {
 ///
 /// ### Accounts:
 ///
+<<<<<<< HEAD
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[]` owner
 ///   2. `[writable, signer]` buyer
@@ -238,9 +234,33 @@ pub struct BuyNftInstructionArgs {
 ///   21. `[writable]` shared_escrow
 ///   22. `[writable]` taker_broker
 ///   23. `[optional]` maker_broker
+=======
+///   0. `[]` owner
+///   1. `[writable, signer]` buyer
+///   2. `[writable]` fee_vault
+///   3. `[writable]` pool
+///   4. `[writable]` buyer_ata
+///   5. `[writable]` pool_ata
+///   6. `[]` mint
+///   7. `[writable]` metadata
+///   8. `[writable]` nft_receipt
+///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   10. `[]` associated_token_program
+///   11. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   12. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
+///   13. `[]` edition
+///   14. `[writable]` pool_token_record
+///   15. `[writable]` buyer_token_record
+///   16. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
+///   17. `[]` instructions
+///   18. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
+///   19. `[]` auth_rules
+///   20. `[writable]` shared_escrow
+///   21. `[writable]` taker_broker
+///   22. `[optional]` maker_broker
+>>>>>>> main
 #[derive(Default)]
 pub struct BuyNftBuilder {
-    rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     buyer: Option<solana_program::pubkey::Pubkey>,
     fee_vault: Option<solana_program::pubkey::Pubkey>,
@@ -275,11 +295,14 @@ impl BuyNftBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+<<<<<<< HEAD
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
         self
     }
+=======
+>>>>>>> main
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -481,7 +504,10 @@ impl BuyNftBuilder {
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts =
             BuyNft {
+<<<<<<< HEAD
                 rent_payer: self.rent_payer.expect("rent_payer is not set"),
+=======
+>>>>>>> main
                 owner: self.owner.expect("owner is not set"),
                 buyer: self.buyer.expect("buyer is not set"),
                 fee_vault: self.fee_vault.expect("fee_vault is not set"),
@@ -538,7 +564,6 @@ impl BuyNftBuilder {
 
 /// `buy_nft` CPI accounts.
 pub struct BuyNftCpiAccounts<'a, 'b> {
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -594,8 +619,6 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
 pub struct BuyNftCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -657,7 +680,6 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             buyer: accounts.buyer,
             fee_vault: accounts.fee_vault,
@@ -717,11 +739,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
@@ -837,9 +855,8 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(23 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.buyer.clone());
         account_infos.push(self.fee_vault.clone());
@@ -881,30 +898,29 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[]` owner
-///   2. `[writable, signer]` buyer
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[writable]` buyer_ata
-///   6. `[writable]` pool_ata
-///   7. `[]` mint
-///   8. `[writable]` metadata
-///   9. `[writable]` nft_receipt
-///   10. `[]` token_program
-///   11. `[]` associated_token_program
-///   12. `[]` system_program
-///   13. `[]` rent
-///   14. `[]` edition
-///   15. `[writable]` pool_token_record
-///   16. `[writable]` buyer_token_record
-///   17. `[]` token_metadata_program
-///   18. `[]` instructions
-///   19. `[]` authorization_rules_program
-///   20. `[]` auth_rules
-///   21. `[writable]` shared_escrow
-///   22. `[writable]` taker_broker
-///   23. `[optional]` maker_broker
+///   0. `[]` owner
+///   1. `[writable, signer]` buyer
+///   2. `[writable]` fee_vault
+///   3. `[writable]` pool
+///   4. `[writable]` buyer_ata
+///   5. `[writable]` pool_ata
+///   6. `[]` mint
+///   7. `[writable]` metadata
+///   8. `[writable]` nft_receipt
+///   9. `[]` token_program
+///   10. `[]` associated_token_program
+///   11. `[]` system_program
+///   12. `[]` rent
+///   13. `[]` edition
+///   14. `[writable]` pool_token_record
+///   15. `[writable]` buyer_token_record
+///   16. `[]` token_metadata_program
+///   17. `[]` instructions
+///   18. `[]` authorization_rules_program
+///   19. `[]` auth_rules
+///   20. `[writable]` shared_escrow
+///   21. `[writable]` taker_broker
+///   22. `[optional]` maker_broker
 pub struct BuyNftCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -913,7 +929,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(BuyNftCpiBuilderInstruction {
             __program: program,
-            rent_payer: None,
             owner: None,
             buyer: None,
             fee_vault: None,
@@ -944,14 +959,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn rent_payer(
-        &mut self,
-        rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_payer = Some(rent_payer);
-        self
     }
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
@@ -1221,8 +1228,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         let instruction = BuyNftCpi {
             __program: self.instruction.__program,
 
-            rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             buyer: self.instruction.buyer.expect("buyer is not set"),
@@ -1312,7 +1317,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
 
 struct BuyNftCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     buyer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     fee_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,

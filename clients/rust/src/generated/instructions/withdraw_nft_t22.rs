@@ -11,8 +11,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct WithdrawNftT22 {
-    /// If no external rent_payer, this should be set to the owner.
-    pub rent_payer: solana_program::pubkey::Pubkey,
     /// Tied to the pool because used to verify pool seeds
     pub owner: solana_program::pubkey::Pubkey,
 
@@ -48,11 +46,7 @@ impl WithdrawNftT22 {
         args: WithdrawNftT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
@@ -126,6 +120,7 @@ pub struct WithdrawNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
+<<<<<<< HEAD
 ///   0. `[writable, signer]` rent_payer
 ///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
@@ -137,9 +132,20 @@ pub struct WithdrawNftT22InstructionArgs {
 ///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   9. `[]` associated_token_program
 ///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
+=======
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[]` mint
+///   4. `[writable]` owner_ata
+///   5. `[writable]` pool_ata
+///   6. `[writable]` nft_receipt
+///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   8. `[]` associated_token_program
+///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
+>>>>>>> main
 #[derive(Default)]
 pub struct WithdrawNftT22Builder {
-    rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
@@ -158,12 +164,15 @@ impl WithdrawNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
+<<<<<<< HEAD
     /// If no external rent_payer, this should be set to the owner.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
         self
     }
+=======
+>>>>>>> main
     /// Tied to the pool because used to verify pool seeds
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -247,7 +256,10 @@ impl WithdrawNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = WithdrawNftT22 {
+<<<<<<< HEAD
             rent_payer: self.rent_payer.expect("rent_payer is not set"),
+=======
+>>>>>>> main
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
@@ -275,8 +287,6 @@ impl WithdrawNftT22Builder {
 
 /// `withdraw_nft_t22` CPI accounts.
 pub struct WithdrawNftT22CpiAccounts<'a, 'b> {
-    /// If no external rent_payer, this should be set to the owner.
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Tied to the pool because used to verify pool seeds
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -303,8 +313,6 @@ pub struct WithdrawNftT22CpiAccounts<'a, 'b> {
 pub struct WithdrawNftT22Cpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// If no external rent_payer, this should be set to the owner.
-    pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Tied to the pool because used to verify pool seeds
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
@@ -337,7 +345,6 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            rent_payer: accounts.rent_payer,
             owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
@@ -384,11 +391,7 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            true,
-        ));
+        let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
@@ -445,9 +448,8 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(11 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(10 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
@@ -474,17 +476,16 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` rent_payer
-///   1. `[writable, signer]` owner
-///   2. `[writable]` pool
-///   3. `[]` whitelist
-///   4. `[]` mint
-///   5. `[writable]` owner_ata
-///   6. `[writable]` pool_ata
-///   7. `[writable]` nft_receipt
-///   8. `[]` token_program
-///   9. `[]` associated_token_program
-///   10. `[]` system_program
+///   0. `[writable, signer]` owner
+///   1. `[writable]` pool
+///   2. `[]` whitelist
+///   3. `[]` mint
+///   4. `[writable]` owner_ata
+///   5. `[writable]` pool_ata
+///   6. `[writable]` nft_receipt
+///   7. `[]` token_program
+///   8. `[]` associated_token_program
+///   9. `[]` system_program
 pub struct WithdrawNftT22CpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -493,7 +494,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(WithdrawNftT22CpiBuilderInstruction {
             __program: program,
-            rent_payer: None,
             owner: None,
             pool: None,
             whitelist: None,
@@ -508,15 +508,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// If no external rent_payer, this should be set to the owner.
-    #[inline(always)]
-    pub fn rent_payer(
-        &mut self,
-        rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_payer = Some(rent_payer);
-        self
     }
     /// Tied to the pool because used to verify pool seeds
     #[inline(always)]
@@ -643,8 +634,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
         let instruction = WithdrawNftT22Cpi {
             __program: self.instruction.__program,
 
-            rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             pool: self.instruction.pool.expect("pool is not set"),
@@ -687,7 +676,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
 
 struct WithdrawNftT22CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,

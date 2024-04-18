@@ -47,7 +47,10 @@ import {
 
 export type WithdrawNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+<<<<<<< HEAD
   TAccountRentPayer extends string | IAccountMeta<string> = string,
+=======
+>>>>>>> main
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
@@ -81,10 +84,6 @@ export type WithdrawNftInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountRentPayer extends string
-        ? WritableSignerAccount<TAccountRentPayer> &
-            IAccountSignerMeta<TAccountRentPayer>
-        : TAccountRentPayer,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
@@ -191,7 +190,6 @@ export function getWithdrawNftInstructionDataCodec(): Codec<
 }
 
 export type WithdrawNftInput<
-  TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountMint extends string = string,
@@ -211,7 +209,10 @@ export type WithdrawNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
 > = {
+<<<<<<< HEAD
   rentPayer: TransactionSigner<TAccountRentPayer>;
+=======
+>>>>>>> main
   /** The owner of the pool and will receive the NFT at the owner_ata account. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
@@ -244,7 +245,6 @@ export type WithdrawNftInput<
 };
 
 export function getWithdrawNftInstruction<
-  TAccountRentPayer extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountMint extends string,
@@ -265,7 +265,6 @@ export function getWithdrawNftInstruction<
   TAccountAuthRules extends string,
 >(
   input: WithdrawNftInput<
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountMint,
@@ -287,7 +286,6 @@ export function getWithdrawNftInstruction<
   >
 ): WithdrawNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountMint,
@@ -312,7 +310,6 @@ export function getWithdrawNftInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
@@ -377,7 +374,6 @@ export function getWithdrawNftInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.mint),
@@ -403,7 +399,6 @@ export function getWithdrawNftInstruction<
     ),
   } as WithdrawNftInstruction<
     typeof AMM_PROGRAM_ADDRESS,
-    TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
     TAccountMint,
@@ -433,34 +428,33 @@ export type ParsedWithdrawNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    rentPayer: TAccountMetas[0];
     /** The owner of the pool and will receive the NFT at the owner_ata account. */
-    owner: TAccountMetas[1];
+    owner: TAccountMetas[0];
     /** The pool from which the NFT will be withdrawn. */
-    pool: TAccountMetas[2];
-    mint: TAccountMetas[3];
+    pool: TAccountMetas[1];
+    mint: TAccountMetas[2];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
-    ownerAta: TAccountMetas[4];
+    ownerAta: TAccountMetas[3];
     /** The ATA of the pool, where the NFT token is escrowed. */
-    poolAta: TAccountMetas[5];
-    nftReceipt: TAccountMetas[6];
-    tokenProgram: TAccountMetas[7];
-    associatedTokenProgram: TAccountMetas[8];
-    systemProgram: TAccountMetas[9];
-    rent: TAccountMetas[10];
-    metadata: TAccountMetas[11];
-    edition: TAccountMetas[12];
-    ownerTokenRecord: TAccountMetas[13];
+    poolAta: TAccountMetas[4];
+    nftReceipt: TAccountMetas[5];
+    tokenProgram: TAccountMetas[6];
+    associatedTokenProgram: TAccountMetas[7];
+    systemProgram: TAccountMetas[8];
+    rent: TAccountMetas[9];
+    metadata: TAccountMetas[10];
+    edition: TAccountMetas[11];
+    ownerTokenRecord: TAccountMetas[12];
     /** The Token Metadata pool temporary token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[14];
+    poolTokenRecord: TAccountMetas[13];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[15];
+    tokenMetadataProgram: TAccountMetas[14];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[16];
+    instructions: TAccountMetas[15];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[17];
+    authorizationRulesProgram: TAccountMetas[16];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[18];
+    authRules: TAccountMetas[17];
   };
   data: WithdrawNftInstructionData;
 };
@@ -473,7 +467,7 @@ export function parseWithdrawNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 19) {
+  if (instruction.accounts.length < 18) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -486,7 +480,6 @@ export function parseWithdrawNftInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      rentPayer: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       mint: getNextAccount(),
