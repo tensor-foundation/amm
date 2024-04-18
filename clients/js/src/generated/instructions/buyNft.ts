@@ -52,9 +52,7 @@ import {
 
 export type BuyNftInstruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -248,7 +246,7 @@ export type BuyNftInput<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
 > = {
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
+  rentPayer: TransactionSigner<TAccountRentPayer>;
   /**
    * Owner is the pool owner who created the pool and the nominal owner of the
    * escrowed NFT. In this transaction they are the seller, though the transfer
@@ -431,10 +429,6 @@ export function getBuyNftInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.rentPayer.value) {
-    accounts.rentPayer.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

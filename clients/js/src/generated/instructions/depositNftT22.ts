@@ -41,9 +41,7 @@ import {
 
 export type DepositNftT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
-  TAccountRentPayer extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
+  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -158,7 +156,7 @@ export type DepositNftT22Input<
   TAccountSystemProgram extends string = string,
 > = {
   /** If no external rent payer, set this to the owner. */
-  rentPayer?: TransactionSigner<TAccountRentPayer>;
+  rentPayer: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation, also checked via has_one on pool */
@@ -249,10 +247,6 @@ export function getDepositNftT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.rentPayer.value) {
-    accounts.rentPayer.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

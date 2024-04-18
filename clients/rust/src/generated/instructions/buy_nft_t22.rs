@@ -163,7 +163,7 @@ pub struct BuyNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer, optional]` rent_payer (default to `SysvarRent111111111111111111111111111111111`)
+///   0. `[writable, signer]` rent_payer
 ///   1. `[writable]` owner
 ///   2. `[signer]` buyer
 ///   3. `[writable]` fee_vault
@@ -206,7 +206,6 @@ impl BuyNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     /// If no external rent payer, this should be the buyer.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -334,9 +333,7 @@ impl BuyNftT22Builder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = BuyNftT22 {
-            rent_payer: self.rent_payer.unwrap_or(solana_program::pubkey!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
+            rent_payer: self.rent_payer.expect("rent_payer is not set"),
             owner: self.owner.expect("owner is not set"),
             buyer: self.buyer.expect("buyer is not set"),
             fee_vault: self.fee_vault.expect("fee_vault is not set"),
