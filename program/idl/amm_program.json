@@ -1864,7 +1864,9 @@
           },
           {
             "name": "currency",
-            "type": "publicKey"
+            "type": {
+              "defined": "Currency"
+            }
           },
           {
             "name": "amount",

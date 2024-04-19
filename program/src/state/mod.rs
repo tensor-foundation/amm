@@ -165,7 +165,7 @@ mod tests {
                 price_offset,
                 nfts_held: 0,
                 stats: PoolStats::default(),
-                currency: Pubkey::default(),
+                currency: Currency::sol(),
                 amount: 0,
                 shared_escrow: NullableOption::none(),
                 max_taker_sell_count: 10,

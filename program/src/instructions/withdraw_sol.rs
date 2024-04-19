@@ -1,6 +1,6 @@
 //! User withdrawing SOL from their pool (all 3 types)
 use tensor_toolbox::transfer_lamports_from_pda;
-use vipers::throw_err;
+use vipers::{throw_err, unwrap_checked};
 
 use crate::{error::ErrorCode, *};
 
@@ -59,11 +59,13 @@ pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     lamports: u64,
 ) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
+
     // ToDo: If pool has padding for future proofing, the keep-alive rent  can be extracted to a constant.
     let rent = solana_program::rent::Rent::get()?;
     let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
 
-    let current_pool_lamports = ctx.accounts.pool.to_account_info().get_lamports();
+    let current_pool_lamports = pool.to_account_info().get_lamports();
 
     // The pool must maintain the minimum rent balance. To close the pool, use "close_pool", which
     // performs appropriate checks.
@@ -73,6 +75,11 @@ pub fn process_withdraw_sol<'info>(
         < pool_keep_alive
     {
         throw_err!(ErrorCode::PoolKeepAlive);
+    }
+
+    // Update the pool's currency amount
+    if pool.currency.is_sol() {
+        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports) });
     }
 
     ctx.accounts

@@ -7,7 +7,7 @@ use crate::{
     constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
     error::ErrorCode,
     state::{Pool, PoolConfig, POOL_SIZE},
-    CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
+    Currency, CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -108,7 +108,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.pool_id = args.pool_id;
     pool.rent_payer = ctx.accounts.rent_payer.key();
     // Only SOL currently supported
-    pool.currency = Pubkey::default();
+    pool.currency = Currency::sol();
     pool.amount = 0;
 
     pool.price_offset = 0;

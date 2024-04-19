@@ -13,7 +13,7 @@ use tensor_toolbox::{
     FromAcc, PnftTransferArgs,
 };
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
-use vipers::{throw_err, unwrap_int, Validate};
+use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, utils::send_pnft, *};
@@ -260,6 +260,8 @@ pub fn process_sell_nft_token_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
+
     let owner_pubkey = ctx.accounts.owner.key();
 
     // --------------------------------------- send pnft
@@ -444,5 +446,12 @@ pub fn process_sell_nft_token_pool<'info>(
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
+    // Update the pool's currency balance.
+    if pool.currency.is_sol() {
+        let pool_post_balance = pool.get_lamports();
+        let lamports_taken =
+            unwrap_checked!({ pool_initial_balance.checked_sub(pool_post_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
+    }
     Ok(())
 }

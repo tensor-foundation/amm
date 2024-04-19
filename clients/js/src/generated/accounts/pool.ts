@@ -48,8 +48,12 @@ import {
   mapEncoder,
 } from '@solana/codecs';
 import {
+  Currency,
+  CurrencyArgs,
   NullableAddress,
   NullableAddressArgs,
+  getCurrencyDecoder,
+  getCurrencyEncoder,
   getNullableAddressDecoder,
   getNullableAddressEncoder,
 } from '../../hooked';
@@ -92,7 +96,7 @@ export type PoolAccountData = {
   owner: Address;
   whitelist: Address;
   rentPayer: Address;
-  currency: Address;
+  currency: Currency;
   /** The amount of currency held in the pool */
   amount: bigint;
   /**
@@ -130,7 +134,7 @@ export type PoolAccountDataArgs = {
   owner: Address;
   whitelist: Address;
   rentPayer: Address;
-  currency: Address;
+  currency: CurrencyArgs;
   /** The amount of currency held in the pool */
   amount: number | bigint;
   /**
@@ -165,7 +169,7 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
       ['rentPayer', getAddressEncoder()],
-      ['currency', getAddressEncoder()],
+      ['currency', getCurrencyEncoder()],
       ['amount', getU64Encoder()],
       ['priceOffset', getI32Encoder()],
       ['nftsHeld', getU32Encoder()],
@@ -195,7 +199,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
     ['rentPayer', getAddressDecoder()],
-    ['currency', getAddressDecoder()],
+    ['currency', getCurrencyDecoder()],
     ['amount', getU64Decoder()],
     ['priceOffset', getI32Decoder()],
     ['nftsHeld', getU32Decoder()],

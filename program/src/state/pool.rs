@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
@@ -55,6 +57,31 @@ pub struct PoolStats {
     pub accumulated_mm_profit: u64,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
+pub struct Currency(Pubkey);
+
+impl Deref for Currency {
+    type Target = Pubkey;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Currency {
+    pub fn new(pubkey: Pubkey) -> Self {
+        Self(pubkey)
+    }
+
+    pub fn sol() -> Self {
+        Self::default()
+    }
+
+    pub fn is_sol(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 #[account]
 pub struct Pool {
     /// Pool version, used to control upgrades.
@@ -77,7 +104,7 @@ pub struct Pool {
     // without signing when the pool is closed.
     pub rent_payer: Pubkey,
     // Default Pubkey is SOL, otherwise SPL token mint
-    pub currency: Pubkey,
+    pub currency: Currency,
     /// The amount of currency held in the pool
     pub amount: u64,
 

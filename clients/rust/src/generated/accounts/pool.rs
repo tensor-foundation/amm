@@ -7,6 +7,7 @@
 
 use crate::generated::types::PoolConfig;
 use crate::generated::types::PoolStats;
+use crate::hooked::Currency;
 use crate::hooked::NullableAddress;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -43,11 +44,7 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub rent_payer: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub currency: Pubkey,
+    pub currency: Currency,
     /// The amount of currency held in the pool
     pub amount: u64,
     /// The difference between the number of buys and sells

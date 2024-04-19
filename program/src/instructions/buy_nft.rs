@@ -210,6 +210,8 @@ pub fn process_buy_nft<'info, 'b>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
+
     let owner_pubkey = ctx.accounts.owner.key();
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
@@ -277,7 +279,7 @@ pub fn process_buy_nft<'info, 'b>(
     )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
-    // don't have the context of manual lamport balance changes so need to come before.
+    // don't have the context of manual lamport balance changes so this needs to come before.
 
     // close nft escrow account
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
@@ -314,6 +316,7 @@ pub fn process_buy_nft<'info, 'b>(
 
     //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+    msg!("Rebate to destination: {}", maker_rebate);
 
     // transfer royalties (on top of current price)
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
@@ -367,6 +370,14 @@ pub fn process_buy_nft<'info, 'b>(
         let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
+    }
+
+    // Update the pool's currency balance.
+    if pool.currency.is_sol() {
+        let pool_post_balance = pool.get_lamports();
+        let lamports_added =
+            unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
     }
 
     Ok(())

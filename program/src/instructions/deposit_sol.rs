@@ -1,7 +1,7 @@
 //! User depositing SOL into their Token/Trade pool (to purchase NFTs)
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use tensor_whitelist::WhitelistV2;
-use vipers::{throw_err, Validate};
+use vipers::{throw_err, unwrap_checked, Validate};
 
 use crate::{error::ErrorCode, *};
 
@@ -66,5 +66,12 @@ pub fn process_deposit_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
     lamports: u64,
 ) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
+
+    // Update the pool's currency amount
+    if pool.currency.is_sol() {
+        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports) });
+    }
+
     ctx.accounts.transfer_lamports(lamports)
 }
