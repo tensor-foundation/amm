@@ -289,10 +289,13 @@ pub fn process_t22_buy_nft<'info, 'b>(
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
 
-    // Update the pool's SOL balance.
-    let pool_post_balance = pool.get_lamports();
-    let lamports_added = unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
-    pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+    // Update the pool's currency balance.
+    if pool.currency.is_sol() {
+        let pool_post_balance = pool.get_lamports();
+        let lamports_added =
+            unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+    }
 
     Ok(())
 }
