@@ -40,6 +40,7 @@ import {
   isSol,
 } from '../src/index.js';
 import {
+  BASIS_POINTS,
   DEFAULT_PUBKEY,
   MAKER_REBATE_BPS,
   createPool,
@@ -447,8 +448,11 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   // This is a Trade pool so funds go to the pool instead of straight through to the pool's owner.
   // The pool's post balance should be the pre-balance plus the price paid for the NFT and the maker rebate.
-  const lamportsAdded =
-    config.startingPrice + (config.startingPrice * MAKER_REBATE_BPS) / 10_000n;
+  const makerRebate = (config.startingPrice * MAKER_REBATE_BPS) / BASIS_POINTS;
+  const mmFee =
+    (config.startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
+
+  const lamportsAdded = config.startingPrice + makerRebate + mmFee;
 
   t.assert(postPoolBalance === prePoolBalance + lamportsAdded);
 

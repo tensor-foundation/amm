@@ -223,6 +223,7 @@ pub fn process_buy_nft<'info, 'b>(
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
@@ -279,7 +280,7 @@ pub fn process_buy_nft<'info, 'b>(
     )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
-    // don't have the context of manual lamport balance changes so this needs to come before.
+    // don't have the context of manual lamport balance changes so need to come before.
 
     // close nft escrow account
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
@@ -316,7 +317,6 @@ pub fn process_buy_nft<'info, 'b>(
 
     //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
-    msg!("Rebate to destination: {}", maker_rebate);
 
     // transfer royalties (on top of current price)
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
@@ -338,11 +338,10 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
-    // transfer current price + MM fee if !compounded (within current price)
     match pool.config.pool_type {
         PoolType::Trade if !pool.config.mm_compound_fees => {
             let mm_fee = pool.calc_mm_fee(current_price)?;
-            let left_for_pool = unwrap_int!(current_price.checked_sub(mm_fee));
+            let left_for_pool = current_price;
             ctx.accounts
                 .transfer_lamports(&destination, left_for_pool)?;
             ctx.accounts
@@ -371,7 +370,6 @@ pub fn process_buy_nft<'info, 'b>(
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
-
     // Update the pool's currency balance.
     if pool.currency.is_sol() {
         let pool_post_balance = pool.get_lamports();

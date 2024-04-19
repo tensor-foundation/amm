@@ -253,11 +253,10 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
-    // transfer current price + MM fee if !compounded (within current price)
     match pool.config.pool_type {
         PoolType::Trade if !pool.config.mm_compound_fees => {
             let mm_fee = pool.calc_mm_fee(current_price)?;
-            let left_for_pool = unwrap_int!(current_price.checked_sub(mm_fee));
+            let left_for_pool = current_price;
             ctx.accounts
                 .transfer_lamports(&destination, left_for_pool)?;
             ctx.accounts
