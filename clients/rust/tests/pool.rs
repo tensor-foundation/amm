@@ -299,6 +299,7 @@ async fn edit_pool() {
         cosigner: None,
         max_taker_sell_count: None,
         expire_in_sec: None,
+        reset_price_offset: true,
     });
 
     let tx = Transaction::new_signed_with_payer(

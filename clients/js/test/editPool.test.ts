@@ -63,6 +63,7 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
     newConfig: null,
     cosigner: null,
     maxTakerSellCount: null,
+    resetPriceOffset: true,
   });
 
   await pipe(

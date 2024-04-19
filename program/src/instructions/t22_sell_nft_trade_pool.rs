@@ -301,7 +301,10 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_add(1));
-    pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
+
+    // Pool has bought an NFT, so we decrement the trade counter.
+    pool.price_offset = unwrap_int!(pool.price_offset.checked_sub(1));
+
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 

@@ -1874,18 +1874,14 @@
             "type": "u64"
           },
           {
-            "name": "takerSellCount",
+            "name": "priceOffset",
             "docs": [
-              "How many times a taker has SOLD into the pool"
+              "The difference between the number of buys and sells",
+              "where a postive number indicates the pool has SOLD more NFTs than it has bought",
+              "and a negative number indicates the pool has BOUGHT more NFTs than it has sold.",
+              "This is used to calculate the current price of the pool."
             ],
-            "type": "u32"
-          },
-          {
-            "name": "takerBuyCount",
-            "docs": [
-              "How many times a taker has BOUGHT from the pool"
-            ],
-            "type": "u32"
+            "type": "i32"
           },
           {
             "name": "nftsHeld",
@@ -2072,6 +2068,10 @@
             "type": {
               "option": "u32"
             }
+          },
+          {
+            "name": "resetPriceOffset",
+            "type": "bool"
           }
         ]
       }

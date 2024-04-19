@@ -111,8 +111,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.currency = Pubkey::default();
     pool.amount = 0;
 
-    pool.taker_buy_count = 0;
-    pool.taker_sell_count = 0;
+    pool.price_offset = 0;
     pool.nfts_held = 0;
 
     pool.stats = PoolStats::default();

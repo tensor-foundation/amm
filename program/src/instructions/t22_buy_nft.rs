@@ -274,7 +274,10 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
-    pool.taker_buy_count = unwrap_int!(pool.taker_buy_count.checked_add(1));
+
+    // Pool has sold an NFT, so we increment the trade counter.
+    pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
+
     pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 

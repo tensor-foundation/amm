@@ -50,10 +50,11 @@ pub struct Pool {
     pub currency: Pubkey,
     /// The amount of currency held in the pool
     pub amount: u64,
-    /// How many times a taker has SOLD into the pool
-    pub taker_sell_count: u32,
-    /// How many times a taker has BOUGHT from the pool
-    pub taker_buy_count: u32,
+    /// The difference between the number of buys and sells
+    /// where a postive number indicates the pool has SOLD more NFTs than it has bought
+    /// and a negative number indicates the pool has BOUGHT more NFTs than it has sold.
+    /// This is used to calculate the current price of the pool.
+    pub price_offset: i32,
     pub nfts_held: u32,
     pub stats: PoolStats,
     /// If an escrow account is present, means it's a shared-escrow pool

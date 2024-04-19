@@ -15,10 +15,11 @@ macro_rules! unwrap_opt_or_return_ok {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct EditPoolArgs {
-    new_config: Option<PoolConfig>,
+    pub new_config: Option<PoolConfig>,
     pub cosigner: Option<Pubkey>,
     pub expire_in_sec: Option<u64>,
-    max_taker_sell_count: Option<u32>,
+    pub max_taker_sell_count: Option<u32>,
+    pub reset_price_offset: bool,
 }
 
 #[derive(Accounts)]
@@ -108,6 +109,10 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {
         pool.valid_max_sell_count(max_taker_sell_count)?;
         pool.max_taker_sell_count = max_taker_sell_count;
+    }
+
+    if args.reset_price_offset {
+        pool.price_offset = 0;
     }
 
     let timestamp = Clock::get()?.unix_timestamp;
