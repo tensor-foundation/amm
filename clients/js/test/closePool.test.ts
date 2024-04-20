@@ -36,6 +36,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import bs58 from 'bs58';
 import {
+  AMM_PROGRAM_ADDRESS,
   CurveType,
   Pool,
   PoolConfig,
@@ -347,6 +348,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
+    ammProgram: AMM_PROGRAM_ADDRESS,
     // Remaining accounts
     creators: [nftOwner.address],
   });
@@ -499,6 +501,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
+    ammProgram: AMM_PROGRAM_ADDRESS,
     // Remaining accounts
     creators: [nftOwner.address],
   });

@@ -30,6 +30,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import bs58 from 'bs58';
 import {
+  AMM_PROGRAM_ADDRESS,
   CurveType,
   PoolConfig,
   PoolType,
@@ -167,6 +168,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
+    ammProgram: AMM_PROGRAM_ADDRESS,
     // Remaining accounts
     creators: [nftOwner.address],
   });

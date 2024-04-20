@@ -86,6 +86,24 @@
   ],
   "instructions": [
     {
+      "name": "tammNoop",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "event",
+          "type": {
+            "defined": "TAmmEvent"
+          }
+        }
+      ]
+    },
+    {
       "name": "reallocPool",
       "accounts": [
         {
@@ -791,6 +809,11 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1030,6 +1053,11 @@
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
             "Checks are performed in the handler."
           ]
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1248,6 +1276,11 @@
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
             "Checks are performed in the handler."
           ]
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1394,6 +1427,11 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1576,6 +1614,11 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1683,6 +1726,11 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -2095,6 +2143,30 @@
       }
     },
     {
+      "name": "BuySellEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "currentPrice",
+            "type": "u64"
+          },
+          {
+            "name": "tswapFee",
+            "type": "u64"
+          },
+          {
+            "name": "mmFee",
+            "type": "u64"
+          },
+          {
+            "name": "creatorsFee",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolConfig",
       "type": {
         "kind": "struct",
@@ -2229,6 +2301,22 @@
       }
     },
     {
+      "name": "TAmmEvent",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "BuySellEvent",
+            "fields": [
+              {
+                "defined": "BuySellEvent"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "PoolType",
       "type": {
         "kind": "enum",
@@ -2325,31 +2413,6 @@
     }
   ],
   "events": [
-    {
-      "name": "BuySellEvent",
-      "fields": [
-        {
-          "name": "currentPrice",
-          "type": "u64",
-          "index": true
-        },
-        {
-          "name": "tswapFee",
-          "type": "u64",
-          "index": true
-        },
-        {
-          "name": "mmFee",
-          "type": "u64",
-          "index": true
-        },
-        {
-          "name": "creatorsFee",
-          "type": "u64",
-          "index": true
-        }
-      ]
-    },
     {
       "name": "DelistEvent",
       "fields": [

@@ -301,6 +301,15 @@ impl Pool {
 
         Ok(())
     }
+
+    pub fn seeds(&self) -> [&[u8]; 4] {
+        [
+            b"pool",
+            self.owner.as_ref(),
+            self.pool_id.as_ref(),
+            &self.bump,
+        ]
+    }
 }
 
 pub enum Direction {

@@ -21,6 +21,7 @@ export * from './sellNftTokenPool';
 export * from './sellNftTokenPoolT22';
 export * from './sellNftTradePool';
 export * from './sellNftTradePoolT22';
+export * from './tammNoop';
 export * from './withdrawMmFee';
 export * from './withdrawNft';
 export * from './withdrawNftT22';

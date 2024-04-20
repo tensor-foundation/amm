@@ -5,6 +5,7 @@ import {
   Base64EncodedDataResponse,
   ProgramDerivedAddress,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
+  Signature,
   address,
   airdropFactory,
   appendTransactionInstruction,
@@ -44,6 +45,7 @@ import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
 import { v4 } from 'uuid';
 import {
+  AMM_PROGRAM_ADDRESS,
   CurveType,
   PoolConfig,
   PoolType,
@@ -574,6 +576,7 @@ export async function mintAndSellIntoPool({
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
+    ammProgram: AMM_PROGRAM_ADDRESS,
     // Remaining accounts
     creators: [nftOwner.address],
   });
@@ -591,3 +594,20 @@ export async function mintAndSellIntoPool({
 
   return { mint, feeVault, shard: lastByte, bump };
 }
+
+export const assertTammNoop = async (
+  t: ExecutionContext,
+  client: Client,
+  sig: Signature
+) => {
+  const tx = await client.rpc
+    .getTransaction(sig, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    })
+    .send();
+
+  t.assert(
+    tx?.meta?.logMessages?.some((msg) => msg.includes('Instruction: TammNoop'))
+  );
+};
