@@ -231,11 +231,6 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     } = calc_fees_rebates(current_price)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
-    msg!("current_price: {}", current_price);
-    msg!("tswap_fee: {}", tswap_fee);
-    msg!("broker_fee: {}", broker_fee);
-    msg!("taker_fee: {}", taker_fee);
-
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     //
