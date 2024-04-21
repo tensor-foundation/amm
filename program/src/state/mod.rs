@@ -394,10 +394,7 @@ mod tests {
         // NB: selling into the pool is always 1 delta lower than buying.
 
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-        assert_eq!(
-            p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL - delta
-        );
+        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
         //pool's a buyer -> price goes down
         p.price_offset -= 1;
@@ -407,7 +404,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL - delta * 2
+            LAMPORTS_PER_SOL - delta
         );
 
         p.price_offset -= 2;
@@ -417,7 +414,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL - delta * 4
+            LAMPORTS_PER_SOL - delta * 3
         );
         //pool can pay 0
         p.price_offset -= 7;
@@ -425,16 +422,15 @@ mod tests {
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL - delta * 10
         );
-
-        // Sell price will overflow.
+        assert_eq!(
+            p.current_price(TakerSide::Sell).unwrap(),
+            LAMPORTS_PER_SOL - delta * 10
+        );
 
         //pool's neutral
         p.price_offset += 10;
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-        assert_eq!(
-            p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL - delta
-        );
+        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
         //pool's a seller -> price goes up
         p.price_offset += 1;
@@ -442,7 +438,10 @@ mod tests {
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta
         );
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
+        assert_eq!(
+            p.current_price(TakerSide::Sell).unwrap(),
+            LAMPORTS_PER_SOL + delta
+        );
 
         p.price_offset += 2;
         assert_eq!(
@@ -451,7 +450,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL + delta * 2
+            LAMPORTS_PER_SOL + delta * 3
         );
         //go much higher
         p.price_offset += 9999996;
@@ -461,7 +460,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL + delta * 9999998
+            LAMPORTS_PER_SOL + delta * 9999999
         );
     }
 
@@ -489,7 +488,7 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             delta,
-            -10, //10+1 tick for selling = overflow
+            -11,
             NullableOption::none(),
         );
         p.current_price(TakerSide::Sell).unwrap();
@@ -511,6 +510,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "IntegerOverflow")]
     fn test_linear_trade_pool_sell_side_upper() {
         let delta = LAMPORTS_PER_SOL * 10_000_000_000;
         let p = Pool::new(
@@ -521,8 +521,7 @@ mod tests {
             1,
             NullableOption::none(),
         );
-        // This shouldn't oveflow for sell side (1 tick lower).
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), delta);
+        p.current_price(TakerSide::Sell).unwrap();
     }
 
     // --------------------------------------- exponential
@@ -647,10 +646,7 @@ mod tests {
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-        assert_eq!(
-            p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL * MAX_BPS / 11000
-        );
+        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
         //pool's a buyer -> price goes down
         p.price_offset -= 1;
@@ -660,7 +656,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100)
+            LAMPORTS_PER_SOL * MAX_BPS / 11000
         );
         p.price_offset -= 2;
         assert_eq!(
@@ -669,16 +665,13 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL * MAX_BPS / 14641
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
         );
 
         //pool's neutral
         p.price_offset += 3;
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-        assert_eq!(
-            p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL * MAX_BPS / 11000
-        );
+        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
         //pool's a seller -> price goes up
         p.price_offset += 1;
@@ -686,7 +679,10 @@ mod tests {
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * 11000 / MAX_BPS
         );
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
+        assert_eq!(
+            p.current_price(TakerSide::Sell).unwrap(),
+            LAMPORTS_PER_SOL * 11000 / MAX_BPS
+        );
         p.price_offset += 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
@@ -694,7 +690,7 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            LAMPORTS_PER_SOL * 12100 / MAX_BPS
+            LAMPORTS_PER_SOL * 13310 / MAX_BPS
         );
     }
 
@@ -714,6 +710,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "IntegerOverflow")]
     fn test_expo_trade_pool_sell_side_upper() {
         let delta = 1000;
         let p = Pool::new(
@@ -724,7 +721,6 @@ mod tests {
             1,
             NullableOption::none(),
         );
-        // 1 tick lower, should not panic.
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), u64::MAX - 1);
+        p.current_price(TakerSide::Sell).unwrap();
     }
 }

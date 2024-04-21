@@ -336,7 +336,9 @@ pub fn process_buy_nft<'info, 'b>(
     match pool.config.pool_type {
         PoolType::Trade if !pool.config.mm_compound_fees => {
             let mm_fee = pool.calc_mm_fee(current_price)?;
+
             let left_for_pool = current_price;
+
             ctx.accounts
                 .transfer_lamports(&destination, left_for_pool)?;
             ctx.accounts
