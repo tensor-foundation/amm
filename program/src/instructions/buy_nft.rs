@@ -6,8 +6,8 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
-    assert_decode_metadata, send_pnft, transfer_creators_fee, transfer_lamports_from_pda,
-    CreatorFeeMode, FromAcc, FromExternal, PnftTransferArgs,
+    assert_decode_metadata, send_pnft, transfer_creators_fee, CreatorFeeMode, FromAcc,
+    FromExternal, PnftTransferArgs,
 };
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
@@ -174,11 +174,6 @@ impl<'info> BuyNft<'info> {
     }
 
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        // Handle buyers that have non-zero data and cannot use system transfer.
-        if !self.buyer.data_is_empty() {
-            return transfer_lamports_from_pda(&self.buyer.to_account_info(), to, lamports);
-        }
-
         invoke(
             &system_instruction::transfer(self.buyer.key, to.key, lamports),
             &[

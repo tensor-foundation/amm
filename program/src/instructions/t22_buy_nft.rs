@@ -6,7 +6,7 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
@@ -125,11 +125,6 @@ impl<'info> BuyNftT22<'info> {
     }
 
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        // Handle buyers that have non-zero data and cannot use system transfer.
-        if !self.buyer.data_is_empty() {
-            return transfer_lamports_from_pda(&self.buyer.to_account_info(), to, lamports);
-        }
-
         invoke(
             &system_instruction::transfer(self.buyer.key, to.key, lamports),
             &[
