@@ -48,8 +48,8 @@ pub struct Pool {
     /// The amount of currency held in the pool
     pub amount: u64,
     /// The difference between the number of buys and sells
-    /// where a postive number indicates the pool has SOLD more NFTs than it has bought
-    /// and a negative number indicates the pool has BOUGHT more NFTs than it has sold.
+    /// where a postive number indicates the taker has BOUGHT more NFTs than sold
+    /// and a negative number indicates the taker has SOLD more NFTs than bought.
     /// This is used to calculate the current price of the pool.
     pub price_offset: i32,
     pub nfts_held: u32,

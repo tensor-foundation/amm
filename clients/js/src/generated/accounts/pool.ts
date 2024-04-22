@@ -101,8 +101,8 @@ export type PoolAccountData = {
   amount: bigint;
   /**
    * The difference between the number of buys and sells
-   * where a postive number indicates the pool has SOLD more NFTs than it has bought
-   * and a negative number indicates the pool has BOUGHT more NFTs than it has sold.
+   * where a postive number indicates the taker has BOUGHT more NFTs than sold
+   * and a negative number indicates the taker has SOLD more NFTs than bought.
    * This is used to calculate the current price of the pool.
    */
   priceOffset: number;
@@ -139,8 +139,8 @@ export type PoolAccountDataArgs = {
   amount: number | bigint;
   /**
    * The difference between the number of buys and sells
-   * where a postive number indicates the pool has SOLD more NFTs than it has bought
-   * and a negative number indicates the pool has BOUGHT more NFTs than it has sold.
+   * where a postive number indicates the taker has BOUGHT more NFTs than sold
+   * and a negative number indicates the taker has SOLD more NFTs than bought.
    * This is used to calculate the current price of the pool.
    */
   priceOffset: number;

@@ -13,7 +13,7 @@ use tensor_toolbox::{
     FromAcc, PnftTransferArgs,
 };
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
-use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
+use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, utils::send_pnft, *};
@@ -260,7 +260,6 @@ pub fn process_sell_nft_token_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
-    let pool_initial_balance = pool.get_lamports();
 
     let owner_pubkey = ctx.accounts.owner.key();
 
@@ -447,11 +446,11 @@ pub fn process_sell_nft_token_pool<'info>(
     pool.updated_at = Clock::get()?.unix_timestamp;
 
     // Update the pool's currency balance.
+    // Only our instructions can change the pool's SOL balance, so we can just set the amount
+    // directly to the post-transaction balance, minus state bond keep-alive.
     if pool.currency.is_sol() {
-        let pool_post_balance = pool.get_lamports();
-        let lamports_taken =
-            unwrap_checked!({ pool_initial_balance.checked_sub(pool_post_balance) });
-        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
     }
+
     Ok(())
 }

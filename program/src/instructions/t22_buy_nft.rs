@@ -157,7 +157,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
     validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
-    let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
     let current_price = pool.current_price(TakerSide::Buy)?;
@@ -285,10 +284,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     // Update the pool's currency balance.
     if pool.currency.is_sol() {
-        let pool_post_balance = pool.get_lamports();
-        let lamports_added =
-            unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
-        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
     }
 
     Ok(())

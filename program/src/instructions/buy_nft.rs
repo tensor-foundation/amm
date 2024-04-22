@@ -205,7 +205,6 @@ pub fn process_buy_nft<'info, 'b>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
-    let pool_initial_balance = pool.get_lamports();
 
     let owner_pubkey = ctx.accounts.owner.key();
 
@@ -361,18 +360,18 @@ pub fn process_buy_nft<'info, 'b>(
     pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
-    //record the entirety of MM fee during the buy tx
     if pool.config.pool_type == PoolType::Trade {
         let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
+
     // Update the pool's currency balance.
+    // It's possible for an external instruction to fund our pool with SOL,
+    // but we don't care as that just counts towards total liquidity, so we just
+    // use the pool's post-balance minus the state-bond keep-alive.
     if pool.currency.is_sol() {
-        let pool_post_balance = pool.get_lamports();
-        let lamports_added =
-            unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
-        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
     }
 
     Ok(())
