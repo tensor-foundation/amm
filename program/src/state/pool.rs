@@ -210,7 +210,7 @@ impl Pool {
             | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
-            // liquidity from being drained by subsequent buys and sells.
+            // liquidity from being drained by repeated matched buys and sells.
             (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
 
             // Invalid combinations of pool type and side.
