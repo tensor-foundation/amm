@@ -29,7 +29,6 @@ import {
   ParsedSellNftTokenPoolT22Instruction,
   ParsedSellNftTradePoolInstruction,
   ParsedSellNftTradePoolT22Instruction,
-  ParsedWithdrawMmFeeInstruction,
   ParsedWithdrawNftInstruction,
   ParsedWithdrawNftT22Instruction,
   ParsedWithdrawSolInstruction,
@@ -95,7 +94,6 @@ export enum AmmInstruction {
   BuyNft,
   SellNftTokenPool,
   SellNftTradePool,
-  WithdrawMmFee,
   BuyNftT22,
   DepositNftT22,
   SellNftTokenPoolT22,
@@ -152,11 +150,6 @@ export function identifyAmmInstruction(
   }
   if (memcmp(data, new Uint8Array([131, 82, 125, 77, 13, 157, 36, 90]), 0)) {
     return AmmInstruction.SellNftTradePool;
-  }
-  if (
-    memcmp(data, new Uint8Array([54, 150, 129, 126, 135, 205, 149, 120]), 0)
-  ) {
-    return AmmInstruction.WithdrawMmFee;
   }
   if (memcmp(data, new Uint8Array([155, 219, 126, 245, 170, 199, 51, 79]), 0)) {
     return AmmInstruction.BuyNftT22;
@@ -220,9 +213,6 @@ export type ParsedAmmInstruction<
   | ({
       instructionType: AmmInstruction.SellNftTradePool;
     } & ParsedSellNftTradePoolInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.WithdrawMmFee;
-    } & ParsedWithdrawMmFeeInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.BuyNftT22;
     } & ParsedBuyNftT22Instruction<TProgram>)

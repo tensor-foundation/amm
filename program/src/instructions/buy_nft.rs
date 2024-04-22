@@ -98,7 +98,7 @@ pub struct BuyNft<'info> {
         // redundant but extra safety
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
-        close = buyer,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -310,9 +310,6 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    //rebate to destination (not necessarily owner)
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
-
     // transfer royalties (on top of current price)
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
     transfer_creators_fee(
@@ -332,6 +329,9 @@ pub fn process_buy_nft<'info, 'b>(
             }),
         },
     )?;
+
+    //rebate to destination (not necessarily owner)
+    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
     // Price always goes to the destination: NFT pool --> owner, Trade pool either the pool or the escrow account.
     ctx.accounts

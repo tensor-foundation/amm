@@ -205,9 +205,13 @@ impl Pool {
 
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
         match (self.config.pool_type, side) {
-            (PoolType::Trade, _)
+            (PoolType::Trade, TakerSide::Buy)
             | (PoolType::Token, TakerSide::Sell)
             | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
+
+            // Trade pool sells require the price to be shifted down by 1 to prevent
+            // liquidity from being drained by subsequent buys and sells.
+            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
 
             // Invalid combinations of pool type and side.
             _ => {

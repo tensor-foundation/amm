@@ -1281,38 +1281,6 @@
       ]
     },
     {
-      "name": "withdrawMmFee",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "The owner of the pool and will receive the SOL."
-          ]
-        },
-        {
-          "name": "pool",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The pool from which the SOL will be withdrawn."
-          ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "lamports",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "buyNftT22",
       "accounts": [
         {

@@ -236,7 +236,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
 });
 
-test.only('it can sell an NFT into a Token pool', async (t) => {
+test('it can sell an NFT into a Token pool', async (t) => {
   const client = createDefaultSolanaClient();
 
   const owner = await generateKeyPairSignerWithSol(client, 100n * ONE_SOL);

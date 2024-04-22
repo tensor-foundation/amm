@@ -277,7 +277,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     curveType: CurveType.Linear,
     startingPrice: 1_000_000n,
     delta: 0n,
-    mmCompoundFees: false,
+    mmCompoundFees: true,
     mmFeeBps: 100,
   };
 
@@ -446,7 +446,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   t.assert(postBuyTokenAmount === 1n);
   t.assert(postBuyTokenOwner === buyer.address);
 
-  // This is a Trade pool so funds go to the pool instead of straight through to the pool's owner.
+  // This is a Trade pool with mm compound fees so funds go to the pool instead of straight through to the pool's owner.
   // The pool's post balance should be the pre-balance plus the price paid for the NFT and the maker rebate.
   const makerRebate = (config.startingPrice * MAKER_REBATE_BPS) / BASIS_POINTS;
   const mmFee =
