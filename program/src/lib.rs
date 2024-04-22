@@ -130,13 +130,6 @@ pub mod amm_program {
         )
     }
 
-    pub fn withdraw_mm_fee<'info>(
-        ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
-        lamports: u64,
-    ) -> Result<()> {
-        instructions::withdraw_mm_fees::process_withdraw_mm_fees(ctx, lamports)
-    }
-
     //-------------------------------//
     // Token 2022 instructions       //
     //-------------------------------//
