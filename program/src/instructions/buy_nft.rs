@@ -15,6 +15,8 @@ use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
+use super::*;
+
 /// Allows a buyer to purchase an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
@@ -296,7 +298,7 @@ pub fn process_buy_nft<'info, 'b>(
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match &pool.shared_escrow.value() {
             Some(stored_shared_escrow) => {
-                assert_decode_shared_escrow_account(
+                assert_decode_margin_account(
                     &ctx.accounts.shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
@@ -330,7 +332,6 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
-    //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
     // Price always goes to the destination: NFT pool --> owner, Trade pool either the pool or the escrow account.

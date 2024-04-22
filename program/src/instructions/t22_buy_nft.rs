@@ -11,6 +11,7 @@ use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
+use super::*;
 use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
@@ -231,7 +232,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match pool.shared_escrow.value() {
             Some(stored_shared_escrow_account) => {
-                assert_decode_shared_escrow_account(
+                assert_decode_margin_account(
                     &ctx.accounts.shared_escrow_account,
                     &ctx.accounts.owner.to_account_info(),
                 )?;

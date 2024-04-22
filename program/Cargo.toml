@@ -14,6 +14,9 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 anchor-lang = { version = "0.29.0", features = ["init-if-needed"] }
 anchor-spl = { version = "0.29.0", features = ["default"] }
+escrow-program = { version = "*", git = "ssh://git@github.com/tensor-foundation/escrow", features = [
+    "no-entrypoint",
+] }
 mpl-token-metadata = "4.0.0"
 solana-program = "<1.18"
 spl-math = { version = "0.1.0", features = ["no-entrypoint"] }

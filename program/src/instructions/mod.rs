@@ -38,58 +38,17 @@ pub use t22_withdraw_nft::*;
 pub use withdraw_nft::*;
 pub use withdraw_sol::*;
 
+use crate::constants::{HUNDRED_PCT_BPS, MAKER_REBATE_BPS, TAKER_BROKER_PCT, TSWAP_TAKER_FEE_BPS};
+use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount};
+use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
-use tensor_escrow::accounts::MarginAccount;
-use tensor_toolbox::escrow::TSWAP_SINGLETON;
 use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked};
 
-use crate::constants::{HUNDRED_PCT_BPS, MAKER_REBATE_BPS, TAKER_BROKER_PCT, TSWAP_TAKER_FEE_BPS};
-use crate::{error::ErrorCode, *};
-
 pub static MPL_TOKEN_AUTH_RULES_ID: Pubkey = pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
-
-pub fn shared_escrow_pda(owner: &Pubkey, nr: u16) -> (Pubkey, u8) {
-    let program_id = &crate::id();
-    Pubkey::find_program_address(
-        &[
-            b"margin".as_ref(),
-            owner.as_ref(),
-            TSWAP_SINGLETON.as_ref(),
-            &nr.to_le_bytes(),
-        ],
-        program_id,
-    )
-}
-
-#[inline(never)]
-pub fn assert_decode_shared_escrow_account<'info>(
-    shared_escrow_account_info: &AccountInfo<'info>,
-    owner: &AccountInfo<'info>,
-) -> Result<Box<MarginAccount>> {
-    let data: &[u8] = &shared_escrow_account_info.try_borrow_data()?;
-    let shared_escrow_account: Box<MarginAccount> =
-        Box::new(BorshDeserialize::try_from_slice(data)?);
-
-    let program_id = &crate::id();
-    let (key, _) = shared_escrow_pda(&owner.key(), shared_escrow_account.nr);
-    if key != *shared_escrow_account_info.key {
-        throw_err!(ErrorCode::BadSharedEscrow);
-    }
-    // Check program owner (redundant because of find_program_address above, but why not).
-    if *shared_escrow_account_info.owner != *program_id {
-        throw_err!(ErrorCode::BadSharedEscrow);
-    }
-    // Check normal owner (not redundant - this actually checks if the account is initialized and stores the owner correctly).
-    if shared_escrow_account.owner != owner.key() {
-        throw_err!(ErrorCode::BadSharedEscrow);
-    }
-
-    Ok(shared_escrow_account)
-}
 
 #[inline(never)]
 pub fn assert_decode_mint_proof(

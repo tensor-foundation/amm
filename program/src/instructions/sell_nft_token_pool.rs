@@ -16,6 +16,7 @@ use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
+use super::*;
 use crate::{error::ErrorCode, utils::send_pnft, *};
 
 /// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
@@ -385,7 +386,7 @@ pub fn process_sell_nft_token_pool<'info>(
     //decide where we're sending the money from - shared escrow (shared escrow pool) or the pool itself
     let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow) => {
-            assert_decode_shared_escrow_account(
+            assert_decode_margin_account(
                 &ctx.accounts.shared_escrow,
                 &ctx.accounts.pool.to_account_info(),
             )?;
