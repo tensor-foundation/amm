@@ -6,11 +6,12 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
+use super::*;
 use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
@@ -125,11 +126,6 @@ impl<'info> BuyNftT22<'info> {
     }
 
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        // Handle buyers that have non-zero data and cannot use system transfer.
-        if !self.buyer.data_is_empty() {
-            return transfer_lamports_from_pda(&self.buyer.to_account_info(), to, lamports);
-        }
-
         invoke(
             &system_instruction::transfer(self.buyer.key, to.key, lamports),
             &[
@@ -171,6 +167,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
@@ -235,7 +232,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match pool.shared_escrow.value() {
             Some(stored_shared_escrow_account) => {
-                assert_decode_shared_escrow_account(
+                assert_decode_margin_account(
                     &ctx.accounts.shared_escrow_account,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
@@ -252,19 +249,18 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
-    // transfer current price + MM fee if !compounded (within current price)
-    match pool.config.pool_type {
-        PoolType::Trade if !pool.config.mm_compound_fees => {
-            let mm_fee = pool.calc_mm_fee(current_price)?;
-            let left_for_pool = unwrap_int!(current_price.checked_sub(mm_fee));
+    // Trade pools need to check compounding fees
+    if matches!(pool.config.pool_type, PoolType::Trade) {
+        // If MM fees are compounded they go to the destination to remain
+        // in the pool or escrow.
+        if pool.config.mm_compound_fees {
             ctx.accounts
-                .transfer_lamports(&destination, left_for_pool)?;
+                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+        } else {
+            // If MM fees are not compounded they go to the owner.
             ctx.accounts
-                .transfer_lamports(&ctx.accounts.pool.to_account_info(), mm_fee)?;
+                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
         }
-        _ => ctx
-            .accounts
-            .transfer_lamports(&destination, current_price)?,
     }
 
     // TODO: add royalty payment once available on T22
@@ -274,7 +270,10 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
-    pool.taker_buy_count = unwrap_int!(pool.taker_buy_count.checked_add(1));
+
+    // Pool has sold an NFT, so we increment the trade counter.
+    pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
+
     pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
@@ -283,6 +282,11 @@ pub fn process_t22_buy_nft<'info, 'b>(
         let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
+    }
+
+    // Update the pool's currency balance.
+    if pool.currency.is_sol() {
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
     }
 
     Ok(())

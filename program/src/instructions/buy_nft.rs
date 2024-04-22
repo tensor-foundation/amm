@@ -6,14 +6,16 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
-    assert_decode_metadata, send_pnft, transfer_creators_fee, transfer_lamports_from_pda,
-    CreatorFeeMode, FromAcc, FromExternal, PnftTransferArgs,
+    assert_decode_metadata, send_pnft, transfer_creators_fee, CreatorFeeMode, FromAcc,
+    FromExternal, PnftTransferArgs,
 };
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
+
+use super::*;
 
 /// Allows a buyer to purchase an NFT from a Trade or NFT pool.
 #[derive(Accounts)]
@@ -98,7 +100,7 @@ pub struct BuyNft<'info> {
         // redundant but extra safety
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
-        close = buyer,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -174,11 +176,6 @@ impl<'info> BuyNft<'info> {
     }
 
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        // Handle buyers that have non-zero data and cannot use system transfer.
-        if !self.buyer.data_is_empty() {
-            return transfer_lamports_from_pda(&self.buyer.to_account_info(), to, lamports);
-        }
-
         invoke(
             &system_instruction::transfer(self.buyer.key, to.key, lamports),
             &[
@@ -210,6 +207,7 @@ pub fn process_buy_nft<'info, 'b>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+
     let owner_pubkey = ctx.accounts.owner.key();
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
@@ -221,6 +219,8 @@ pub fn process_buy_nft<'info, 'b>(
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+    let mm_fee = pool.calc_mm_fee(current_price)?;
+
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
@@ -298,7 +298,7 @@ pub fn process_buy_nft<'info, 'b>(
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match &pool.shared_escrow.value() {
             Some(stored_shared_escrow) => {
-                assert_decode_shared_escrow_account(
+                assert_decode_margin_account(
                     &ctx.accounts.shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
@@ -311,9 +311,6 @@ pub fn process_buy_nft<'info, 'b>(
         },
         PoolType::Token => unreachable!(),
     };
-
-    //rebate to destination (not necessarily owner)
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
     // transfer royalties (on top of current price)
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
@@ -335,19 +332,24 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
-    // transfer current price + MM fee if !compounded (within current price)
-    match pool.config.pool_type {
-        PoolType::Trade if !pool.config.mm_compound_fees => {
-            let mm_fee = pool.calc_mm_fee(current_price)?;
-            let left_for_pool = unwrap_int!(current_price.checked_sub(mm_fee));
+    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+
+    // Price always goes to the destination: NFT pool --> owner, Trade pool either the pool or the escrow account.
+    ctx.accounts
+        .transfer_lamports(&destination, current_price)?;
+
+    // Trade pools need to check compounding fees
+    if matches!(pool.config.pool_type, PoolType::Trade) {
+        // If MM fees are compounded they go to the destination to remain
+        // in the pool or escrow.
+        if pool.config.mm_compound_fees {
             ctx.accounts
-                .transfer_lamports(&destination, left_for_pool)?;
+                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+        } else {
+            // If MM fees are not compounded they go to the owner.
             ctx.accounts
-                .transfer_lamports(&ctx.accounts.pool.to_account_info(), mm_fee)?;
+                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
         }
-        _ => ctx
-            .accounts
-            .transfer_lamports(&destination, current_price)?,
     }
 
     // --------------------------------------- accounting
@@ -355,15 +357,25 @@ pub fn process_buy_nft<'info, 'b>(
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
-    pool.taker_buy_count = unwrap_int!(pool.taker_buy_count.checked_add(1));
+
+    // Pool has sold an NFT, so we increment the trade counter.
+    pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
+
     pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
-    //record the entirety of MM fee during the buy tx
     if pool.config.pool_type == PoolType::Trade {
         let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
+    }
+
+    // Update the pool's currency balance.
+    // It's possible for an external instruction to fund our pool with SOL,
+    // but we don't care as that just counts towards total liquidity, so we just
+    // use the pool's post-balance minus the state-bond keep-alive.
+    if pool.currency.is_sol() {
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
     }
 
     Ok(())

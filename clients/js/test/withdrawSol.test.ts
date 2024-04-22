@@ -38,6 +38,7 @@ import {
   getDepositSolInstruction,
   getSellNftTradePoolInstruction,
   getWithdrawSolInstruction,
+  isSol,
 } from '../src/index.js';
 import {
   DEFAULT_PUBKEY,
@@ -299,4 +300,89 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   } else {
     t.fail("expected a custom error, but didn't get one");
   }
+});
+
+test('withdrawing Sol from a Trade pool decreases currency amount', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  const owner = await generateKeyPairSignerWithSol(client);
+  const nftOwner = await generateKeyPairSignerWithSol(client);
+
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000n,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: 100,
+  };
+
+  const depositLamports = 10n * config.startingPrice;
+  const withdrawLamports = 5n * config.startingPrice;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+  });
+
+  let poolAccount = await fetchPool(client.rpc, pool);
+
+  // Correct pool type.
+  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
+
+  // New pool so currency amount is 0.
+  t.assert(poolAccount.data.amount === 0n);
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    whitelist,
+    owner,
+    lamports: depositLamports,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner.address),
+    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  poolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(poolAccount.data.currency));
+
+  // Currency amount should be what was deposited.
+  t.assert(poolAccount.data.amount === depositLamports);
+
+  // Withdraw SOL from pool
+  const withdrawSolIx = getWithdrawSolInstruction({
+    owner,
+    pool,
+    lamports: withdrawLamports,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner.address),
+    (tx) => appendTransactionInstruction(withdrawSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  poolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(poolAccount.data.currency));
+
+  // Currency amount should be what was deposited minues what was withdrawn.
+  t.assert(poolAccount.data.amount === depositLamports - withdrawLamports);
 });

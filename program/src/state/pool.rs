@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
@@ -21,6 +23,11 @@ pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + 4                              // max_taker_sell_count
         + 100                            // _reserved
         ;
+
+/// Amount of SOL required to keep the pool account alive. Min "rent".
+// Sync this with any changes to the Pool size.
+#[constant]
+pub const POOL_STATE_BOND: u64 = 3814080;
 
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +62,31 @@ pub struct PoolStats {
     pub accumulated_mm_profit: u64,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
+pub struct Currency(Pubkey);
+
+impl Deref for Currency {
+    type Target = Pubkey;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Currency {
+    pub fn new(pubkey: Pubkey) -> Self {
+        Self(pubkey)
+    }
+
+    pub fn sol() -> Self {
+        Self::default()
+    }
+
+    pub fn is_sol(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 #[account]
 pub struct Pool {
     /// Pool version, used to control upgrades.
@@ -77,14 +109,15 @@ pub struct Pool {
     // without signing when the pool is closed.
     pub rent_payer: Pubkey,
     // Default Pubkey is SOL, otherwise SPL token mint
-    pub currency: Pubkey,
+    pub currency: Currency,
     /// The amount of currency held in the pool
     pub amount: u64,
 
-    /// How many times a taker has SOLD into the pool
-    pub taker_sell_count: u32,
-    /// How many times a taker has BOUGHT from the pool
-    pub taker_buy_count: u32,
+    /// The difference between the number of buys and sells
+    /// where a postive number indicates the taker has BOUGHT more NFTs than sold
+    /// and a negative number indicates the taker has SOLD more NFTs than bought.
+    /// This is used to calculate the current price of the pool.
+    pub price_offset: i32,
     pub nfts_held: u32,
 
     pub stats: PoolStats,
@@ -172,38 +205,15 @@ impl Pool {
 
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
         match (self.config.pool_type, side) {
-            //Token pool = buys nfts = each sell into the pool LOWERS the price
-            (PoolType::Token, TakerSide::Sell) => {
-                self.shift_price_by_delta(Direction::Down, self.taker_sell_count)
-            }
-            //NFT pool = sells nfts = each buy from the pool INCREASES the price
-            (PoolType::NFT, TakerSide::Buy) => {
-                self.shift_price_by_delta(Direction::Up, self.taker_buy_count)
-            }
-            //if sales > purchases, Trade pool acts as an NFT pool
-            (PoolType::Trade, side) => {
-                // The price of selling into a trade pool is 1 tick lower.
-                // We simulate this by increasing the purchase count by 1.
-                let offset = match side {
-                    TakerSide::Buy => 0,
-                    TakerSide::Sell => SPREAD_TICKS,
-                };
-                let modified_taker_sell_count =
-                    unwrap_int!(self.taker_sell_count.checked_add(offset as u32));
+            (PoolType::Trade, TakerSide::Buy)
+            | (PoolType::Token, TakerSide::Sell)
+            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
 
-                if self.taker_buy_count > modified_taker_sell_count {
-                    self.shift_price_by_delta(
-                        Direction::Up,
-                        unwrap_int!(self.taker_buy_count.checked_sub(modified_taker_sell_count)),
-                    )
-                } else {
-                    //else, Trade pool acts as a Token pool
-                    self.shift_price_by_delta(
-                        Direction::Down,
-                        unwrap_int!(modified_taker_sell_count.checked_sub(self.taker_buy_count)),
-                    )
-                }
-            }
+            // Trade pool sells require the price to be shifted down by 1 to prevent
+            // liquidity from being drained by repeated matched buys and sells.
+            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
+
+            // Invalid combinations of pool type and side.
             _ => {
                 throw_err!(ErrorCode::WrongPoolType);
             }
@@ -224,8 +234,29 @@ impl Pool {
         )
     }
 
-    pub fn shift_price_by_delta(&self, direction: Direction, times: u32) -> Result<u64> {
+    pub fn shift_price(&self, price_offset: i32) -> Result<u64> {
+        let direction = if price_offset > 0 {
+            Direction::Up
+        } else {
+            Direction::Down
+        };
+
+        let offset = price_offset.unsigned_abs();
+
         let current_price = match self.config.curve_type {
+            CurveType::Linear => {
+                let base = self.config.starting_price;
+                let delta = self.config.delta;
+
+                match direction {
+                    Direction::Up => {
+                        unwrap_checked!({ base.checked_add(delta.checked_mul(offset as u64)?) })
+                    }
+                    Direction::Down => {
+                        unwrap_checked!({ base.checked_sub(delta.checked_mul(offset as u64)?) })
+                    }
+                }
+            }
             CurveType::Exponential => {
                 let hundred_pct = unwrap_int!(PreciseNumber::new(HUNDRED_PCT_BPS.into()));
 
@@ -237,7 +268,7 @@ impl Pool {
                             .into(),
                     )?
                     .checked_div(&hundred_pct)?
-                    .checked_pow(times.into())
+                    .checked_pow(offset.into())
                 });
 
                 let result = match direction {
@@ -249,23 +280,8 @@ impl Pool {
 
                 unwrap_int!(u64::try_from(unwrap_checked!({ result?.to_imprecise() })).ok())
             }
-            CurveType::Linear => match direction {
-                Direction::Up => {
-                    unwrap_checked!({
-                        self.config
-                            .starting_price
-                            .checked_add((self.config.delta).checked_mul(times as u64)?)
-                    })
-                }
-                Direction::Down => {
-                    unwrap_checked!({
-                        self.config
-                            .starting_price
-                            .checked_sub((self.config.delta).checked_mul(times as u64)?)
-                    })
-                }
-            },
         };
+
         Ok(current_price)
     }
 

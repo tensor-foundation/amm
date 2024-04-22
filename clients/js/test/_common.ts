@@ -64,6 +64,10 @@ export const ONE_YEAR = 60 * 60 * 24 * 365;
 export const ZERO_ACCOUNT_RENT_LAMPORTS = 890880n;
 export const ONE_SOL = 1_000_000_000n;
 
+export const MAKER_REBATE_BPS = 25n;
+
+export const BASIS_POINTS = 10_000n;
+
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

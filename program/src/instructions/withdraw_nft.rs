@@ -167,7 +167,6 @@ pub fn process_withdraw_nft<'info>(
     authorization_data: Option<AuthorizationDataLocal>,
     rules_acc_present: bool,
 ) -> Result<()> {
-    msg!("WithdrawNft");
     let auth_rules_acc_info = &ctx.accounts.auth_rules.to_account_info();
     let auth_rules = if rules_acc_present {
         Some(auth_rules_acc_info)

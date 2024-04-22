@@ -33,6 +33,8 @@ import {
   getArrayEncoder,
   getBytesDecoder,
   getBytesEncoder,
+  getI32Decoder,
+  getI32Encoder,
   getI64Decoder,
   getI64Encoder,
   getStructDecoder,
@@ -46,8 +48,12 @@ import {
   mapEncoder,
 } from '@solana/codecs';
 import {
+  Currency,
+  CurrencyArgs,
   NullableAddress,
   NullableAddressArgs,
+  getCurrencyDecoder,
+  getCurrencyEncoder,
   getNullableAddressDecoder,
   getNullableAddressEncoder,
 } from '../../hooked';
@@ -90,13 +96,16 @@ export type PoolAccountData = {
   owner: Address;
   whitelist: Address;
   rentPayer: Address;
-  currency: Address;
+  currency: Currency;
   /** The amount of currency held in the pool */
   amount: bigint;
-  /** How many times a taker has SOLD into the pool */
-  takerSellCount: number;
-  /** How many times a taker has BOUGHT from the pool */
-  takerBuyCount: number;
+  /**
+   * The difference between the number of buys and sells
+   * where a postive number indicates the taker has BOUGHT more NFTs than sold
+   * and a negative number indicates the taker has SOLD more NFTs than bought.
+   * This is used to calculate the current price of the pool.
+   */
+  priceOffset: number;
   nftsHeld: number;
   stats: PoolStats;
   /** If an escrow account is present, means it's a shared-escrow pool */
@@ -125,13 +134,16 @@ export type PoolAccountDataArgs = {
   owner: Address;
   whitelist: Address;
   rentPayer: Address;
-  currency: Address;
+  currency: CurrencyArgs;
   /** The amount of currency held in the pool */
   amount: number | bigint;
-  /** How many times a taker has SOLD into the pool */
-  takerSellCount: number;
-  /** How many times a taker has BOUGHT from the pool */
-  takerBuyCount: number;
+  /**
+   * The difference between the number of buys and sells
+   * where a postive number indicates the taker has BOUGHT more NFTs than sold
+   * and a negative number indicates the taker has SOLD more NFTs than bought.
+   * This is used to calculate the current price of the pool.
+   */
+  priceOffset: number;
   nftsHeld: number;
   stats: PoolStatsArgs;
   /** If an escrow account is present, means it's a shared-escrow pool */
@@ -157,10 +169,9 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['owner', getAddressEncoder()],
       ['whitelist', getAddressEncoder()],
       ['rentPayer', getAddressEncoder()],
-      ['currency', getAddressEncoder()],
+      ['currency', getCurrencyEncoder()],
       ['amount', getU64Encoder()],
-      ['takerSellCount', getU32Encoder()],
-      ['takerBuyCount', getU32Encoder()],
+      ['priceOffset', getI32Encoder()],
       ['nftsHeld', getU32Encoder()],
       ['stats', getPoolStatsEncoder()],
       ['sharedEscrow', getNullableAddressEncoder()],
@@ -188,10 +199,9 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['owner', getAddressDecoder()],
     ['whitelist', getAddressDecoder()],
     ['rentPayer', getAddressDecoder()],
-    ['currency', getAddressDecoder()],
+    ['currency', getCurrencyDecoder()],
     ['amount', getU64Decoder()],
-    ['takerSellCount', getU32Decoder()],
-    ['takerBuyCount', getU32Decoder()],
+    ['priceOffset', getI32Decoder()],
     ['nftsHeld', getU32Decoder()],
     ['stats', getPoolStatsDecoder()],
     ['sharedEscrow', getNullableAddressDecoder()],

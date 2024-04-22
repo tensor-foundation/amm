@@ -13,6 +13,7 @@ use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
+use super::*;
 use crate::{error::ErrorCode, *};
 
 #[derive(Accounts)]
@@ -234,7 +235,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
     let from = match pool.shared_escrow.value() {
         Some(stored_shared_escrow_account) => {
-            assert_decode_shared_escrow_account(
+            assert_decode_margin_account(
                 &ctx.accounts.shared_escrow_account,
                 &ctx.accounts.owner.to_account_info(),
             )?;
@@ -270,9 +271,19 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     //update pool accounting
     let pool = &mut ctx.accounts.pool;
-    pool.taker_sell_count = unwrap_int!(pool.taker_sell_count.checked_add(1));
+
+    // Pool has bought an NFT, so we decrement the trade counter.
+    pool.price_offset = unwrap_int!(pool.price_offset.checked_sub(1));
+
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
+
+    // Update the pool's currency balance.
+    // Only our instructions can change the pool's SOL balance, so we can just set the amount
+    // directly to the post-transaction balance, minus state bond keep-alive.
+    if pool.currency.is_sol() {
+        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+    }
 
     Ok(())
 }

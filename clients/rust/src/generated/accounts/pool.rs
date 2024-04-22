@@ -7,6 +7,7 @@
 
 use crate::generated::types::PoolConfig;
 use crate::generated::types::PoolStats;
+use crate::hooked::Currency;
 use crate::hooked::NullableAddress;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
@@ -43,17 +44,14 @@ pub struct Pool {
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub rent_payer: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub currency: Pubkey,
+    pub currency: Currency,
     /// The amount of currency held in the pool
     pub amount: u64,
-    /// How many times a taker has SOLD into the pool
-    pub taker_sell_count: u32,
-    /// How many times a taker has BOUGHT from the pool
-    pub taker_buy_count: u32,
+    /// The difference between the number of buys and sells
+    /// where a postive number indicates the taker has BOUGHT more NFTs than sold
+    /// and a negative number indicates the taker has SOLD more NFTs than bought.
+    /// This is used to calculate the current price of the pool.
+    pub price_offset: i32,
     pub nfts_held: u32,
     pub stats: PoolStats,
     /// If an escrow account is present, means it's a shared-escrow pool

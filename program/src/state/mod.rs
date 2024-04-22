@@ -1,11 +1,9 @@
 pub mod nft_deposit_receipt;
 pub mod pool;
-pub mod shared_escrow;
 pub mod single_listing;
 
 pub use nft_deposit_receipt::*;
 pub use pool::*;
-pub use shared_escrow::*;
 pub use single_listing::*;
 
 use anchor_lang::prelude::*;
@@ -142,8 +140,7 @@ mod tests {
             curve_type: CurveType,
             starting_price: u64,
             delta: u64,
-            taker_sell_count: u32,
-            taker_buy_count: u32,
+            price_offset: i32,
             mm_fee_bps: NullableOption<u16>,
         ) -> Self {
             Self {
@@ -165,11 +162,10 @@ mod tests {
                     mm_compound_fees: true,
                     mm_fee_bps,
                 },
-                taker_sell_count,
-                taker_buy_count,
+                price_offset,
                 nfts_held: 0,
                 stats: PoolStats::default(),
-                currency: Pubkey::default(),
+                currency: Currency::sol(),
                 amount: 0,
                 shared_escrow: NullableOption::none(),
                 max_taker_sell_count: 10,
@@ -187,7 +183,6 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             LAMPORTS_PER_SOL,
-            0,
             0,
             NullableOption::new(1000), //10%
         );
@@ -222,7 +217,6 @@ mod tests {
             LAMPORTS_PER_SOL,
             LAMPORTS_PER_SOL,
             0,
-            0,
             NullableOption::none(),
         );
 
@@ -232,9 +226,9 @@ mod tests {
         );
     }
 
-    // --------------------------------------- linear
+    // --------------------------------------- Linear
 
-    // token
+    // Token Pool
 
     #[test]
     fn test_linear_token_pool() {
@@ -245,31 +239,36 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
-        //should have no effect
-        p.taker_buy_count += 999999;
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
-
-        p.taker_sell_count += 1;
+        // The pool has bought 1 NFT so has a trade "deficit".
+        // The price should be shifted down by 1 delta.
+        p.price_offset -= 1;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             LAMPORTS_PER_SOL - delta
         );
-        p.taker_sell_count += 2;
+
+        // The pool has bought 2 additional NFTs so has a trade "deficit" of 3.
+        // The price should be shifted down by 3 deltas.
+        p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             LAMPORTS_PER_SOL - delta * 3
         );
-        //pool can pay 0
-        p.taker_sell_count += 7;
+
+        // The pool has bought 7 additional NFTs so has a trade "deficit" of 10.
+        // The price should be shifted down by 10 deltas.
+        p.price_offset -= 7;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             LAMPORTS_PER_SOL - delta * 10
         );
+
+        // The current price should now be zero, because the pool has spent all its SOL.
+        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), 0);
     }
 
     #[test]
@@ -281,10 +280,12 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             delta,
-            11,
-            0,
+            -11,
             NullableOption::none(),
         );
+        // Should overflow when we calculate the current price
+        // because the trade difference is more than the maximum
+        // and we cannot have a negative price.
         p.current_price(TakerSide::Sell).unwrap();
     }
 
@@ -298,13 +299,14 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
+        // Token pools only buy NFTs (seller sells into them),
+        // so the taker side cannot be buy.
         p.current_price(TakerSide::Buy).unwrap();
     }
 
-    // nft
+    // NFT Pool
 
     #[test]
     fn test_linear_nft_pool() {
@@ -315,27 +317,29 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
-        //should have no effect
-        p.taker_sell_count += 999999;
-        assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-
-        p.taker_buy_count += 1;
+        //  Trade surplus because Pool has sold NFT to taker.
+        // Current price should be shifted up by 1 delta.
+        p.price_offset += 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta
         );
-        p.taker_buy_count += 2;
+
+        // Sell an additional 2 NFTs to taker and the trade surplus is 3.
+        p.price_offset += 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta * 3
         );
-        //go much higher
-        p.taker_buy_count += 9999996;
+
+        // Price continues to go up.
+        // Real pools will run out of NTFs to sell at some point,
+        // but the price calculation in this test should still go up.
+        p.price_offset += 9999996;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta * 9999999
@@ -351,10 +355,10 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL * 100,
             delta,
-            0,
-            u32::MAX - 1, //get this to overflow
+            i32::MAX - 1, //get this to overflow
             NullableOption::none(),
         );
+        // Cannot go higher
         p.current_price(TakerSide::Buy).unwrap();
     }
 
@@ -368,13 +372,13 @@ mod tests {
             LAMPORTS_PER_SOL * 100,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
+        // NFT pools only sell NFTs (buyer buys from them).
         p.current_price(TakerSide::Sell).unwrap();
     }
 
-    // trade
+    // Trade Pool
 
     #[test]
     fn test_linear_trade_pool() {
@@ -384,7 +388,6 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             delta,
-            0,
             0,
             NullableOption::none(),
         );
@@ -397,7 +400,7 @@ mod tests {
         );
 
         //pool's a buyer -> price goes down
-        p.taker_sell_count += 1;
+        p.price_offset -= 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL - delta
@@ -407,7 +410,7 @@ mod tests {
             LAMPORTS_PER_SOL - delta * 2
         );
 
-        p.taker_sell_count += 2;
+        p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL - delta * 3
@@ -417,15 +420,16 @@ mod tests {
             LAMPORTS_PER_SOL - delta * 4
         );
         //pool can pay 0
-        p.taker_sell_count += 7;
+        p.price_offset -= 7;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL - delta * 10
         );
+
         // Sell price will overflow.
 
         //pool's neutral
-        p.taker_buy_count = 10;
+        p.price_offset += 10;
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
@@ -433,13 +437,14 @@ mod tests {
         );
 
         //pool's a seller -> price goes up
-        p.taker_buy_count += 1;
+        p.price_offset += 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
-        p.taker_buy_count += 2;
+
+        p.price_offset += 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta * 3
@@ -449,7 +454,7 @@ mod tests {
             LAMPORTS_PER_SOL + delta * 2
         );
         //go much higher
-        p.taker_buy_count += 9999996;
+        p.price_offset += 9999996;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL + delta * 9999999
@@ -469,8 +474,7 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             delta,
-            11,
-            0,
+            -11,
             NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
@@ -485,8 +489,7 @@ mod tests {
             CurveType::Linear,
             LAMPORTS_PER_SOL,
             delta,
-            10, //10+1 tick for selling = overflow
-            0,
+            -10, //10+1 tick for selling = overflow
             NullableOption::none(),
         );
         p.current_price(TakerSide::Sell).unwrap();
@@ -501,7 +504,6 @@ mod tests {
             CurveType::Linear,
             delta,
             delta,
-            0,
             1, //just enough to overflow
             NullableOption::<u16>::none(),
         );
@@ -516,7 +518,6 @@ mod tests {
             CurveType::Linear,
             delta,
             delta,
-            0,
             1,
             NullableOption::none(),
         );
@@ -551,33 +552,28 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
-        //should have no effect
-        p.taker_buy_count += 999999;
-        assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
-
-        p.taker_sell_count += 1;
+        p.price_offset -= 1;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             LAMPORTS_PER_SOL * MAX_BPS / 11000
         );
 
-        p.taker_sell_count += 2;
+        p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
         );
 
-        p.taker_sell_count += 7;
+        p.price_offset -= 7;
         // This one has very small rounding error (within 1 bps).
         assert!((p.current_price(TakerSide::Sell).unwrap()) > LAMPORTS_PER_SOL * MAX_BPS / 25938);
         assert!((p.current_price(TakerSide::Sell).unwrap()) < LAMPORTS_PER_SOL * MAX_BPS / 25937);
 
-        p.taker_sell_count += 90;
+        p.price_offset -= 90;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
             calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123)
@@ -595,33 +591,28 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
-        //should have no effect
-        p.taker_sell_count += 999999;
-        assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
-
-        p.taker_buy_count += 1;
+        p.price_offset += 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * 11000 / MAX_BPS
         );
 
-        p.taker_buy_count += 2;
+        p.price_offset += 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * 13310 / MAX_BPS
         );
 
-        p.taker_buy_count += 7;
+        p.price_offset += 7;
         // This one has very small rounding error (within 1 bps).
         assert!(p.current_price(TakerSide::Buy).unwrap() > LAMPORTS_PER_SOL * 25937 / MAX_BPS);
         assert!(p.current_price(TakerSide::Buy).unwrap() < LAMPORTS_PER_SOL * 25938 / MAX_BPS);
 
-        p.taker_buy_count += 90;
+        p.price_offset += 90;
         // This one has very small rounding error (within 1 bps).
         assert!(p.current_price(TakerSide::Buy).unwrap() > LAMPORTS_PER_SOL * 137806123 / MAX_BPS);
         assert!(p.current_price(TakerSide::Buy).unwrap() < LAMPORTS_PER_SOL * 137806124 / MAX_BPS);
@@ -636,8 +627,7 @@ mod tests {
             CurveType::Exponential,
             LAMPORTS_PER_SOL * 100,
             delta,
-            0,
-            u32::MAX - 1, // this will overflow
+            i32::MAX - 1, // this will overflow
             NullableOption::none(),
         );
         p.current_price(TakerSide::Buy).unwrap();
@@ -654,7 +644,6 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            0,
             NullableOption::none(),
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
@@ -664,7 +653,7 @@ mod tests {
         );
 
         //pool's a buyer -> price goes down
-        p.taker_sell_count += 1;
+        p.price_offset -= 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * MAX_BPS / 11000
@@ -673,7 +662,7 @@ mod tests {
             p.current_price(TakerSide::Sell).unwrap(),
             calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100)
         );
-        p.taker_sell_count += 2;
+        p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
@@ -684,7 +673,7 @@ mod tests {
         );
 
         //pool's neutral
-        p.taker_buy_count = 3;
+        p.price_offset += 3;
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
@@ -692,13 +681,13 @@ mod tests {
         );
 
         //pool's a seller -> price goes up
-        p.taker_buy_count += 1;
+        p.price_offset += 1;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * 11000 / MAX_BPS
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
-        p.taker_buy_count += 2;
+        p.price_offset += 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
             LAMPORTS_PER_SOL * 13310 / MAX_BPS
@@ -718,7 +707,6 @@ mod tests {
             CurveType::Exponential,
             u64::MAX - 1,
             delta,
-            0, //get this to overflow
             1,
             NullableOption::none(),
         );
@@ -733,7 +721,6 @@ mod tests {
             CurveType::Exponential,
             u64::MAX - 1,
             delta,
-            0,
             1,
             NullableOption::none(),
         );

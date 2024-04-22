@@ -20,6 +20,8 @@ import {
   combineCodec,
   getArrayDecoder,
   getArrayEncoder,
+  getBooleanDecoder,
+  getBooleanEncoder,
   getOptionDecoder,
   getOptionEncoder,
   getStructDecoder,
@@ -83,6 +85,7 @@ export type EditPoolInstructionData = {
   cosigner: Option<Address>;
   expireInSec: Option<bigint>;
   maxTakerSellCount: Option<number>;
+  resetPriceOffset: boolean;
 };
 
 export type EditPoolInstructionDataArgs = {
@@ -90,6 +93,7 @@ export type EditPoolInstructionDataArgs = {
   cosigner: OptionOrNullable<Address>;
   expireInSec: OptionOrNullable<number | bigint>;
   maxTakerSellCount: OptionOrNullable<number>;
+  resetPriceOffset: boolean;
 };
 
 export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstructionDataArgs> {
@@ -100,6 +104,7 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['expireInSec', getOptionEncoder(getU64Encoder())],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
+      ['resetPriceOffset', getBooleanEncoder()],
     ]),
     (value) => ({ ...value, discriminator: [50, 174, 34, 36, 3, 166, 29, 204] })
   );
@@ -112,6 +117,7 @@ export function getEditPoolInstructionDataDecoder(): Decoder<EditPoolInstruction
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['expireInSec', getOptionDecoder(getU64Decoder())],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
+    ['resetPriceOffset', getBooleanDecoder()],
   ]);
 }
 
@@ -137,6 +143,7 @@ export type EditPoolInput<
   cosigner: EditPoolInstructionDataArgs['cosigner'];
   expireInSec: EditPoolInstructionDataArgs['expireInSec'];
   maxTakerSellCount: EditPoolInstructionDataArgs['maxTakerSellCount'];
+  resetPriceOffset: EditPoolInstructionDataArgs['resetPriceOffset'];
 };
 
 export function getEditPoolInstruction<

@@ -76,6 +76,7 @@ pub struct EditPoolInstructionArgs {
     pub cosigner: Option<Pubkey>,
     pub expire_in_sec: Option<u64>,
     pub max_taker_sell_count: Option<u32>,
+    pub reset_price_offset: bool,
 }
 
 /// Instruction builder for `EditPool`.
@@ -94,6 +95,7 @@ pub struct EditPoolBuilder {
     cosigner: Option<Pubkey>,
     expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
+    reset_price_offset: Option<bool>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -141,6 +143,11 @@ impl EditPoolBuilder {
         self.max_taker_sell_count = Some(max_taker_sell_count);
         self
     }
+    #[inline(always)]
+    pub fn reset_price_offset(&mut self, reset_price_offset: bool) -> &mut Self {
+        self.reset_price_offset = Some(reset_price_offset);
+        self
+    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -173,6 +180,10 @@ impl EditPoolBuilder {
             cosigner: self.cosigner.clone(),
             expire_in_sec: self.expire_in_sec.clone(),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
+            reset_price_offset: self
+                .reset_price_offset
+                .clone()
+                .expect("reset_price_offset is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -317,6 +328,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
             cosigner: None,
             expire_in_sec: None,
             max_taker_sell_count: None,
+            reset_price_offset: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -361,6 +373,11 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
         self.instruction.max_taker_sell_count = Some(max_taker_sell_count);
+        self
+    }
+    #[inline(always)]
+    pub fn reset_price_offset(&mut self, reset_price_offset: bool) -> &mut Self {
+        self.instruction.reset_price_offset = Some(reset_price_offset);
         self
     }
     /// Add an additional account to the instruction.
@@ -409,6 +426,11 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
             cosigner: self.instruction.cosigner.clone(),
             expire_in_sec: self.instruction.expire_in_sec.clone(),
             max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
+            reset_price_offset: self
+                .instruction
+                .reset_price_offset
+                .clone()
+                .expect("reset_price_offset is not set"),
         };
         let instruction = EditPoolCpi {
             __program: self.instruction.__program,
@@ -439,6 +461,7 @@ struct EditPoolCpiBuilderInstruction<'a, 'b> {
     cosigner: Option<Pubkey>,
     expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
+    reset_price_offset: Option<bool>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
