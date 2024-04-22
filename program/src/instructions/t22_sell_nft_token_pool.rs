@@ -12,7 +12,7 @@ use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -109,6 +109,7 @@ pub struct SellNftTokenPoolT22<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
+    pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // CHECK: 1)is signer, 2)cosigner stored on tswap
     // 1. optional co-signer (will be drawn first if necessary)
@@ -217,13 +218,15 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     //
     // TODO: This needs to be updated once there is a "standard" way to determine
     // royalties on T22
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
         mm_fee: 0,       // no MM fee for token pool
-        creators_fee: 0  // no royalties on T22,
+        creators_fee: 0, // no royalties on T22,
     });
 
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
     if current_price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }

@@ -62,6 +62,7 @@ export type BuyNftT22Instruction<
   TAccountSharedEscrowAccount extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -113,6 +114,9 @@ export type BuyNftT22Instruction<
       TAccountMakerBroker extends string
         ? ReadonlyAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
+      TAccountAmmProgram extends string
+        ? ReadonlyAccount<TAccountAmmProgram>
+        : TAccountAmmProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -176,6 +180,7 @@ export type BuyNftT22Input<
   TAccountSharedEscrowAccount extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountAmmProgram extends string = string,
 > = {
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
@@ -195,6 +200,7 @@ export type BuyNftT22Input<
   sharedEscrowAccount: Address<TAccountSharedEscrowAccount>;
   takerBroker: Address<TAccountTakerBroker>;
   makerBroker?: Address<TAccountMakerBroker>;
+  ammProgram: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
 };
@@ -215,6 +221,7 @@ export function getBuyNftT22Instruction<
   TAccountSharedEscrowAccount extends string,
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountAmmProgram extends string,
 >(
   input: BuyNftT22Input<
     TAccountOwner,
@@ -231,7 +238,8 @@ export function getBuyNftT22Instruction<
     TAccountSystemProgram,
     TAccountSharedEscrowAccount,
     TAccountTakerBroker,
-    TAccountMakerBroker
+    TAccountMakerBroker,
+    TAccountAmmProgram
   >
 ): BuyNftT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -249,7 +257,8 @@ export function getBuyNftT22Instruction<
   TAccountSystemProgram,
   TAccountSharedEscrowAccount,
   TAccountTakerBroker,
-  TAccountMakerBroker
+  TAccountMakerBroker,
+  TAccountAmmProgram
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -277,6 +286,7 @@ export function getBuyNftT22Instruction<
     },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -314,6 +324,7 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.sharedEscrowAccount),
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.ammProgram),
     ],
     programAddress,
     data: getBuyNftT22InstructionDataEncoder().encode(
@@ -335,7 +346,8 @@ export function getBuyNftT22Instruction<
     TAccountSystemProgram,
     TAccountSharedEscrowAccount,
     TAccountTakerBroker,
-    TAccountMakerBroker
+    TAccountMakerBroker,
+    TAccountAmmProgram
   >;
 
   return instruction;
@@ -365,6 +377,7 @@ export type ParsedBuyNftT22Instruction<
     sharedEscrowAccount: TAccountMetas[12];
     takerBroker: TAccountMetas[13];
     makerBroker?: TAccountMetas[14] | undefined;
+    ammProgram: TAccountMetas[15];
   };
   data: BuyNftT22InstructionData;
 };
@@ -377,7 +390,7 @@ export function parseBuyNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 15) {
+  if (instruction.accounts.length < 16) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -411,6 +424,7 @@ export function parseBuyNftT22Instruction<
       sharedEscrowAccount: getNextAccount(),
       takerBroker: getNextAccount(),
       makerBroker: getNextOptionalAccount(),
+      ammProgram: getNextAccount(),
     },
     data: getBuyNftT22InstructionDataDecoder().decode(instruction.data),
   };

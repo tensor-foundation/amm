@@ -60,6 +60,8 @@ pub struct BuyNft {
     pub taker_broker: solana_program::pubkey::Pubkey,
 
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
+
+    pub amm_program: solana_program::pubkey::Pubkey,
 }
 
 impl BuyNft {
@@ -75,7 +77,7 @@ impl BuyNft {
         args: BuyNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
@@ -170,6 +172,10 @@ impl BuyNft {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.amm_program,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = BuyNftInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -232,6 +238,7 @@ pub struct BuyNftInstructionArgs {
 ///   20. `[writable]` shared_escrow
 ///   21. `[writable]` taker_broker
 ///   22. `[optional]` maker_broker
+///   23. `[]` amm_program
 #[derive(Default)]
 pub struct BuyNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -257,6 +264,7 @@ pub struct BuyNftBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
+    amm_program: Option<solana_program::pubkey::Pubkey>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,
@@ -426,6 +434,11 @@ impl BuyNftBuilder {
         self
     }
     #[inline(always)]
+    pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
     pub fn max_price(&mut self, max_price: u64) -> &mut Self {
         self.max_price = Some(max_price);
         self
@@ -508,6 +521,7 @@ impl BuyNftBuilder {
                 shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
                 taker_broker: self.taker_broker.expect("taker_broker is not set"),
                 maker_broker: self.maker_broker,
+                amm_program: self.amm_program.expect("amm_program is not set"),
             };
         let args = BuyNftInstructionArgs {
             max_price: self.max_price.clone().expect("max_price is not set"),
@@ -574,6 +588,8 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `buy_nft` CPI instruction.
@@ -629,6 +645,8 @@ pub struct BuyNftCpi<'a, 'b> {
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: BuyNftInstructionArgs,
 }
@@ -664,6 +682,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             shared_escrow: accounts.shared_escrow,
             taker_broker: accounts.taker_broker,
             maker_broker: accounts.maker_broker,
+            amm_program: accounts.amm_program,
             __args: args,
         }
     }
@@ -700,7 +719,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(23 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
@@ -800,6 +819,10 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.amm_program.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -816,7 +839,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(23 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.buyer.clone());
@@ -843,6 +866,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
         if let Some(maker_broker) = self.maker_broker {
             account_infos.push(maker_broker.clone());
         }
+        account_infos.push(self.amm_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -882,6 +906,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
 ///   20. `[writable]` shared_escrow
 ///   21. `[writable]` taker_broker
 ///   22. `[optional]` maker_broker
+///   23. `[]` amm_program
 pub struct BuyNftCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -913,6 +938,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             shared_escrow: None,
             taker_broker: None,
             maker_broker: None,
+            amm_program: None,
             max_price: None,
             rules_acc_present: None,
             authorization_data: None,
@@ -1110,6 +1136,14 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn amm_program(
+        &mut self,
+        amm_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
     pub fn max_price(&mut self, max_price: u64) -> &mut Self {
         self.instruction.max_price = Some(max_price);
         self
@@ -1267,6 +1301,11 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
                 .expect("taker_broker is not set"),
 
             maker_broker: self.instruction.maker_broker,
+
+            amm_program: self
+                .instruction
+                .amm_program
+                .expect("amm_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1301,6 +1340,7 @@ struct BuyNftCpiBuilderInstruction<'a, 'b> {
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,

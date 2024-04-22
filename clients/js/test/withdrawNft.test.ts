@@ -28,6 +28,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import bs58 from 'bs58';
 import {
+  AMM_PROGRAM_ADDRESS,
   CurveType,
   PoolConfig,
   PoolType,
@@ -171,6 +172,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
+    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({

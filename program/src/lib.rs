@@ -18,11 +18,13 @@ pub mod amm_program {
     // admin instructions            //
     //-------------------------------//
 
+    pub fn tamm_noop(ctx: Context<TAmmNoop>, _event: TAmmEvent) -> Result<()> {
+        noop::process_noop(ctx)
+    }
+
     pub fn realloc_pool(ctx: Context<ReallocPool>, _config: PoolConfig) -> Result<()> {
         instructions::admin::realloc_pool::process_realloc_pool(ctx)
     }
-
-    // **Ix to collect fees from sharded fee accounts**
 
     //-------------------------------//
     // "standard" instructions       //

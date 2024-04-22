@@ -10,7 +10,7 @@ use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -111,6 +111,8 @@ pub struct BuyNftT22<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    pub amm_program: Program<'info, AmmProgram>,
 }
 
 impl<'info> BuyNftT22<'info> {
@@ -174,12 +176,15 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //
     // TODO: This needs to be updated once there is a "standard" way to determine
     // royalties on T22
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
-        mm_fee: 0,       //record in sell_trade ix for parsing
-        creators_fee: 0, // no royalties on T22
+        mm_fee: 0,
+        creators_fee: 0,
     });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     if current_price > max_price {
         throw_err!(ErrorCode::PriceMismatch);

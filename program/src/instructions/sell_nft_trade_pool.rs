@@ -14,7 +14,7 @@ use tensor_toolbox::{
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -176,6 +176,7 @@ pub struct SellNftTradePool<'info> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
+    pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
@@ -293,14 +294,15 @@ pub fn process_sell_nft_trade_pool<'info>(
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
-        //record MM here instead of buy tx (when it's technically paid to the MMer)
-        //this is because offchain we use the event to determine "true" price paid by taker, which in this case is current price - mm fee
         mm_fee,
         creators_fee,
     });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
     if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {

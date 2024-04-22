@@ -68,6 +68,8 @@ pub struct SellNftTradePool {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
+
+    pub amm_program: solana_program::pubkey::Pubkey,
 }
 
 impl SellNftTradePool {
@@ -83,7 +85,7 @@ impl SellNftTradePool {
         args: SellNftTradePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -203,6 +205,10 @@ impl SellNftTradePool {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.amm_program,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SellNftTradePoolInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -268,6 +274,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   23. `[writable]` taker_broker
 ///   24. `[optional]` maker_broker
 ///   25. `[signer, optional]` cosigner
+///   26. `[]` amm_program
 #[derive(Default)]
 pub struct SellNftTradePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -296,6 +303,7 @@ pub struct SellNftTradePoolBuilder {
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
+    amm_program: Option<solana_program::pubkey::Pubkey>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,
@@ -486,6 +494,11 @@ impl SellNftTradePoolBuilder {
         self
     }
     #[inline(always)]
+    pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.min_price = Some(min_price);
         self
@@ -571,6 +584,7 @@ impl SellNftTradePoolBuilder {
                 taker_broker: self.taker_broker.expect("taker_broker is not set"),
                 maker_broker: self.maker_broker,
                 cosigner: self.cosigner,
+                amm_program: self.amm_program.expect("amm_program is not set"),
             };
         let args = SellNftTradePoolInstructionArgs {
             min_price: self.min_price.clone().expect("min_price is not set"),
@@ -645,6 +659,8 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `sell_nft_trade_pool` CPI instruction.
@@ -708,6 +724,8 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+
+    pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: SellNftTradePoolInstructionArgs,
 }
@@ -746,6 +764,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             taker_broker: accounts.taker_broker,
             maker_broker: accounts.maker_broker,
             cosigner: accounts.cosigner,
+            amm_program: accounts.amm_program,
             __args: args,
         }
     }
@@ -782,7 +801,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(26 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -908,6 +927,10 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.amm_program.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -924,7 +947,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(26 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(27 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.seller.clone());
@@ -958,6 +981,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         if let Some(cosigner) = self.cosigner {
             account_infos.push(cosigner.clone());
         }
+        account_infos.push(self.amm_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -1000,6 +1024,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   23. `[writable]` taker_broker
 ///   24. `[optional]` maker_broker
 ///   25. `[signer, optional]` cosigner
+///   26. `[]` amm_program
 pub struct SellNftTradePoolCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTradePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1034,6 +1059,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             taker_broker: None,
             maker_broker: None,
             cosigner: None,
+            amm_program: None,
             min_price: None,
             rules_acc_present: None,
             authorization_data: None,
@@ -1264,6 +1290,14 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
+    pub fn amm_program(
+        &mut self,
+        amm_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.instruction.min_price = Some(min_price);
         self
@@ -1427,6 +1461,11 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             maker_broker: self.instruction.maker_broker,
 
             cosigner: self.instruction.cosigner,
+
+            amm_program: self
+                .instruction
+                .amm_program
+                .expect("amm_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1464,6 +1503,7 @@ struct SellNftTradePoolCpiBuilderInstruction<'a, 'b> {
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     min_price: Option<u64>,
     rules_acc_present: Option<bool>,
     authorization_data: Option<AuthorizationDataLocal>,

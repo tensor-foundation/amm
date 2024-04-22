@@ -6,6 +6,7 @@
 //!
 
 pub(crate) mod r#authorization_data_local;
+pub(crate) mod r#buy_sell_event;
 pub(crate) mod r#curve_type;
 pub(crate) mod r#direction;
 pub(crate) mod r#fee_seeds;
@@ -15,10 +16,12 @@ pub(crate) mod r#pool_stats;
 pub(crate) mod r#pool_type;
 pub(crate) mod r#proof_info_local;
 pub(crate) mod r#seeds_vec_local;
+pub(crate) mod r#t_amm_event;
 pub(crate) mod r#tagged_payload;
 pub(crate) mod r#taker_side;
 
 pub use self::r#authorization_data_local::*;
+pub use self::r#buy_sell_event::*;
 pub use self::r#curve_type::*;
 pub use self::r#direction::*;
 pub use self::r#fee_seeds::*;
@@ -28,5 +31,6 @@ pub use self::r#pool_stats::*;
 pub use self::r#pool_type::*;
 pub use self::r#proof_info_local::*;
 pub use self::r#seeds_vec_local::*;
+pub use self::r#t_amm_event::*;
 pub use self::r#tagged_payload::*;
 pub use self::r#taker_side::*;

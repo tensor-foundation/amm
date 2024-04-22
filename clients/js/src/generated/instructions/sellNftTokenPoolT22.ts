@@ -62,6 +62,7 @@ export type SellNftTokenPoolT22Instruction<
   TAccountSharedEscrowAccount extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -113,6 +114,9 @@ export type SellNftTokenPoolT22Instruction<
       TAccountMakerBroker extends string
         ? ReadonlyAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
+      TAccountAmmProgram extends string
+        ? ReadonlyAccount<TAccountAmmProgram>
+        : TAccountAmmProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -176,6 +180,7 @@ export type SellNftTokenPoolT22Input<
   TAccountSharedEscrowAccount extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountAmmProgram extends string = string,
 > = {
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
@@ -196,6 +201,7 @@ export type SellNftTokenPoolT22Input<
   sharedEscrowAccount: Address<TAccountSharedEscrowAccount>;
   takerBroker: Address<TAccountTakerBroker>;
   makerBroker?: Address<TAccountMakerBroker>;
+  ammProgram: Address<TAccountAmmProgram>;
   config: SellNftTokenPoolT22InstructionDataArgs['config'];
   minPrice: SellNftTokenPoolT22InstructionDataArgs['minPrice'];
 };
@@ -216,6 +222,7 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountSharedEscrowAccount extends string,
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountAmmProgram extends string,
 >(
   input: SellNftTokenPoolT22Input<
     TAccountOwner,
@@ -232,7 +239,8 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountSystemProgram,
     TAccountSharedEscrowAccount,
     TAccountTakerBroker,
-    TAccountMakerBroker
+    TAccountMakerBroker,
+    TAccountAmmProgram
   >
 ): SellNftTokenPoolT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -250,7 +258,8 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountSystemProgram,
   TAccountSharedEscrowAccount,
   TAccountTakerBroker,
-  TAccountMakerBroker
+  TAccountMakerBroker,
+  TAccountAmmProgram
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -278,6 +287,7 @@ export function getSellNftTokenPoolT22Instruction<
     },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -315,6 +325,7 @@ export function getSellNftTokenPoolT22Instruction<
       getAccountMeta(accounts.sharedEscrowAccount),
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.ammProgram),
     ],
     programAddress,
     data: getSellNftTokenPoolT22InstructionDataEncoder().encode(
@@ -336,7 +347,8 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountSystemProgram,
     TAccountSharedEscrowAccount,
     TAccountTakerBroker,
-    TAccountMakerBroker
+    TAccountMakerBroker,
+    TAccountAmmProgram
   >;
 
   return instruction;
@@ -367,6 +379,7 @@ export type ParsedSellNftTokenPoolT22Instruction<
     sharedEscrowAccount: TAccountMetas[12];
     takerBroker: TAccountMetas[13];
     makerBroker?: TAccountMetas[14] | undefined;
+    ammProgram: TAccountMetas[15];
   };
   data: SellNftTokenPoolT22InstructionData;
 };
@@ -379,7 +392,7 @@ export function parseSellNftTokenPoolT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 15) {
+  if (instruction.accounts.length < 16) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -413,6 +426,7 @@ export function parseSellNftTokenPoolT22Instruction<
       sharedEscrowAccount: getNextAccount(),
       takerBroker: getNextAccount(),
       makerBroker: getNextOptionalAccount(),
+      ammProgram: getNextAccount(),
     },
     data: getSellNftTokenPoolT22InstructionDataDecoder().decode(
       instruction.data

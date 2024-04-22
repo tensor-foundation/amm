@@ -15,7 +15,7 @@ use tensor_toolbox::{
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{error::ErrorCode, utils::send_pnft, *};
 
@@ -181,6 +181,7 @@ pub struct SellNftTokenPool<'info> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
+    pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts
 }
@@ -369,12 +370,15 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
         mm_fee: 0, // no MM fee for token pool
         creators_fee,
     });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     if current_price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
