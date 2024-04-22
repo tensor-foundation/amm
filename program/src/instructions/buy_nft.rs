@@ -217,6 +217,7 @@ pub fn process_buy_nft<'info, 'b>(
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
@@ -332,20 +333,22 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
-    match pool.config.pool_type {
-        PoolType::Trade if !pool.config.mm_compound_fees => {
-            let mm_fee = pool.calc_mm_fee(current_price)?;
+    // Price always goes to the destination: NFT pool --> owner, Trade pool either the pool or the escrow account.
+    ctx.accounts
+        .transfer_lamports(&destination, current_price)?;
 
-            let left_for_pool = current_price;
-
+    // Trade pools need to check compounding fees
+    if matches!(pool.config.pool_type, PoolType::Trade) {
+        // If MM fees are compounded they go to the destination to remain
+        // in the pool or escrow.
+        if pool.config.mm_compound_fees {
             ctx.accounts
-                .transfer_lamports(&destination, left_for_pool)?;
+                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+        } else {
+            // If MM fees are not compounded they go to the owner.
             ctx.accounts
-                .transfer_lamports(&ctx.accounts.pool.to_account_info(), mm_fee)?;
+                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
         }
-        _ => ctx
-            .accounts
-            .transfer_lamports(&destination, current_price)?,
     }
 
     // --------------------------------------- accounting

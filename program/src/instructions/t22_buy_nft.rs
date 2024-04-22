@@ -166,6 +166,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
@@ -247,18 +248,18 @@ pub fn process_t22_buy_nft<'info, 'b>(
     //rebate to destination (not necessarily owner)
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
-    match pool.config.pool_type {
-        PoolType::Trade if !pool.config.mm_compound_fees => {
-            let mm_fee = pool.calc_mm_fee(current_price)?;
-            let left_for_pool = current_price;
+    // Trade pools need to check compounding fees
+    if matches!(pool.config.pool_type, PoolType::Trade) {
+        // If MM fees are compounded they go to the destination to remain
+        // in the pool or escrow.
+        if pool.config.mm_compound_fees {
             ctx.accounts
-                .transfer_lamports(&destination, left_for_pool)?;
+                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+        } else {
+            // If MM fees are not compounded they go to the owner.
             ctx.accounts
-                .transfer_lamports(&ctx.accounts.pool.to_account_info(), mm_fee)?;
+                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
         }
-        _ => ctx
-            .accounts
-            .transfer_lamports(&destination, current_price)?,
     }
 
     // TODO: add royalty payment once available on T22
