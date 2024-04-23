@@ -98,7 +98,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -180,7 +180,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -221,7 +221,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

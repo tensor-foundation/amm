@@ -105,7 +105,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -191,7 +191,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -246,7 +246,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, buyer.address),
+    await createDefaultTransaction(client, buyer),
     (tx) => appendTransactionInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -363,7 +363,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -431,7 +431,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, buyer.address),
+    await createDefaultTransaction(client, buyer),
     (tx) => appendTransactionInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -522,7 +522,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -605,7 +605,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -655,7 +655,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   });
 
   const sig = await pipe(
-    await createDefaultTransaction(client, buyer.address),
+    await createDefaultTransaction(client, buyer),
     (tx) => appendTransactionInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

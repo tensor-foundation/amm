@@ -139,12 +139,12 @@ impl BuyNftT22 {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct BuyNftT22InstructionData {
+pub struct BuyNftT22InstructionData {
     discriminator: [u8; 8],
 }
 
 impl BuyNftT22InstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [155, 219, 126, 245, 170, 199, 51, 79],
         }

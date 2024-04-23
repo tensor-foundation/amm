@@ -10,10 +10,10 @@ importers:
     devDependencies:
       '@metaplex-foundation/amman':
         specifier: ^0.12.1
-        version: 0.12.1(typescript@5.4.5)
+        version: 0.12.1(bufferutil@4.0.8)(typescript@5.4.5)(utf-8-validate@5.0.10)
       '@metaplex-foundation/kinobi':
         specifier: ^0.18.4
-        version: 0.18.4(fastestsmallesttextencoderdecoder@1.0.22)
+        version: 0.18.5(fastestsmallesttextencoderdecoder@1.0.22)
       '@metaplex-foundation/shank-js':
         specifier: ^0.1.0
         version: 0.1.7
@@ -43,8 +43,8 @@ packages:
   '@metaplex-foundation/cusper@0.0.2':
     resolution: {integrity: sha512-S9RulC2fFCFOQraz61bij+5YCHhSO9llJegK8c8Y6731fSi6snUSQJdCUqYS8AIgR0TKbQvdvgSyIIdbDFZbBA==}
 
-  '@metaplex-foundation/kinobi@0.18.4':
-    resolution: {integrity: sha512-at4rR31Rh3guC4YgyrmV31L2OxITaLnx42x7d1O/rFfg7APsFiT6ewgCrkZPRwwdfYMB/ado4lbB0X69uh9lkQ==}
+  '@metaplex-foundation/kinobi@0.18.5':
+    resolution: {integrity: sha512-qh4h4xGB+PHR5o4rcZki+wsIeZYi6R9SRV5UMqGi/rfDJXk0ckAZ+fxdam+mCc4N8HWLLWmEJbF5gx8E5K0fOA==}
 
   '@metaplex-foundation/rustbin@0.3.5':
     resolution: {integrity: sha512-m0wkRBEQB/8krwMwKBvFugufZtYwMXiGHud2cTDAv+aGXK4M90y0Hx67/wpu+AqqoQfdV8VM9YezUOHKD+Z5kA==}
@@ -107,8 +107,8 @@ packages:
     resolution: {integrity: sha512-RWcn31OXtdqIxmkzQfB2R+WpsJOVS6rKuvpxJFjvik2LyODd+WN58ZP3Rpjpro03fscGAkzlFuP3r42doRJgyQ==}
     engines: {node: '>= 14'}
 
-  '@solana/web3.js@1.91.6':
-    resolution: {integrity: sha512-dm20nN6HQvXToo+kM51nxHdtaa2wMSRdeK37p+WIWESfeiVHqV8XbV4XnWupq6ngt5vIckhGFG7ZnTBxUgLzDA==}
+  '@solana/web3.js@1.91.7':
+    resolution: {integrity: sha512-HqljZKDwk6Z4TajKRGhGLlRsbGK4S8EY27DA7v1z6yakewiUY3J7ZKDZRxcqz2MYV/ZXRrJ6wnnpiHFkPdv0WA==}
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -446,8 +446,8 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
-  joi@17.12.3:
-    resolution: {integrity: sha512-2RRziagf555owrm9IRVtdKynOBeITiDpuZqIpgwqXShPncPKNiRQoiGsl/T8SQdq+8ugRzH2LqY67irr2y/d+g==}
+  joi@17.13.0:
+    resolution: {integrity: sha512-9qcrTyoBmFZRNHeVP4edKqIUEgFzq7MHvTNSDuHSqkpOPtiBkgNgcmTSqmiw1kw9tdKaiddvIDv/eCJDxmqWCA==}
 
   js-sha3@0.8.0:
     resolution: {integrity: sha512-gF1cRrHhIzNfToc802P800N8PpXS+evLLXfsVpowqmAFR9uwbi89WvXg2QspOmXL8QL86J4T1EpFu+yUkwJY3Q==}
@@ -813,15 +813,15 @@ snapshots:
     dependencies:
       '@hapi/hoek': 9.3.0
 
-  '@metaplex-foundation/amman-client@0.2.4':
+  '@metaplex-foundation/amman-client@0.2.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@metaplex-foundation/cusper': 0.0.2
       '@solana/spl-token-registry': 0.2.4574
-      '@solana/web3.js': 1.91.6
+      '@solana/web3.js': 1.91.7(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       bn.js: 5.2.1
       debug: 4.3.4
       js-sha3: 0.8.0
-      socket.io-client: 4.7.5
+      socket.io-client: 4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       tweetnacl: 1.0.3
     transitivePeerDependencies:
       - bufferutil
@@ -829,11 +829,11 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@metaplex-foundation/amman@0.12.1(typescript@5.4.5)':
+  '@metaplex-foundation/amman@0.12.1(bufferutil@4.0.8)(typescript@5.4.5)(utf-8-validate@5.0.10)':
     dependencies:
-      '@metaplex-foundation/amman-client': 0.2.4
-      '@solana/spl-token': 0.2.0
-      '@solana/web3.js': 1.91.6
+      '@metaplex-foundation/amman-client': 0.2.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      '@solana/spl-token': 0.2.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      '@solana/web3.js': 1.91.7(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       ansi-colors: 4.1.3
       bn.js: 5.2.1
       buffer-hexdump: 1.0.0
@@ -843,7 +843,7 @@ snapshots:
       diff: 5.2.0
       numeral: 2.0.6
       port-pid: 0.0.7
-      socket.io: 4.7.5
+      socket.io: 4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       text-table: 0.2.0
       timeago.js: 4.0.2
       ts-essentials: 9.4.2(typescript@5.4.5)
@@ -858,7 +858,7 @@ snapshots:
 
   '@metaplex-foundation/cusper@0.0.2': {}
 
-  '@metaplex-foundation/kinobi@0.18.4(fastestsmallesttextencoderdecoder@1.0.22)':
+  '@metaplex-foundation/kinobi@0.18.5(fastestsmallesttextencoderdecoder@1.0.22)':
     dependencies:
       '@noble/hashes': 1.4.0
       '@prettier/sync': 0.5.2(prettier@3.2.5)
@@ -909,10 +909,10 @@ snapshots:
 
   '@socket.io/component-emitter@3.1.1': {}
 
-  '@solana/buffer-layout-utils@0.2.0':
+  '@solana/buffer-layout-utils@0.2.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@solana/buffer-layout': 4.0.1
-      '@solana/web3.js': 1.91.6
+      '@solana/web3.js': 1.91.7(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       bigint-buffer: 1.1.5
       bignumber.js: 9.1.2
     transitivePeerDependencies:
@@ -949,11 +949,11 @@ snapshots:
     dependencies:
       cross-fetch: 3.0.6
 
-  '@solana/spl-token@0.2.0':
+  '@solana/spl-token@0.2.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@solana/buffer-layout': 4.0.1
-      '@solana/buffer-layout-utils': 0.2.0
-      '@solana/web3.js': 1.91.6
+      '@solana/buffer-layout-utils': 0.2.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      '@solana/web3.js': 1.91.7(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       start-server-and-test: 1.15.4
     transitivePeerDependencies:
       - bufferutil
@@ -961,7 +961,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@solana/web3.js@1.91.6':
+  '@solana/web3.js@1.91.7(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@babel/runtime': 7.24.4
       '@noble/curves': 1.4.0
@@ -974,7 +974,7 @@ snapshots:
       bs58: 4.0.1
       buffer: 6.0.3
       fast-stable-stringify: 1.0.0
-      jayson: 4.1.0
+      jayson: 4.1.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       node-fetch: 2.7.0
       rpc-websockets: 7.10.0
       superstruct: 0.14.2
@@ -1088,6 +1088,7 @@ snapshots:
   bufferutil@4.0.8:
     dependencies:
       node-gyp-build: 4.8.0
+    optional: true
 
   call-bind@1.0.7:
     dependencies:
@@ -1171,12 +1172,12 @@ snapshots:
 
   emoji-regex@8.0.0: {}
 
-  engine.io-client@6.5.3:
+  engine.io-client@6.5.3(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@socket.io/component-emitter': 3.1.1
       debug: 4.3.4
       engine.io-parser: 5.2.2
-      ws: 8.11.0
+      ws: 8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       xmlhttprequest-ssl: 2.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -1185,7 +1186,7 @@ snapshots:
 
   engine.io-parser@5.2.2: {}
 
-  engine.io@6.5.4:
+  engine.io@6.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@types/cookie': 0.4.1
       '@types/cors': 2.8.17
@@ -1196,7 +1197,7 @@ snapshots:
       cors: 2.8.5
       debug: 4.3.4
       engine.io-parser: 5.2.2
-      ws: 8.11.0
+      ws: 8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -1249,7 +1250,7 @@ snapshots:
   file-uri-to-path@1.0.0: {}
 
   follow-redirects@1.15.6(debug@4.3.4):
-    dependencies:
+    optionalDependencies:
       debug: 4.3.4
 
   form-data@4.0.0:
@@ -1308,11 +1309,11 @@ snapshots:
 
   isexe@2.0.0: {}
 
-  isomorphic-ws@4.0.1(ws@7.5.9):
+  isomorphic-ws@4.0.1(ws@7.5.9(bufferutil@4.0.8)(utf-8-validate@5.0.10)):
     dependencies:
-      ws: 7.5.9
+      ws: 7.5.9(bufferutil@4.0.8)(utf-8-validate@5.0.10)
 
-  jayson@4.1.0:
+  jayson@4.1.0(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@types/connect': 3.4.38
       '@types/node': 12.20.55
@@ -1322,15 +1323,15 @@ snapshots:
       delay: 5.0.0
       es6-promisify: 5.0.0
       eyes: 0.1.8
-      isomorphic-ws: 4.0.1(ws@7.5.9)
+      isomorphic-ws: 4.0.1(ws@7.5.9(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       json-stringify-safe: 5.0.1
       uuid: 8.3.2
-      ws: 7.5.9
+      ws: 7.5.9(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  joi@17.12.3:
+  joi@17.13.0:
     dependencies:
       '@hapi/hoek': 9.3.0
       '@hapi/topo': 5.1.0
@@ -1391,7 +1392,8 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-gyp-build@4.8.0: {}
+  node-gyp-build@4.8.0:
+    optional: true
 
   npm-run-path@4.0.1:
     dependencies:
@@ -1475,20 +1477,20 @@ snapshots:
 
   signal-exit@3.0.7: {}
 
-  socket.io-adapter@2.5.4:
+  socket.io-adapter@2.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       debug: 4.3.4
-      ws: 8.11.0
+      ws: 8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  socket.io-client@4.7.5:
+  socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@socket.io/component-emitter': 3.1.1
       debug: 4.3.4
-      engine.io-client: 6.5.3
+      engine.io-client: 6.5.3(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       socket.io-parser: 4.2.4
     transitivePeerDependencies:
       - bufferutil
@@ -1502,14 +1504,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.7.5:
+  socket.io@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.5
       debug: 4.3.4
-      engine.io: 6.5.4
-      socket.io-adapter: 2.5.4
+      engine.io: 6.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      socket.io-adapter: 2.5.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       socket.io-parser: 4.2.4
     transitivePeerDependencies:
       - bufferutil
@@ -1570,7 +1572,7 @@ snapshots:
   tr46@0.0.3: {}
 
   ts-essentials@9.4.2(typescript@5.4.5):
-    dependencies:
+    optionalDependencies:
       typescript: 5.4.5
 
   tslib@2.6.2: {}
@@ -1584,6 +1586,7 @@ snapshots:
   utf-8-validate@5.0.10:
     dependencies:
       node-gyp-build: 4.8.0
+    optional: true
 
   uuid@8.3.2: {}
 
@@ -1592,7 +1595,7 @@ snapshots:
   wait-on@6.0.1(debug@4.3.4):
     dependencies:
       axios: 0.25.0(debug@4.3.4)
-      joi: 17.12.3
+      joi: 17.13.0
       lodash: 4.17.21
       minimist: 1.2.8
       rxjs: 7.8.1
@@ -1602,7 +1605,7 @@ snapshots:
   wait-on@7.0.1(debug@4.3.4):
     dependencies:
       axios: 0.27.2(debug@4.3.4)
-      joi: 17.12.3
+      joi: 17.13.0
       lodash: 4.17.21
       minimist: 1.2.8
       rxjs: 7.8.1
@@ -1626,12 +1629,18 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
 
-  ws@7.5.9: {}
+  ws@7.5.9(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 5.0.10
 
-  ws@8.11.0: {}
+  ws@8.11.0(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 5.0.10
 
   ws@8.16.0(bufferutil@4.0.8)(utf-8-validate@5.0.10):
-    dependencies:
+    optionalDependencies:
       bufferutil: 4.0.8
       utf-8-validate: 5.0.10
 

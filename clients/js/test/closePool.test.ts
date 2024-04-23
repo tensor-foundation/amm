@@ -112,7 +112,7 @@ test('it can close a pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(closePoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -195,7 +195,7 @@ test('close pool fails if nfts still deposited', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
@@ -208,7 +208,7 @@ test('close pool fails if nfts still deposited', async (t) => {
   });
 
   const promise = pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(closePoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -277,7 +277,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -358,7 +358,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -372,7 +372,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(closePoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -434,7 +434,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -511,7 +511,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -525,7 +525,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   });
 
   const promise = pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(closePoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

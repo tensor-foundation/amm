@@ -62,12 +62,12 @@ impl ReallocPool {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct ReallocPoolInstructionData {
+pub struct ReallocPoolInstructionData {
     discriminator: [u8; 8],
 }
 
 impl ReallocPoolInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [114, 128, 37, 167, 71, 227, 40, 178],
         }

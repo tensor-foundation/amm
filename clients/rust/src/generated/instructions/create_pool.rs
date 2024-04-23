@@ -69,12 +69,12 @@ impl CreatePool {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct CreatePoolInstructionData {
+pub struct CreatePoolInstructionData {
     discriminator: [u8; 8],
 }
 
 impl CreatePoolInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
         }
