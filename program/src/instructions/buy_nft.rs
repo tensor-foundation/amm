@@ -13,7 +13,7 @@ use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 
 use super::*;
 
@@ -159,6 +159,7 @@ pub struct BuyNft<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
+    pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
@@ -225,12 +226,19 @@ pub fn process_buy_nft<'info, 'b>(
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
-        mm_fee: 0, //record in sell_trade ix for parsing
+        mm_fee: if pool.config.pool_type == PoolType::Trade {
+            mm_fee
+        } else {
+            0
+        },
         creators_fee,
     });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     if current_price > max_price {
         throw_err!(ErrorCode::PriceMismatch);

@@ -1,7 +1,9 @@
+pub mod event;
 pub mod nft_deposit_receipt;
 pub mod pool;
 pub mod single_listing;
 
+pub use event::*;
 pub use nft_deposit_receipt::*;
 pub use pool::*;
 pub use single_listing::*;
@@ -32,18 +34,6 @@ pub struct DummyCtx<'info> {
 pub struct FeeVault {}
 
 // --------------------------------------- events
-
-#[event]
-pub struct BuySellEvent {
-    #[index]
-    pub current_price: u64,
-    #[index]
-    pub tswap_fee: u64,
-    #[index]
-    pub mm_fee: u64,
-    #[index]
-    pub creators_fee: u64,
-}
 
 #[event]
 pub struct DelistEvent {

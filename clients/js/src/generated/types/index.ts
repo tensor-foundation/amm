@@ -7,6 +7,7 @@
  */
 
 export * from './authorizationDataLocal';
+export * from './buySellEvent';
 export * from './curveType';
 export * from './direction';
 export * from './feeSeeds';
@@ -18,3 +19,4 @@ export * from './proofInfoLocal';
 export * from './seedsVecLocal';
 export * from './taggedPayload';
 export * from './takerSide';
+export * from './tAmmEvent';

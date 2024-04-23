@@ -89,6 +89,7 @@ export type SellNftTradePoolInstruction<
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountCosigner extends string | IAccountMeta<string> = string,
+  TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -174,6 +175,9 @@ export type SellNftTradePoolInstruction<
         ? ReadonlySignerAccount<TAccountCosigner> &
             IAccountSignerMeta<TAccountCosigner>
         : TAccountCosigner,
+      TAccountAmmProgram extends string
+        ? ReadonlyAccount<TAccountAmmProgram>
+        : TAccountAmmProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -259,6 +263,7 @@ export type SellNftTradePoolInput<
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountCosigner extends string = string,
+  TAccountAmmProgram extends string = string,
 > = {
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
@@ -314,6 +319,7 @@ export type SellNftTradePoolInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  ammProgram: Address<TAccountAmmProgram>;
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
   rulesAccPresent: SellNftTradePoolInstructionDataArgs['rulesAccPresent'];
   authorizationData: SellNftTradePoolInstructionDataArgs['authorizationData'];
@@ -348,6 +354,7 @@ export function getSellNftTradePoolInstruction<
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
   TAccountCosigner extends string,
+  TAccountAmmProgram extends string,
 >(
   input: SellNftTradePoolInput<
     TAccountOwner,
@@ -375,7 +382,8 @@ export function getSellNftTradePoolInstruction<
     TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
-    TAccountCosigner
+    TAccountCosigner,
+    TAccountAmmProgram
   >
 ): SellNftTradePoolInstruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -404,7 +412,8 @@ export function getSellNftTradePoolInstruction<
   TAccountSharedEscrow,
   TAccountTakerBroker,
   TAccountMakerBroker,
-  TAccountCosigner
+  TAccountCosigner,
+  TAccountAmmProgram
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -449,6 +458,7 @@ export function getSellNftTradePoolInstruction<
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: false },
     cosigner: { value: input.cosigner ?? null, isWritable: false },
+    ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -514,6 +524,7 @@ export function getSellNftTradePoolInstruction<
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.cosigner),
+      getAccountMeta(accounts.ammProgram),
       ...remainingAccounts,
     ],
     programAddress,
@@ -547,7 +558,8 @@ export function getSellNftTradePoolInstruction<
     TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
-    TAccountCosigner
+    TAccountCosigner,
+    TAccountAmmProgram
   >;
 
   return instruction;
@@ -616,6 +628,7 @@ export type ParsedSellNftTradePoolInstruction<
      */
 
     cosigner?: TAccountMetas[25] | undefined;
+    ammProgram: TAccountMetas[26];
   };
   data: SellNftTradePoolInstructionData;
 };
@@ -628,7 +641,7 @@ export function parseSellNftTradePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTradePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 26) {
+  if (instruction.accounts.length < 27) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -673,6 +686,7 @@ export function parseSellNftTradePoolInstruction<
       takerBroker: getNextAccount(),
       makerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
+      ammProgram: getNextAccount(),
     },
     data: getSellNftTradePoolInstructionDataDecoder().decode(instruction.data),
   };

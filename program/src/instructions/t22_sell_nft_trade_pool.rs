@@ -18,7 +18,7 @@ use tensor_toolbox::{
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
+use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -126,6 +126,8 @@ pub struct SellNftTradePoolT22<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    pub amm_program: Program<'info, AmmProgram>,
 }
 
 impl<'info> Validate<'info> for SellNftTradePoolT22<'info> {
@@ -234,14 +236,15 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     //
-    emit!(BuySellEvent {
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
-        //record MM here instead of buy tx (when it's technically paid to the MMer)
-        //this is because offchain we use the event to determine "true" price paid by taker, which in this case is current price - mm fee
         mm_fee,
         creators_fee: 0, // no royalties on T22
     });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
 

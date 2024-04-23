@@ -29,6 +29,7 @@ import {
   ParsedSellNftTokenPoolT22Instruction,
   ParsedSellNftTradePoolInstruction,
   ParsedSellNftTradePoolT22Instruction,
+  ParsedTammNoopInstruction,
   ParsedWithdrawNftInstruction,
   ParsedWithdrawNftT22Instruction,
   ParsedWithdrawSolInstruction,
@@ -81,6 +82,7 @@ export function identifyAmmAccount(
 }
 
 export enum AmmInstruction {
+  TammNoop,
   ReallocPool,
   CreatePool,
   EditPool,
@@ -106,6 +108,11 @@ export function identifyAmmInstruction(
 ): AmmInstruction {
   const data =
     instruction instanceof Uint8Array ? instruction : instruction.data;
+  if (
+    memcmp(data, new Uint8Array([31, 162, 228, 158, 153, 160, 198, 182]), 0)
+  ) {
+    return AmmInstruction.TammNoop;
+  }
   if (memcmp(data, new Uint8Array([114, 128, 37, 167, 71, 227, 40, 178]), 0)) {
     return AmmInstruction.ReallocPool;
   }
@@ -174,6 +181,9 @@ export function identifyAmmInstruction(
 export type ParsedAmmInstruction<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
 > =
+  | ({
+      instructionType: AmmInstruction.TammNoop;
+    } & ParsedTammNoopInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.ReallocPool;
     } & ParsedReallocPoolInstruction<TProgram>)
