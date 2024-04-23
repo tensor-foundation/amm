@@ -229,7 +229,11 @@ pub fn process_buy_nft<'info, 'b>(
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         tswap_fee: taker_fee,
-        mm_fee: 0,
+        mm_fee: if pool.config.pool_type == PoolType::Trade {
+            mm_fee
+        } else {
+            0
+        },
         creators_fee,
     });
 
