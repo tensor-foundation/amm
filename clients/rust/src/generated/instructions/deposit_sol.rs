@@ -61,12 +61,12 @@ impl DepositSol {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct DepositSolInstructionData {
+pub struct DepositSolInstructionData {
     discriminator: [u8; 8],
 }
 
 impl DepositSolInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [108, 81, 78, 117, 125, 155, 56, 200],
         }

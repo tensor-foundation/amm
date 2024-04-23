@@ -45,12 +45,12 @@ impl TammNoop {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct TammNoopInstructionData {
+pub struct TammNoopInstructionData {
     discriminator: [u8; 8],
 }
 
 impl TammNoopInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [31, 162, 228, 158, 153, 160, 198, 182],
         }

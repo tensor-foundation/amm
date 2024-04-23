@@ -152,7 +152,7 @@ export async function createWhitelistV2({
   });
 
   await pipe(
-    await createDefaultTransaction(client, payer.address),
+    await createDefaultTransaction(client, payer),
     (tx) => appendTransactionInstruction(createWhitelistIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -276,7 +276,7 @@ export async function createPool({
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(createPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -338,7 +338,7 @@ export async function createPoolThrows({
   });
 
   const promise = pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(createPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -586,7 +586,7 @@ export async function mintAndSellIntoPool({
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })

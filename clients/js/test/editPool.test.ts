@@ -67,7 +67,7 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, updateAuthority.address),
+    await createDefaultTransaction(client, updateAuthority),
     (tx) => appendTransactionInstruction(editPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

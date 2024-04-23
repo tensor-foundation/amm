@@ -145,12 +145,12 @@ impl WithdrawNft {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct WithdrawNftInstructionData {
+pub struct WithdrawNftInstructionData {
     discriminator: [u8; 8],
 }
 
 impl WithdrawNftInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [142, 181, 191, 149, 82, 175, 216, 100],
         }

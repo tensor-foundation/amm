@@ -112,7 +112,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );

@@ -55,12 +55,12 @@ impl CloseExpiredPool {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct CloseExpiredPoolInstructionData {
+pub struct CloseExpiredPoolInstructionData {
     discriminator: [u8; 8],
 }
 
 impl CloseExpiredPoolInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [108, 212, 233, 53, 132, 83, 63, 219],
         }

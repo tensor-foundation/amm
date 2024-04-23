@@ -53,12 +53,12 @@ impl FeeCrank {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct FeeCrankInstructionData {
+pub struct FeeCrankInstructionData {
     discriminator: [u8; 8],
 }
 
 impl FeeCrankInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [108, 152, 200, 126, 233, 45, 155, 146],
         }

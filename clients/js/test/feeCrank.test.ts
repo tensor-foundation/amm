@@ -94,7 +94,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, poolOwner.address),
+    await createDefaultTransaction(client, poolOwner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -128,7 +128,7 @@ test('it can collect fees from sharded fee accounts', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, payer.address),
+    await createDefaultTransaction(client, payer),
     (tx) => setTransactionFeePayerSigner(payer, tx),
     (tx) => appendTransactionInstruction(collectFeesIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })

@@ -101,7 +101,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -178,7 +178,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, nftOwner.address),
+    await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
@@ -211,7 +211,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -269,7 +269,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -282,7 +282,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   });
 
   const promise = pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -354,7 +354,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -375,7 +375,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner.address),
+    await createDefaultTransaction(client, owner),
     (tx) => appendTransactionInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

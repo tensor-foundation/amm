@@ -55,12 +55,12 @@ impl ClosePool {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-struct ClosePoolInstructionData {
+pub struct ClosePoolInstructionData {
     discriminator: [u8; 8],
 }
 
 impl ClosePoolInstructionData {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             discriminator: [140, 189, 209, 23, 239, 62, 239, 11],
         }
