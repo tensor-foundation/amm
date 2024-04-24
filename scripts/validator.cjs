@@ -41,6 +41,11 @@ module.exports = {
         label: "Token Metadata",
         programId: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
         deployPath: getProgram("mpl_token_metadata.so")
+      },
+      {
+        label: "Tensor Escrow",
+        programId: "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN",
+        deployPath: getProgram("escrow_program.so")
       }
     ]
   }

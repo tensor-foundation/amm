@@ -15,6 +15,7 @@ import {
   MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
   MPL_TOKEN_METADATA_PROGRAM_ID,
   SYSVARS_INSTRUCTIONS,
+  TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -173,6 +174,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     // Remaining accounts
     creators: [nftOwner.address],
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({

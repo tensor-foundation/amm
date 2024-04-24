@@ -1,5 +1,5 @@
 [package]
-name = "amm"
+name = "tensor-amm"
 version = "0.0.0"
 edition = "2021"
 readme = "README.md"

@@ -1286,6 +1286,11 @@
           "name": "ammProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "escrowProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [

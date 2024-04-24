@@ -1,15 +1,15 @@
-use amm::{
-    accounts::Pool,
-    instructions::CreatePoolBuilder,
-    types::{CurveType, PoolConfig, PoolType},
-    NullableU16,
-};
 use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
 use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     system_instruction,
     transaction::Transaction,
+};
+use tensor_amm::{
+    accounts::Pool,
+    instructions::CreatePoolBuilder,
+    types::{CurveType, PoolConfig, PoolType},
+    NullableU16,
 };
 use tensor_whitelist::{
     accounts::WhitelistV2,
@@ -26,7 +26,7 @@ lazy_static::lazy_static! {
 }
 
 pub async fn program_context() -> ProgramTestContext {
-    let mut program_test = ProgramTest::new("amm_program", amm::ID, None);
+    let mut program_test = ProgramTest::new("amm_program", tensor_amm::ID, None);
     program_test.add_program("whitelist_program", tensor_whitelist::ID, None);
     program_test.start_with_context().await
 }
