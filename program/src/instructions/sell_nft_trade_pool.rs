@@ -318,8 +318,6 @@ pub fn process_sell_nft_trade_pool<'info>(
         throw_err!(ErrorCode::PriceMismatch);
     }
 
-    let mut left_for_seller = current_price;
-
     // --------------------------------------- SOL transfers
 
     // Signer seeds for the pool account.
@@ -345,17 +343,6 @@ pub fn process_sell_nft_trade_pool<'info>(
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
-        // Total amount will be the price + the tswap, broker and creators fees.
-        // MM fee is subtracted from the price and stays in the escrow.
-        // TODO: what about if not compounding?
-        let transfer_amount = current_price
-            .checked_add(tswap_fee)
-            .ok_or(ErrorCode::ArithmeticError)?
-            .checked_add(broker_fee)
-            .ok_or(ErrorCode::ArithmeticError)?
-            .checked_add(creators_fee)
-            .ok_or(ErrorCode::ArithmeticError)?;
-
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
             __program: &ctx.accounts.escrow_program.to_account_info(),
@@ -367,11 +354,14 @@ pub fn process_sell_nft_trade_pool<'info>(
             __args: WithdrawMarginAccountCpiTammInstructionArgs {
                 bump: pool.bump[0],
                 pool_id: pool.pool_id,
-                lamports: transfer_amount,
+                // Seller will receive this minus fees.
+                lamports: current_price,
             },
         }
         .invoke_signed(signer_seeds)?;
     }
+
+    let mut left_for_seller = current_price;
 
     // transfer fees
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));

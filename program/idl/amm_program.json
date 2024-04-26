@@ -1063,6 +1063,11 @@
           "name": "ammProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "escrowProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1578,7 +1583,7 @@
           "isSigner": false
         },
         {
-          "name": "sharedEscrowAccount",
+          "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false
         },
@@ -1595,6 +1600,11 @@
         },
         {
           "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "escrowProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -1690,7 +1700,7 @@
           "isSigner": false
         },
         {
-          "name": "sharedEscrowAccount",
+          "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false
         },
@@ -1707,6 +1717,11 @@
         },
         {
           "name": "ammProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "escrowProgram",
           "isMut": false,
           "isSigner": false
         }

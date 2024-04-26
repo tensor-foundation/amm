@@ -59,10 +59,11 @@ export type SellNftTokenPoolT22Instruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountSharedEscrowAccount extends string | IAccountMeta<string> = string,
+  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
+  TAccountEscrowProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -105,9 +106,9 @@ export type SellNftTokenPoolT22Instruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountSharedEscrowAccount extends string
-        ? WritableAccount<TAccountSharedEscrowAccount>
-        : TAccountSharedEscrowAccount,
+      TAccountSharedEscrow extends string
+        ? WritableAccount<TAccountSharedEscrow>
+        : TAccountSharedEscrow,
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
@@ -117,6 +118,9 @@ export type SellNftTokenPoolT22Instruction<
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
         : TAccountAmmProgram,
+      TAccountEscrowProgram extends string
+        ? ReadonlyAccount<TAccountEscrowProgram>
+        : TAccountEscrowProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -177,10 +181,11 @@ export type SellNftTokenPoolT22Input<
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountSharedEscrowAccount extends string = string,
+  TAccountSharedEscrow extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountAmmProgram extends string = string,
+  TAccountEscrowProgram extends string = string,
 > = {
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
@@ -198,10 +203,11 @@ export type SellNftTokenPoolT22Input<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  sharedEscrowAccount: Address<TAccountSharedEscrowAccount>;
+  sharedEscrow: Address<TAccountSharedEscrow>;
   takerBroker: Address<TAccountTakerBroker>;
   makerBroker?: Address<TAccountMakerBroker>;
   ammProgram: Address<TAccountAmmProgram>;
+  escrowProgram: Address<TAccountEscrowProgram>;
   config: SellNftTokenPoolT22InstructionDataArgs['config'];
   minPrice: SellNftTokenPoolT22InstructionDataArgs['minPrice'];
 };
@@ -219,10 +225,11 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountSharedEscrowAccount extends string,
+  TAccountSharedEscrow extends string,
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
   TAccountAmmProgram extends string,
+  TAccountEscrowProgram extends string,
 >(
   input: SellNftTokenPoolT22Input<
     TAccountOwner,
@@ -237,10 +244,11 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountSharedEscrowAccount,
+    TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
-    TAccountAmmProgram
+    TAccountAmmProgram,
+    TAccountEscrowProgram
   >
 ): SellNftTokenPoolT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -256,10 +264,11 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
-  TAccountSharedEscrowAccount,
+  TAccountSharedEscrow,
   TAccountTakerBroker,
   TAccountMakerBroker,
-  TAccountAmmProgram
+  TAccountAmmProgram,
+  TAccountEscrowProgram
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -281,13 +290,11 @@ export function getSellNftTokenPoolT22Instruction<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    sharedEscrowAccount: {
-      value: input.sharedEscrowAccount ?? null,
-      isWritable: true,
-    },
+    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
+    escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -322,10 +329,11 @@ export function getSellNftTokenPoolT22Instruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.sharedEscrowAccount),
+      getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.ammProgram),
+      getAccountMeta(accounts.escrowProgram),
     ],
     programAddress,
     data: getSellNftTokenPoolT22InstructionDataEncoder().encode(
@@ -345,10 +353,11 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountSharedEscrowAccount,
+    TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
-    TAccountAmmProgram
+    TAccountAmmProgram,
+    TAccountEscrowProgram
   >;
 
   return instruction;
@@ -376,10 +385,11 @@ export type ParsedSellNftTokenPoolT22Instruction<
     tokenProgram: TAccountMetas[9];
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
-    sharedEscrowAccount: TAccountMetas[12];
+    sharedEscrow: TAccountMetas[12];
     takerBroker: TAccountMetas[13];
     makerBroker?: TAccountMetas[14] | undefined;
     ammProgram: TAccountMetas[15];
+    escrowProgram: TAccountMetas[16];
   };
   data: SellNftTokenPoolT22InstructionData;
 };
@@ -392,7 +402,7 @@ export function parseSellNftTokenPoolT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 16) {
+  if (instruction.accounts.length < 17) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -423,10 +433,11 @@ export function parseSellNftTokenPoolT22Instruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      sharedEscrowAccount: getNextAccount(),
+      sharedEscrow: getNextAccount(),
       takerBroker: getNextAccount(),
       makerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
+      escrowProgram: getNextAccount(),
     },
     data: getSellNftTokenPoolT22InstructionDataDecoder().decode(
       instruction.data

@@ -8,6 +8,9 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
+use tensor_escrow::instructions::{
+    WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
+};
 use tensor_toolbox::{
     assert_decode_metadata, transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode,
     FromAcc, PnftTransferArgs,
@@ -181,7 +184,12 @@ pub struct SellNftTokenPool<'info> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
+
+    /// CHECK: address constraint is checked here
+    #[account(address = tensor_escrow::ID)]
+    pub escrow_program: UncheckedAccount<'info>,
     // remaining accounts:
     // optional 0 to N creator accounts
 }
@@ -251,7 +259,6 @@ impl<'info> SellNftTokenPool<'info> {
     }
 }
 
-//ToDo: fix this
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPool<'info>>,
@@ -262,7 +269,6 @@ pub fn process_sell_nft_token_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
-
     let owner_pubkey = ctx.accounts.owner.key();
 
     // --------------------------------------- send pnft
@@ -384,29 +390,51 @@ pub fn process_sell_nft_token_pool<'info>(
         throw_err!(ErrorCode::PriceMismatch);
     }
 
-    let mut left_for_seller = current_price;
-
     // --------------------------------------- SOL transfers
-    //decide where we're sending the money from - shared escrow (shared escrow pool) or the pool itself
-    let from = match pool.shared_escrow.value() {
-        Some(stored_shared_escrow) => {
-            assert_decode_margin_account(
-                &ctx.accounts.shared_escrow,
-                &ctx.accounts.pool.to_account_info(),
-            )?;
-            if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
-                throw_err!(ErrorCode::BadSharedEscrow);
-            }
-            ctx.accounts.shared_escrow.to_account_info()
+
+    // If the source funds are from a shared escrow account, we first transfer from there
+    // to the pool, to make payments cleaner. After this, we can always send from the pool
+    // so the logic is simpler.
+    if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+        // Validate it's a valid escrow account.
+        assert_decode_margin_account(
+            &ctx.accounts.shared_escrow,
+            &ctx.accounts.owner.to_account_info(),
+        )?;
+
+        // Validate it's the correct account: the stored escrow account matches the one passed in.
+        if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+            throw_err!(ErrorCode::BadSharedEscrow);
         }
-        None => ctx.accounts.pool.to_account_info(),
-    };
+
+        // Withdraw from escrow account to pool.
+        WithdrawMarginAccountCpiTammCpi {
+            __program: &ctx.accounts.escrow_program.to_account_info(),
+            margin_account: &ctx.accounts.shared_escrow,
+            pool: &ctx.accounts.pool.to_account_info(),
+            owner: &ctx.accounts.owner.to_account_info(),
+            destination: &ctx.accounts.pool.to_account_info(),
+            system_program: &ctx.accounts.system_program.to_account_info(),
+            __args: WithdrawMarginAccountCpiTammInstructionArgs {
+                bump: pool.bump[0],
+                pool_id: pool.pool_id,
+                lamports: current_price,
+            },
+        }
+        .invoke_signed(signer_seeds)?;
+    }
+
+    let mut left_for_seller = current_price;
 
     // transfer fees
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
     transfer_lamports_from_pda(
-        &from,
+        &ctx.accounts.pool.to_account_info(),
+        &ctx.accounts.fee_vault.to_account_info(),
+        tswap_fee,
+    )?;
+    transfer_lamports_from_pda(
+        &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.taker_broker.to_account_info(),
         broker_fee,
     )?;
@@ -425,7 +453,7 @@ pub fn process_sell_nft_token_pool<'info>(
         remaining_accounts,
         creators_fee,
         &CreatorFeeMode::Sol {
-            from: &FromAcc::Pda(&from),
+            from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
         },
     )?;
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
@@ -434,7 +462,7 @@ pub fn process_sell_nft_token_pool<'info>(
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
     // (!) maker rebate already taken out of this amount
     transfer_lamports_from_pda(
-        &from,
+        &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;

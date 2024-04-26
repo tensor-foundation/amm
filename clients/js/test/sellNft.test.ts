@@ -485,6 +485,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
     // Remaining accounts
     creators: [nftOwner.address],
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({
@@ -735,6 +736,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     optionalRoyaltyPct: none(),
 
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
 
     // Remaining accounts
 
