@@ -11,18 +11,18 @@
     "generate": "pnpm generate:idls && pnpm generate:clients",
     "generate:idls": "node ./scripts/generate-idls.cjs",
     "generate:clients": "node ./scripts/generate-clients.cjs",
-    "refresh": "pnpm validator:stop && pnpm programs:build && pnpm generate && pnpm validator",
     "validator": "CI=1 amman start --config ./scripts/validator.cjs",
+    "validator:refresh": "pnpm validator:stop && pnpm programs:build && pnpm generate && pnpm validator",
     "validator:restart": "pnpm validator:stop && pnpm validator",
     "validator:debug": "amman start --config ./scripts/validator.cjs",
     "validator:logs": "CI=1 amman logs",
     "validator:stop": "amman stop"
   },
   "devDependencies": {
-    "@metaplex-foundation/shank-js": "^0.1.0",
     "@metaplex-foundation/amman": "^0.12.1",
-    "@metaplex-foundation/kinobi": "^0.18.4",
+    "@metaplex-foundation/kinobi": "^0.18.5",
+    "@metaplex-foundation/shank-js": "^0.1.0",
     "typescript": "^5.4.2"
   },
-  "packageManager": "pnpm@9.0.5"
+  "packageManager": "pnpm@9.0.6"
 }

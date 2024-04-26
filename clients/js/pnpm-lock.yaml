@@ -41,24 +41,24 @@ importers:
         version: 4.1.0
       '@solana/eslint-config-solana':
         specifier: ^3.0.0
-        version: 3.0.3(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-jest@27.9.0(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-react-hooks@4.6.0(eslint@8.57.0))(eslint-plugin-simple-import-sort@10.0.0(eslint@8.57.0))(eslint-plugin-sort-keys-fix@1.1.2)(eslint-plugin-typescript-sort-keys@3.2.0(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
+        version: 3.0.3(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-jest@27.9.0(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-react-hooks@4.6.1(eslint@8.57.0))(eslint-plugin-simple-import-sort@10.0.0(eslint@8.57.0))(eslint-plugin-sort-keys-fix@1.1.2)(eslint-plugin-typescript-sort-keys@3.2.0(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
       '@solana/webcrypto-ed25519-polyfill':
         specifier: 2.0.0-preview.2
         version: 2.0.0-preview.2
       '@tensor-foundation/escrow':
-        specifier: git+ssh://git@github.com/tensor-foundation/escrow.git#chore/update-js-add-margin-seeds&path:clients/js
-        version: git+https://git@github.com:tensor-foundation/escrow.git#56caafc9283937db82cca54240d8be946d289209&path:clients/js(fastestsmallesttextencoderdecoder@1.0.22)
+        specifier: 0.0.1
+        version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)
       '@tensor-foundation/test-helpers':
-        specifier: 0.0.1-alpha.3
-        version: 0.0.1-alpha.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
+        specifier: 0.0.2
+        version: 0.0.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
       '@tensor-foundation/toolkit-token-metadata':
-        specifier: 0.0.1-alpha.3
-        version: 0.0.1-alpha.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
+        specifier: 0.0.1
+        version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
       '@tensor-foundation/whitelist':
-        specifier: 0.0.1-alpha.1
-        version: 0.0.1-alpha.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
+        specifier: 0.0.1
+        version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
       '@types/node':
-        specifier: ^20.11.26
+        specifier: 20.12.7
         version: 20.12.7
       '@types/uuid':
         specifier: ^9.0.8
@@ -1487,18 +1487,17 @@ packages:
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}
     engines: {node: '>=10'}
 
-  '@tensor-foundation/escrow@git+https://git@github.com:tensor-foundation/escrow.git#56caafc9283937db82cca54240d8be946d289209&path:clients/js':
-    resolution: {commit: 56caafc9283937db82cca54240d8be946d289209, path: clients/js, repo: git@github.com:tensor-foundation/escrow.git, type: git}
-    version: 0.0.0
+  '@tensor-foundation/escrow@0.0.1':
+    resolution: {integrity: sha512-Y7cfIGgIPOhU6DSw2jPB2q/O6gO+Y9MqeBBjDx/GdNK1SVzF5LwoQPW++7fPf7CDh/cR2zL7czsRy2onTqVSYg==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/escrow/0.0.1/dfeb22677400020d8b6ef886dc7efc025c66a5a4}
 
-  '@tensor-foundation/test-helpers@0.0.1-alpha.3':
-    resolution: {integrity: sha512-FEH2xjPS31fgNYBapk9QJ/qQfj84TiQJCZH9/OIWME4/SeuAEf28CZQTxyzs8OLViyvCke0sWFGqq7T6EmQRKA==}
+  '@tensor-foundation/test-helpers@0.0.2':
+    resolution: {integrity: sha512-iLIkIcAknFmLD0LPfO59HsPsO0FjglPLy16j2XD6LB4Akp6Ff5YxE3AJLUwmz0ct3qYxKvOyUaAaC/rM46zDQw==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/test-helpers/0.0.2/feb5036985113625d2192948ecf0ca2328d64d9c}
 
-  '@tensor-foundation/toolkit-token-metadata@0.0.1-alpha.3':
-    resolution: {integrity: sha512-fqTwz+33oB2afV/1BW9CYI/xOR/X8bEiCIpscK4d/LCmYoMZ4f81f0HVI5pZ3brrcEUHxGys8amkp1idC+uhSQ==}
+  '@tensor-foundation/toolkit-token-metadata@0.0.1':
+    resolution: {integrity: sha512-kv0m7JW811RQujQFuIfRZ9snf/18p/vrmxPkey+taUOYOht+rgsdQTsZ/s0HDsRkwfcS1RGs+GhcIHb/NCkB9w==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/toolkit-token-metadata/0.0.1/04659a7ed2db2cde694955a62bfc02f4e1fbc9ab}
 
-  '@tensor-foundation/whitelist@0.0.1-alpha.1':
-    resolution: {integrity: sha512-JwPMg0aaBy6FxT8hXmFBuH3MAf0qvtRsnNpwBmlDG1KH0gjsxDJM3UplNIG15s+gFLcGCi2PiBZibDrSAF6VpQ==}
+  '@tensor-foundation/whitelist@0.0.1':
+    resolution: {integrity: sha512-ugNnnBPlD/Idw2+usNkE2kjjkeSJKmC+l67hlm9EjSHvDLQk0SYjA0SHdEoN0oDtpcz8KlZPsWu49NSEh909EQ==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/whitelist/0.0.1/f91c89b567660a41845414cccedf73cbc002ebf5}
 
   '@tootallnate/once@1.1.2':
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
@@ -1579,8 +1578,8 @@ packages:
   '@types/prop-types@15.7.12':
     resolution: {integrity: sha512-5zvhXYtRNRluoE/jAp4GVsSduVUzNWKkOZrCDBWYtE7biZywwdC2AcEzg+cSMLFRfVgeAFqpfNabiPjxFddV1Q==}
 
-  '@types/react@18.2.79':
-    resolution: {integrity: sha512-RwGAGXPl9kSXwdNTafkOEuFrTBD5SA2B3iEB96xi8+xu5ddUa/cpvyVCSNn+asgLCTHkb5ZxN8gbuibYJi4s1w==}
+  '@types/react@18.3.0':
+    resolution: {integrity: sha512-DiUcKjzE6soLyln8NNZmyhcQjVv+WsUIFSqetMN0p8927OztKT4VTfFTqsbAi5oAGIcgOmOajlfBqyptDDjZRw==}
 
   '@types/responselike@1.0.3':
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
@@ -2409,8 +2408,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  electron-to-chromium@1.4.748:
-    resolution: {integrity: sha512-VWqjOlPZn70UZ8FTKUOkUvBLeTQ0xpty66qV0yJcAGY2/CthI4xyW9aEozRVtuwv3Kpf5xTesmJUcPwuJmgP4A==}
+  electron-to-chromium@1.4.749:
+    resolution: {integrity: sha512-LRMMrM9ITOvue0PoBrvNIraVmuDbJV5QC9ierz/z5VilMdPOVMjOtpICNld3PuXuTZ3CHH/UPxX9gHhAPwi+0Q==}
 
   emittery@1.0.3:
     resolution: {integrity: sha512-tJdCJitoy2lrC2ldJcqN4vkqJ00lT+tOWNT1hBJjO/3FDMJa5TTIiYGCKGkn/WfCyOzUMObeohbVTj00fhiLiA==}
@@ -2712,8 +2711,8 @@ packages:
       eslint-config-prettier:
         optional: true
 
-  eslint-plugin-react-hooks@4.6.0:
-    resolution: {integrity: sha512-oFc7Itz9Qxh2x4gNHStv3BqJq54ExXmfC+a1NjAta66IAN87Wu0R/QArgIS9qKzX3dXKPI9H5crl9QchNMY9+g==}
+  eslint-plugin-react-hooks@4.6.1:
+    resolution: {integrity: sha512-Ck77j8hF7l9N4S/rzSLOWEKpn994YH6iwUK8fr9mXIaQvGpQYmOnQLbiue1u5kI5T1y+gdgqosnEAO9NCz0DBg==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
@@ -3538,8 +3537,8 @@ packages:
     resolution: {integrity: sha512-tqNXrS78oMOE73NMxK4EMLQsQowWf8jKooH9g7xPavRT706R6bkQJ6DY2Te7QukaZsulxa30wQ7bk0pm4XiHmA==}
     engines: {node: '>=8'}
 
-  lru-cache@10.2.0:
-    resolution: {integrity: sha512-2bIM8x+VAf6JT4bKAljS1qUWgMsqZRPGJS6FSahIMPVvctcNhyVp7AJu7quxOW9jwkryBReKZY5tY5JYv2n/7Q==}
+  lru-cache@10.2.1:
+    resolution: {integrity: sha512-tS24spDe/zXhWbNPErCHs/AGOzbKGHT+ybSBqmdLm8WZ1xXLWvH8Qn71QPAlqVhd0qUTWjy+Kl9JmISgDdEjsA==}
     engines: {node: 14 || >=16.14}
 
   lru-cache@5.1.1:
@@ -4260,8 +4259,8 @@ packages:
     resolution: {integrity: sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==}
     engines: {node: '>= 0.8'}
 
-  react-refresh@0.14.0:
-    resolution: {integrity: sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==}
+  react-refresh@0.14.1:
+    resolution: {integrity: sha512-iZiRCtNGY3QYP3pYOSSBOvQmBpQTcJccr/VcK2blpJrpPTUDjeN51mxm5nsrkCzBwsbGUj+TN9q2oPz5E13FLg==}
     engines: {node: '>=0.10.0'}
 
   readable-stream@1.1.14:
@@ -4980,8 +4979,8 @@ packages:
   vfile@5.3.7:
     resolution: {integrity: sha512-r7qlzkgErKjobAmyNIkkSpizsFPYiUPuJb5pNW1RB4JcYVZhs4lIbVqk8XPk033CV/1z8ss5pkax8SuhGpcG8g==}
 
-  vite-node@1.5.1:
-    resolution: {integrity: sha512-HNpfV7BrAsjkYVNWIcPleJwvJmydJqqJRrRbpoQ/U7QDwJKyEzNa4g5aYg8MjXJyKsk29IUCcMLFRcsEvqUIsA==}
+  vite-node@1.5.2:
+    resolution: {integrity: sha512-Y8p91kz9zU+bWtF7HGt6DVw2JbhyuB2RlZix3FPYAYmUyZ3n7iTp8eSyLyY6sxtPegvxQtmlTMhfPhUfCUF93A==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
@@ -6225,7 +6224,7 @@ snapshots:
   '@npmcli/fs@1.1.1':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.6.0
+      semver: 7.3.8
 
   '@npmcli/move-file@1.1.2':
     dependencies:
@@ -6247,7 +6246,7 @@ snapshots:
     dependencies:
       '@remix-run/router': 1.5.0
       '@types/cookie': 0.4.1
-      '@types/react': 18.2.79
+      '@types/react': 18.3.0
       '@web3-storage/multipart-parser': 1.0.0
       cookie: 0.4.2
       set-cookie-parser: 2.6.0
@@ -6384,13 +6383,13 @@ snapshots:
       chalk: 5.3.0
       commander: 12.0.0
 
-  '@solana/eslint-config-solana@3.0.3(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-jest@27.9.0(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-react-hooks@4.6.0(eslint@8.57.0))(eslint-plugin-simple-import-sort@10.0.0(eslint@8.57.0))(eslint-plugin-sort-keys-fix@1.1.2)(eslint-plugin-typescript-sort-keys@3.2.0(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)':
+  '@solana/eslint-config-solana@3.0.3(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-jest@27.9.0(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint-plugin-react-hooks@4.6.1(eslint@8.57.0))(eslint-plugin-simple-import-sort@10.0.0(eslint@8.57.0))(eslint-plugin-sort-keys-fix@1.1.2)(eslint-plugin-typescript-sort-keys@3.2.0(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)':
     dependencies:
       '@typescript-eslint/eslint-plugin': 7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
       '@typescript-eslint/parser': 7.7.1(eslint@8.57.0)(typescript@5.4.5)
       eslint: 8.57.0
       eslint-plugin-jest: 27.9.0(@typescript-eslint/eslint-plugin@7.7.1(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
-      eslint-plugin-react-hooks: 4.6.0(eslint@8.57.0)
+      eslint-plugin-react-hooks: 4.6.1(eslint@8.57.0)
       eslint-plugin-simple-import-sort: 10.0.0(eslint@8.57.0)
       eslint-plugin-sort-keys-fix: 1.1.2
       eslint-plugin-typescript-sort-keys: 3.2.0(@typescript-eslint/parser@7.7.1(eslint@8.57.0)(typescript@5.4.5))(eslint@8.57.0)(typescript@5.4.5)
@@ -6580,7 +6579,7 @@ snapshots:
     dependencies:
       defer-to-connect: 2.0.1
 
-  '@tensor-foundation/escrow@git+https://git@github.com:tensor-foundation/escrow.git#56caafc9283937db82cca54240d8be946d289209&path:clients/js(fastestsmallesttextencoderdecoder@1.0.22)':
+  '@tensor-foundation/escrow@0.0.1(fastestsmallesttextencoderdecoder@1.0.22)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6591,7 +6590,7 @@ snapshots:
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
 
-  '@tensor-foundation/test-helpers@0.0.1-alpha.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
+  '@tensor-foundation/test-helpers@0.0.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6604,7 +6603,7 @@ snapshots:
       - fastestsmallesttextencoderdecoder
       - ws
 
-  '@tensor-foundation/toolkit-token-metadata@0.0.1-alpha.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
+  '@tensor-foundation/toolkit-token-metadata@0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6613,12 +6612,12 @@ snapshots:
       '@solana/programs': 2.0.0-preview.2
       '@solana/signers': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/web3.js': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
-      '@tensor-foundation/test-helpers': 0.0.1-alpha.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
+      '@tensor-foundation/test-helpers': 0.0.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
       - ws
 
-  '@tensor-foundation/whitelist@0.0.1-alpha.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
+  '@tensor-foundation/whitelist@0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6716,7 +6715,7 @@ snapshots:
 
   '@types/prop-types@15.7.12': {}
 
-  '@types/react@18.2.79':
+  '@types/react@18.3.0':
     dependencies:
       '@types/prop-types': 15.7.12
       csstype: 3.1.3
@@ -6902,7 +6901,7 @@ snapshots:
       mlly: 1.6.1
       outdent: 0.8.0
       vite: 5.2.10(@types/node@20.12.7)
-      vite-node: 1.5.1(@types/node@20.12.7)
+      vite-node: 1.5.2(@types/node@20.12.7)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -7084,11 +7083,11 @@ snapshots:
       prettier: 2.7.1
       pretty-ms: 7.0.1
       proxy-agent: 5.0.0
-      react-refresh: 0.14.0
+      react-refresh: 0.14.1
       recast: 0.21.5
       remark-frontmatter: 4.0.1
       remark-mdx-frontmatter: 1.1.1
-      semver: 7.6.0
+      semver: 7.3.8
       sort-package-json: 1.57.0
       tar-fs: 2.1.1
       tsconfig-paths: 4.2.0
@@ -7439,7 +7438,7 @@ snapshots:
   browserslist@4.23.0:
     dependencies:
       caniuse-lite: 1.0.30001612
-      electron-to-chromium: 1.4.748
+      electron-to-chromium: 1.4.749
       node-releases: 2.0.14
       update-browserslist-db: 1.0.13(browserslist@4.23.0)
 
@@ -7813,7 +7812,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  electron-to-chromium@1.4.748: {}
+  electron-to-chromium@1.4.749: {}
 
   emittery@1.0.3: {}
 
@@ -8173,7 +8172,7 @@ snapshots:
     optionalDependencies:
       eslint-config-prettier: 9.1.0(eslint@8.57.0)
 
-  eslint-plugin-react-hooks@4.6.0(eslint@8.57.0):
+  eslint-plugin-react-hooks@4.6.1(eslint@8.57.0):
     dependencies:
       eslint: 8.57.0
 
@@ -8634,7 +8633,7 @@ snapshots:
       '@types/glob': 7.2.0
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.3.2
+      fast-glob: 3.2.11
       glob: 7.2.3
       ignore: 5.3.1
       merge2: 1.4.1
@@ -9087,7 +9086,7 @@ snapshots:
 
   lowercase-keys@2.0.0: {}
 
-  lru-cache@10.2.0: {}
+  lru-cache@10.2.1: {}
 
   lru-cache@5.1.1:
     dependencies:
@@ -9759,7 +9758,7 @@ snapshots:
 
   path-scurry@1.10.2:
     dependencies:
-      lru-cache: 10.2.0
+      lru-cache: 10.2.1
       minipass: 7.0.4
 
   path-to-regexp@0.1.7: {}
@@ -9947,7 +9946,7 @@ snapshots:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
 
-  react-refresh@0.14.0: {}
+  react-refresh@0.14.1: {}
 
   readable-stream@1.1.14:
     dependencies:
@@ -10810,7 +10809,7 @@ snapshots:
       unist-util-stringify-position: 3.0.3
       vfile-message: 3.1.4
 
-  vite-node@1.5.1(@types/node@20.12.7):
+  vite-node@1.5.2(@types/node@20.12.7):
     dependencies:
       cac: 6.7.14
       debug: 4.3.4
