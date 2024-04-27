@@ -215,6 +215,7 @@ export interface CreatePoolParams {
   owner: KeyPairSigner;
   payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
+  sharedEscrow?: Address;
   poolId?: Uint8Array;
   config?: PoolConfig;
   expireInSec?: number;
@@ -239,6 +240,7 @@ export async function createPool({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
   expireInSec,
@@ -276,6 +278,7 @@ export async function createPool({
     config,
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
+    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
   });
@@ -295,6 +298,7 @@ export async function createPoolThrows({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
   t,
@@ -337,7 +341,8 @@ export async function createPoolThrows({
     currency: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
-    cosigner: some(cosigner.address),
+    cosigner: cosigner ? some(cosigner.address) : none(),
+    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     orderType: 0,
     expireInSec: null,
   });
@@ -366,7 +371,12 @@ export async function createPoolThrows({
 type CreatePoolAndWhitelistParams = Omit<
   CreatePoolParams,
   'whitelist' | 'owner'
-> & { owner?: KeyPairSigner; depositAmount?: bigint; conditions?: Condition[] };
+> & {
+  owner?: KeyPairSigner;
+  depositAmount?: bigint;
+  conditions?: Condition[];
+  funded: boolean;
+};
 type CreatePoolAndWhitelistThrowsParams = Omit<
   CreatePoolThrowsParams,
   'whitelist' | 'owner'
@@ -377,10 +387,12 @@ export async function createPoolAndWhitelist({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
   depositAmount = 1_000_000n,
   conditions,
+  funded,
 }: CreatePoolAndWhitelistParams) {
   const updateAuthority = await generateKeyPairSignerWithSol(client);
   const namespace = await generateKeyPairSigner();
@@ -413,30 +425,32 @@ export async function createPoolAndWhitelist({
     payer,
     owner,
     cosigner,
+    sharedEscrow,
     poolId,
     config,
   });
 
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    whitelist,
-    owner,
-    lamports: depositAmount,
-  });
+  if (funded) {
+    // Deposit SOL
+    const depositSolIx = getDepositSolInstruction({
+      pool,
+      whitelist,
+      owner,
+      lamports: depositAmount,
+    });
 
-  await pipe(
-    await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
+    await pipe(
+      await createDefaultTransaction(client, owner),
+      (tx) => appendTransactionInstruction(depositSolIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
 
   return { pool, owner, cosigner, poolId, whitelist };
 }
 
 export async function createPoolAndWhitelistThrows({
   client,
-
   owner,
   cosigner,
   poolId,

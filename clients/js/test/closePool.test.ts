@@ -86,7 +86,10 @@ test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Create default pool
-  const { pool, owner } = await createPoolAndWhitelist({ client });
+  const { pool, owner } = await createPoolAndWhitelist({
+    client,
+    funded: false,
+  });
 
   const poolAccount = await fetchPool(client.rpc, pool);
   // Then an account was created with the correct data.

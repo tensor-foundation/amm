@@ -270,7 +270,6 @@ pub fn process_sell_nft_token_pool<'info>(
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
-    msg!("initial balance, {}", pool_initial_balance);
     let owner_pubkey = ctx.accounts.owner.key();
 
     // --------------------------------------- send pnft
@@ -500,11 +499,7 @@ pub fn process_sell_nft_token_pool<'info>(
     pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
-    // Update the pool's currency balance.
-    // It's possible for an external instruction to fund our pool with SOL
-    // and top off a pool's existing balance to bring it above the minimum price and enable
-    // an unintended sell. To prevent this we only track SOL additions or subtractions
-    // that happen directly in our handlers.
+    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     if pool.currency.is_sol() {
         let pool_final_balance = pool.get_lamports();
         let lamports_taken =

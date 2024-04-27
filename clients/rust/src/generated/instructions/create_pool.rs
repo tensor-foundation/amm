@@ -87,6 +87,7 @@ pub struct CreatePoolInstructionArgs {
     pub pool_id: [u8; 32],
     pub config: PoolConfig,
     pub currency: Pubkey,
+    pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
@@ -112,6 +113,7 @@ pub struct CreatePoolBuilder {
     pool_id: Option<[u8; 32]>,
     config: Option<PoolConfig>,
     currency: Option<Pubkey>,
+    shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
@@ -163,6 +165,12 @@ impl CreatePoolBuilder {
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.currency = Some(currency);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn shared_escrow(&mut self, shared_escrow: Pubkey) -> &mut Self {
+        self.shared_escrow = Some(shared_escrow);
         self
     }
     /// `[optional argument]`
@@ -221,6 +229,7 @@ impl CreatePoolBuilder {
             pool_id: self.pool_id.clone().expect("pool_id is not set"),
             config: self.config.clone().expect("config is not set"),
             currency: self.currency.clone().expect("currency is not set"),
+            shared_escrow: self.shared_escrow.clone(),
             cosigner: self.cosigner.clone(),
             order_type: self.order_type.clone().expect("order_type is not set"),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
@@ -392,6 +401,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             pool_id: None,
             config: None,
             currency: None,
+            shared_escrow: None,
             cosigner: None,
             order_type: None,
             max_taker_sell_count: None,
@@ -448,6 +458,12 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.instruction.currency = Some(currency);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn shared_escrow(&mut self, shared_escrow: Pubkey) -> &mut Self {
+        self.instruction.shared_escrow = Some(shared_escrow);
         self
     }
     /// `[optional argument]`
@@ -526,6 +542,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .currency
                 .clone()
                 .expect("currency is not set"),
+            shared_escrow: self.instruction.shared_escrow.clone(),
             cosigner: self.instruction.cosigner.clone(),
             order_type: self
                 .instruction
@@ -569,6 +586,7 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     pool_id: Option<[u8; 32]>,
     config: Option<PoolConfig>,
     currency: Option<Pubkey>,
+    shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,

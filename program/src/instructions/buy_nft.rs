@@ -391,12 +391,9 @@ pub fn process_buy_nft<'info, 'b>(
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
 
-    // Update the pool's currency balance.
-    // It's possible for an external instruction to fund our pool with SOL
-    // and top off a pool's existing balance to bring it above the minimum price and enable
-    // an unintended sell. To preven this we only track SOL additions or subtractions
-    // that happen directly in our handlers.
-    if pool.currency.is_sol() {
+    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+    // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
         let pool_post_balance = pool.get_lamports();
         let lamports_added =
             unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });

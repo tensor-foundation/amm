@@ -2042,6 +2042,12 @@
             "type": "publicKey"
           },
           {
+            "name": "sharedEscrow",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
             "name": "cosigner",
             "type": {
               "option": "publicKey"

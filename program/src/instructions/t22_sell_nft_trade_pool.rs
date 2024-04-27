@@ -191,6 +191,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     min_price: u64,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
     // validate mint account
@@ -273,7 +274,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // If the source funds are from a shared escrow account, we first transfer from there
     // to the pool, to make payments cleaner. After this, we can always send from the pool
     // so the logic is simpler.
-    let currency_source = if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+    if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
             &ctx.accounts.shared_escrow,
@@ -307,9 +308,6 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     } else {
         ctx.accounts.pool.to_account_info()
     };
-
-    //(!) This needs to be before any transfers!
-    let currency_initial_balance = currency_source.get_lamports();
 
     let mut left_for_seller = current_price;
 
@@ -383,15 +381,11 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     pool.stats.accumulated_mm_profit =
         unwrap_int!(pool.stats.accumulated_mm_profit.checked_add(mm_fee));
 
-    // Update the pool's currency balance.
-    // It's possible for an external instruction to fund our pool with SOL
-    // and top off a pool's existing balance to bring it above the minimum price and enable
-    // an unintended sell. To prevent this we only track SOL additions or subtractions
-    // that happen directly in our handlers.
-    if pool.currency.is_sol() {
-        let currency_final_balance = currency_source.get_lamports();
-        let lamports_taken =
-            unwrap_int!(currency_initial_balance.checked_sub(currency_final_balance));
+    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+    // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+        let pool_final_balance = pool.get_lamports();
+        let lamports_taken = unwrap_int!(pool_initial_balance.checked_sub(pool_final_balance));
         pool.amount = unwrap_int!(pool.amount.checked_sub(lamports_taken));
     }
 

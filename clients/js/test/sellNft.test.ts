@@ -31,6 +31,7 @@ import bs58 from 'bs58';
 import {
   AMM_PROGRAM_ADDRESS,
   CurveType,
+  Pool,
   PoolConfig,
   PoolType,
   fetchPool,
@@ -82,6 +83,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     config,
     depositAmount,
     conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    funded: true,
   });
 
   const poolAccount = await fetchPool(client.rpc, pool);
@@ -208,8 +210,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
 });
 
-// Disabled until we decide what we are tracking with currency amount for shared escrow Trade pools.
-test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
+test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const client = createDefaultSolanaClient();
 
   const owner = await generateKeyPairSignerWithSol(client, 100n * ONE_SOL);
@@ -227,16 +228,6 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
 
   const depositAmount = config.startingPrice * 10n;
 
-  // Create a whitelist and a funded pool.
-  const { whitelist, pool, cosigner } = await createPoolAndWhitelist({
-    client,
-    payer: buyer,
-    owner,
-    config,
-    depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
-  });
-
   // Mint NFT
   const { mint, metadata, masterEdition } = await createDefaultNft(
     client,
@@ -247,6 +238,34 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
 
   // Derives fee vault from mint and airdrops keep-alive rent to it.
   const feeVault = await getAndFundFeeVault(client, mint);
+
+  // Create a shared escrow account.
+  const sharedEscrow = await createAndFundEscrow(client, owner, feeVault, 1);
+
+  // Starting balance of the shared escrow.
+  const preSharedEscrowBalance = (
+    await client.rpc.getBalance(sharedEscrow).send()
+  ).value;
+
+  // Create a whitelist and a funded pool.
+  const { whitelist, pool, cosigner } = await createPoolAndWhitelist({
+    client,
+    payer: buyer,
+    owner,
+    config,
+    sharedEscrow,
+    depositAmount,
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    funded: false, // cannot deposit to shared escrow pool
+  });
+
+  t.like(await fetchPool(client.rpc, pool), <Pool>{
+    address: pool,
+    data: {
+      sharedEscrow,
+      config,
+    },
+  });
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
@@ -263,13 +282,6 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 850_000n;
-
-  const sharedEscrow = await createAndFundEscrow(client, owner, feeVault, 1);
-
-  // Starting balance of the shared escrow.
-  const preSharedEscrowBalance = (
-    await client.rpc.getBalance(sharedEscrow).send()
-  ).value;
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
@@ -312,7 +324,7 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   const postSharedEscrowBalance = (
@@ -338,6 +350,7 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
   const price = config.startingPrice - config.delta;
   const makerRebate = (price * MAKER_REBATE_BPS) / BASIS_POINTS;
 
+  // Shared escrow loses the price minus the maker rebate.
   const lamportsTaken = price - makerRebate;
 
   t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
@@ -347,8 +360,8 @@ test.skip('it can sell an NFT into a Trade pool w/ an escrow account', async (t)
   // Ensure it's a SOL currency.
   t.assert(isSol(updatedPoolAccount.data.currency));
 
-  // Only one sell, so the currency amount should be the deposit - lamportsTaken for the sale.
-  t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
+  // Shared escrow pools should have an amount of 0.
+  t.assert(updatedPoolAccount.data.amount === 0n);
 });
 
 test('it can sell an NFT into a Token pool', async (t) => {
