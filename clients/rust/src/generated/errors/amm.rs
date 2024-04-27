@@ -148,6 +148,9 @@ pub enum AmmError {
     /// 12045 (0x2F0D) - Invalid fee crank
     #[error("Invalid fee crank")]
     InvalidFeeCrank,
+    /// 12046 (0x2F0E) - Unsupported currency
+    #[error("Unsupported currency")]
+    UnsupportedCurrency,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

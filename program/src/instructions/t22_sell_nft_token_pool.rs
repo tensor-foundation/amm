@@ -177,6 +177,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     min_price: u64,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
     // validate mint account
@@ -216,10 +217,10 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
-        tswap_fee,
+        taker_fee,
         maker_rebate: _,
         broker_fee,
-        taker_fee,
+        tamm_fee,
     } = calc_fees_rebates(current_price)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
@@ -229,7 +230,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // royalties on T22
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee: 0,       // no MM fee for token pool
         creators_fee: 0, // no royalties on T22,
     });
@@ -290,7 +291,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.fee_vault.to_account_info(),
-        tswap_fee,
+        tamm_fee,
     )?;
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
@@ -321,10 +322,15 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     pool.updated_at = Clock::get()?.unix_timestamp;
 
     // Update the pool's currency balance.
-    // Only our instructions can change the pool's SOL balance, so we can just set the amount
-    // directly to the post-transaction balance, minus state bond keep-alive.
+    // It's possible for an external instruction to fund our pool with SOL
+    // and top off a pool's existing balance to bring it above the minimum price and enable
+    // an unintended sell. To prevent this we only track SOL additions or subtractions
+    // that happen directly in our handlers.
     if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+        let pool_final_balance = pool.get_lamports();
+        let lamports_taken =
+            unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
     }
 
     Ok(())

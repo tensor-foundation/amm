@@ -19,7 +19,12 @@ import {
   pipe,
   some,
 } from '@solana/web3.js';
-import '@solana/webcrypto-ed25519-polyfill';
+import {
+  findMarginAccountPda,
+  getDepositMarginAccountInstruction,
+  getInitMarginAccountInstruction,
+  getInitUpdateTswapInstruction,
+} from '@tensor-foundation/escrow';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
@@ -43,12 +48,6 @@ import {
   findWhitelistV2Pda,
   getCreateWhitelistV2Instruction,
 } from '@tensor-foundation/whitelist';
-import {
-  getInitMarginAccountInstruction,
-  findMarginAccountPda,
-  getDepositMarginAccountInstruction,
-  getInitUpdateTswapInstruction,
-} from '@tensor-foundation/escrow';
 import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
 import { v4 } from 'uuid';

@@ -14,10 +14,7 @@
       "require": "./dist/src/index.cjs"
     }
   },
-  "files": [
-    "./dist/src",
-    "./dist/types"
-  ],
+  "files": ["./dist/src", "./dist/types"],
   "scripts": {
     "build": "rimraf dist && tsup && tsc -p ./tsconfig.declarations.json",
     "build:docs": "typedoc",
@@ -49,7 +46,6 @@
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
     "@solana/eslint-config-solana": "^3.0.0",
-    "@solana/webcrypto-ed25519-polyfill": "2.0.0-preview.2",
     "@tensor-foundation/escrow": "0.0.1",
     "@tensor-foundation/test-helpers": "0.0.2",
     "@tensor-foundation/toolkit-token-metadata": "0.0.1",
@@ -75,9 +71,6 @@
     "vercel": "^28.16.0"
   },
   "ava": {
-    "require": [
-      "@solana/webcrypto-ed25519-polyfill"
-    ],
     "typescript": {
       "compile": false,
       "rewritePaths": {

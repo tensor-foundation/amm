@@ -40,7 +40,6 @@ export type PoolConfig = {
   curveType: CurveType;
   startingPrice: bigint;
   delta: bigint;
-  /** Trade pools only */
   mmCompoundFees: boolean;
   mmFeeBps: NullableU16;
 };
@@ -50,7 +49,6 @@ export type PoolConfigArgs = {
   curveType: CurveTypeArgs;
   startingPrice: number | bigint;
   delta: number | bigint;
-  /** Trade pools only */
   mmCompoundFees: boolean;
   mmFeeBps: NullableU16Args;
 };

@@ -234,7 +234,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
-        tswap_fee,
+        tamm_fee,
         maker_rebate: _,
         broker_fee,
         taker_fee,
@@ -246,7 +246,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     //
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee,
         creators_fee: 0, // no royalties on T22
     });
@@ -273,7 +273,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // If the source funds are from a shared escrow account, we first transfer from there
     // to the pool, to make payments cleaner. After this, we can always send from the pool
     // so the logic is simpler.
-    if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+    let currency_source = if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
             &ctx.accounts.shared_escrow,
@@ -301,7 +301,14 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             },
         }
         .invoke_signed(signer_seeds)?;
-    }
+
+        ctx.accounts.shared_escrow.to_account_info()
+    } else {
+        ctx.accounts.pool.to_account_info()
+    };
+
+    //(!) This needs to be before any transfers!
+    let currency_initial_balance = currency_source.get_lamports();
 
     let mut left_for_seller = current_price;
 
@@ -310,7 +317,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.fee_vault.to_account_info(),
-        tswap_fee,
+        tamm_fee,
     )?;
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
@@ -331,6 +338,26 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
+
+    // If MM fees are compounded they go to the pool or shared escrow, otherwise to the owner.
+    if pool.config.mm_compound_fees {
+        // Send back to shared escrow
+        if pool.shared_escrow.value().is_some() {
+            transfer_lamports_from_pda(
+                &ctx.accounts.pool.to_account_info(),
+                &ctx.accounts.shared_escrow.to_account_info(),
+                mm_fee,
+            )?;
+        }
+        // Otherwise, already in the pool so no transfer needed.
+    } else {
+        // Send to owner
+        transfer_lamports_from_pda(
+            &ctx.accounts.pool.to_account_info(),
+            &ctx.accounts.owner.to_account_info(),
+            mm_fee,
+        )?;
+    }
 
     // --------------------------------------- accounting
 
@@ -354,10 +381,15 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         unwrap_int!(pool.stats.accumulated_mm_profit.checked_add(mm_fee));
 
     // Update the pool's currency balance.
-    // Only our instructions can change the pool's SOL balance, so we can just set the amount
-    // directly to the post-transaction balance, minus state bond keep-alive.
+    // It's possible for an external instruction to fund our pool with SOL
+    // and top off a pool's existing balance to bring it above the minimum price and enable
+    // an unintended sell. To prevent this we only track SOL additions or subtractions
+    // that happen directly in our handlers.
     if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+        let currency_final_balance = currency_source.get_lamports();
+        let lamports_taken =
+            unwrap_int!(currency_initial_balance.checked_sub(currency_final_balance));
+        pool.amount = unwrap_int!(pool.amount.checked_sub(lamports_taken));
     }
 
     Ok(())

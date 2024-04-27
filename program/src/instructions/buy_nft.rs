@@ -208,6 +208,7 @@ pub fn process_buy_nft<'info, 'b>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
 
     let owner_pubkey = ctx.accounts.owner.key();
 
@@ -215,7 +216,7 @@ pub fn process_buy_nft<'info, 'b>(
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
-        tswap_fee,
+        tamm_fee,
         maker_rebate,
         broker_fee,
         taker_fee,
@@ -228,7 +229,7 @@ pub fn process_buy_nft<'info, 'b>(
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee: if pool.config.pool_type == PoolType::Trade {
             mm_fee
         } else {
@@ -244,8 +245,8 @@ pub fn process_buy_nft<'info, 'b>(
         throw_err!(ErrorCode::PriceMismatch);
     }
 
-    // transfer nft to buyer
-    // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
+    // Transfer nft to buyer
+    // Has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
     let auth_rules_acc_info = &ctx.accounts.auth_rules.to_account_info();
     let auth_rules = if rules_acc_present {
         Some(auth_rules_acc_info)
@@ -290,14 +291,19 @@ pub fn process_buy_nft<'info, 'b>(
     // close nft escrow account
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
-    // --------------------------------------- SOL transfers
+    /*  **Transfer Fees**
+    The buy price is the total price the buyer pays for buying the NFT from the pool.
 
-    // transfer fees
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
+    buy_price = current_price + taker_fee + mm_fee + creators_fee
 
+    taker_fee = tamm_fee + broker_fee + maker_rebate
+
+    Fees are paid by individual transfers as they go to various accounts depending on the pool type
+    and configuration.
+
+    */
+
+    // Determine the SOL destination: owner, pool or shared escrow account.
     //(!) this block has to come before royalties transfer due to remaining_accounts
     let destination = match pool.config.pool_type {
         //send money direct to seller/owner
@@ -320,7 +326,16 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
+    // Buyer pays the taker fee: tamm_fee + broker_fee + maker_rebate.
+    ctx.accounts
+        .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
+    ctx.accounts
+        .transfer_lamports(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
+    // Maker rebate--goes to the destination, not necessarily the owner
+    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+
     // transfer royalties (on top of current price)
+    // Buyer pays the royalty fee.
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
     transfer_creators_fee(
         &metadata
@@ -340,9 +355,7 @@ pub fn process_buy_nft<'info, 'b>(
         },
     )?;
 
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
-
-    // Price always goes to the destination: NFT pool --> owner, Trade pool either the pool or the escrow account.
+    // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
     ctx.accounts
         .transfer_lamports(&destination, current_price)?;
 
@@ -379,11 +392,15 @@ pub fn process_buy_nft<'info, 'b>(
     }
 
     // Update the pool's currency balance.
-    // It's possible for an external instruction to fund our pool with SOL,
-    // but we don't care as that just counts towards total liquidity, so we just
-    // use the pool's post-balance minus the state-bond keep-alive.
+    // It's possible for an external instruction to fund our pool with SOL
+    // and top off a pool's existing balance to bring it above the minimum price and enable
+    // an unintended sell. To preven this we only track SOL additions or subtractions
+    // that happen directly in our handlers.
     if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+        let pool_post_balance = pool.get_lamports();
+        let lamports_added =
+            unwrap_checked!({ pool_post_balance.checked_sub(pool_initial_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
     }
 
     Ok(())

@@ -118,8 +118,10 @@ impl From<ProofInfoLocal> for ProofInfo {
 
 #[cfg(test)]
 mod tests {
+    use crate::constants::{HUNDRED_PCT_BPS, TAKER_FEE_BPS};
+
     use super::*;
-    use crate::constants::{HUNDRED_PCT_BPS, TSWAP_TAKER_FEE_BPS};
+
     use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
     use spl_math::precise_number::PreciseNumber;
     use tensor_toolbox::NullableOption;
@@ -212,7 +214,7 @@ mod tests {
 
         assert_eq!(
             p.calc_tswap_fee(LAMPORTS_PER_SOL).unwrap(),
-            LAMPORTS_PER_SOL * TSWAP_TAKER_FEE_BPS as u64 / 10000
+            LAMPORTS_PER_SOL * TAKER_FEE_BPS as u64 / 10000
         );
     }
 

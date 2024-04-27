@@ -99,6 +99,8 @@ export const enum AmmProgramErrorCode {
   POOL_NOT_EXPIRED = 0x2f0c, // 12044
   /** InvalidFeeCrank: Invalid fee crank */
   INVALID_FEE_CRANK = 0x2f0d, // 12045
+  /** UnsupportedCurrency: Unsupported currency */
+  UNSUPPORTED_CURRENCY = 0x2f0e, // 12046
 }
 
 export class AmmProgramError extends Error {
@@ -299,6 +301,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.INVALID_FEE_CRANK]: [
       'InvalidFeeCrank',
       `Invalid fee crank`,
+    ],
+    [AmmProgramErrorCode.UNSUPPORTED_CURRENCY]: [
+      'UnsupportedCurrency',
+      `Unsupported currency`,
     ],
   };
 }

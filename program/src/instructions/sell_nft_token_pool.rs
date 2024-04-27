@@ -269,6 +269,8 @@ pub fn process_sell_nft_token_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
+    msg!("initial balance, {}", pool_initial_balance);
     let owner_pubkey = ctx.accounts.owner.key();
 
     // --------------------------------------- send pnft
@@ -367,7 +369,7 @@ pub fn process_sell_nft_token_pool<'info>(
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
-        tswap_fee,
+        tamm_fee,
         maker_rebate: _,
         broker_fee,
         taker_fee,
@@ -378,23 +380,33 @@ pub fn process_sell_nft_token_pool<'info>(
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee: 0, // no MM fee for token pool
         creators_fee,
     });
 
     // Self-CPI log the event.
-    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
+    record_event(event, &ctx.accounts.amm_program, pool)?;
 
     if current_price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
 
-    // --------------------------------------- SOL transfers
+    /*  **Transfer Fees**
+    The sell price is the total price the seller receives for selling the NFT into the pool.
+    No mm_fee for token pools.
+
+    sell_price = current_price - taker_fee - creators_fee
+
+    taker_fee = tamm_fee + broker_fee + maker_rebate
+
+    Fees are paid by deducting them from the current price, with the final remainder
+    then being sent to the seller.
+
+    */
 
     // If the source funds are from a shared escrow account, we first transfer from there
-    // to the pool, to make payments cleaner. After this, we can always send from the pool
-    // so the logic is simpler.
+    // to the pool, to avoid CPI calls.
     if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
@@ -426,13 +438,18 @@ pub fn process_sell_nft_token_pool<'info>(
 
     let mut left_for_seller = current_price;
 
-    // transfer fees
+    // Taker fee is the fee the taker pays: tamm fee + broker fee + maker rebate
+    // We subtract the taker fee here and then make the individual transfers to distribute it.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
+
+    // TAmm contract fee.
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.fee_vault.to_account_info(),
-        tswap_fee,
+        tamm_fee,
     )?;
+
+    // Broker fee.
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.taker_broker.to_account_info(),
@@ -456,6 +473,8 @@ pub fn process_sell_nft_token_pool<'info>(
             from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
         },
     )?;
+
+    // Deduct royalties from the remaining amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
 
     // transfer remainder to seller
@@ -479,10 +498,15 @@ pub fn process_sell_nft_token_pool<'info>(
     pool.updated_at = Clock::get()?.unix_timestamp;
 
     // Update the pool's currency balance.
-    // Only our instructions can change the pool's SOL balance, so we can just set the amount
-    // directly to the post-transaction balance, minus state bond keep-alive.
+    // It's possible for an external instruction to fund our pool with SOL
+    // and top off a pool's existing balance to bring it above the minimum price and enable
+    // an unintended sell. To prevent this we only track SOL additions or subtractions
+    // that happen directly in our handlers.
     if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+        let pool_final_balance = pool.get_lamports();
+        let lamports_taken =
+            unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
     }
 
     Ok(())
