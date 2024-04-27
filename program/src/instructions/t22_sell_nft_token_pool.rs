@@ -299,6 +299,8 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         broker_fee,
     )?;
 
+    // Maker rebate stays in the pool, so is paid deductively by not transferring it out.
+
     // TODO: add royalty payment to T22 once available
 
     // transfer remainder to seller

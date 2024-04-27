@@ -294,7 +294,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
         tamm_fee,
-        maker_rebate: _,
+        maker_rebate,
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
@@ -345,6 +345,9 @@ pub fn process_sell_nft_trade_pool<'info>(
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
+        // Leave maker rebate in the shared escrow account.
+        let transfer_amount = current_price - maker_rebate;
+
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
             __program: &ctx.accounts.escrow_program.to_account_info(),
@@ -356,8 +359,7 @@ pub fn process_sell_nft_trade_pool<'info>(
             __args: WithdrawMarginAccountCpiTammInstructionArgs {
                 bump: pool.bump[0],
                 pool_id: pool.pool_id,
-                // Seller will receive this minus fees.
-                lamports: current_price,
+                lamports: transfer_amount,
             },
         }
         .invoke_signed(signer_seeds)?;
@@ -402,7 +404,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         broker_fee,
     )?;
 
-    // Maker rebate stays in the pool or shared escrow, so is paid deductively by not transferring it out.
+    // Maker rebate is left in the shared escrow account or pool account, so is paid deductively.
 
     // Transfer royalties
     let remaining_accounts = &mut ctx.remaining_accounts.iter();

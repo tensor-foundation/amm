@@ -23,7 +23,7 @@ use super::*;
 use crate::{error::ErrorCode, utils::send_pnft, *};
 
 /// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
-/// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price in return.
+/// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price, minus fees, in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
@@ -394,11 +394,12 @@ pub fn process_sell_nft_token_pool<'info>(
 
     /*  **Transfer Fees**
     The sell price is the total price the seller receives for selling the NFT into the pool.
-    No mm_fee for token pools.
 
     sell_price = current_price - taker_fee - creators_fee
 
     taker_fee = tamm_fee + broker_fee + maker_rebate
+
+    No mm_fee for token pools.
 
     Fees are paid by deducting them from the current price, with the final remainder
     then being sent to the seller.
@@ -406,7 +407,7 @@ pub fn process_sell_nft_token_pool<'info>(
     */
 
     // If the source funds are from a shared escrow account, we first transfer from there
-    // to the pool, to avoid CPI calls.
+    // to the pool, to avoid multiple, expensive CPI calls.
     if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
@@ -455,6 +456,8 @@ pub fn process_sell_nft_token_pool<'info>(
         &ctx.accounts.taker_broker.to_account_info(),
         broker_fee,
     )?;
+
+    // Maker rebate stays in the pool, so is paid deductively by not transferring it out.
 
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
