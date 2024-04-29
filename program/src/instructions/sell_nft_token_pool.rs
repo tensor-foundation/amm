@@ -440,11 +440,8 @@ pub fn process_sell_nft_token_pool<'info>(
         .invoke_signed(signer_seeds)?;
     }
 
-    let mut left_for_seller = current_price;
-
-    // Taker fee is the fee the taker pays: tamm fee + broker fee + maker rebate
-    // We subtract the taker fee here and then make the individual transfers to distribute it.
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
+    // Maker rebate is left in the shared escrow account or pool account, so is paid deductively.
+    let mut left_for_seller = unwrap_int!(current_price.checked_sub(maker_rebate));
 
     // TAmm contract fee.
     transfer_lamports_from_pda(
@@ -452,6 +449,7 @@ pub fn process_sell_nft_token_pool<'info>(
         &ctx.accounts.fee_vault.to_account_info(),
         tamm_fee,
     )?;
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
 
     // Broker fee.
     transfer_lamports_from_pda(
@@ -459,8 +457,7 @@ pub fn process_sell_nft_token_pool<'info>(
         &ctx.accounts.taker_broker.to_account_info(),
         broker_fee,
     )?;
-
-    // Maker rebate stays in the pool, so is paid deductively by not transferring it out.
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(broker_fee));
 
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
 
@@ -482,6 +479,8 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // Deduct royalties from the remaining amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
+
+    // Token pools do not have MM fees.
 
     // transfer remainder to seller
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
@@ -509,6 +508,12 @@ pub fn process_sell_nft_token_pool<'info>(
         let lamports_taken =
             unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
         pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
+
+        // Sanity check to avoid edge cases:
+        require!(
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            ErrorCode::InvalidPoolAmount
+        );
     }
 
     Ok(())

@@ -315,24 +315,26 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         ctx.accounts.pool.to_account_info()
     };
 
-    let mut left_for_seller = current_price;
+    // Maker rebate is left in the shared escrow account or pool account, so is paid deductively.
+    let mut left_for_seller = unwrap_int!(current_price.checked_sub(maker_rebate));
 
-    // transfer fees
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
+    // TAmm contract fee.
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.fee_vault.to_account_info(),
         tamm_fee,
     )?;
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
+
+    // Broker fee.
     transfer_lamports_from_pda(
         &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.taker_broker.to_account_info(),
         broker_fee,
     )?;
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(broker_fee));
 
-    // Maker rebate is left in the shared escrow account or pool account, so is paid deductively.
-
-    // subtract MM spread before wiring to seller
+    // Taker pays MM fee, so we subtract it from the amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(mm_fee));
 
     // TODO: add royalty payment once available on T22
@@ -393,6 +395,12 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         let pool_final_balance = pool.get_lamports();
         let lamports_taken = unwrap_int!(pool_initial_balance.checked_sub(pool_final_balance));
         pool.amount = unwrap_int!(pool.amount.checked_sub(lamports_taken));
+
+        // Sanity check to avoid edge cases:
+        require!(
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            ErrorCode::InvalidPoolAmount
+        );
     }
 
     Ok(())

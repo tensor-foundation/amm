@@ -186,10 +186,10 @@ pub enum ErrorCode {
     PoolNotExpired,
 
     // 6042 | 0x179a
-    #[msg("Invalid fee crank")]
-    InvalidFeeCrank,
-
-    // 6043 | 0x179b
     #[msg("Unsupported currency")]
     UnsupportedCurrency,
+
+    // 6043 | 0x179b
+    #[msg("Invalid pool amount")]
+    InvalidPoolAmount,
 }

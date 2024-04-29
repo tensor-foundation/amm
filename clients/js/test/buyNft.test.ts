@@ -1,57 +1,46 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
+import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-    address,
-    airdropFactory,
-    appendTransactionInstruction,
-    getProgramDerivedAddress,
-    getStringEncoder,
-    getU8Encoder,
-    lamports,
-    none,
-    pipe,
-} from '@solana/web3.js';
-import {
-    ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-    MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    MPL_TOKEN_METADATA_PROGRAM_ID,
-    SYSVARS_INSTRUCTIONS,
-    TSWAP_PROGRAM_ID,
-    createDefaultSolanaClient,
-    createDefaultTransaction,
-    generateKeyPairSignerWithSol,
-    signAndSendTransaction,
+  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
+  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+  SYSVARS_INSTRUCTIONS,
+  TSWAP_PROGRAM_ID,
+  createDefaultSolanaClient,
+  createDefaultTransaction,
+  generateKeyPairSignerWithSol,
+  signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
-    createDefaultNft,
-    findTokenRecordPda,
+  createDefaultNft,
+  findTokenRecordPda,
 } from '@tensor-foundation/toolkit-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
-import bs58 from 'bs58';
 import {
-    AMM_PROGRAM_ADDRESS,
-    CurveType,
-    PoolConfig,
-    PoolType,
-    fetchPool,
-    findNftDepositReceiptPda,
-    getBuyNftInstruction,
-    getDepositNftInstruction,
-    getDepositSolInstruction,
-    getSellNftTradePoolInstruction,
-    isSol,
+  AMM_PROGRAM_ADDRESS,
+  CurveType,
+  PoolConfig,
+  PoolType,
+  fetchPool,
+  findNftDepositReceiptPda,
+  getBuyNftInstruction,
+  getDepositNftInstruction,
+  getDepositSolInstruction,
+  getSellNftTradePoolInstruction,
+  isSol,
 } from '../src/index.js';
 import {
-    BASIS_POINTS,
-    DEFAULT_PUBKEY,
-    MAKER_REBATE_BPS,
-    assertTammNoop,
-    createPool,
-    createWhitelistV2,
-    findAtaPda,
-    getAndFundFeeVault,
-    getTokenAmount,
-    getTokenOwner,
+  BASIS_POINTS,
+  DEFAULT_PUBKEY,
+  MAKER_REBATE_BPS,
+  assertTammNoop,
+  createPool,
+  createWhitelistV2,
+  findAtaPda,
+  getAndFundFeeVault,
+  getTokenAmount,
+  getTokenOwner,
 } from './_common.js';
 
 test('it can buy an NFT from a Trade pool', async (t) => {

@@ -2609,13 +2609,13 @@
     },
     {
       "code": 12045,
-      "name": "InvalidFeeCrank",
-      "msg": "Invalid fee crank"
+      "name": "UnsupportedCurrency",
+      "msg": "Unsupported currency"
     },
     {
       "code": 12046,
-      "name": "UnsupportedCurrency",
-      "msg": "Unsupported currency"
+      "name": "InvalidPoolAmount",
+      "msg": "Invalid pool amount"
     }
   ],
   "metadata": {
