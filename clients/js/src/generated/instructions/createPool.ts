@@ -94,6 +94,7 @@ export type CreatePoolInstructionData = {
   poolId: Uint8Array;
   config: PoolConfig;
   currency: Address;
+  sharedEscrow: Option<Address>;
   cosigner: Option<Address>;
   orderType: number;
   maxTakerSellCount: Option<number>;
@@ -104,6 +105,7 @@ export type CreatePoolInstructionDataArgs = {
   poolId: Uint8Array;
   config: PoolConfigArgs;
   currency: Address;
+  sharedEscrow: OptionOrNullable<Address>;
   cosigner: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
@@ -117,6 +119,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['poolId', getBytesEncoder({ size: 32 })],
       ['config', getPoolConfigEncoder()],
       ['currency', getAddressEncoder()],
+      ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
@@ -135,6 +138,7 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['poolId', getBytesDecoder({ size: 32 })],
     ['config', getPoolConfigDecoder()],
     ['currency', getAddressDecoder()],
+    ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
@@ -168,6 +172,7 @@ export type CreatePoolInput<
   poolId: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
   currency: CreatePoolInstructionDataArgs['currency'];
+  sharedEscrow: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];

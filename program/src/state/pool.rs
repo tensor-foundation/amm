@@ -48,9 +48,8 @@ pub enum CurveType {
 pub struct PoolConfig {
     pub pool_type: PoolType,
     pub curve_type: CurveType,
-    pub starting_price: u64, //lamports
-    pub delta: u64,          //lamports pr bps
-    /// Trade pools only
+    pub starting_price: u64,
+    pub delta: u64,
     pub mm_compound_fees: bool,
     pub mm_fee_bps: NullableOption<u16>,
 }
@@ -135,7 +134,7 @@ pub struct Pool {
     pub _reserved: [u8; 100],
 }
 
-pub fn calc_tswap_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
+pub fn calc_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
     let fee = unwrap_checked!({
         (fee_bps as u64)
             .checked_mul(current_price)?
@@ -199,8 +198,8 @@ impl Pool {
         Ok(fee)
     }
 
-    pub fn calc_tswap_fee(&self, current_price: u64) -> Result<u64> {
-        calc_tswap_fee(TSWAP_TAKER_FEE_BPS, current_price)
+    pub fn calc_taker_fee(&self, current_price: u64) -> Result<u64> {
+        calc_fee(TAKER_FEE_BPS, current_price)
     }
 
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {

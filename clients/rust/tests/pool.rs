@@ -1,11 +1,6 @@
 #![cfg(feature = "test-sbf")]
 pub mod setup;
 
-use amm::{
-    accounts::Pool,
-    instructions::{CloseExpiredPool, ClosePool, EditPool, EditPoolInstructionArgs},
-    types::{CurveType, PoolConfig},
-};
 use borsh::BorshDeserialize;
 use solana_program_test::tokio;
 use solana_sdk::{
@@ -13,6 +8,11 @@ use solana_sdk::{
     signature::{Keypair, Signer},
     system_program,
     transaction::Transaction,
+};
+use tensor_amm::{
+    accounts::Pool,
+    instructions::{CloseExpiredPool, ClosePool, EditPool, EditPoolInstructionArgs},
+    types::{CurveType, PoolConfig},
 };
 
 use crate::setup::{

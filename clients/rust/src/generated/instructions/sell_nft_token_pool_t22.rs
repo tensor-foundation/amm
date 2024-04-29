@@ -35,13 +35,18 @@ pub struct SellNftTokenPoolT22 {
 
     pub system_program: solana_program::pubkey::Pubkey,
 
-    pub shared_escrow_account: solana_program::pubkey::Pubkey,
+    pub shared_escrow: solana_program::pubkey::Pubkey,
 
     pub taker_broker: solana_program::pubkey::Pubkey,
 
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<solana_program::pubkey::Pubkey>,
 
     pub amm_program: solana_program::pubkey::Pubkey,
+
+    pub escrow_program: solana_program::pubkey::Pubkey,
 }
 
 impl SellNftTokenPoolT22 {
@@ -57,7 +62,7 @@ impl SellNftTokenPoolT22 {
         args: SellNftTokenPoolT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -104,7 +109,7 @@ impl SellNftTokenPoolT22 {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.shared_escrow_account,
+            self.shared_escrow,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -122,8 +127,22 @@ impl SellNftTokenPoolT22 {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                cosigner, true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.amm_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.escrow_program,
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
@@ -177,10 +196,12 @@ pub struct SellNftTokenPoolT22InstructionArgs {
 ///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   10. `[]` associated_token_program
 ///   11. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   12. `[writable]` shared_escrow_account
+///   12. `[writable]` shared_escrow
 ///   13. `[writable]` taker_broker
 ///   14. `[optional]` maker_broker
-///   15. `[]` amm_program
+///   15. `[signer, optional]` cosigner
+///   16. `[]` amm_program
+///   17. `[]` escrow_program
 #[derive(Default)]
 pub struct SellNftTokenPoolT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -195,10 +216,12 @@ pub struct SellNftTokenPoolT22Builder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    shared_escrow_account: Option<solana_program::pubkey::Pubkey>,
+    shared_escrow: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
+    cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
+    escrow_program: Option<solana_program::pubkey::Pubkey>,
     config: Option<PoolConfig>,
     min_price: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -278,11 +301,8 @@ impl SellNftTokenPoolT22Builder {
         self
     }
     #[inline(always)]
-    pub fn shared_escrow_account(
-        &mut self,
-        shared_escrow_account: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.shared_escrow_account = Some(shared_escrow_account);
+    pub fn shared_escrow(&mut self, shared_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.shared_escrow = Some(shared_escrow);
         self
     }
     #[inline(always)]
@@ -299,9 +319,22 @@ impl SellNftTokenPoolT22Builder {
         self.maker_broker = maker_broker;
         self
     }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(&mut self, cosigner: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.cosigner = cosigner;
+        self
+    }
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
+    pub fn escrow_program(&mut self, escrow_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.escrow_program = Some(escrow_program);
         self
     }
     #[inline(always)]
@@ -353,12 +386,12 @@ impl SellNftTokenPoolT22Builder {
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            shared_escrow_account: self
-                .shared_escrow_account
-                .expect("shared_escrow_account is not set"),
+            shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
             taker_broker: self.taker_broker.expect("taker_broker is not set"),
             maker_broker: self.maker_broker,
+            cosigner: self.cosigner,
             amm_program: self.amm_program.expect("amm_program is not set"),
+            escrow_program: self.escrow_program.expect("escrow_program is not set"),
         };
         let args = SellNftTokenPoolT22InstructionArgs {
             config: self.config.clone().expect("config is not set"),
@@ -395,13 +428,18 @@ pub struct SellNftTokenPoolT22CpiAccounts<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub shared_escrow_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `sell_nft_token_pool_t22` CPI instruction.
@@ -433,13 +471,18 @@ pub struct SellNftTokenPoolT22Cpi<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub shared_escrow_account: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub taker_broker: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: SellNftTokenPoolT22InstructionArgs,
 }
@@ -464,10 +507,12 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             token_program: accounts.token_program,
             associated_token_program: accounts.associated_token_program,
             system_program: accounts.system_program,
-            shared_escrow_account: accounts.shared_escrow_account,
+            shared_escrow: accounts.shared_escrow,
             taker_broker: accounts.taker_broker,
             maker_broker: accounts.maker_broker,
+            cosigner: accounts.cosigner,
             amm_program: accounts.amm_program,
+            escrow_program: accounts.escrow_program,
             __args: args,
         }
     }
@@ -504,7 +549,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -554,7 +599,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.shared_escrow_account.key,
+            *self.shared_escrow.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -572,8 +617,23 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *cosigner.key,
+                true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.amm_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.escrow_program.key,
             false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
@@ -594,7 +654,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(16 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(18 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.seller.clone());
@@ -608,12 +668,16 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
         account_infos.push(self.token_program.clone());
         account_infos.push(self.associated_token_program.clone());
         account_infos.push(self.system_program.clone());
-        account_infos.push(self.shared_escrow_account.clone());
+        account_infos.push(self.shared_escrow.clone());
         account_infos.push(self.taker_broker.clone());
         if let Some(maker_broker) = self.maker_broker {
             account_infos.push(maker_broker.clone());
         }
+        if let Some(cosigner) = self.cosigner {
+            account_infos.push(cosigner.clone());
+        }
         account_infos.push(self.amm_program.clone());
+        account_infos.push(self.escrow_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -642,10 +706,12 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
 ///   9. `[]` token_program
 ///   10. `[]` associated_token_program
 ///   11. `[]` system_program
-///   12. `[writable]` shared_escrow_account
+///   12. `[writable]` shared_escrow
 ///   13. `[writable]` taker_broker
 ///   14. `[optional]` maker_broker
-///   15. `[]` amm_program
+///   15. `[signer, optional]` cosigner
+///   16. `[]` amm_program
+///   17. `[]` escrow_program
 pub struct SellNftTokenPoolT22CpiBuilder<'a, 'b> {
     instruction: Box<SellNftTokenPoolT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -666,10 +732,12 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
             token_program: None,
             associated_token_program: None,
             system_program: None,
-            shared_escrow_account: None,
+            shared_escrow: None,
             taker_broker: None,
             maker_broker: None,
+            cosigner: None,
             amm_program: None,
+            escrow_program: None,
             config: None,
             min_price: None,
             __remaining_accounts: Vec::new(),
@@ -768,11 +836,11 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn shared_escrow_account(
+    pub fn shared_escrow(
         &mut self,
-        shared_escrow_account: &'b solana_program::account_info::AccountInfo<'a>,
+        shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.shared_escrow_account = Some(shared_escrow_account);
+        self.instruction.shared_escrow = Some(shared_escrow);
         self
     }
     #[inline(always)]
@@ -792,12 +860,31 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
         self.instruction.maker_broker = maker_broker;
         self
     }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(
+        &mut self,
+        cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.cosigner = cosigner;
+        self
+    }
     #[inline(always)]
     pub fn amm_program(
         &mut self,
         amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.amm_program = Some(amm_program);
+        self
+    }
+    #[inline(always)]
+    pub fn escrow_program(
+        &mut self,
+        escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.escrow_program = Some(escrow_program);
         self
     }
     #[inline(always)]
@@ -895,10 +982,10 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
                 .system_program
                 .expect("system_program is not set"),
 
-            shared_escrow_account: self
+            shared_escrow: self
                 .instruction
-                .shared_escrow_account
-                .expect("shared_escrow_account is not set"),
+                .shared_escrow
+                .expect("shared_escrow is not set"),
 
             taker_broker: self
                 .instruction
@@ -907,10 +994,17 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
 
             maker_broker: self.instruction.maker_broker,
 
+            cosigner: self.instruction.cosigner,
+
             amm_program: self
                 .instruction
                 .amm_program
                 .expect("amm_program is not set"),
+
+            escrow_program: self
+                .instruction
+                .escrow_program
+                .expect("escrow_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -934,10 +1028,12 @@ struct SellNftTokenPoolT22CpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    shared_escrow_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<PoolConfig>,
     min_price: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

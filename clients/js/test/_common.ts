@@ -19,7 +19,12 @@ import {
   pipe,
   some,
 } from '@solana/web3.js';
-import '@solana/webcrypto-ed25519-polyfill';
+import {
+  findMarginAccountPda,
+  getDepositMarginAccountInstruction,
+  getInitMarginAccountInstruction,
+  getInitUpdateTswapInstruction,
+} from '@tensor-foundation/escrow';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
@@ -27,7 +32,9 @@ import {
   MPL_TOKEN_METADATA_PROGRAM_ID,
   SYSVARS_INSTRUCTIONS,
   TOKEN_PROGRAM_ID,
+  TSWAP_PROGRAM_ID,
   createDefaultTransaction,
+  createKeyPairSigner,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
@@ -52,8 +59,30 @@ import {
   findNftDepositReceiptPda,
   findPoolPda,
   getCreatePoolInstruction,
+  getDepositSolInstruction,
   getSellNftTradePoolInstruction,
 } from '../src/index.js';
+
+const OWNER_BYTES = [
+  75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
+  51, 180, 184, 6, 77, 52, 36, 243, 28, 125, 104, 104, 114, 246, 166, 110, 5,
+  17, 12, 8, 199, 21, 64, 143, 53, 202, 39, 71, 93, 114, 119, 171, 152, 44, 155,
+  146, 43, 217, 148, 215, 83, 14, 162, 91, 65, 177,
+];
+
+export const getOwner = async () =>
+  await createKeyPairSigner(Uint8Array.from(OWNER_BYTES));
+
+export const getAndFundOwner = async (client: Client) => {
+  const owner = await createKeyPairSigner(Uint8Array.from(OWNER_BYTES));
+  await airdropFactory(client)({
+    recipientAddress: owner.address,
+    lamports: lamports(ONE_SOL),
+    commitment: 'confirmed',
+  });
+
+  return owner;
+};
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -69,6 +98,10 @@ export const ONE_SOL = 1_000_000_000n;
 export const MAKER_REBATE_BPS = 25n;
 
 export const BASIS_POINTS = 10_000n;
+
+export const TSWAP_SINGLETON: Address = address(
+  '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
+);
 
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -160,34 +193,6 @@ export async function createWhitelistV2({
   return { whitelist, uuid, conditions };
 }
 
-// export const createFvcWhitelist = async (fvc: Address) => {
-//   const client = createDefaultSolanaClient();
-//   const { cosigner } = await setupSigners(client);
-
-//   const uuid = uuidToUint8Array(v4());
-//   const name = nameToUint8Array('test whitelist');
-
-//   const [whitelist] = await findWhitelistPda({ uuid });
-
-//   const createWhitelistIx = await getInitUpdateWhitelistInstructionAsync({
-//     whitelist,
-//     cosigner,
-//     uuid,
-//     name,
-//     fvc,
-//     rootHash: none(),
-//     voc: none(),
-//   });
-
-//   await pipe(
-//     await createDefaultTransaction(client, cosigner.address),
-//     (tx) => appendTransactionInstruction(createWhitelistIx, tx),
-//     (tx) => signAndSendTransaction(client, tx)
-//   );
-
-//   return { fvc, whitelist, uuid, name };
-// };
-
 export const generateUuid = () => uuidToUint8Array(v4());
 
 export const uuidToUint8Array = (uuid: string) => {
@@ -210,6 +215,7 @@ export interface CreatePoolParams {
   owner: KeyPairSigner;
   payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
+  sharedEscrow?: Address;
   poolId?: Uint8Array;
   config?: PoolConfig;
   expireInSec?: number;
@@ -234,6 +240,7 @@ export async function createPool({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
   expireInSec,
@@ -271,6 +278,7 @@ export async function createPool({
     config,
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
+    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
   });
@@ -290,6 +298,7 @@ export async function createPoolThrows({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
   t,
@@ -332,7 +341,8 @@ export async function createPoolThrows({
     currency: DEFAULT_PUBKEY,
     config,
     maxTakerSellCount: 0,
-    cosigner: some(cosigner.address),
+    cosigner: cosigner ? some(cosigner.address) : none(),
+    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     orderType: 0,
     expireInSec: null,
   });
@@ -361,7 +371,12 @@ export async function createPoolThrows({
 type CreatePoolAndWhitelistParams = Omit<
   CreatePoolParams,
   'whitelist' | 'owner'
-> & { owner?: KeyPairSigner };
+> & {
+  owner?: KeyPairSigner;
+  depositAmount?: bigint;
+  conditions?: Condition[];
+  funded: boolean;
+};
 type CreatePoolAndWhitelistThrowsParams = Omit<
   CreatePoolThrowsParams,
   'whitelist' | 'owner'
@@ -372,12 +387,15 @@ export async function createPoolAndWhitelist({
   owner,
   payer = owner,
   cosigner,
+  sharedEscrow,
   poolId,
   config,
+  depositAmount = 1_000_000n,
+  conditions,
+  funded,
 }: CreatePoolAndWhitelistParams) {
   const updateAuthority = await generateKeyPairSignerWithSol(client);
   const namespace = await generateKeyPairSigner();
-  const voc = (await generateKeyPairSigner()).address;
 
   // Pool values
   if (owner === undefined) {
@@ -389,13 +407,11 @@ export async function createPoolAndWhitelist({
   if (poolId === undefined) {
     poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
+  if (conditions === undefined) {
+    conditions = [{ mode: Mode.FVC, value: updateAuthority.address }];
+  }
 
   // Setup a basic whitelist to use with the pool.
-  const conditions = [
-    { mode: Mode.FVC, value: owner.address },
-    { mode: Mode.VOC, value: voc },
-  ];
-
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority,
@@ -403,20 +419,38 @@ export async function createPoolAndWhitelist({
     namespace,
   });
 
-  return await createPool({
+  const { pool } = await createPool({
     client,
     whitelist,
     payer,
     owner,
     cosigner,
+    sharedEscrow,
     poolId,
     config,
   });
+
+  if (funded) {
+    // Deposit SOL
+    const depositSolIx = getDepositSolInstruction({
+      pool,
+      whitelist,
+      owner,
+      lamports: depositAmount,
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, owner),
+      (tx) => appendTransactionInstruction(depositSolIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  return { pool, owner, cosigner, poolId, whitelist };
 }
 
 export async function createPoolAndWhitelistThrows({
   client,
-
   owner,
   cosigner,
   poolId,
@@ -579,6 +613,7 @@ export async function mintAndSellIntoPool({
     // Remaining accounts
     creators: [nftOwner.address],
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({
@@ -610,4 +645,86 @@ export const assertTammNoop = async (
   t.assert(
     tx?.meta?.logMessages?.some((msg) => msg.includes('Instruction: TammNoop'))
   );
+};
+
+export const findFeeVaultPda = async (mint: Address) => {
+  // Last byte of mint address is the fee vault shard number.
+  const mintBytes = bs58.decode(mint);
+  const lastByte = mintBytes[mintBytes.length - 1];
+
+  return await getProgramDerivedAddress({
+    programAddress: address('TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A'),
+    seeds: [
+      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
+      getU8Encoder().encode(lastByte),
+    ],
+  });
+};
+
+// Derives fee vault from mint and airdrops keep-alive rent to it.
+export const getAndFundFeeVault = async (client: Client, mint: Address) => {
+  const [feeVault] = await findFeeVaultPda(mint);
+
+  // Fund fee vault with min rent lamports.
+  await airdropFactory(client)({
+    recipientAddress: feeVault,
+    lamports: lamports(890880n),
+    commitment: 'confirmed',
+  });
+
+  return feeVault;
+};
+
+export const createAndFundEscrow = async (
+  client: Client,
+  owner: KeyPairSigner,
+  feeVault: Address,
+  marginNr: number
+) => {
+  const tswapOwner = await getAndFundOwner(client);
+
+  const tswap = TSWAP_SINGLETON;
+  const nr = new Uint8Array(2);
+  nr[0] = marginNr & 0xff;
+  nr[1] = (marginNr >> 8) & 0xff;
+
+  const [marginAccount] = await findMarginAccountPda({
+    owner: owner.address,
+    tswap,
+    marginNr: nr,
+  });
+
+  const initTswapIx = getInitUpdateTswapInstruction({
+    tswap,
+    owner: tswapOwner,
+    newOwner: tswapOwner,
+    feeVault,
+    cosigner: tswapOwner,
+    config: { feeBps: 0 },
+  });
+
+  const createEscrowIx = getInitMarginAccountInstruction({
+    owner,
+    tswap,
+    marginAccount,
+    marginNr,
+    name: Uint8Array.from([]),
+  });
+
+  const depositEscrowIx = getDepositMarginAccountInstruction({
+    owner,
+    tswap,
+    marginAccount,
+    lamports: 1_000_000n,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionInstruction(initTswapIx, tx),
+    (tx) => appendTransactionInstruction(createEscrowIx, tx),
+    (tx) => appendTransactionInstruction(depositEscrowIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  return marginAccount;
 };

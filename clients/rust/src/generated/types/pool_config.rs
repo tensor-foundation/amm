@@ -18,7 +18,6 @@ pub struct PoolConfig {
     pub curve_type: CurveType,
     pub starting_price: u64,
     pub delta: u64,
-    /// Trade pools only
     pub mm_compound_fees: bool,
     pub mm_fee_bps: NullableU16,
 }

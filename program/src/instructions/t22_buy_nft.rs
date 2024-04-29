@@ -32,6 +32,7 @@ pub struct BuyNftT22<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -138,6 +139,17 @@ impl<'info> BuyNftT22<'info> {
         )
         .map_err(Into::into)
     }
+
+    /// transfers lamports, skipping the transfer if not rent exempt
+    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
+        let rent = Rent::get()?.minimum_balance(to.data_len());
+        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
+            //skip current creator, we can't pay them
+            return Ok(());
+        }
+        self.transfer_lamports(to, lamports)?;
+        Ok(())
+    }
 }
 
 impl<'info> Validate<'info> for BuyNftT22<'info> {
@@ -160,11 +172,12 @@ pub fn process_t22_buy_nft<'info, 'b>(
     validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
-        tswap_fee,
+        tamm_fee,
         maker_rebate,
         broker_fee,
         taker_fee,
@@ -178,7 +191,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // royalties on T22
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee: if pool.config.pool_type == PoolType::Trade {
             mm_fee
         } else {
@@ -225,14 +238,21 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // close nft escrow account
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
-    // --------------------------------------- SOL transfers
+    /*  **Transfer Fees**
+    The buy price is the total price the buyer pays for buying the NFT from the pool.
 
-    // transfer fees
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
+    buy_price = current_price + taker_fee + mm_fee + creators_fee
 
+    taker_fee = tamm_fee + broker_fee + maker_rebate
+
+    The mm_fee is the fee paid to the MM for providing liquidity to the pool and only applies to Trade pools.
+
+    Fees are paid by individual transfers as they go to various accounts depending on the pool type
+    and configuration.
+
+    */
+
+    // Determine the SOL destination: owner, pool or shared escrow account.
     //(!) this block has to come before royalties transfer due to remaining_accounts
     let destination = match pool.config.pool_type {
         //send money direct to seller/owner
@@ -255,7 +275,13 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    //rebate to destination (not necessarily owner)
+    // TAmm contract fee.
+    ctx.accounts
+        .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
+    // Broker fee.
+    ctx.accounts
+        .transfer_lamports_min_balance(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
+    // Maker rebate--goes to the destination, not necessarily the owner
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 
     // Trade pools need to check compounding fees
@@ -293,9 +319,19 @@ pub fn process_t22_buy_nft<'info, 'b>(
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }
 
-    // Update the pool's currency balance.
-    if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+    // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+        let pool_final_balance = pool.get_lamports();
+        let lamports_added =
+            unwrap_checked!({ pool_final_balance.checked_sub(pool_initial_balance) });
+        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+
+        // Sanity check to avoid edge cases:
+        require!(
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            ErrorCode::InvalidPoolAmount
+        );
     }
 
     Ok(())

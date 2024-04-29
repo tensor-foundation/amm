@@ -97,8 +97,10 @@ export const enum AmmProgramErrorCode {
   EXPIRED_POOL = 0x2f0b, // 12043
   /** PoolNotExpired: Pool not expired */
   POOL_NOT_EXPIRED = 0x2f0c, // 12044
-  /** InvalidFeeCrank: Invalid fee crank */
-  INVALID_FEE_CRANK = 0x2f0d, // 12045
+  /** UnsupportedCurrency: Unsupported currency */
+  UNSUPPORTED_CURRENCY = 0x2f0d, // 12045
+  /** InvalidPoolAmount: Invalid pool amount */
+  INVALID_POOL_AMOUNT = 0x2f0e, // 12046
 }
 
 export class AmmProgramError extends Error {
@@ -296,9 +298,13 @@ if (__DEV__) {
       'PoolNotExpired',
       `Pool not expired`,
     ],
-    [AmmProgramErrorCode.INVALID_FEE_CRANK]: [
-      'InvalidFeeCrank',
-      `Invalid fee crank`,
+    [AmmProgramErrorCode.UNSUPPORTED_CURRENCY]: [
+      'UnsupportedCurrency',
+      `Unsupported currency`,
+    ],
+    [AmmProgramErrorCode.INVALID_POOL_AMOUNT]: [
+      'InvalidPoolAmount',
+      `Invalid pool amount`,
     ],
   };
 }

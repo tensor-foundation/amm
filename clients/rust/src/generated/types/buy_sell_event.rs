@@ -12,7 +12,7 @@ use borsh::BorshSerialize;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BuySellEvent {
     pub current_price: u64,
-    pub tswap_fee: u64,
+    pub taker_fee: u64,
     pub mm_fee: u64,
     pub creators_fee: u64,
 }

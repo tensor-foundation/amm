@@ -19,14 +19,14 @@ import {
 
 export type BuySellEvent = {
   currentPrice: bigint;
-  tswapFee: bigint;
+  takerFee: bigint;
   mmFee: bigint;
   creatorsFee: bigint;
 };
 
 export type BuySellEventArgs = {
   currentPrice: number | bigint;
-  tswapFee: number | bigint;
+  takerFee: number | bigint;
   mmFee: number | bigint;
   creatorsFee: number | bigint;
 };
@@ -34,7 +34,7 @@ export type BuySellEventArgs = {
 export function getBuySellEventEncoder(): Encoder<BuySellEventArgs> {
   return getStructEncoder([
     ['currentPrice', getU64Encoder()],
-    ['tswapFee', getU64Encoder()],
+    ['takerFee', getU64Encoder()],
     ['mmFee', getU64Encoder()],
     ['creatorsFee', getU64Encoder()],
   ]);
@@ -43,7 +43,7 @@ export function getBuySellEventEncoder(): Encoder<BuySellEventArgs> {
 export function getBuySellEventDecoder(): Decoder<BuySellEvent> {
   return getStructDecoder([
     ['currentPrice', getU64Decoder()],
-    ['tswapFee', getU64Decoder()],
+    ['takerFee', getU64Decoder()],
     ['mmFee', getU64Decoder()],
     ['creatorsFee', getU64Decoder()],
   ]);

@@ -145,9 +145,12 @@ pub enum AmmError {
     /// 12044 (0x2F0C) - Pool not expired
     #[error("Pool not expired")]
     PoolNotExpired,
-    /// 12045 (0x2F0D) - Invalid fee crank
-    #[error("Invalid fee crank")]
-    InvalidFeeCrank,
+    /// 12045 (0x2F0D) - Unsupported currency
+    #[error("Unsupported currency")]
+    UnsupportedCurrency,
+    /// 12046 (0x2F0E) - Invalid pool amount
+    #[error("Invalid pool amount")]
+    InvalidPoolAmount,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

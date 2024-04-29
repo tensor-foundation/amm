@@ -4,15 +4,9 @@ import {
   CompilableTransaction,
   ITransactionWithBlockhashLifetime,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  address,
-  airdropFactory,
   appendTransactionInstruction,
-  getProgramDerivedAddress,
   getSignatureFromTransaction,
-  getStringEncoder,
-  getU8Encoder,
   isSolanaError,
-  lamports,
   none,
   pipe,
   sendAndConfirmTransactionFactory,
@@ -24,6 +18,7 @@ import {
   MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
   MPL_TOKEN_METADATA_PROGRAM_ID,
   SYSVARS_INSTRUCTIONS,
+  TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -34,7 +29,6 @@ import {
 } from '@tensor-foundation/toolkit-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
-import bs58 from 'bs58';
 import {
   AMM_PROGRAM_ADDRESS,
   CurveType,
@@ -56,6 +50,7 @@ import {
   createPoolAndWhitelist,
   createWhitelistV2,
   findAtaPda,
+  getAndFundFeeVault,
 } from './_common.js';
 
 export interface TransactionOptions {
@@ -85,7 +80,10 @@ test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Create default pool
-  const { pool, owner } = await createPoolAndWhitelist({ client });
+  const { pool, owner } = await createPoolAndWhitelist({
+    client,
+    funded: false,
+  });
 
   const poolAccount = await fetchPool(client.rpc, pool);
   // Then an account was created with the correct data.
@@ -282,24 +280,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
-
-  const [feeVault] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVault = await getAndFundFeeVault(client, mint);
 
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
@@ -351,6 +332,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     // Remaining accounts
     creators: [nftOwner.address],
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({
@@ -361,7 +343,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionInstruction(computeIx, tx),
     (tx) => appendTransactionInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // Close pool
@@ -439,24 +421,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
-
-  const [feeVault] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVault = await getAndFundFeeVault(client, mint);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
@@ -504,6 +469,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     // Remaining accounts
     creators: [nftOwner.address],
     ammProgram: AMM_PROGRAM_ADDRESS,
+    escrowProgram: TSWAP_PROGRAM_ID,
   });
 
   const computeIx = getSetComputeUnitLimitInstruction({

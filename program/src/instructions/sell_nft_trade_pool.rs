@@ -7,6 +7,9 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
+use tensor_escrow::instructions::{
+    WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
+};
 use tensor_toolbox::{
     assert_decode_metadata, send_pnft, transfer_creators_fee, transfer_lamports_from_pda,
     CreatorFeeMode, FromAcc, PnftTransferArgs,
@@ -39,6 +42,7 @@ pub struct SellNftTradePool<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -176,7 +180,12 @@ pub struct SellNftTradePool<'info> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
+
+    /// CHECK: address constraint is checked here
+    #[account(address = tensor_escrow::ID)]
+    pub escrow_program: UncheckedAccount<'info>,
     // remaining accounts:
     // optional 0 to N creator accounts.
 }
@@ -243,6 +252,8 @@ pub fn process_sell_nft_trade_pool<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
+    let pool_initial_balance = pool.get_lamports();
+    let owner_pubkey = ctx.accounts.owner.key();
 
     // transfer nft to escrow
     // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
@@ -284,11 +295,13 @@ pub fn process_sell_nft_trade_pool<'info>(
 
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
-        tswap_fee,
-        maker_rebate: _,
+        tamm_fee,
+        maker_rebate,
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
+
+    // Creators fee and MM fee are calculated based on the current price.
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
@@ -296,7 +309,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
-        tswap_fee: taker_fee,
+        taker_fee,
         mm_fee,
         creators_fee,
     });
@@ -309,35 +322,87 @@ pub fn process_sell_nft_trade_pool<'info>(
         throw_err!(ErrorCode::PriceMismatch);
     }
 
-    let mut left_for_seller = current_price;
-
     // --------------------------------------- SOL transfers
 
-    //decide where we're sending the money from - shared escrow (shared escrow pool) or escrow (normal pool)
-    let from = match pool.shared_escrow.value() {
-        Some(stored_shared_escrow) => {
-            assert_decode_margin_account(
-                &ctx.accounts.shared_escrow,
-                &ctx.accounts.owner.to_account_info(),
-            )?;
-            if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
-                throw_err!(ErrorCode::BadSharedEscrow);
-            }
-            ctx.accounts.shared_escrow.to_account_info()
+    // Signer seeds for the pool account.
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        b"pool",
+        owner_pubkey.as_ref(),
+        pool.pool_id.as_ref(),
+        &[pool.bump[0]],
+    ]];
+
+    // If the source funds are from a shared escrow account, we first transfer from there
+    // to the pool, to make payments cleaner. After this, we can always send from the pool
+    // so the logic is simpler.
+    if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+        // Validate it's a valid escrow account.
+        assert_decode_margin_account(
+            &ctx.accounts.shared_escrow,
+            &ctx.accounts.owner.to_account_info(),
+        )?;
+
+        // Validate it's the correct account: the stored escrow account matches the one passed in.
+        if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+            throw_err!(ErrorCode::BadSharedEscrow);
         }
-        None => ctx.accounts.pool.to_account_info(),
+
+        // Leave maker rebate in the shared escrow account.
+        let transfer_amount = unwrap_int!(current_price.checked_sub(maker_rebate));
+
+        // Withdraw from escrow account to pool.
+        WithdrawMarginAccountCpiTammCpi {
+            __program: &ctx.accounts.escrow_program.to_account_info(),
+            margin_account: &ctx.accounts.shared_escrow,
+            pool: &ctx.accounts.pool.to_account_info(),
+            owner: &ctx.accounts.owner.to_account_info(),
+            destination: &ctx.accounts.pool.to_account_info(),
+            system_program: &ctx.accounts.system_program.to_account_info(),
+            __args: WithdrawMarginAccountCpiTammInstructionArgs {
+                bump: pool.bump[0],
+                pool_id: pool.pool_id,
+                lamports: transfer_amount,
+            },
+        }
+        .invoke_signed(signer_seeds)?;
+
+        ctx.accounts.shared_escrow.to_account_info()
+    } else {
+        ctx.accounts.pool.to_account_info()
     };
 
-    // transfer fees
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_fee));
-    transfer_lamports_from_pda(&from, &ctx.accounts.fee_vault.to_account_info(), tswap_fee)?;
+    /*  **Transfer Fees**
+    The sell price is the total price the seller receives for selling the NFT into the pool.
+
+    sell_price = current_price - taker_fee - mm_fee - creators_fee
+
+    taker_fee = tamm_fee + broker_fee + maker_rebate
+
+    Fees are paid by deducting them from the current price, with the final remainder
+    then being sent to the seller.
+
+    */
+
+    // Maker rebate is left in the shared escrow account or pool account, so is paid deductively.
+    let mut left_for_seller = unwrap_int!(current_price.checked_sub(maker_rebate));
+
+    // TAmm contract fee.
     transfer_lamports_from_pda(
-        &from,
+        &ctx.accounts.pool.to_account_info(),
+        &ctx.accounts.fee_vault.to_account_info(),
+        tamm_fee,
+    )?;
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
+
+    // Broker fee.
+    transfer_lamports_from_pda(
+        &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.taker_broker.to_account_info(),
         broker_fee,
     )?;
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(broker_fee));
 
-    // transfer royalties
+    // Transfer royalties
     let remaining_accounts = &mut ctx.remaining_accounts.iter();
     let actual_creators_fee = transfer_creators_fee(
         &metadata
@@ -350,22 +415,46 @@ pub fn process_sell_nft_trade_pool<'info>(
         remaining_accounts,
         creators_fee,
         &CreatorFeeMode::Sol {
-            from: &FromAcc::Pda(&from),
+            from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
         },
     )?;
+
+    // Taker pays royalties, so we subtract them from the amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
 
-    // subtract MM spread before wiring to seller
+    // Taker pays MM fee, so we subtract it from the amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(mm_fee));
 
-    // transfer remainder to seller
+    //Transfer remainder to seller
     // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
     // (!) maker rebate already taken out of this amount
     transfer_lamports_from_pda(
-        &from,
+        &ctx.accounts.pool.to_account_info(),
         &ctx.accounts.seller.to_account_info(),
         left_for_seller,
     )?;
+
+    // If MM fees are compounded they go to the pool or shared escrow, otherwise to the owner.
+    if pool.config.mm_compound_fees {
+        msg!("Compounding MM fees");
+        // Send back to shared escrow
+        if pool.shared_escrow.value().is_some() {
+            transfer_lamports_from_pda(
+                &ctx.accounts.pool.to_account_info(),
+                &ctx.accounts.shared_escrow.to_account_info(),
+                mm_fee,
+            )?;
+        }
+        // Otherwise, already in the pool so no transfer needed.
+    } else {
+        msg!("Sending mm fees to the owner");
+        // Send to owner
+        transfer_lamports_from_pda(
+            &ctx.accounts.pool.to_account_info(),
+            &ctx.accounts.owner.to_account_info(),
+            mm_fee,
+        )?;
+    }
 
     // --------------------------------------- accounting
 
@@ -388,11 +477,18 @@ pub fn process_sell_nft_trade_pool<'info>(
     pool.stats.accumulated_mm_profit =
         unwrap_int!(pool.stats.accumulated_mm_profit.checked_add(mm_fee));
 
-    // Update the pool's currency balance.
-    // Only our instructions can change the pool's SOL balance, so we can just set the amount
-    // directly to the post-transaction balance, minus state bond keep-alive.
-    if pool.currency.is_sol() {
-        pool.amount = unwrap_int!(pool.get_lamports().checked_sub(POOL_STATE_BOND));
+    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+    // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+        let pool_final_balance = pool.get_lamports();
+        let lamports_taken = unwrap_int!(pool_initial_balance.checked_sub(pool_final_balance));
+        pool.amount = unwrap_int!(pool.amount.checked_sub(lamports_taken));
+
+        // Sanity check to avoid edge cases:
+        require!(
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            ErrorCode::InvalidPoolAmount
+        );
     }
 
     Ok(())

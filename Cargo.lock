@@ -118,25 +118,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amm"
-version = "0.0.0"
-dependencies = [
- "assert_matches",
- "borsh 0.10.3",
- "lazy_static",
- "num-derive 0.3.3",
- "num-traits",
- "serde",
- "serde_with 3.7.0",
- "solana-program",
- "solana-program-test",
- "solana-sdk",
- "spl-associated-token-account",
- "tensor-whitelist",
- "thiserror",
-]
-
-[[package]]
 name = "amm-program"
 version = "0.0.0"
 dependencies = [
@@ -5292,6 +5273,25 @@ dependencies = [
  "fastrand",
  "rustix",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "tensor-amm"
+version = "0.0.0"
+dependencies = [
+ "assert_matches",
+ "borsh 0.10.3",
+ "lazy_static",
+ "num-derive 0.3.3",
+ "num-traits",
+ "serde",
+ "serde_with 3.7.0",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "tensor-whitelist",
+ "thiserror",
 ]
 
 [[package]]

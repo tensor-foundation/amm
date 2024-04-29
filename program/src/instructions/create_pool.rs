@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use tensor_toolbox::NullableOption;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, try_or_err, Validate};
 
@@ -16,6 +15,7 @@ pub struct CreatePoolArgs {
     pub config: PoolConfig,
     // Here to support future SPL mints, contract enforces this is the native mint currently
     pub currency: Pubkey,
+    pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
@@ -117,8 +117,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.stats = PoolStats::default();
 
     pool.cosigner = args.cosigner.into();
-    //all pools start off without a shared escrow, and can be attached later
-    pool.shared_escrow = NullableOption::none();
+    pool.shared_escrow = args.shared_escrow.into();
 
     let timestamp = Clock::get()?.unix_timestamp;
 
