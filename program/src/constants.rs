@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use solana_program::pubkey;
 
 // (!) DONT USE UNDERSCORES (3_000) OR WONT BE ABLE TO READ JS-SIDE
 #[constant]
@@ -31,3 +32,5 @@ pub const MAKER_REBATE_BPS: u16 = 25;
 
 #[constant]
 pub const TAKER_BROKER_PCT: u64 = 0;
+
+pub const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");

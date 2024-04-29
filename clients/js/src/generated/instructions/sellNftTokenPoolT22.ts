@@ -28,6 +28,7 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
+  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -62,6 +63,7 @@ export type SellNftTokenPoolT22Instruction<
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountCosigner extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
@@ -115,6 +117,10 @@ export type SellNftTokenPoolT22Instruction<
       TAccountMakerBroker extends string
         ? ReadonlyAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
+      TAccountCosigner extends string
+        ? ReadonlySignerAccount<TAccountCosigner> &
+            IAccountSignerMeta<TAccountCosigner>
+        : TAccountCosigner,
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
         : TAccountAmmProgram,
@@ -184,6 +190,7 @@ export type SellNftTokenPoolT22Input<
   TAccountSharedEscrow extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
 > = {
@@ -206,6 +213,11 @@ export type SellNftTokenPoolT22Input<
   sharedEscrow: Address<TAccountSharedEscrow>;
   takerBroker: Address<TAccountTakerBroker>;
   makerBroker?: Address<TAccountMakerBroker>;
+  /**
+   * The optional cosigner account that must be passed in if the pool has a cosigner.
+   * Checks are performed in the handler.
+   */
+  cosigner?: TransactionSigner<TAccountCosigner>;
   ammProgram: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   config: SellNftTokenPoolT22InstructionDataArgs['config'];
@@ -228,6 +240,7 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountSharedEscrow extends string,
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountCosigner extends string,
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
 >(
@@ -247,6 +260,7 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
   >
@@ -267,6 +281,7 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountSharedEscrow,
   TAccountTakerBroker,
   TAccountMakerBroker,
+  TAccountCosigner,
   TAccountAmmProgram,
   TAccountEscrowProgram
 > {
@@ -293,6 +308,7 @@ export function getSellNftTokenPoolT22Instruction<
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
   };
@@ -332,6 +348,7 @@ export function getSellNftTokenPoolT22Instruction<
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
     ],
@@ -356,6 +373,7 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
   >;
@@ -388,8 +406,14 @@ export type ParsedSellNftTokenPoolT22Instruction<
     sharedEscrow: TAccountMetas[12];
     takerBroker: TAccountMetas[13];
     makerBroker?: TAccountMetas[14] | undefined;
-    ammProgram: TAccountMetas[15];
-    escrowProgram: TAccountMetas[16];
+    /**
+     * The optional cosigner account that must be passed in if the pool has a cosigner.
+     * Checks are performed in the handler.
+     */
+
+    cosigner?: TAccountMetas[15] | undefined;
+    ammProgram: TAccountMetas[16];
+    escrowProgram: TAccountMetas[17];
   };
   data: SellNftTokenPoolT22InstructionData;
 };
@@ -402,7 +426,7 @@ export function parseSellNftTokenPoolT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 18) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -436,6 +460,7 @@ export function parseSellNftTokenPoolT22Instruction<
       sharedEscrow: getNextAccount(),
       takerBroker: getNextAccount(),
       makerBroker: getNextOptionalAccount(),
+      cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
       escrowProgram: getNextAccount(),
     },

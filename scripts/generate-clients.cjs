@@ -11,8 +11,8 @@ const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
 // Update programs.
 kinobi.update(
   new k.updateProgramsVisitor({
-    ammProgram: { name: "amm" }
-  })
+    ammProgram: { name: "amm" },
+  }),
 );
 
 // Update accounts.
@@ -24,14 +24,14 @@ kinobi.update(
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
-          "The address of the pool owner"
+          "The address of the pool owner",
         ),
         k.variablePdaSeedNode(
           "pool_id",
           k.bytesTypeNode(k.fixedSizeNode(32)),
-          "Pool unique ID"
-        )
-      ]
+          "Pool unique ID",
+        ),
+      ],
     },
     sharedEscrow: {
       seeds: [
@@ -39,14 +39,14 @@ kinobi.update(
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
-          "The owner address"
+          "The owner address",
         ),
         k.variablePdaSeedNode(
           "nr",
           k.numberTypeNode("u16"),
-          "The escrow number"
-        )
-      ]
+          "The escrow number",
+        ),
+      ],
     },
     nftDepositReceipt: {
       seeds: [
@@ -54,22 +54,16 @@ kinobi.update(
         k.variablePdaSeedNode(
           "mint",
           k.publicKeyTypeNode(),
-          "The nft mint address"
+          "The nft mint address",
         ),
-        k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
-      ]
-    },
-    feeVault: {
-      seeds: [
-        k.constantPdaSeedNodeFromString("fee_vault"),
         k.variablePdaSeedNode(
-          "index",
-          k.bytesTypeNode(k.fixedSizeNode(1)),
-          "The fee vault index"
-        )
-      ]
-    }
-  })
+          "pool",
+          k.publicKeyTypeNode(),
+          "The pool address",
+        ),
+      ],
+    },
+  }),
 );
 
 // Update instructions.
@@ -80,38 +74,38 @@ kinobi.update(
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true
-        })
-      ]
+          isWritable: true,
+        }),
+      ],
     },
     sellNftTradePool: {
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true
-        })
-      ]
+          isWritable: true,
+        }),
+      ],
     },
     buyNft: {
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true
-        })
-      ]
+          isWritable: true,
+        }),
+      ],
     },
     feeCrank: {
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("feeAccounts"), {
           isOptional: false,
           isSigner: false,
-          isWritable: true
-        })
-      ]
-    }
-  })
+          isWritable: true,
+        }),
+      ],
+    },
+  }),
 );
 
 // Add missing types from the IDL.
@@ -124,9 +118,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
         };
-      }
+      },
     },
     {
       select:
@@ -135,9 +129,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
         };
-      }
+      },
     },
     {
       select:
@@ -146,9 +140,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("currency", "hooked")
+          type: k.definedTypeLinkNode("currency", "hooked"),
         };
-      }
+      },
     },
     {
       select:
@@ -157,11 +151,11 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableU16", "hooked")
+          type: k.definedTypeLinkNode("nullableU16", "hooked"),
         };
-      }
-    }
-  ])
+      },
+    },
+  ]),
 );
 
 // Debug: print the AST.
@@ -172,8 +166,8 @@ const jsDir = path.join(clientDir, "js", "src", "generated");
 const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
 kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
-    prettier
-  })
+    prettier,
+  }),
 );
 
 // Render Rust.
@@ -182,6 +176,6 @@ const rustDir = path.join(clientDir, "rust", "src", "generated");
 kinobi.accept(
   k.renderRustVisitor(rustDir, {
     formatCode: true,
-    crateFolder: crateDir
-  })
+    crateFolder: crateDir,
+  }),
 );

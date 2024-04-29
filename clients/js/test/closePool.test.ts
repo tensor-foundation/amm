@@ -4,15 +4,9 @@ import {
   CompilableTransaction,
   ITransactionWithBlockhashLifetime,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  address,
-  airdropFactory,
   appendTransactionInstruction,
-  getProgramDerivedAddress,
   getSignatureFromTransaction,
-  getStringEncoder,
-  getU8Encoder,
   isSolanaError,
-  lamports,
   none,
   pipe,
   sendAndConfirmTransactionFactory,
@@ -35,7 +29,6 @@ import {
 } from '@tensor-foundation/toolkit-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
-import bs58 from 'bs58';
 import {
   AMM_PROGRAM_ADDRESS,
   CurveType,
@@ -57,6 +50,7 @@ import {
   createPoolAndWhitelist,
   createWhitelistV2,
   findAtaPda,
+  getAndFundFeeVault,
 } from './_common.js';
 
 export interface TransactionOptions {
@@ -286,24 +280,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
-
-  const [feeVault] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVault = await getAndFundFeeVault(client, mint);
 
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
@@ -444,24 +421,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
-
-  const [feeVault] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVault = await getAndFundFeeVault(client, mint);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });

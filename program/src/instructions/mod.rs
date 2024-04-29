@@ -6,7 +6,6 @@ pub mod create_pool;
 pub mod deposit_nft;
 pub mod deposit_sol;
 pub mod edit_pool;
-pub mod fee_crank;
 pub mod sell_nft_token_pool;
 pub mod sell_nft_trade_pool;
 pub mod t22_buy_nft;
@@ -25,7 +24,6 @@ pub use create_pool::*;
 pub use deposit_nft::*;
 pub use deposit_sol::*;
 pub use edit_pool::*;
-pub use fee_crank::*;
 pub use sell_nft_token_pool::*;
 pub use sell_nft_trade_pool::*;
 pub use single_listing::*;
@@ -47,6 +45,8 @@ use mpl_token_metadata::{self};
 use solana_program::pubkey;
 use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked};
+
+use self::constants::TFEE_PROGRAM_ID;
 
 pub static MPL_TOKEN_AUTH_RULES_ID: Pubkey = pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
 
@@ -105,12 +105,21 @@ pub fn assert_decode_mint_proof_v2(
 }
 
 /// Shared accounts between the two sell ixs.
+/// Currently unused until Kinobi support.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct SellNftShared<'info> {
-    //degenerate: fee_acc now === TSwap, keeping around to preserve backwards compatibility
-    /// CHECK: has_one = fee_vault in tswap
-    #[account(mut)]
+    /// CHECK: Seeds checked here, account has no state.
+    #[account(
+        mut,
+        seeds = [
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            shard_num!(mint),
+        ],
+        seeds::program = TFEE_PROGRAM_ID,
+        bump
+    )]
     pub fee_vault: UncheckedAccount<'info>,
 
     #[account(mut,
@@ -175,12 +184,21 @@ pub struct SellNftShared<'info> {
 }
 
 /// Shared accounts between the two sell T22 ixs.
+/// Currently unused until Kinobi support.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct SellNftSharedT22<'info> {
-    //degenerate: fee_acc now === TSwap, keeping around to preserve backwards compatibility
-    /// CHECK: has_one = fee_vault in tswap
-    #[account(mut)]
+    /// CHECK: Seeds checked here, account has no state.
+    #[account(
+        mut,
+        seeds = [
+            b"fee_vault",
+            // Use the last byte of the mint as the fee shard number
+            shard_num!(nft_mint),
+        ],
+        seeds::program = TFEE_PROGRAM_ID,
+        bump
+    )]
     pub fee_vault: UncheckedAccount<'info>,
 
     #[account(mut,
@@ -229,6 +247,7 @@ pub struct SellNftSharedT22<'info> {
     pub seller: Signer<'info>,
 }
 
+/// Currently unused until Kinobi support.
 #[derive(Accounts)]
 pub struct ProgNftShared<'info> {
     //can't deserialize directly coz Anchor traits not implemented
@@ -285,9 +304,4 @@ pub fn calc_fees_rebates(amount: u64) -> Result<Fees> {
         broker_fee,
         taker_fee,
     })
-}
-
-pub fn get_tswap_addr() -> Pubkey {
-    let (pda, _) = Pubkey::find_program_address(&[], &crate::id());
-    pda
 }

@@ -22,31 +22,6 @@ pub struct FeeVault {
 impl FeeVault {
     pub const LEN: usize = 8;
 
-    /// Prefix values used to generate a PDA for this account.
-    ///
-    /// Values are positional and appear in the following order:
-    ///
-    ///   0. `FeeVault::PREFIX`
-    ///   1. index (`[u8; 1]`)
-    pub const PREFIX: &'static [u8] = "fee_vault".as_bytes();
-
-    pub fn create_pda(
-        index: [u8; 1],
-        bump: u8,
-    ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
-        solana_program::pubkey::Pubkey::create_program_address(
-            &["fee_vault".as_bytes(), &index, &[bump]],
-            &crate::AMM_ID,
-        )
-    }
-
-    pub fn find_pda(index: [u8; 1]) -> (solana_program::pubkey::Pubkey, u8) {
-        solana_program::pubkey::Pubkey::find_program_address(
-            &["fee_vault".as_bytes(), &index],
-            &crate::AMM_ID,
-        )
-    }
-
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
         let mut data = data;

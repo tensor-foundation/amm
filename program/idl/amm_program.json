@@ -407,34 +407,6 @@
       ]
     },
     {
-      "name": "feeCrank",
-      "accounts": [
-        {
-          "name": "treasury",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Fee destination account"
-          ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "feeSeeds",
-          "type": {
-            "vec": {
-              "defined": "FeeSeeds"
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "withdrawNft",
       "accounts": [
         {
@@ -1584,6 +1556,16 @@
           "isOptional": true
         },
         {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
+          ]
+        },
+        {
           "name": "ammProgram",
           "isMut": false,
           "isSigner": false
@@ -1699,6 +1681,16 @@
           "isMut": false,
           "isSigner": false,
           "isOptional": true
+        },
+        {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
+          ]
         },
         {
           "name": "ammProgram",
@@ -2106,22 +2098,6 @@
           {
             "name": "resetPriceOffset",
             "type": "bool"
-          }
-        ]
-      }
-    },
-    {
-      "name": "FeeSeeds",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "shard",
-            "type": "u8"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           }
         ]
       }

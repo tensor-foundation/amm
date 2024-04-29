@@ -36,6 +36,7 @@ pub struct SellNftTokenPoolT22<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -113,14 +114,15 @@ pub struct SellNftTokenPoolT22<'info> {
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<Signer<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
 
     /// CHECK: address constraint is checked here
     #[account(address = tensor_escrow::ID)]
     pub escrow_program: UncheckedAccount<'info>,
-    // remaining accounts:
-    // CHECK: 1)is signer, 2)cosigner stored on tswap
-    // 1. optional co-signer (will be drawn first if necessary)
 }
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
@@ -218,7 +220,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
         taker_fee,
-        maker_rebate: _,
+        maker_rebate,
         broker_fee,
         tamm_fee,
     } = calc_fees_rebates(current_price)?;
@@ -266,6 +268,9 @@ pub fn process_t22_sell_nft_token_pool<'info>(
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
+        // Leave maker rebate in the shared escrow account.
+        let transfer_amount = unwrap_int!(current_price.checked_sub(maker_rebate));
+
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
             __program: &ctx.accounts.escrow_program.to_account_info(),
@@ -278,7 +283,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
                 bump: pool.bump[0],
                 pool_id: pool.pool_id,
                 // Seller will receive this minus fees.
-                lamports: current_price,
+                lamports: transfer_amount,
             },
         }
         .invoke_signed(signer_seeds)?;

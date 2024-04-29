@@ -202,7 +202,7 @@ mod tests {
     }
 
     #[test]
-    fn tst_tswap_fees() {
+    fn tst_tamm_fees() {
         let p = Pool::new(
             PoolType::Trade,
             CurveType::Linear,
@@ -213,7 +213,7 @@ mod tests {
         );
 
         assert_eq!(
-            p.calc_tswap_fee(LAMPORTS_PER_SOL).unwrap(),
+            p.calc_tamm_fee(LAMPORTS_PER_SOL).unwrap(),
             LAMPORTS_PER_SOL * TAKER_FEE_BPS as u64 / 10000
         );
     }

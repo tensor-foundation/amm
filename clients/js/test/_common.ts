@@ -647,19 +647,23 @@ export const assertTammNoop = async (
   );
 };
 
-// Derives fee vault from mint and airdrops keep-alive rent to it.
-export const getAndFundFeeVault = async (client: Client, mint: Address) => {
+export const findFeeVaultPda = async (mint: Address) => {
   // Last byte of mint address is the fee vault shard number.
   const mintBytes = bs58.decode(mint);
   const lastByte = mintBytes[mintBytes.length - 1];
 
-  const [feeVault] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
+  return await getProgramDerivedAddress({
+    programAddress: address('TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A'),
     seeds: [
       getStringEncoder({ size: 'variable' }).encode('fee_vault'),
       getU8Encoder().encode(lastByte),
     ],
   });
+};
+
+// Derives fee vault from mint and airdrops keep-alive rent to it.
+export const getAndFundFeeVault = async (client: Client, mint: Address) => {
+  const [feeVault] = await findFeeVaultPda(mint);
 
   // Fund fee vault with min rent lamports.
   await airdropFactory(client)({

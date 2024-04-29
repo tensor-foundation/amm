@@ -41,6 +41,7 @@ pub struct SellNftTradePoolT22<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -129,6 +130,10 @@ pub struct SellNftTradePoolT22<'info> {
     pub taker_broker: UncheckedAccount<'info>,
 
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<Signer<'info>>,
 
     pub amm_program: Program<'info, AmmProgram>,
 
@@ -286,7 +291,8 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
-        let transfer_amount = current_price - maker_rebate;
+        // Leave maker rebate in the shared escrow account.
+        let transfer_amount = unwrap_int!(current_price.checked_sub(maker_rebate));
 
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {

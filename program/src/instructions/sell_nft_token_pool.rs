@@ -44,6 +44,7 @@ pub struct SellNftTokenPool<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -369,7 +370,7 @@ pub fn process_sell_nft_token_pool<'info>(
     let current_price = pool.current_price(TakerSide::Sell)?;
     let Fees {
         tamm_fee,
-        maker_rebate: _,
+        maker_rebate,
         broker_fee,
         taker_fee,
     } = calc_fees_rebates(current_price)?;
@@ -419,6 +420,9 @@ pub fn process_sell_nft_token_pool<'info>(
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
+        // Leave maker rebate in the shared escrow account.
+        let transfer_amount = unwrap_int!(current_price.checked_sub(maker_rebate));
+
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
             __program: &ctx.accounts.escrow_program.to_account_info(),
@@ -430,7 +434,7 @@ pub fn process_sell_nft_token_pool<'info>(
             __args: WithdrawMarginAccountCpiTammInstructionArgs {
                 bump: pool.bump[0],
                 pool_id: pool.pool_id,
-                lamports: current_price,
+                lamports: transfer_amount,
             },
         }
         .invoke_signed(signer_seeds)?;

@@ -38,6 +38,7 @@ pub struct BuyNft<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -187,6 +188,17 @@ impl<'info> BuyNft<'info> {
         )
         .map_err(Into::into)
     }
+
+    /// transfers lamports, skipping the transfer if not rent exempt
+    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
+        let rent = Rent::get()?.minimum_balance(to.data_len());
+        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
+            //skip current creator, we can't pay them
+            return Ok(());
+        }
+        self.transfer_lamports(to, lamports)?;
+        Ok(())
+    }
 }
 
 impl<'info> Validate<'info> for BuyNft<'info> {
@@ -330,7 +342,7 @@ pub fn process_buy_nft<'info, 'b>(
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
     ctx.accounts
-        .transfer_lamports(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
+        .transfer_lamports_min_balance(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
     // Maker rebate--goes to the destination, not necessarily the owner
     ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
 

@@ -42,6 +42,7 @@ pub struct SellNftTradePool<'info> {
             // Use the last byte of the mint as the fee shard number
             shard_num!(mint),
         ],
+        seeds::program = TFEE_PROGRAM_ID,
         bump
     )]
     pub fee_vault: UncheckedAccount<'info>,
@@ -347,7 +348,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         }
 
         // Leave maker rebate in the shared escrow account.
-        let transfer_amount = current_price - maker_rebate;
+        let transfer_amount = unwrap_int!(current_price.checked_sub(maker_rebate));
 
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
