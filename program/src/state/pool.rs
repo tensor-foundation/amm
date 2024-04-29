@@ -134,7 +134,7 @@ pub struct Pool {
     pub _reserved: [u8; 100],
 }
 
-pub fn calc_tamm_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
+pub fn calc_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
     let fee = unwrap_checked!({
         (fee_bps as u64)
             .checked_mul(current_price)?
@@ -198,8 +198,8 @@ impl Pool {
         Ok(fee)
     }
 
-    pub fn calc_tamm_fee(&self, current_price: u64) -> Result<u64> {
-        calc_tamm_fee(TAKER_FEE_BPS, current_price)
+    pub fn calc_taker_fee(&self, current_price: u64) -> Result<u64> {
+        calc_fee(TAKER_FEE_BPS, current_price)
     }
 
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
