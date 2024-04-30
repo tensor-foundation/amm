@@ -28,8 +28,8 @@ pub enum AmmError {
     /// 12005 (0x2EE5) - escrow account doesn't match that stored on pool
     #[error("escrow account doesn't match that stored on pool")]
     BadEscrowAccount,
-    /// 12006 (0x2EE6) - when setting up a Trade pool, must provide fee bps & fee vault
-    #[error("when setting up a Trade pool, must provide fee bps & fee vault")]
+    /// 12006 (0x2EE6) - when setting up a Trade pool, must provide fee bps
+    #[error("when setting up a Trade pool, must provide fee bps")]
     MissingFees,
     /// 12007 (0x2EE7) - fees entered above allowed threshold
     #[error("fees entered above allowed threshold")]

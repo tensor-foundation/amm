@@ -119,7 +119,7 @@ export type SellNftTradePoolT22Instruction<
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
       TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
+        ? WritableAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
       TAccountCosigner extends string
         ? ReadonlySignerAccount<TAccountCosigner> &
@@ -213,7 +213,9 @@ export type SellNftTradePoolT22Input<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   sharedEscrow: Address<TAccountSharedEscrow>;
-  takerBroker: Address<TAccountTakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
@@ -313,7 +315,7 @@ export function getSellNftTradePoolT22Instruction<
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
@@ -412,7 +414,9 @@ export type ParsedSellNftTradePoolT22Instruction<
     tokenProgram: TAccountMetas[11];
     systemProgram: TAccountMetas[12];
     sharedEscrow: TAccountMetas[13];
-    takerBroker: TAccountMetas[14];
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[14] | undefined;
+    /** The account that receives the maker broker fee. */
     makerBroker?: TAccountMetas[15] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
@@ -467,7 +471,7 @@ export function parseSellNftTradePoolT22Instruction<
       tokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       sharedEscrow: getNextAccount(),
-      takerBroker: getNextAccount(),
+      takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),

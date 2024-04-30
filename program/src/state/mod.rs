@@ -153,6 +153,7 @@ mod tests {
                     delta,
                     mm_compound_fees: true,
                     mm_fee_bps,
+                    maker_broker_pct: 0,
                 },
                 price_offset,
                 nfts_held: 0,

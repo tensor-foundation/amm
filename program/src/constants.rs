@@ -23,14 +23,11 @@ pub const SPREAD_TICKS: u8 = 1;
 
 // --------------------------------------- fees
 
-//(!) Keep in sync with TBID_FEE_BPS and SDK constants
 #[constant]
-pub const TAKER_FEE_BPS: u16 = 150;
-//taken out of taker fee
-#[constant]
-pub const MAKER_REBATE_BPS: u16 = 25;
+pub const TAKER_FEE_BPS: u16 = 200;
 
+// 50% of Taker Fee
 #[constant]
-pub const TAKER_BROKER_PCT: u64 = 0;
+pub const BROKER_FEE_PCT: u8 = 50;
 
-pub const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");
+pub(crate) const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");

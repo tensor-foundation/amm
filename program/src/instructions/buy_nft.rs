@@ -153,13 +153,16 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub shared_escrow: UncheckedAccount<'info>,
 
-    /// The taker broker account that receives the taker fees.
-    /// CHECK: need checks specified
-    // TODO: optional account? what checks?
+    /// The account that receives the taker broker fee.
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
     #[account(mut)]
-    pub taker_broker: UncheckedAccount<'info>,
+    pub taker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The account that receives the maker broker fee.
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
@@ -228,11 +231,11 @@ pub fn process_buy_nft<'info, 'b>(
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
-        tamm_fee,
-        maker_rebate,
-        broker_fee,
         taker_fee,
-    } = calc_fees_rebates(current_price)?;
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    } = calc_taker_fees(current_price, pool.config.maker_broker_pct)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
@@ -338,13 +341,27 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    // Buyer pays the taker fee: tamm_fee + broker_fee + maker_rebate.
+    // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
-    ctx.accounts
-        .transfer_lamports_min_balance(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
-    // Maker rebate--goes to the destination, not necessarily the owner
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .maker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&destination),
+        maker_broker_fee,
+    )?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .taker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&destination),
+        taker_broker_fee,
+    )?;
 
     // transfer royalties (on top of current price)
     // Buyer pays the royalty fee.

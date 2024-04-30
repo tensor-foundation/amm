@@ -107,10 +107,14 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub shared_escrow_account: UncheckedAccount<'info>,
 
-    /// CHECK:
+    /// The account that receives the taker broker fee.
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
     #[account(mut)]
-    pub taker_broker: UncheckedAccount<'info>,
+    pub taker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The account that receives the maker broker fee.
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     pub amm_program: Program<'info, AmmProgram>,
@@ -177,11 +181,11 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
-        tamm_fee,
-        maker_rebate,
-        broker_fee,
         taker_fee,
-    } = calc_fees_rebates(current_price)?;
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    } = calc_taker_fees(current_price, pool.config.maker_broker_pct)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
@@ -275,14 +279,27 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    // TAmm contract fee.
+    // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
-    // Broker fee.
-    ctx.accounts
-        .transfer_lamports_min_balance(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
-    // Maker rebate--goes to the destination, not necessarily the owner
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .maker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&destination),
+        maker_broker_fee,
+    )?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .taker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&destination),
+        taker_broker_fee,
+    )?;
 
     // Trade pools need to check compounding fees
     if matches!(pool.config.pool_type, PoolType::Trade) {

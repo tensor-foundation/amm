@@ -35,17 +35,12 @@
     {
       "name": "TAKER_FEE_BPS",
       "type": "u16",
-      "value": "150"
+      "value": "200"
     },
     {
-      "name": "MAKER_REBATE_BPS",
-      "type": "u16",
-      "value": "25"
-    },
-    {
-      "name": "TAKER_BROKER_PCT",
-      "type": "u64",
-      "value": "0"
+      "name": "BROKER_FEE_PCT",
+      "type": "u8",
+      "value": "50"
     },
     {
       "name": "DEPOSIT_RECEIPT_SIZE",
@@ -762,15 +757,19 @@
           "name": "takerBroker",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
-            "The taker broker account that receives the taker fees."
+            "The account that receives the taker broker fee."
           ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "ammProgram",
@@ -996,15 +995,19 @@
           "name": "takerBroker",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
-            "The taker broker account that receives the taker fees."
+            "The account that receives the taker broker fee."
           ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "cosigner",
@@ -1224,15 +1227,19 @@
           "name": "takerBroker",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
-            "The taker broker account that receives the taker fees."
+            "The account that receives the taker broker fee."
           ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "cosigner",
@@ -1360,13 +1367,20 @@
         {
           "name": "takerBroker",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The account that receives the taker broker fee."
+          ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "ammProgram",
@@ -1547,13 +1561,20 @@
         {
           "name": "takerBroker",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The account that receives the taker broker fee."
+          ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "cosigner",
@@ -1674,13 +1695,20 @@
         {
           "name": "takerBroker",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The account that receives the taker broker fee."
+          ]
         },
         {
           "name": "makerBroker",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The account that receives the maker broker fee."
+          ]
         },
         {
           "name": "cosigner",
@@ -2160,6 +2188,10 @@
             "type": {
               "defined": "NullableOption<u16>"
             }
+          },
+          {
+            "name": "makerBrokerPct",
+            "type": "u8"
           }
         ]
       }
@@ -2415,7 +2447,7 @@
     {
       "code": 12006,
       "name": "MissingFees",
-      "msg": "when setting up a Trade pool, must provide fee bps & fee vault"
+      "msg": "when setting up a Trade pool, must provide fee bps"
     },
     {
       "code": 12007,

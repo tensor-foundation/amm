@@ -47,6 +47,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     delta: 0n,
     mmCompoundFees: false,
     mmFeeBps: 100,
+    makerBrokerPct: 0,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.

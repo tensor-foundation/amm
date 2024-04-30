@@ -192,6 +192,7 @@ pub async fn setup_default_pool<'a>(
         delta: delta.unwrap_or(1),
         mm_compound_fees: mm_compound_fees.unwrap_or(false),
         mm_fee_bps,
+        maker_broker_pct: 0,
     };
 
     let mut builder = CreatePoolBuilder::new();

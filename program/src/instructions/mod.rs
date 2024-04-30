@@ -36,7 +36,7 @@ pub use t22_withdraw_nft::*;
 pub use withdraw_nft::*;
 pub use withdraw_sol::*;
 
-use crate::constants::{HUNDRED_PCT_BPS, MAKER_REBATE_BPS, TAKER_BROKER_PCT, TAKER_FEE_BPS};
+use crate::constants::{HUNDRED_PCT_BPS, TAKER_FEE_BPS};
 use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount};
@@ -44,9 +44,9 @@ use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
 use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
-use vipers::{throw_err, unwrap_checked};
+use vipers::{throw_err, unwrap_checked, unwrap_int};
 
-use self::constants::TFEE_PROGRAM_ID;
+use self::constants::{BROKER_FEE_PCT, TFEE_PROGRAM_ID};
 
 pub static MPL_TOKEN_AUTH_RULES_ID: Pubkey = pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
 
@@ -266,42 +266,44 @@ pub struct ProgNftShared<'info> {
 }
 
 pub struct Fees {
-    pub tamm_fee: u64,
-    pub maker_rebate: u64,
-    pub broker_fee: u64,
     pub taker_fee: u64,
+    pub tamm_fee: u64,
+    pub maker_broker_fee: u64,
+    pub taker_broker_fee: u64,
 }
 
-pub fn calc_fees_rebates(amount: u64) -> Result<Fees> {
-    // Fee paid by the taker: maker_rebate + taker_fee + broker_fee + tamm_fee.
-    // For token pools, this is the total fee paid by the taker.
-    // For trade pools there is the additional mm_fee which is paid by the taker.
+pub fn calc_taker_fees(amount: u64, maker_broker_pct: u8) -> Result<Fees> {
+    // Taker fee: protocol and broker fees.
     let taker_fee = unwrap_checked!({
         (TAKER_FEE_BPS as u64)
             .checked_mul(amount)?
             .checked_div(HUNDRED_PCT_BPS as u64)
     });
 
-    // Rebate back to maker, calculated from the current price and taken out of taker fee.
-    let maker_rebate = unwrap_checked!({
-        (MAKER_REBATE_BPS as u64)
-            .checked_mul(amount)?
-            .checked_div(HUNDRED_PCT_BPS as u64)
+    // Broker fees are a percentage of the taker fee.
+    let broker_fees = unwrap_checked!({
+        (BROKER_FEE_PCT as u64)
+            .checked_mul(taker_fee)?
+            .checked_div(100u64)
     });
 
-    // Remaining fee after the maker rebate is deducted.
-    let rem_fee = unwrap_checked!({ taker_fee.checked_sub(maker_rebate) });
+    // The protocol is the remainder of the taker fee.
+    let tamm_fee = unwrap_int!(taker_fee.checked_sub(broker_fees));
 
-    // Broker fee is a percentage of the remaining fee after the maker rebate is deducted.
-    let broker_fee = unwrap_checked!({ rem_fee.checked_mul(TAKER_BROKER_PCT)?.checked_div(100) });
+    // Maker broker fee calculated as a percentage of the total brokers fee.
+    let maker_broker_fee = unwrap_checked!({
+        (maker_broker_pct as u64)
+            .checked_mul(broker_fees)?
+            .checked_div(100u64)
+    });
 
-    // Tamm fee is the remaining fee after the broker fee is deducted.
-    let tamm_fee = unwrap_checked!({ rem_fee.checked_sub(broker_fee) });
+    // Remaining broker fee is the taker broker fee.
+    let taker_broker_fee = unwrap_int!(broker_fees.checked_sub(maker_broker_fee));
 
     Ok(Fees {
-        tamm_fee,
-        maker_rebate,
-        broker_fee,
         taker_fee,
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
     })
 }

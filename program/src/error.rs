@@ -27,7 +27,7 @@ pub enum ErrorCode {
     BadEscrowAccount = 6005,
 
     // 6006 | 0x1776
-    #[msg("when setting up a Trade pool, must provide fee bps & fee vault")]
+    #[msg("when setting up a Trade pool, must provide fee bps")]
     MissingFees = 6006,
 
     // 6007 | 0x1777

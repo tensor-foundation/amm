@@ -16,6 +16,7 @@ import {
   createPool,
   createPoolThrows,
   createWhitelistV2,
+  tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
 
@@ -209,7 +210,7 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
     whitelist,
     owner: updateAuthority,
     config: {
-      ...tradePoolConfig,
+      ...tokenPoolConfig,
       poolType: PoolType.Token,
       curveType: CurveType.Exponential,
       delta: 10_000n, // 100% delta, basis points
@@ -264,6 +265,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
       startingPrice: 1n,
       mmCompoundFees: false,
       mmFeeBps: 100, // this fee should not be allowed
+      makerBrokerPct: 0,
     },
     t,
     // 0x2ef1 - 12017 DeltaTooLarge

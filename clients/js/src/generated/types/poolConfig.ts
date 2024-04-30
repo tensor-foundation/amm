@@ -17,6 +17,8 @@ import {
   getStructEncoder,
   getU64Decoder,
   getU64Encoder,
+  getU8Decoder,
+  getU8Encoder,
 } from '@solana/codecs';
 import {
   CurveType,
@@ -42,6 +44,7 @@ export type PoolConfig = {
   delta: bigint;
   mmCompoundFees: boolean;
   mmFeeBps: NullableU16;
+  makerBrokerPct: number;
 };
 
 export type PoolConfigArgs = {
@@ -51,6 +54,7 @@ export type PoolConfigArgs = {
   delta: number | bigint;
   mmCompoundFees: boolean;
   mmFeeBps: NullableU16Args;
+  makerBrokerPct: number;
 };
 
 export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
@@ -61,6 +65,7 @@ export function getPoolConfigEncoder(): Encoder<PoolConfigArgs> {
     ['delta', getU64Encoder()],
     ['mmCompoundFees', getBooleanEncoder()],
     ['mmFeeBps', getNullableU16Encoder()],
+    ['makerBrokerPct', getU8Encoder()],
   ]);
 }
 
@@ -72,6 +77,7 @@ export function getPoolConfigDecoder(): Decoder<PoolConfig> {
     ['delta', getU64Decoder()],
     ['mmCompoundFees', getBooleanDecoder()],
     ['mmFeeBps', getNullableU16Decoder()],
+    ['makerBrokerPct', getU8Decoder()],
   ]);
 }
 

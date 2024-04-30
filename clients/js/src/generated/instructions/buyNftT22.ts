@@ -112,7 +112,7 @@ export type BuyNftT22Instruction<
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
       TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
+        ? WritableAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
@@ -198,7 +198,9 @@ export type BuyNftT22Input<
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   sharedEscrowAccount: Address<TAccountSharedEscrowAccount>;
-  takerBroker: Address<TAccountTakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
   ammProgram: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
@@ -285,7 +287,7 @@ export function getBuyNftT22Instruction<
       isWritable: true,
     },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -375,7 +377,9 @@ export type ParsedBuyNftT22Instruction<
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
     sharedEscrowAccount: TAccountMetas[12];
-    takerBroker: TAccountMetas[13];
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[13] | undefined;
+    /** The account that receives the maker broker fee. */
     makerBroker?: TAccountMetas[14] | undefined;
     ammProgram: TAccountMetas[15];
   };
@@ -422,7 +426,7 @@ export function parseBuyNftT22Instruction<
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       sharedEscrowAccount: getNextAccount(),
-      takerBroker: getNextAccount(),
+      takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
     },

@@ -19,8 +19,6 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   AMM_PROGRAM_ADDRESS,
-  CurveType,
-  PoolConfig,
   PoolType,
   fetchPool,
   findNftDepositReceiptPda,
@@ -36,6 +34,7 @@ import {
   getAndFundFeeVault,
   getTokenAmount,
   getTokenOwner,
+  tradePoolConfig,
 } from './_common.js';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
@@ -44,14 +43,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   const owner = await generateKeyPairSignerWithSol(client);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 0n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-  };
+  const config = tradePoolConfig;
 
   // Create whitelist with FVC where the NFT owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -115,7 +107,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
-  const minPrice = 900_000n;
+  const minPrice = 850_000n;
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({

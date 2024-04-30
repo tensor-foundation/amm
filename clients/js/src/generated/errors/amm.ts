@@ -19,7 +19,7 @@ export const enum AmmProgramErrorCode {
   BAD_FEE_ACCOUNT = 0x2ee4, // 12004
   /** BadEscrowAccount: escrow account doesn't match that stored on pool */
   BAD_ESCROW_ACCOUNT = 0x2ee5, // 12005
-  /** MissingFees: when setting up a Trade pool, must provide fee bps & fee vault */
+  /** MissingFees: when setting up a Trade pool, must provide fee bps */
   MISSING_FEES = 0x2ee6, // 12006
   /** FeesTooHigh: fees entered above allowed threshold */
   FEES_TOO_HIGH = 0x2ee7, // 12007
@@ -153,7 +153,7 @@ if (__DEV__) {
     ],
     [AmmProgramErrorCode.MISSING_FEES]: [
       'MissingFees',
-      `when setting up a Trade pool, must provide fee bps & fee vault`,
+      `when setting up a Trade pool, must provide fee bps`,
     ],
     [AmmProgramErrorCode.FEES_TOO_HIGH]: [
       'FeesTooHigh',

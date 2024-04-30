@@ -159,7 +159,7 @@ export type BuyNftInstruction<
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
       TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
+        ? WritableAccount<TAccountMakerBroker>
         : TAccountMakerBroker,
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
@@ -287,8 +287,9 @@ export type BuyNftInput<
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow: Address<TAccountSharedEscrow>;
-  /** The taker broker account that receives the taker fees. */
-  takerBroker: Address<TAccountTakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
   ammProgram: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
@@ -416,7 +417,7 @@ export function getBuyNftInstruction<
     authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -568,8 +569,9 @@ export type ParsedBuyNftInstruction<
     authRules: TAccountMetas[19];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
     sharedEscrow: TAccountMetas[20];
-    /** The taker broker account that receives the taker fees. */
-    takerBroker: TAccountMetas[21];
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[21] | undefined;
+    /** The account that receives the maker broker fee. */
     makerBroker?: TAccountMetas[22] | undefined;
     ammProgram: TAccountMetas[23];
   };
@@ -624,7 +626,7 @@ export function parseBuyNftInstruction<
       authorizationRulesProgram: getNextAccount(),
       authRules: getNextAccount(),
       sharedEscrow: getNextAccount(),
-      takerBroker: getNextAccount(),
+      takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
     },

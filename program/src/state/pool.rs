@@ -52,6 +52,7 @@ pub struct PoolConfig {
     pub delta: u64,
     pub mm_compound_fees: bool,
     pub mm_fee_bps: NullableOption<u16>,
+    pub maker_broker_pct: u8,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]

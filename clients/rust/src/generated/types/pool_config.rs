@@ -20,4 +20,5 @@ pub struct PoolConfig {
     pub delta: u64,
     pub mm_compound_fees: bool,
     pub mm_fee_bps: NullableU16,
+    pub maker_broker_pct: u8,
 }
