@@ -60,7 +60,7 @@ pub struct SellNftTokenPool {
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     pub auth_rules: solana_program::pubkey::Pubkey,
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    pub shared_escrow: solana_program::pubkey::Pubkey,
+    pub shared_escrow: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the maker broker fee.
@@ -179,10 +179,17 @@ impl SellNftTokenPool {
             self.auth_rules,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.shared_escrow,
-            false,
-        ));
+        if let Some(shared_escrow) = self.shared_escrow {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                shared_escrow,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         if let Some(taker_broker) = self.taker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 taker_broker,
@@ -284,7 +291,7 @@ pub struct SellNftTokenPoolInstructionArgs {
 ///   19. `[]` instructions
 ///   20. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
 ///   21. `[]` auth_rules
-///   22. `[writable]` shared_escrow
+///   22. `[writable, optional]` shared_escrow
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[writable, optional]` maker_broker
 ///   25. `[signer, optional]` cosigner
@@ -489,10 +496,14 @@ impl SellNftTokenPoolBuilder {
         self.auth_rules = Some(auth_rules);
         self
     }
+    /// `[optional account]`
     /// The shared escrow account for pools that pool liquidity in a shared account.
     #[inline(always)]
-    pub fn shared_escrow(&mut self, shared_escrow: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.shared_escrow = Some(shared_escrow);
+    pub fn shared_escrow(
+        &mut self,
+        shared_escrow: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.shared_escrow = shared_escrow;
         self
     }
     /// `[optional account]`
@@ -615,7 +626,7 @@ impl SellNftTokenPoolBuilder {
                     solana_program::pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg"),
                 ),
                 auth_rules: self.auth_rules.expect("auth_rules is not set"),
-                shared_escrow: self.shared_escrow.expect("shared_escrow is not set"),
+                shared_escrow: self.shared_escrow,
                 taker_broker: self.taker_broker,
                 maker_broker: self.maker_broker,
                 cosigner: self.cosigner,
@@ -687,7 +698,7 @@ pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
@@ -754,7 +765,7 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    pub shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+    pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
@@ -938,10 +949,17 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
             *self.auth_rules.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.shared_escrow.key,
-            false,
-        ));
+        if let Some(shared_escrow) = self.shared_escrow {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *shared_escrow.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         if let Some(taker_broker) = self.taker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *taker_broker.key,
@@ -1025,7 +1043,9 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
         account_infos.push(self.instructions.clone());
         account_infos.push(self.authorization_rules_program.clone());
         account_infos.push(self.auth_rules.clone());
-        account_infos.push(self.shared_escrow.clone());
+        if let Some(shared_escrow) = self.shared_escrow {
+            account_infos.push(shared_escrow.clone());
+        }
         if let Some(taker_broker) = self.taker_broker {
             account_infos.push(taker_broker.clone());
         }
@@ -1075,7 +1095,7 @@ impl<'a, 'b> SellNftTokenPoolCpi<'a, 'b> {
 ///   19. `[]` instructions
 ///   20. `[]` authorization_rules_program
 ///   21. `[]` auth_rules
-///   22. `[writable]` shared_escrow
+///   22. `[writable, optional]` shared_escrow
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[writable, optional]` maker_broker
 ///   25. `[signer, optional]` cosigner
@@ -1318,13 +1338,14 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self.instruction.auth_rules = Some(auth_rules);
         self
     }
+    /// `[optional account]`
     /// The shared escrow account for pools that pool liquidity in a shared account.
     #[inline(always)]
     pub fn shared_escrow(
         &mut self,
-        shared_escrow: &'b solana_program::account_info::AccountInfo<'a>,
+        shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.shared_escrow = Some(shared_escrow);
+        self.instruction.shared_escrow = shared_escrow;
         self
     }
     /// `[optional account]`
@@ -1525,10 +1546,7 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
 
             auth_rules: self.instruction.auth_rules.expect("auth_rules is not set"),
 
-            shared_escrow: self
-                .instruction
-                .shared_escrow
-                .expect("shared_escrow is not set"),
+            shared_escrow: self.instruction.shared_escrow,
 
             taker_broker: self.instruction.taker_broker,
 

@@ -324,8 +324,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     cosigner,
     minPrice,
     rulesAccPresent: false,
@@ -373,9 +371,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
 
   const owner = await generateKeyPairSignerWithSol(client);
   const nftOwner = await generateKeyPairSignerWithSol(client);
-
-  const takerBroker = await generateKeyPairSignerWithSol(client);
-  const makerBroker = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
 
@@ -457,9 +452,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: owner.address, // No shared escrow so we put a dummy account here for now
-    takerBroker: takerBroker.address,
-    makerBroker: makerBroker.address,
     cosigner,
     minPrice,
     rulesAccPresent: false,

@@ -19,7 +19,7 @@ use tensor_toolbox::{
     transfer_lamports_from_pda,
 };
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
-use vipers::{throw_err, unwrap_int, Validate};
+use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
 
 use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
@@ -123,7 +123,7 @@ pub struct SellNftTradePoolT22<'info> {
 
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
     #[account(mut)]
-    pub shared_escrow: UncheckedAccount<'info>,
+    pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
     /// CHECK: The caller decides who receives the fee, so no constraints are needed.
@@ -284,21 +284,27 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // to the pool, to make payments cleaner. After this, we can always send from the pool
     // so the logic is simpler.
     if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+        let incoming_shared_escrow = unwrap_opt!(
+            ctx.accounts.shared_escrow.as_ref(),
+            ErrorCode::BadSharedEscrow
+        )
+        .to_account_info();
+
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
-            &ctx.accounts.shared_escrow,
+            &incoming_shared_escrow,
             &ctx.accounts.owner.to_account_info(),
         )?;
 
         // Validate it's the correct account: the stored escrow account matches the one passed in.
-        if *ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+        if incoming_shared_escrow.key != stored_shared_escrow {
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
             __program: &ctx.accounts.escrow_program.to_account_info(),
-            margin_account: &ctx.accounts.shared_escrow,
+            margin_account: &incoming_shared_escrow,
             pool: &ctx.accounts.pool.to_account_info(),
             owner: &ctx.accounts.owner.to_account_info(),
             destination: &ctx.accounts.pool.to_account_info(),
@@ -310,11 +316,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
             },
         }
         .invoke_signed(signer_seeds)?;
-
-        ctx.accounts.shared_escrow.to_account_info()
-    } else {
-        ctx.accounts.pool.to_account_info()
-    };
+    }
 
     let mut left_for_seller = current_price;
 
@@ -363,9 +365,15 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     if pool.config.mm_compound_fees {
         // Send back to shared escrow
         if pool.shared_escrow.value().is_some() {
+            let incoming_shared_escrow = unwrap_opt!(
+                ctx.accounts.shared_escrow.as_ref(),
+                ErrorCode::BadSharedEscrow
+            )
+            .to_account_info();
+
             transfer_lamports_from_pda(
                 &ctx.accounts.pool.to_account_info(),
-                &ctx.accounts.shared_escrow.to_account_info(),
+                &incoming_shared_escrow,
                 mm_fee,
             )?;
         }

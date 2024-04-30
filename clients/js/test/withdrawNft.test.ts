@@ -128,8 +128,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     cosigner,
     minPrice,
     rulesAccPresent: false,

@@ -286,7 +286,7 @@ export type BuyNftInput<
   /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
-  sharedEscrow: Address<TAccountSharedEscrow>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
   /** The account that receives the maker broker fee. */
@@ -568,7 +568,7 @@ export type ParsedBuyNftInstruction<
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
     authRules: TAccountMetas[19];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow: TAccountMetas[20];
+    sharedEscrow?: TAccountMetas[20] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[21] | undefined;
     /** The account that receives the maker broker fee. */
@@ -625,7 +625,7 @@ export function parseBuyNftInstruction<
       instructions: getNextAccount(),
       authorizationRulesProgram: getNextAccount(),
       authRules: getNextAccount(),
-      sharedEscrow: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),

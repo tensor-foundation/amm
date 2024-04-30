@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::{self, WhitelistV2};
-use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
+use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
@@ -105,7 +105,7 @@ pub struct BuyNftT22<'info> {
 
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared_escrow acc stored on pool
     #[account(mut)]
-    pub shared_escrow_account: UncheckedAccount<'info>,
+    pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
     /// CHECK: The caller decides who receives the fee, so no constraints are needed.
@@ -263,16 +263,23 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match pool.shared_escrow.value() {
-            Some(stored_shared_escrow_account) => {
+        PoolType::Trade => match &pool.shared_escrow.value() {
+            Some(stored_shared_escrow) => {
+                let incoming_shared_escrow = unwrap_opt!(
+                    ctx.accounts.shared_escrow.as_ref(),
+                    ErrorCode::BadSharedEscrow
+                )
+                .to_account_info();
+
                 assert_decode_margin_account(
-                    &ctx.accounts.shared_escrow_account,
+                    &incoming_shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
-                if *ctx.accounts.shared_escrow_account.key != *stored_shared_escrow_account {
+
+                if incoming_shared_escrow.key != *stored_shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
-                ctx.accounts.shared_escrow_account.to_account_info()
+                incoming_shared_escrow
             }
             None => ctx.accounts.pool.to_account_info(),
         },

@@ -749,6 +749,7 @@
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The shared escrow account for pools that pool liquidity in a shared account."
           ]
@@ -987,6 +988,7 @@
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The shared escrow account for pools that pool liquidity in a shared account."
           ]
@@ -1219,6 +1221,7 @@
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The shared escrow account for pools that pool liquidity in a shared account."
           ]
@@ -1360,9 +1363,10 @@
           "isSigner": false
         },
         {
-          "name": "sharedEscrowAccount",
+          "name": "sharedEscrow",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "takerBroker",
@@ -1556,7 +1560,8 @@
         {
           "name": "sharedEscrow",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "takerBroker",
@@ -1690,7 +1695,8 @@
         {
           "name": "sharedEscrow",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "takerBroker",

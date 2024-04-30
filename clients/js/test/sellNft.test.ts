@@ -1,52 +1,49 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-    ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-    MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    MPL_TOKEN_METADATA_PROGRAM_ID,
-    SYSVARS_INSTRUCTIONS,
-    TSWAP_PROGRAM_ID,
-    createDefaultSolanaClient,
-    createDefaultTransaction,
-    generateKeyPairSignerWithSol,
-    signAndSendTransaction,
+  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
+  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
+  MPL_TOKEN_METADATA_PROGRAM_ID,
+  SYSVARS_INSTRUCTIONS,
+  TSWAP_PROGRAM_ID,
+  createDefaultSolanaClient,
+  createDefaultTransaction,
+  generateKeyPairSignerWithSol,
+  signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
-    createDefaultNft,
-    findTokenRecordPda,
+  createDefaultNft,
+  findTokenRecordPda,
 } from '@tensor-foundation/toolkit-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-    AMM_PROGRAM_ADDRESS,
-    CurveType,
-    Pool,
-    PoolConfig,
-    PoolType,
-    fetchPool,
-    findNftDepositReceiptPda,
-    getDepositSolInstruction,
-    getSellNftTokenPoolInstruction,
-    getSellNftTradePoolInstruction,
-    isSol,
+  AMM_PROGRAM_ADDRESS,
+  CurveType,
+  Pool,
+  PoolConfig,
+  PoolType,
+  fetchPool,
+  findNftDepositReceiptPda,
+  getDepositSolInstruction,
+  getSellNftTokenPoolInstruction,
+  getSellNftTradePoolInstruction,
+  isSol,
 } from '../src/index.js';
 import {
-    BASIS_POINTS,
-    BROKER_FEE_PCT,
-    DEFAULT_PUBKEY,
-    ONE_SOL,
-    TAKER_FEE_BPS,
-    assertTammNoop,
-    createAndFundEscrow,
-    createPool,
-    createPoolAndWhitelist,
-    createWhitelistV2,
-    findAtaPda,
-    getAndFundFeeVault,
-    getTokenAmount,
-    getTokenOwner,
-    tokenPoolConfig,
-    tradePoolConfig,
+  DEFAULT_PUBKEY,
+  ONE_SOL,
+  assertTammNoop,
+  createAndFundEscrow,
+  createPool,
+  createPoolAndWhitelist,
+  createWhitelistV2,
+  findAtaPda,
+  getAndFundFeeVault,
+  getTokenAmount,
+  getTokenOwner,
+  tokenPoolConfig,
+  tradePoolConfig,
 } from './_common.js';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
@@ -56,15 +53,11 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   const nftOwner = await generateKeyPairSignerWithSol(client);
   const buyer = await generateKeyPairSignerWithSol(client);
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 100_000n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-    makerBrokerPct: 0,
-  };
+  const makerBroker = await generateKeyPairSignerWithSol(client);
+  const takerBroker = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
   const depositAmount = config.startingPrice * 10n;
 
   // Create a whitelist and a funded pool.
@@ -82,7 +75,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 
   // Correct pool type.
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
-  t.assert(poolAccount.data.config.mmFeeBps === 100);
+  t.assert(poolAccount.data.config.mmFeeBps === 50);
 
   // Mint NFT
   const { mint, metadata, masterEdition } = await createDefaultNft(
@@ -136,8 +129,8 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     cosigner,
     minPrice,
     rulesAccPresent: false,
@@ -183,7 +176,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 
   // This is a Trade pool without a shared escrow, so funds come from the pool.
 
-  // Because this is a sell our starting price is shifted down one delta.
+  // Because this is a trade pool sell our starting price is shifted down one delta.
   const price = config.startingPrice - config.delta;
 
   // The pool pays out the current_price - mm_fees, if compounded.
@@ -466,7 +459,6 @@ test('it can sell an NFT into a Token pool', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: owner.address, // No shared escrow so we put a dummy account here for now
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
     cosigner,
@@ -631,8 +623,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     cosigner,
     minPrice,
     rulesAccPresent: false,
@@ -743,8 +733,6 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     cosigner,
     minPrice,
     rulesAccPresent: false,

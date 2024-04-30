@@ -42,7 +42,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   // Pool and NFT owner.
   const owner = await generateKeyPairSignerWithSol(client);
-
   // Buyer of the NFT.
   const buyer = await generateKeyPairSignerWithSol(client);
 
@@ -159,8 +158,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     maxPrice,
     rulesAccPresent: false,
     authorizationData: none(),
@@ -327,7 +324,6 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: owner.address, // dummy value
     takerBroker: takerBroker.address,
     makerBroker: makerBroker.address,
     maxPrice,
@@ -500,8 +496,6 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     maxPrice,
     rulesAccPresent: false,
     authorizationData: none(),

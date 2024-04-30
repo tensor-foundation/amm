@@ -317,7 +317,7 @@ export type SellNftTokenPoolInput<
   /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
-  sharedEscrow: Address<TAccountSharedEscrow>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
   /** The account that receives the maker broker fee. */
@@ -639,7 +639,7 @@ export type ParsedSellNftTokenPoolInstruction<
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
     authRules: TAccountMetas[21];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow: TAccountMetas[22];
+    sharedEscrow?: TAccountMetas[22] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[23] | undefined;
     /** The account that receives the maker broker fee. */
@@ -705,7 +705,7 @@ export function parseSellNftTokenPoolInstruction<
       instructions: getNextAccount(),
       authorizationRulesProgram: getNextAccount(),
       authRules: getNextAccount(),
-      sharedEscrow: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),

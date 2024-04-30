@@ -59,7 +59,7 @@ export type BuyNftT22Instruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountSharedEscrowAccount extends string | IAccountMeta<string> = string,
+  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
@@ -105,9 +105,9 @@ export type BuyNftT22Instruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountSharedEscrowAccount extends string
-        ? WritableAccount<TAccountSharedEscrowAccount>
-        : TAccountSharedEscrowAccount,
+      TAccountSharedEscrow extends string
+        ? WritableAccount<TAccountSharedEscrow>
+        : TAccountSharedEscrow,
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
@@ -177,7 +177,7 @@ export type BuyNftT22Input<
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountSharedEscrowAccount extends string = string,
+  TAccountSharedEscrow extends string = string,
   TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountAmmProgram extends string = string,
@@ -197,7 +197,7 @@ export type BuyNftT22Input<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  sharedEscrowAccount: Address<TAccountSharedEscrowAccount>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
   /** The account that receives the maker broker fee. */
@@ -220,7 +220,7 @@ export function getBuyNftT22Instruction<
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountSharedEscrowAccount extends string,
+  TAccountSharedEscrow extends string,
   TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
   TAccountAmmProgram extends string,
@@ -238,7 +238,7 @@ export function getBuyNftT22Instruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountSharedEscrowAccount,
+    TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
     TAccountAmmProgram
@@ -257,7 +257,7 @@ export function getBuyNftT22Instruction<
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
-  TAccountSharedEscrowAccount,
+  TAccountSharedEscrow,
   TAccountTakerBroker,
   TAccountMakerBroker,
   TAccountAmmProgram
@@ -282,10 +282,7 @@ export function getBuyNftT22Instruction<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    sharedEscrowAccount: {
-      value: input.sharedEscrowAccount ?? null,
-      isWritable: true,
-    },
+    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
@@ -323,7 +320,7 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.sharedEscrowAccount),
+      getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.ammProgram),
@@ -346,7 +343,7 @@ export function getBuyNftT22Instruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountSharedEscrowAccount,
+    TAccountSharedEscrow,
     TAccountTakerBroker,
     TAccountMakerBroker,
     TAccountAmmProgram
@@ -376,7 +373,7 @@ export type ParsedBuyNftT22Instruction<
     tokenProgram: TAccountMetas[9];
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
-    sharedEscrowAccount: TAccountMetas[12];
+    sharedEscrow?: TAccountMetas[12] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[13] | undefined;
     /** The account that receives the maker broker fee. */
@@ -425,7 +422,7 @@ export function parseBuyNftT22Instruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      sharedEscrowAccount: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),

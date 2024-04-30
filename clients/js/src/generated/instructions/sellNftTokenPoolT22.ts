@@ -210,7 +210,7 @@ export type SellNftTokenPoolT22Input<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  sharedEscrow: Address<TAccountSharedEscrow>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
   /** The account that receives the maker broker fee. */
@@ -405,7 +405,7 @@ export type ParsedSellNftTokenPoolT22Instruction<
     tokenProgram: TAccountMetas[9];
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
-    sharedEscrow: TAccountMetas[12];
+    sharedEscrow?: TAccountMetas[12] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[13] | undefined;
     /** The account that receives the maker broker fee. */
@@ -461,7 +461,7 @@ export function parseSellNftTokenPoolT22Instruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      sharedEscrow: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
