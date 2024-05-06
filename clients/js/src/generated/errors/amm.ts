@@ -101,6 +101,8 @@ export const enum AmmProgramErrorCode {
   UNSUPPORTED_CURRENCY = 0x2f0d, // 12045
   /** InvalidPoolAmount: Invalid pool amount */
   INVALID_POOL_AMOUNT = 0x2f0e, // 12046
+  /** WrongBrokerAccount: Wrong broker account */
+  WRONG_BROKER_ACCOUNT = 0x2f0f, // 12047
 }
 
 export class AmmProgramError extends Error {
@@ -305,6 +307,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.INVALID_POOL_AMOUNT]: [
       'InvalidPoolAmount',
       `Invalid pool amount`,
+    ],
+    [AmmProgramErrorCode.WRONG_BROKER_ACCOUNT]: [
+      'WrongBrokerAccount',
+      `Wrong broker account`,
     ],
   };
 }

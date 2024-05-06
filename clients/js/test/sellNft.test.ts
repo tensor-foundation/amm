@@ -65,6 +65,8 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     client,
     payer: buyer,
     owner,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     config,
     depositAmount,
     conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
@@ -211,7 +213,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     delta: 100_000n,
     mmCompoundFees: false,
     mmFeeBps: 100,
-    makerBrokerPct: 0,
   };
 
   const depositAmount = config.startingPrice * 10n;
@@ -240,6 +241,8 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     client,
     payer: buyer,
     owner,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     config,
     sharedEscrow,
     depositAmount,
@@ -379,6 +382,8 @@ test('it can sell an NFT into a Token pool', async (t) => {
     payer: buyer,
     whitelist,
     owner,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     config,
   });
 

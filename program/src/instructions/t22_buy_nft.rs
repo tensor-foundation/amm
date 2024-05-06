@@ -10,7 +10,10 @@ use tensor_toolbox::token_2022::validate_mint;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
-use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
+use self::{
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+    program::AmmProgram,
+};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -107,15 +110,21 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
-    /// The account that receives the taker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
-    pub taker_broker: Option<UncheckedAccount<'info>>,
-
     /// The account that receives the maker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
+    /// CHECK: Must match the pool's maker_broker
+    #[account(
+        mut,
+        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    /// The account that receives the taker broker fee.
+    /// CHECK: Must match the pool's taker_broker
+    #[account(
+        mut,
+        constraint = Some(&taker_broker.key()) == pool.taker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
+    pub taker_broker: Option<UncheckedAccount<'info>>,
 
     pub amm_program: Program<'info, AmmProgram>,
 }
@@ -185,7 +194,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
-    } = calc_taker_fees(current_price, pool.config.maker_broker_pct)?;
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
@@ -295,7 +304,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&destination),
+            .unwrap_or(&ctx.accounts.fee_vault),
         maker_broker_fee,
     )?;
     ctx.accounts.transfer_lamports_min_balance(
@@ -304,7 +313,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&destination),
+            .unwrap_or(&ctx.accounts.fee_vault),
         taker_broker_fee,
     )?;
 

@@ -136,7 +136,6 @@ export const tradePoolConfig: PoolConfig = {
   delta: DEFAULT_DELTA,
   mmCompoundFees: false,
   mmFeeBps: 50,
-  makerBrokerPct: 50,
 };
 
 export const tokenPoolConfig: PoolConfig = {
@@ -223,6 +222,8 @@ export interface CreatePoolParams {
   payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
   sharedEscrow?: Address;
+  makerBroker?: Address;
+  takerBroker?: Address;
   poolId?: Uint8Array;
   config?: PoolConfig;
   expireInSec?: number;
@@ -248,6 +249,8 @@ export async function createPool({
   payer = owner,
   cosigner,
   sharedEscrow,
+  makerBroker,
+  takerBroker,
   poolId,
   config,
   expireInSec,
@@ -266,7 +269,6 @@ export async function createPool({
       delta: 1n,
       mmCompoundFees: false,
       mmFeeBps: null,
-      makerBrokerPct: 0,
     };
   }
 
@@ -287,6 +289,8 @@ export async function createPool({
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    makerBroker: makerBroker ? some(makerBroker) : none(),
+    takerBroker: takerBroker ? some(takerBroker) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
   });
@@ -331,7 +335,6 @@ export async function createPoolThrows({
       delta: 1n,
       mmCompoundFees: false,
       mmFeeBps: null,
-      makerBrokerPct: 0,
     };
   }
 
@@ -352,6 +355,8 @@ export async function createPoolThrows({
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    makerBroker: none(),
+    takerBroker: none(),
     orderType: 0,
     expireInSec: null,
   });
@@ -397,6 +402,8 @@ export async function createPoolAndWhitelist({
   payer = owner,
   cosigner,
   sharedEscrow,
+  makerBroker,
+  takerBroker,
   poolId,
   config,
   depositAmount = 1_000_000n,
@@ -435,6 +442,8 @@ export async function createPoolAndWhitelist({
     owner,
     cosigner,
     sharedEscrow,
+    makerBroker,
+    takerBroker,
     poolId,
     config,
   });

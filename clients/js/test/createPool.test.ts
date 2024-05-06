@@ -265,7 +265,6 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
       startingPrice: 1n,
       mmCompoundFees: false,
       mmFeeBps: 100, // this fee should not be allowed
-      makerBrokerPct: 0,
     },
     t,
     // 0x2ef1 - 12017 DeltaTooLarge

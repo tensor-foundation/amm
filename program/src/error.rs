@@ -192,4 +192,8 @@ pub enum ErrorCode {
     // 6043 | 0x179b
     #[msg("Invalid pool amount")]
     InvalidPoolAmount,
+
+    // 6044 | 0x179c
+    #[msg("Wrong broker account")]
+    WrongBrokerAccount,
 }

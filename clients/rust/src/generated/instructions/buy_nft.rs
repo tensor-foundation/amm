@@ -56,10 +56,10 @@ pub struct BuyNft {
     pub auth_rules: solana_program::pubkey::Pubkey,
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: Option<solana_program::pubkey::Pubkey>,
-    /// The account that receives the taker broker fee.
-    pub taker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
+    /// The account that receives the taker broker fee.
+    pub taker_broker: Option<solana_program::pubkey::Pubkey>,
 
     pub amm_program: solana_program::pubkey::Pubkey,
 }
@@ -164,9 +164,9 @@ impl BuyNft {
                 false,
             ));
         }
-        if let Some(taker_broker) = self.taker_broker {
+        if let Some(maker_broker) = self.maker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                taker_broker,
+                maker_broker,
                 false,
             ));
         } else {
@@ -175,9 +175,9 @@ impl BuyNft {
                 false,
             ));
         }
-        if let Some(maker_broker) = self.maker_broker {
+        if let Some(taker_broker) = self.taker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                maker_broker,
+                taker_broker,
                 false,
             ));
         } else {
@@ -250,8 +250,8 @@ pub struct BuyNftInstructionArgs {
 ///   18. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
 ///   19. `[]` auth_rules
 ///   20. `[writable, optional]` shared_escrow
-///   21. `[writable, optional]` taker_broker
-///   22. `[writable, optional]` maker_broker
+///   21. `[writable, optional]` maker_broker
+///   22. `[writable, optional]` taker_broker
 ///   23. `[]` amm_program
 #[derive(Default)]
 pub struct BuyNftBuilder {
@@ -276,8 +276,8 @@ pub struct BuyNftBuilder {
     authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
     auth_rules: Option<solana_program::pubkey::Pubkey>,
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
-    taker_broker: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
+    taker_broker: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,
@@ -437,16 +437,6 @@ impl BuyNftBuilder {
         self
     }
     /// `[optional account]`
-    /// The account that receives the taker broker fee.
-    #[inline(always)]
-    pub fn taker_broker(
-        &mut self,
-        taker_broker: Option<solana_program::pubkey::Pubkey>,
-    ) -> &mut Self {
-        self.taker_broker = taker_broker;
-        self
-    }
-    /// `[optional account]`
     /// The account that receives the maker broker fee.
     #[inline(always)]
     pub fn maker_broker(
@@ -454,6 +444,16 @@ impl BuyNftBuilder {
         maker_broker: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
         self.maker_broker = maker_broker;
+        self
+    }
+    /// `[optional account]`
+    /// The account that receives the taker broker fee.
+    #[inline(always)]
+    pub fn taker_broker(
+        &mut self,
+        taker_broker: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.taker_broker = taker_broker;
         self
     }
     #[inline(always)]
@@ -542,8 +542,8 @@ impl BuyNftBuilder {
                 ),
                 auth_rules: self.auth_rules.expect("auth_rules is not set"),
                 shared_escrow: self.shared_escrow,
-                taker_broker: self.taker_broker,
                 maker_broker: self.maker_broker,
+                taker_broker: self.taker_broker,
                 amm_program: self.amm_program.expect("amm_program is not set"),
             };
         let args = BuyNftInstructionArgs {
@@ -607,10 +607,10 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The account that receives the taker broker fee.
-    pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The account that receives the taker broker fee.
+    pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -664,10 +664,10 @@ pub struct BuyNftCpi<'a, 'b> {
     pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
     /// The shared escrow account for pools that pool liquidity in a shared account.
     pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The account that receives the taker broker fee.
-    pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The account that receives the taker broker fee.
+    pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -703,8 +703,8 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             authorization_rules_program: accounts.authorization_rules_program,
             auth_rules: accounts.auth_rules,
             shared_escrow: accounts.shared_escrow,
-            taker_broker: accounts.taker_broker,
             maker_broker: accounts.maker_broker,
+            taker_broker: accounts.taker_broker,
             amm_program: accounts.amm_program,
             __args: args,
         }
@@ -834,9 +834,9 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(taker_broker) = self.taker_broker {
+        if let Some(maker_broker) = self.maker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *taker_broker.key,
+                *maker_broker.key,
                 false,
             ));
         } else {
@@ -845,9 +845,9 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
                 false,
             ));
         }
-        if let Some(maker_broker) = self.maker_broker {
+        if let Some(taker_broker) = self.taker_broker {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *maker_broker.key,
+                *taker_broker.key,
                 false,
             ));
         } else {
@@ -901,11 +901,11 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
         if let Some(shared_escrow) = self.shared_escrow {
             account_infos.push(shared_escrow.clone());
         }
-        if let Some(taker_broker) = self.taker_broker {
-            account_infos.push(taker_broker.clone());
-        }
         if let Some(maker_broker) = self.maker_broker {
             account_infos.push(maker_broker.clone());
+        }
+        if let Some(taker_broker) = self.taker_broker {
+            account_infos.push(taker_broker.clone());
         }
         account_infos.push(self.amm_program.clone());
         remaining_accounts
@@ -945,8 +945,8 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
 ///   18. `[]` authorization_rules_program
 ///   19. `[]` auth_rules
 ///   20. `[writable, optional]` shared_escrow
-///   21. `[writable, optional]` taker_broker
-///   22. `[writable, optional]` maker_broker
+///   21. `[writable, optional]` maker_broker
+///   22. `[writable, optional]` taker_broker
 ///   23. `[]` amm_program
 pub struct BuyNftCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCpiBuilderInstruction<'a, 'b>>,
@@ -977,8 +977,8 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             authorization_rules_program: None,
             auth_rules: None,
             shared_escrow: None,
-            taker_broker: None,
             maker_broker: None,
+            taker_broker: None,
             amm_program: None,
             max_price: None,
             rules_acc_present: None,
@@ -1160,16 +1160,6 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// The account that receives the taker broker fee.
-    #[inline(always)]
-    pub fn taker_broker(
-        &mut self,
-        taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.taker_broker = taker_broker;
-        self
-    }
-    /// `[optional account]`
     /// The account that receives the maker broker fee.
     #[inline(always)]
     pub fn maker_broker(
@@ -1177,6 +1167,16 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.maker_broker = maker_broker;
+        self
+    }
+    /// `[optional account]`
+    /// The account that receives the taker broker fee.
+    #[inline(always)]
+    pub fn taker_broker(
+        &mut self,
+        taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.taker_broker = taker_broker;
         self
     }
     #[inline(always)]
@@ -1336,9 +1336,9 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
 
             shared_escrow: self.instruction.shared_escrow,
 
-            taker_broker: self.instruction.taker_broker,
-
             maker_broker: self.instruction.maker_broker,
+
+            taker_broker: self.instruction.taker_broker,
 
             amm_program: self
                 .instruction
@@ -1376,8 +1376,8 @@ struct BuyNftCpiBuilderInstruction<'a, 'b> {
     authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     max_price: Option<u64>,
     rules_acc_present: Option<bool>,

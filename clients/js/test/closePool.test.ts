@@ -133,7 +133,6 @@ test('close pool fails if nfts still deposited', async (t) => {
     delta: 0n,
     mmCompoundFees: false,
     mmFeeBps: 100,
-    makerBrokerPct: 0,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.
@@ -243,7 +242,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     delta: 0n,
     mmCompoundFees: false,
     mmFeeBps: null,
-    makerBrokerPct: 0,
   };
 
   // Create whitelist with FVC where the NFT owner is the FVC.

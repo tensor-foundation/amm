@@ -19,7 +19,7 @@ pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + (32 + 8)                       // currency and currency amount
         + (3 * 4)                        // taker_sell_count, taker_buy_count, nfts_held
         + (2 * 4) + 8                    // pool stats
-        + (2 * 32)                       // shared escrow, cosigner
+        + (4 * 32)                       // shared escrow, cosigner, maker_broker, taker_broker
         + 4                              // max_taker_sell_count
         + 100                            // _reserved
         ;
@@ -52,7 +52,6 @@ pub struct PoolConfig {
     pub delta: u64,
     pub mm_compound_fees: bool,
     pub mm_fee_bps: NullableOption<u16>,
-    pub maker_broker_pct: u8,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
@@ -126,6 +125,11 @@ pub struct Pool {
     pub shared_escrow: NullableOption<Pubkey>,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: NullableOption<Pubkey>,
+    /// Maker broker fees will be sent to this address if populated.
+    pub maker_broker: NullableOption<Pubkey>,
+    /// Taker broker fees will be sent to this address if populated.
+    pub taker_broker: NullableOption<Pubkey>,
+
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
 

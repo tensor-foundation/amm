@@ -15,7 +15,10 @@ use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
 
-use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
+use self::{
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+    program::AmmProgram,
+};
 use super::*;
 use crate::{error::ErrorCode, *};
 
@@ -108,15 +111,21 @@ pub struct SellNftTokenPoolT22<'info> {
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
-    /// The account that receives the taker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
-    pub taker_broker: Option<UncheckedAccount<'info>>,
-
     /// The account that receives the maker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
+    /// CHECK: Must match the pool's maker_broker
+    #[account(
+        mut,
+        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    /// The account that receives the taker broker fee.
+    /// CHECK: Must match the pool's taker_broker
+    #[account(
+        mut,
+        constraint = Some(&taker_broker.key()) == pool.taker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
+    pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
@@ -227,7 +236,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
-    } = calc_taker_fees(current_price, pool.config.maker_broker_pct)?;
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
@@ -305,23 +314,25 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     )?;
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
 
-    // Broker fees. Transfer if accounts are specified, otherwise the funds just stay in the pool or shared escrow.
-    if let Some(ref account_info) = ctx.accounts.maker_broker {
-        transfer_lamports_from_pda(
-            &ctx.accounts.pool.to_account_info(),
-            &account_info.to_account_info(),
-            maker_broker_fee,
-        )?;
-    }
+    // Broker fees. Transfer if accounts are specified, otherwise the funds go to the fee_vault.
+    transfer_lamports_from_pda(
+        &ctx.accounts.pool.to_account_info(),
+        ctx.accounts
+            .maker_broker
+            .as_ref()
+            .unwrap_or(&ctx.accounts.fee_vault),
+        maker_broker_fee,
+    )?;
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(maker_broker_fee));
 
-    if let Some(ref account_info) = ctx.accounts.taker_broker {
-        transfer_lamports_from_pda(
-            &ctx.accounts.pool.to_account_info(),
-            &account_info.to_account_info(),
-            taker_broker_fee,
-        )?;
-    }
+    transfer_lamports_from_pda(
+        &ctx.accounts.pool.to_account_info(),
+        ctx.accounts
+            .taker_broker
+            .as_ref()
+            .unwrap_or(&ctx.accounts.fee_vault),
+        taker_broker_fee,
+    )?;
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
 
     // TODO: add royalty payment to T22 once available

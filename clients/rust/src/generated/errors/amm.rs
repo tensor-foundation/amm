@@ -151,6 +151,9 @@ pub enum AmmError {
     /// 12046 (0x2F0E) - Invalid pool amount
     #[error("Invalid pool amount")]
     InvalidPoolAmount,
+    /// 12047 (0x2F0F) - Wrong broker account
+    #[error("Wrong broker account")]
+    WrongBrokerAccount,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

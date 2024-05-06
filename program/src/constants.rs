@@ -30,4 +30,8 @@ pub const TAKER_FEE_BPS: u16 = 200;
 #[constant]
 pub const BROKER_FEE_PCT: u8 = 50;
 
+// 80% of Broker Fee, taker gets the remainder.
+#[constant]
+pub const MAKER_BROKER_PCT: u8 = 80;
+
 pub(crate) const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");

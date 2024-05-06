@@ -13,7 +13,10 @@ use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use crate::{error::ErrorCode, *};
 
-use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
+use self::{
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+    program::AmmProgram,
+};
 
 use super::*;
 
@@ -153,15 +156,21 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
-    /// The account that receives the taker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
-    pub taker_broker: Option<UncheckedAccount<'info>>,
-
     /// The account that receives the maker broker fee.
-    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
-    #[account(mut)]
+    /// CHECK: Must match the pool's maker_broker
+    #[account(
+        mut,
+        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    /// The account that receives the taker broker fee.
+    /// CHECK: Must match the pool's taker_broker
+    #[account(
+        mut,
+        constraint = Some(&taker_broker.key()) == pool.taker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
+    pub taker_broker: Option<UncheckedAccount<'info>>,
 
     pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
@@ -235,7 +244,7 @@ pub fn process_buy_nft<'info, 'b>(
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
-    } = calc_taker_fees(current_price, pool.config.maker_broker_pct)?;
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
@@ -357,7 +366,7 @@ pub fn process_buy_nft<'info, 'b>(
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&destination),
+            .unwrap_or(&ctx.accounts.fee_vault),
         maker_broker_fee,
     )?;
     ctx.accounts.transfer_lamports_min_balance(
@@ -366,7 +375,7 @@ pub fn process_buy_nft<'info, 'b>(
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&destination),
+            .unwrap_or(&ctx.accounts.fee_vault),
         taker_broker_fee,
     )?;
 
