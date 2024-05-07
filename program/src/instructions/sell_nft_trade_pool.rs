@@ -504,13 +504,14 @@ pub fn process_sell_nft_trade_pool<'info>(
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
     if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+        let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_taken = unwrap_int!(pool_initial_balance.checked_sub(pool_final_balance));
         pool.amount = unwrap_int!(pool.amount.checked_sub(lamports_taken));
 
         // Sanity check to avoid edge cases:
         require!(
-            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
             ErrorCode::InvalidPoolAmount
         );
     }

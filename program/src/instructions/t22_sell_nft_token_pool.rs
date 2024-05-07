@@ -357,6 +357,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     if pool.currency.is_sol() {
+        let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_taken =
             unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
@@ -364,7 +365,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
         // Sanity check to avoid edge cases:
         require!(
-            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
             ErrorCode::InvalidPoolAmount
         );
     }

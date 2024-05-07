@@ -29,7 +29,7 @@ impl ClosePool {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.rent_payer,
             false,
         ));
@@ -71,7 +71,7 @@ impl ClosePoolInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` rent_payer
+///   0. `[writable]` rent_payer
 ///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -214,7 +214,7 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.rent_payer.key,
             false,
         ));
@@ -266,7 +266,7 @@ impl<'a, 'b> ClosePoolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` rent_payer
+///   0. `[writable]` rent_payer
 ///   1. `[writable, signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` system_program

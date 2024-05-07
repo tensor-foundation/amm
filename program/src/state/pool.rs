@@ -24,11 +24,6 @@ pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + 100                            // _reserved
         ;
 
-/// Amount of SOL required to keep the pool account alive. Min "rent".
-// Sync this with any changes to the Pool size.
-#[constant]
-pub const POOL_STATE_BOND: u64 = 3814080;
-
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PoolType {

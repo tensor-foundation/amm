@@ -51,6 +51,7 @@ import {
   createWhitelistV2,
   findAtaPda,
   getAndFundFeeVault,
+  getPoolStateBond,
   tradePoolConfig,
 } from './_common.js';
 
@@ -503,18 +504,70 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   }
 });
 
-// test('closing the pool roundtrips fees + deposited SOL', async (t) => {
-//   // Todo: Implement this test
-//   // requires importing/porting over a bunch of tensor-common helpers
-// t.pass();
-// });
+test('closing a pool returns excess funds to the owner', async (t) => {
+  const client = createDefaultSolanaClient();
 
-// test('it closes the pool and withdraws SOL from any buys in the TRADE pool', async (t) => {
-//   const client = createDefaultSolanaClient();
-//   const owner = await generateKeyPairSignerWithSol(client);
-//   const buyer = await generateKeyPairSignerWithSol(client);
-//   const config = tradePoolConfig;
-//   const buyPrice = LAMPORTS_PER_SOL;
+  const txPayer = await generateKeyPairSignerWithSol(client);
+  const rentPayer = await generateKeyPairSignerWithSol(client);
 
-//   t.pass();
-// });
+  const depositAmount = 10_000_000n;
+
+  const poolStateBond = await getPoolStateBond(client);
+
+  // Create default pool
+  const { pool, owner, whitelist } = await createPoolAndWhitelist({
+    client,
+    payer: rentPayer,
+    funded: false,
+  });
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    whitelist,
+    owner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, txPayer),
+    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const ownerStartingBalance = (
+    await client.rpc.getBalance(owner.address).send()
+  ).value;
+  const rentPayerStartingBalance = (
+    await client.rpc.getBalance(rentPayer.address).send()
+  ).value;
+
+  // Close the pool
+  const closePoolIx = getClosePoolInstruction({
+    rentPayer: rentPayer.address,
+    owner,
+    pool,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, txPayer),
+    (tx) => appendTransactionInstruction(closePoolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Then the pool is closed.
+  const maybePoolAccount = await fetchMaybePool(client.rpc, pool);
+  t.assert(!maybePoolAccount.exists);
+
+  const ownerEndingBalance = (await client.rpc.getBalance(owner.address).send())
+    .value;
+  const rentPayerEndingBalance = (
+    await client.rpc.getBalance(rentPayer.address).send()
+  ).value;
+
+  // The owner should have received the excess funds.
+  t.assert(ownerEndingBalance === ownerStartingBalance + depositAmount);
+
+  // The original rent payer should have received the pool rent back.
+  t.assert(rentPayerEndingBalance === rentPayerStartingBalance + poolStateBond);
+});
