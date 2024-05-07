@@ -83,8 +83,8 @@ export type BuyNftInstruction<
     | IAccountMeta<string> = 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
   TAccountAuthRules extends string | IAccountMeta<string> = string,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -155,12 +155,12 @@ export type BuyNftInstruction<
       TAccountSharedEscrow extends string
         ? WritableAccount<TAccountSharedEscrow>
         : TAccountSharedEscrow,
+      TAccountMakerBroker extends string
+        ? WritableAccount<TAccountMakerBroker>
+        : TAccountMakerBroker,
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
-      TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
-        : TAccountMakerBroker,
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
         : TAccountAmmProgram,
@@ -241,8 +241,8 @@ export type BuyNftInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
   TAccountSharedEscrow extends string = string,
-  TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountTakerBroker extends string = string,
   TAccountAmmProgram extends string = string,
 > = {
   /**
@@ -286,10 +286,11 @@ export type BuyNftInput<
   /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
-  sharedEscrow: Address<TAccountSharedEscrow>;
-  /** The taker broker account that receives the taker fees. */
-  takerBroker: Address<TAccountTakerBroker>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
   ammProgram: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   rulesAccPresent: BuyNftInstructionDataArgs['rulesAccPresent'];
@@ -320,8 +321,8 @@ export function getBuyNftInstruction<
   TAccountAuthorizationRulesProgram extends string,
   TAccountAuthRules extends string,
   TAccountSharedEscrow extends string,
-  TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountTakerBroker extends string,
   TAccountAmmProgram extends string,
 >(
   input: BuyNftInput<
@@ -346,8 +347,8 @@ export function getBuyNftInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountAmmProgram
   >
 ): BuyNftInstruction<
@@ -373,8 +374,8 @@ export function getBuyNftInstruction<
   TAccountAuthorizationRulesProgram,
   TAccountAuthRules,
   TAccountSharedEscrow,
-  TAccountTakerBroker,
   TAccountMakerBroker,
+  TAccountTakerBroker,
   TAccountAmmProgram
 > {
   // Program address.
@@ -415,8 +416,8 @@ export function getBuyNftInstruction<
     },
     authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -478,8 +479,8 @@ export function getBuyNftInstruction<
       getAccountMeta(accounts.authorizationRulesProgram),
       getAccountMeta(accounts.authRules),
       getAccountMeta(accounts.sharedEscrow),
-      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.ammProgram),
       ...remainingAccounts,
     ],
@@ -510,8 +511,8 @@ export function getBuyNftInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountAmmProgram
   >;
 
@@ -567,10 +568,11 @@ export type ParsedBuyNftInstruction<
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
     authRules: TAccountMetas[19];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow: TAccountMetas[20];
-    /** The taker broker account that receives the taker fees. */
-    takerBroker: TAccountMetas[21];
-    makerBroker?: TAccountMetas[22] | undefined;
+    sharedEscrow?: TAccountMetas[20] | undefined;
+    /** The account that receives the maker broker fee. */
+    makerBroker?: TAccountMetas[21] | undefined;
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[22] | undefined;
     ammProgram: TAccountMetas[23];
   };
   data: BuyNftInstructionData;
@@ -623,9 +625,9 @@ export function parseBuyNftInstruction<
       instructions: getNextAccount(),
       authorizationRulesProgram: getNextAccount(),
       authRules: getNextAccount(),
-      sharedEscrow: getNextAccount(),
-      takerBroker: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
+      takerBroker: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
     },
     data: getBuyNftInstructionDataDecoder().decode(instruction.data),

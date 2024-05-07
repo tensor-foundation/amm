@@ -143,6 +143,7 @@ mod tests {
                 expiry: 0,
                 owner: Pubkey::default(),
                 cosigner: NullableOption::none(),
+                maker_broker: NullableOption::none(),
                 rent_payer: Pubkey::default(),
                 whitelist: Pubkey::default(),
                 pool_id: [0; 32],

@@ -25,8 +25,6 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   AMM_PROGRAM_ADDRESS,
-  CurveType,
-  PoolConfig,
   PoolType,
   fetchPool,
   findNftDepositReceiptPda,
@@ -43,6 +41,7 @@ import {
   getAndFundFeeVault,
   getTokenAmount,
   getTokenOwner,
+  tradePoolConfig,
 } from './_common.js';
 
 test('it can withdraw Sol from a Trade pool', async (t) => {
@@ -51,14 +50,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const owner = await generateKeyPairSignerWithSol(client);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 0n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-  };
+  const config = tradePoolConfig;
 
   // Create whitelist with FVC where the NFT owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -117,7 +109,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
-  const minPrice = 900_000n;
+  const minPrice = 850_000n;
 
   // Sell NFT into pool
   const sellNftIx = getSellNftTradePoolInstruction({
@@ -138,8 +130,6 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     instructions: SYSVARS_INSTRUCTIONS,
     authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
     authRules: DEFAULT_PUBKEY,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: owner.address, // No taker broker so we put a dummy here for now
     cosigner,
     minPrice,
     rulesAccPresent: false,
@@ -211,14 +201,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   // Min rent for POOL_SIZE account
   const keepAliveLamports = 3090240n;
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 0n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-  };
+  const config = tradePoolConfig;
 
   // Create whitelist with FVC where the NFT owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -289,14 +272,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   const owner = await generateKeyPairSignerWithSol(client);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 0n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-  };
+  const config = tradePoolConfig;
 
   const depositLamports = 10n * config.startingPrice;
   const withdrawLamports = 5n * config.startingPrice;

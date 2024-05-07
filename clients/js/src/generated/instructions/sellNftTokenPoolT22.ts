@@ -61,8 +61,8 @@ export type SellNftTokenPoolT22Instruction<
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountCosigner extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
@@ -111,12 +111,12 @@ export type SellNftTokenPoolT22Instruction<
       TAccountSharedEscrow extends string
         ? WritableAccount<TAccountSharedEscrow>
         : TAccountSharedEscrow,
+      TAccountMakerBroker extends string
+        ? WritableAccount<TAccountMakerBroker>
+        : TAccountMakerBroker,
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
-      TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
-        : TAccountMakerBroker,
       TAccountCosigner extends string
         ? ReadonlySignerAccount<TAccountCosigner> &
             IAccountSignerMeta<TAccountCosigner>
@@ -188,8 +188,8 @@ export type SellNftTokenPoolT22Input<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
   TAccountSharedEscrow extends string = string,
-  TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountTakerBroker extends string = string,
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
@@ -210,9 +210,11 @@ export type SellNftTokenPoolT22Input<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  sharedEscrow: Address<TAccountSharedEscrow>;
-  takerBroker: Address<TAccountTakerBroker>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
    * Checks are performed in the handler.
@@ -238,8 +240,8 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
   TAccountSharedEscrow extends string,
-  TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountTakerBroker extends string,
   TAccountCosigner extends string,
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
@@ -258,8 +260,8 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
@@ -279,8 +281,8 @@ export function getSellNftTokenPoolT22Instruction<
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
   TAccountSharedEscrow,
-  TAccountTakerBroker,
   TAccountMakerBroker,
+  TAccountTakerBroker,
   TAccountCosigner,
   TAccountAmmProgram,
   TAccountEscrowProgram
@@ -306,8 +308,8 @@ export function getSellNftTokenPoolT22Instruction<
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
     cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
@@ -346,8 +348,8 @@ export function getSellNftTokenPoolT22Instruction<
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.sharedEscrow),
-      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
@@ -371,8 +373,8 @@ export function getSellNftTokenPoolT22Instruction<
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
@@ -403,9 +405,11 @@ export type ParsedSellNftTokenPoolT22Instruction<
     tokenProgram: TAccountMetas[9];
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
-    sharedEscrow: TAccountMetas[12];
-    takerBroker: TAccountMetas[13];
-    makerBroker?: TAccountMetas[14] | undefined;
+    sharedEscrow?: TAccountMetas[12] | undefined;
+    /** The account that receives the maker broker fee. */
+    makerBroker?: TAccountMetas[13] | undefined;
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[14] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
      * Checks are performed in the handler.
@@ -457,9 +461,9 @@ export function parseSellNftTokenPoolT22Instruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      sharedEscrow: getNextAccount(),
-      takerBroker: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
+      takerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
       escrowProgram: getNextAccount(),

@@ -84,8 +84,8 @@ export type SellNftTokenPoolInstruction<
     | IAccountMeta<string> = 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
   TAccountAuthRules extends string | IAccountMeta<string> = string,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
-  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
+  TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountCosigner extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends string | IAccountMeta<string> = string,
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
@@ -164,12 +164,12 @@ export type SellNftTokenPoolInstruction<
       TAccountSharedEscrow extends string
         ? WritableAccount<TAccountSharedEscrow>
         : TAccountSharedEscrow,
+      TAccountMakerBroker extends string
+        ? WritableAccount<TAccountMakerBroker>
+        : TAccountMakerBroker,
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
-      TAccountMakerBroker extends string
-        ? ReadonlyAccount<TAccountMakerBroker>
-        : TAccountMakerBroker,
       TAccountCosigner extends string
         ? ReadonlySignerAccount<TAccountCosigner> &
             IAccountSignerMeta<TAccountCosigner>
@@ -259,8 +259,8 @@ export type SellNftTokenPoolInput<
   TAccountAuthorizationRulesProgram extends string = string,
   TAccountAuthRules extends string = string,
   TAccountSharedEscrow extends string = string,
-  TAccountTakerBroker extends string = string,
   TAccountMakerBroker extends string = string,
+  TAccountTakerBroker extends string = string,
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
@@ -317,10 +317,11 @@ export type SellNftTokenPoolInput<
   /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
   authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
-  sharedEscrow: Address<TAccountSharedEscrow>;
-  /** The taker broker account that receives the taker fees. */
-  takerBroker: Address<TAccountTakerBroker>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
+  /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
    * Checks are performed in the handler.
@@ -359,8 +360,8 @@ export function getSellNftTokenPoolInstruction<
   TAccountAuthorizationRulesProgram extends string,
   TAccountAuthRules extends string,
   TAccountSharedEscrow extends string,
-  TAccountTakerBroker extends string,
   TAccountMakerBroker extends string,
+  TAccountTakerBroker extends string,
   TAccountCosigner extends string,
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
@@ -389,8 +390,8 @@ export function getSellNftTokenPoolInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
@@ -420,8 +421,8 @@ export function getSellNftTokenPoolInstruction<
   TAccountAuthorizationRulesProgram,
   TAccountAuthRules,
   TAccountSharedEscrow,
-  TAccountTakerBroker,
   TAccountMakerBroker,
+  TAccountTakerBroker,
   TAccountCosigner,
   TAccountAmmProgram,
   TAccountEscrowProgram
@@ -469,8 +470,8 @@ export function getSellNftTokenPoolInstruction<
     },
     authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
-    makerBroker: { value: input.makerBroker ?? null, isWritable: false },
     cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
@@ -532,8 +533,8 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.authorizationRulesProgram),
       getAccountMeta(accounts.authRules),
       getAccountMeta(accounts.sharedEscrow),
-      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
@@ -568,8 +569,8 @@ export function getSellNftTokenPoolInstruction<
     TAccountAuthorizationRulesProgram,
     TAccountAuthRules,
     TAccountSharedEscrow,
-    TAccountTakerBroker,
     TAccountMakerBroker,
+    TAccountTakerBroker,
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram
@@ -638,10 +639,11 @@ export type ParsedSellNftTokenPoolInstruction<
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
     authRules: TAccountMetas[21];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow: TAccountMetas[22];
-    /** The taker broker account that receives the taker fees. */
-    takerBroker: TAccountMetas[23];
-    makerBroker?: TAccountMetas[24] | undefined;
+    sharedEscrow?: TAccountMetas[22] | undefined;
+    /** The account that receives the maker broker fee. */
+    makerBroker?: TAccountMetas[23] | undefined;
+    /** The account that receives the taker broker fee. */
+    takerBroker?: TAccountMetas[24] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
      * Checks are performed in the handler.
@@ -703,9 +705,9 @@ export function parseSellNftTokenPoolInstruction<
       instructions: getNextAccount(),
       authorizationRulesProgram: getNextAccount(),
       authRules: getNextAccount(),
-      sharedEscrow: getNextAccount(),
-      takerBroker: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
+      takerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
       escrowProgram: getNextAccount(),

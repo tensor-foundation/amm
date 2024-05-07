@@ -96,6 +96,7 @@ export type CreatePoolInstructionData = {
   currency: Address;
   sharedEscrow: Option<Address>;
   cosigner: Option<Address>;
+  makerBroker: Option<Address>;
   orderType: number;
   maxTakerSellCount: Option<number>;
   expireInSec: Option<bigint>;
@@ -107,6 +108,7 @@ export type CreatePoolInstructionDataArgs = {
   currency: Address;
   sharedEscrow: OptionOrNullable<Address>;
   cosigner: OptionOrNullable<Address>;
+  makerBroker: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
   expireInSec: OptionOrNullable<number | bigint>;
@@ -121,6 +123,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['currency', getAddressEncoder()],
       ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
+      ['makerBroker', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
       ['expireInSec', getOptionEncoder(getU64Encoder())],
@@ -140,6 +143,7 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['currency', getAddressDecoder()],
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
+    ['makerBroker', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
     ['expireInSec', getOptionDecoder(getU64Decoder())],
@@ -174,6 +178,7 @@ export type CreatePoolInput<
   currency: CreatePoolInstructionDataArgs['currency'];
   sharedEscrow: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
+  makerBroker: CreatePoolInstructionDataArgs['makerBroker'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec: CreatePoolInstructionDataArgs['expireInSec'];

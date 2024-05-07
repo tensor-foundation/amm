@@ -112,6 +112,8 @@ export type PoolAccountData = {
   sharedEscrow: NullableAddress;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: NullableAddress;
+  /** Maker broker fees will be sent to this address if populated. */
+  makerBroker: NullableAddress;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfig;
@@ -150,6 +152,8 @@ export type PoolAccountDataArgs = {
   sharedEscrow: NullableAddressArgs;
   /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
   cosigner: NullableAddressArgs;
+  /** Maker broker fees will be sent to this address if populated. */
+  makerBroker: NullableAddressArgs;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfigArgs;
@@ -176,6 +180,7 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['stats', getPoolStatsEncoder()],
       ['sharedEscrow', getNullableAddressEncoder()],
       ['cosigner', getNullableAddressEncoder()],
+      ['makerBroker', getNullableAddressEncoder()],
       ['maxTakerSellCount', getU32Encoder()],
       ['config', getPoolConfigEncoder()],
       ['reserved', getArrayEncoder(getU8Encoder(), { size: 100 })],
@@ -206,6 +211,7 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['stats', getPoolStatsDecoder()],
     ['sharedEscrow', getNullableAddressDecoder()],
     ['cosigner', getNullableAddressDecoder()],
+    ['makerBroker', getNullableAddressDecoder()],
     ['maxTakerSellCount', getU32Decoder()],
     ['config', getPoolConfigDecoder()],
     ['reserved', getArrayDecoder(getU8Decoder(), { size: 100 })],

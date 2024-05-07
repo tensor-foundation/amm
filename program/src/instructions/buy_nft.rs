@@ -9,11 +9,14 @@ use tensor_toolbox::{
     assert_decode_metadata, send_pnft, transfer_creators_fee, CreatorFeeMode, FromAcc,
     FromExternal, PnftTransferArgs,
 };
-use vipers::{throw_err, unwrap_checked, unwrap_int, Validate};
+use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use crate::{error::ErrorCode, *};
 
-use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
+use self::{
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+    program::AmmProgram,
+};
 
 use super::*;
 
@@ -149,17 +152,23 @@ pub struct BuyNft<'info> {
     pub auth_rules: UncheckedAccount<'info>,
 
     /// The shared escrow account for pools that pool liquidity in a shared account.
-    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
+    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4) shared escrow acc stored on pool
     #[account(mut)]
-    pub shared_escrow: UncheckedAccount<'info>,
+    pub shared_escrow: Option<UncheckedAccount<'info>>,
 
-    /// The taker broker account that receives the taker fees.
-    /// CHECK: need checks specified
-    // TODO: optional account? what checks?
-    #[account(mut)]
-    pub taker_broker: UncheckedAccount<'info>,
-
+    /// The account that receives the maker broker fee.
+    /// CHECK: Must match the pool's maker_broker
+    #[account(
+        mut,
+        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+    )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
+
+    /// The account that receives the taker broker fee.
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
+    #[account(mut)]
+    pub taker_broker: Option<UncheckedAccount<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
@@ -228,11 +237,11 @@ pub fn process_buy_nft<'info, 'b>(
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
-        tamm_fee,
-        maker_rebate,
-        broker_fee,
         taker_fee,
-    } = calc_fees_rebates(current_price)?;
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
@@ -324,27 +333,48 @@ pub fn process_buy_nft<'info, 'b>(
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
         PoolType::Trade => match &pool.shared_escrow.value() {
             Some(stored_shared_escrow) => {
+                let incoming_shared_escrow = unwrap_opt!(
+                    ctx.accounts.shared_escrow.as_ref(),
+                    ErrorCode::BadSharedEscrow
+                )
+                .to_account_info();
+
                 assert_decode_margin_account(
-                    &ctx.accounts.shared_escrow,
+                    &incoming_shared_escrow,
                     &ctx.accounts.owner.to_account_info(),
                 )?;
-                if ctx.accounts.shared_escrow.key != *stored_shared_escrow {
+
+                if incoming_shared_escrow.key != *stored_shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
-                ctx.accounts.shared_escrow.to_account_info()
+                incoming_shared_escrow
             }
             None => ctx.accounts.pool.to_account_info(),
         },
         PoolType::Token => unreachable!(),
     };
 
-    // Buyer pays the taker fee: tamm_fee + broker_fee + maker_rebate.
+    // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
-    ctx.accounts
-        .transfer_lamports_min_balance(&ctx.accounts.taker_broker.to_account_info(), broker_fee)?;
-    // Maker rebate--goes to the destination, not necessarily the owner
-    ctx.accounts.transfer_lamports(&destination, maker_rebate)?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .maker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&ctx.accounts.fee_vault),
+        maker_broker_fee,
+    )?;
+    ctx.accounts.transfer_lamports_min_balance(
+        ctx.accounts
+            .taker_broker
+            .as_ref()
+            .map(|acc| acc.to_account_info())
+            .as_ref()
+            .unwrap_or(&ctx.accounts.fee_vault),
+        taker_broker_fee,
+    )?;
 
     // transfer royalties (on top of current price)
     // Buyer pays the royalty fee.

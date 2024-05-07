@@ -19,7 +19,7 @@ export const enum AmmProgramErrorCode {
   BAD_FEE_ACCOUNT = 0x2ee4, // 12004
   /** BadEscrowAccount: escrow account doesn't match that stored on pool */
   BAD_ESCROW_ACCOUNT = 0x2ee5, // 12005
-  /** MissingFees: when setting up a Trade pool, must provide fee bps & fee vault */
+  /** MissingFees: when setting up a Trade pool, must provide fee bps */
   MISSING_FEES = 0x2ee6, // 12006
   /** FeesTooHigh: fees entered above allowed threshold */
   FEES_TOO_HIGH = 0x2ee7, // 12007
@@ -101,6 +101,8 @@ export const enum AmmProgramErrorCode {
   UNSUPPORTED_CURRENCY = 0x2f0d, // 12045
   /** InvalidPoolAmount: Invalid pool amount */
   INVALID_POOL_AMOUNT = 0x2f0e, // 12046
+  /** WrongBrokerAccount: Wrong broker account */
+  WRONG_BROKER_ACCOUNT = 0x2f0f, // 12047
 }
 
 export class AmmProgramError extends Error {
@@ -153,7 +155,7 @@ if (__DEV__) {
     ],
     [AmmProgramErrorCode.MISSING_FEES]: [
       'MissingFees',
-      `when setting up a Trade pool, must provide fee bps & fee vault`,
+      `when setting up a Trade pool, must provide fee bps`,
     ],
     [AmmProgramErrorCode.FEES_TOO_HIGH]: [
       'FeesTooHigh',
@@ -305,6 +307,10 @@ if (__DEV__) {
     [AmmProgramErrorCode.INVALID_POOL_AMOUNT]: [
       'InvalidPoolAmount',
       `Invalid pool amount`,
+    ],
+    [AmmProgramErrorCode.WRONG_BROKER_ACCOUNT]: [
+      'WrongBrokerAccount',
+      `Wrong broker account`,
     ],
   };
 }

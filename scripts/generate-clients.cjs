@@ -135,6 +135,28 @@ kinobi.update(
     },
     {
       select:
+        "[accountNode]pool.[structTypeNode].[structFieldTypeNode]makerBroker",
+      transform: (node) => {
+        k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+        };
+      },
+    },
+    {
+      select:
+        "[accountNode]pool.[structTypeNode].[structFieldTypeNode]takerBroker",
+      transform: (node) => {
+        k.assertIsNode(node, "structFieldTypeNode");
+        return {
+          ...node,
+          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+        };
+      },
+    },
+    {
+      select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]currency",
       transform: (node) => {
         k.assertIsNode(node, "structFieldTypeNode");

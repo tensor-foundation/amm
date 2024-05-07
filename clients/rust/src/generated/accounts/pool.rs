@@ -58,6 +58,8 @@ pub struct Pool {
     pub shared_escrow: NullableAddress,
     /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
     pub cosigner: NullableAddress,
+    /// Maker broker fees will be sent to this address if populated.
+    pub maker_broker: NullableAddress,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
     pub config: PoolConfig,

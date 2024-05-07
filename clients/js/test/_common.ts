@@ -88,15 +88,15 @@ export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
-export const DEFAULT_DELTA = 1000n;
+export const DEFAULT_DELTA = 100_000n;
 export const ONE_WEEK = 60 * 60 * 24 * 7;
 export const ONE_YEAR = 60 * 60 * 24 * 365;
 
 export const ZERO_ACCOUNT_RENT_LAMPORTS = 890880n;
 export const ONE_SOL = 1_000_000_000n;
 
-export const MAKER_REBATE_BPS = 25n;
-
+export const TAKER_FEE_BPS = 150n;
+export const BROKER_FEE_PCT = 50n;
 export const BASIS_POINTS = 10_000n;
 
 export const TSWAP_SINGLETON: Address = address(
@@ -132,9 +132,15 @@ export const findAtaPda = async (
 export const tradePoolConfig: PoolConfig = {
   poolType: PoolType.Trade,
   curveType: CurveType.Linear,
-  startingPrice: LAMPORTS_PER_SOL,
+  startingPrice: 1_000_000n,
   delta: DEFAULT_DELTA,
-  mmCompoundFees: true,
+  mmCompoundFees: false,
+  mmFeeBps: 50,
+};
+
+export const tokenPoolConfig: PoolConfig = {
+  ...tradePoolConfig,
+  poolType: PoolType.Token,
   mmFeeBps: null,
 };
 
@@ -216,6 +222,7 @@ export interface CreatePoolParams {
   payer?: KeyPairSigner;
   cosigner?: KeyPairSigner;
   sharedEscrow?: Address;
+  makerBroker?: Address;
   poolId?: Uint8Array;
   config?: PoolConfig;
   expireInSec?: number;
@@ -241,6 +248,7 @@ export async function createPool({
   payer = owner,
   cosigner,
   sharedEscrow,
+  makerBroker,
   poolId,
   config,
   expireInSec,
@@ -279,6 +287,7 @@ export async function createPool({
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    makerBroker: makerBroker ? some(makerBroker) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
   });
@@ -343,6 +352,7 @@ export async function createPoolThrows({
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    makerBroker: none(),
     orderType: 0,
     expireInSec: null,
   });
@@ -388,6 +398,7 @@ export async function createPoolAndWhitelist({
   payer = owner,
   cosigner,
   sharedEscrow,
+  makerBroker,
   poolId,
   config,
   depositAmount = 1_000_000n,
@@ -426,6 +437,7 @@ export async function createPoolAndWhitelist({
     owner,
     cosigner,
     sharedEscrow,
+    makerBroker,
     poolId,
     config,
   });

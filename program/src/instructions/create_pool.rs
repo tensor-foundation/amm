@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use tensor_toolbox::NullableOption;
 use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, try_or_err, Validate};
 
@@ -17,6 +18,7 @@ pub struct CreatePoolArgs {
     pub currency: Pubkey,
     pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
+    pub maker_broker: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
     pub expire_in_sec: Option<u64>,
@@ -118,6 +120,10 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.cosigner = args.cosigner.into();
     pool.shared_escrow = args.shared_escrow.into();
+
+    if let Some(maker_broker) = args.maker_broker {
+        pool.maker_broker = NullableOption::new(maker_broker.key());
+    }
 
     let timestamp = Clock::get()?.unix_timestamp;
 
