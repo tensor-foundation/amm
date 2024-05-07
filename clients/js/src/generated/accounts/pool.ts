@@ -114,8 +114,6 @@ export type PoolAccountData = {
   cosigner: NullableAddress;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddress;
-  /** Taker broker fees will be sent to this address if populated. */
-  takerBroker: NullableAddress;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfig;
@@ -156,8 +154,6 @@ export type PoolAccountDataArgs = {
   cosigner: NullableAddressArgs;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddressArgs;
-  /** Taker broker fees will be sent to this address if populated. */
-  takerBroker: NullableAddressArgs;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
   maxTakerSellCount: number;
   config: PoolConfigArgs;
@@ -185,7 +181,6 @@ export function getPoolAccountDataEncoder(): Encoder<PoolAccountDataArgs> {
       ['sharedEscrow', getNullableAddressEncoder()],
       ['cosigner', getNullableAddressEncoder()],
       ['makerBroker', getNullableAddressEncoder()],
-      ['takerBroker', getNullableAddressEncoder()],
       ['maxTakerSellCount', getU32Encoder()],
       ['config', getPoolConfigEncoder()],
       ['reserved', getArrayEncoder(getU8Encoder(), { size: 100 })],
@@ -217,7 +212,6 @@ export function getPoolAccountDataDecoder(): Decoder<PoolAccountData> {
     ['sharedEscrow', getNullableAddressDecoder()],
     ['cosigner', getNullableAddressDecoder()],
     ['makerBroker', getNullableAddressDecoder()],
-    ['takerBroker', getNullableAddressDecoder()],
     ['maxTakerSellCount', getU32Decoder()],
     ['config', getPoolConfigDecoder()],
     ['reserved', getArrayDecoder(getU8Decoder(), { size: 100 })],

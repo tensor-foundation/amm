@@ -19,7 +19,6 @@ pub struct CreatePoolArgs {
     pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
-    pub taker_broker: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
     pub expire_in_sec: Option<u64>,
@@ -124,9 +123,6 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     if let Some(maker_broker) = args.maker_broker {
         pool.maker_broker = NullableOption::new(maker_broker.key());
-    }
-    if let Some(taker_broker) = args.taker_broker {
-        pool.taker_broker = NullableOption::new(taker_broker.key());
     }
 
     let timestamp = Clock::get()?.unix_timestamp;

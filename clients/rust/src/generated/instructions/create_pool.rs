@@ -90,7 +90,6 @@ pub struct CreatePoolInstructionArgs {
     pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
-    pub taker_broker: Option<Pubkey>,
     pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
     pub expire_in_sec: Option<u64>,
@@ -118,7 +117,6 @@ pub struct CreatePoolBuilder {
     shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
-    taker_broker: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
     expire_in_sec: Option<u64>,
@@ -189,12 +187,6 @@ impl CreatePoolBuilder {
         self.maker_broker = Some(maker_broker);
         self
     }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn taker_broker(&mut self, taker_broker: Pubkey) -> &mut Self {
-        self.taker_broker = Some(taker_broker);
-        self
-    }
     #[inline(always)]
     pub fn order_type(&mut self, order_type: u8) -> &mut Self {
         self.order_type = Some(order_type);
@@ -248,7 +240,6 @@ impl CreatePoolBuilder {
             shared_escrow: self.shared_escrow.clone(),
             cosigner: self.cosigner.clone(),
             maker_broker: self.maker_broker.clone(),
-            taker_broker: self.taker_broker.clone(),
             order_type: self.order_type.clone().expect("order_type is not set"),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
             expire_in_sec: self.expire_in_sec.clone(),
@@ -422,7 +413,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             shared_escrow: None,
             cosigner: None,
             maker_broker: None,
-            taker_broker: None,
             order_type: None,
             max_taker_sell_count: None,
             expire_in_sec: None,
@@ -498,12 +488,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.maker_broker = Some(maker_broker);
         self
     }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn taker_broker(&mut self, taker_broker: Pubkey) -> &mut Self {
-        self.instruction.taker_broker = Some(taker_broker);
-        self
-    }
     #[inline(always)]
     pub fn order_type(&mut self, order_type: u8) -> &mut Self {
         self.instruction.order_type = Some(order_type);
@@ -577,7 +561,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             shared_escrow: self.instruction.shared_escrow.clone(),
             cosigner: self.instruction.cosigner.clone(),
             maker_broker: self.instruction.maker_broker.clone(),
-            taker_broker: self.instruction.taker_broker.clone(),
             order_type: self
                 .instruction
                 .order_type
@@ -623,7 +606,6 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
-    taker_broker: Option<Pubkey>,
     order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
     expire_in_sec: Option<u64>,

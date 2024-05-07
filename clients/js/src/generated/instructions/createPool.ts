@@ -97,7 +97,6 @@ export type CreatePoolInstructionData = {
   sharedEscrow: Option<Address>;
   cosigner: Option<Address>;
   makerBroker: Option<Address>;
-  takerBroker: Option<Address>;
   orderType: number;
   maxTakerSellCount: Option<number>;
   expireInSec: Option<bigint>;
@@ -110,7 +109,6 @@ export type CreatePoolInstructionDataArgs = {
   sharedEscrow: OptionOrNullable<Address>;
   cosigner: OptionOrNullable<Address>;
   makerBroker: OptionOrNullable<Address>;
-  takerBroker: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
   expireInSec: OptionOrNullable<number | bigint>;
@@ -126,7 +124,6 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['makerBroker', getOptionEncoder(getAddressEncoder())],
-      ['takerBroker', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
       ['expireInSec', getOptionEncoder(getU64Encoder())],
@@ -147,7 +144,6 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['makerBroker', getOptionDecoder(getAddressDecoder())],
-    ['takerBroker', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
     ['expireInSec', getOptionDecoder(getU64Decoder())],
@@ -183,7 +179,6 @@ export type CreatePoolInput<
   sharedEscrow: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker: CreatePoolInstructionDataArgs['makerBroker'];
-  takerBroker: CreatePoolInstructionDataArgs['takerBroker'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec: CreatePoolInstructionDataArgs['expireInSec'];

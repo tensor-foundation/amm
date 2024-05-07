@@ -223,7 +223,6 @@ export interface CreatePoolParams {
   cosigner?: KeyPairSigner;
   sharedEscrow?: Address;
   makerBroker?: Address;
-  takerBroker?: Address;
   poolId?: Uint8Array;
   config?: PoolConfig;
   expireInSec?: number;
@@ -250,7 +249,6 @@ export async function createPool({
   cosigner,
   sharedEscrow,
   makerBroker,
-  takerBroker,
   poolId,
   config,
   expireInSec,
@@ -290,7 +288,6 @@ export async function createPool({
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     makerBroker: makerBroker ? some(makerBroker) : none(),
-    takerBroker: takerBroker ? some(takerBroker) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
   });
@@ -356,7 +353,6 @@ export async function createPoolThrows({
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
     makerBroker: none(),
-    takerBroker: none(),
     orderType: 0,
     expireInSec: null,
   });
@@ -403,7 +399,6 @@ export async function createPoolAndWhitelist({
   cosigner,
   sharedEscrow,
   makerBroker,
-  takerBroker,
   poolId,
   config,
   depositAmount = 1_000_000n,
@@ -443,7 +438,6 @@ export async function createPoolAndWhitelist({
     cosigner,
     sharedEscrow,
     makerBroker,
-    takerBroker,
     poolId,
     config,
   });

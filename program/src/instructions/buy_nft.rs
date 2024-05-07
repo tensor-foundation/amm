@@ -165,11 +165,8 @@ pub struct BuyNft<'info> {
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
-    /// CHECK: Must match the pool's taker_broker
-    #[account(
-        mut,
-        constraint = Some(&taker_broker.key()) == pool.taker_broker.value() @ ErrorCode::WrongBrokerAccount,
-    )]
+    /// CHECK: The caller decides who receives the fee, so no constraints are needed.
+    #[account(mut)]
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     pub amm_program: Program<'info, AmmProgram>,

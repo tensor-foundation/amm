@@ -223,7 +223,6 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     payer: buyer,
     whitelist,
     makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
     owner,
     config,
   });

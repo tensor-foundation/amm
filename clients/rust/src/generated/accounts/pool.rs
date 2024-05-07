@@ -60,8 +60,6 @@ pub struct Pool {
     pub cosigner: NullableAddress,
     /// Maker broker fees will be sent to this address if populated.
     pub maker_broker: NullableAddress,
-    /// Taker broker fees will be sent to this address if populated.
-    pub taker_broker: NullableAddress,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
     pub max_taker_sell_count: u32,
     pub config: PoolConfig,
