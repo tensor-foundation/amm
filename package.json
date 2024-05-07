@@ -11,6 +11,7 @@
     "generate": "pnpm generate:idls && pnpm generate:clients",
     "generate:idls": "node ./scripts/generate-idls.cjs",
     "generate:clients": "node ./scripts/generate-clients.cjs",
+    "validator": "CI=1 amman start --config ./scripts/validator.cjs",
     "validator:start": "CI=1 amman start --config ./scripts/validator.cjs",
     "validator:refresh": "pnpm validator:stop && pnpm programs:build && pnpm generate && pnpm validator:start",
     "validator:restart": "pnpm validator:stop && pnpm validator",
