@@ -70,9 +70,6 @@ export type SellNftTradePoolInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountSellerTokenRecord extends string | IAccountMeta<string> = string,
@@ -136,9 +133,6 @@ export type SellNftTradePoolInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
       TAccountAssociatedTokenProgram extends string
         ? ReadonlyAccount<TAccountAssociatedTokenProgram>
         : TAccountAssociatedTokenProgram,
@@ -254,7 +248,6 @@ export type SellNftTradePoolInput<
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountEdition extends string = string,
   TAccountSellerTokenRecord extends string = string,
@@ -299,7 +292,6 @@ export type SellNftTradePoolInput<
   nftReceipt: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   edition: Address<TAccountEdition>;
   /** The Token Metadata seller/source token record account of the NFT. */
@@ -348,7 +340,6 @@ export function getSellNftTradePoolInstruction<
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountEdition extends string,
   TAccountSellerTokenRecord extends string,
@@ -378,7 +369,6 @@ export function getSellNftTradePoolInstruction<
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountAssociatedTokenProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
@@ -409,7 +399,6 @@ export function getSellNftTradePoolInstruction<
   TAccountNftReceipt,
   TAccountTokenProgram,
   TAccountSystemProgram,
-  TAccountRent,
   TAccountAssociatedTokenProgram,
   TAccountEdition,
   TAccountSellerTokenRecord,
@@ -443,7 +432,6 @@ export function getSellNftTradePoolInstruction<
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
@@ -488,10 +476,6 @@ export function getSellNftTradePoolInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram.value =
       'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
@@ -522,7 +506,6 @@ export function getSellNftTradePoolInstruction<
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.rent),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.sellerTokenRecord),
@@ -558,7 +541,6 @@ export function getSellNftTradePoolInstruction<
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountAssociatedTokenProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
@@ -615,35 +597,34 @@ export type ParsedSellNftTradePoolInstruction<
     nftReceipt: TAccountMetas[10];
     tokenProgram: TAccountMetas[11];
     systemProgram: TAccountMetas[12];
-    rent: TAccountMetas[13];
-    associatedTokenProgram: TAccountMetas[14];
-    edition: TAccountMetas[15];
+    associatedTokenProgram: TAccountMetas[13];
+    edition: TAccountMetas[14];
     /** The Token Metadata seller/source token record account of the NFT. */
-    sellerTokenRecord: TAccountMetas[16];
+    sellerTokenRecord: TAccountMetas[15];
     /** The Token Metadata pool temporary token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[17];
+    poolTokenRecord: TAccountMetas[16];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[18];
+    tokenMetadataProgram: TAccountMetas[17];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[19];
+    instructions: TAccountMetas[18];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[20];
+    authorizationRulesProgram: TAccountMetas[19];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[21];
+    authRules: TAccountMetas[20];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow?: TAccountMetas[22] | undefined;
+    sharedEscrow?: TAccountMetas[21] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[23] | undefined;
+    makerBroker?: TAccountMetas[22] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[24] | undefined;
+    takerBroker?: TAccountMetas[23] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
      * Checks are performed in the handler.
      */
 
-    cosigner?: TAccountMetas[25] | undefined;
-    ammProgram: TAccountMetas[26];
-    escrowProgram: TAccountMetas[27];
+    cosigner?: TAccountMetas[24] | undefined;
+    ammProgram: TAccountMetas[25];
+    escrowProgram: TAccountMetas[26];
   };
   data: SellNftTradePoolInstructionData;
 };
@@ -656,7 +637,7 @@ export function parseSellNftTradePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTradePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 28) {
+  if (instruction.accounts.length < 27) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -688,7 +669,6 @@ export function parseSellNftTradePoolInstruction<
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      rent: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       edition: getNextAccount(),
       sellerTokenRecord: getNextAccount(),

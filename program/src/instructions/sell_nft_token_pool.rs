@@ -536,5 +536,7 @@ pub fn process_sell_nft_token_pool<'info>(
         );
     }
 
+    try_close_pool(pool, ctx.accounts.owner.to_account_info())?;
+
     Ok(())
 }

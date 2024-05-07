@@ -315,11 +315,6 @@
           "isSigner": false
         },
         {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "metadata",
           "isMut": false,
           "isSigner": false,
@@ -463,11 +458,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -689,11 +679,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -1156,11 +1141,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -1955,7 +1935,7 @@
           {
             "name": "sharedEscrow",
             "docs": [
-              "If an escrow account is present, means it's a shared-escrow pool"
+              "If an escrow account is present, means it's a shared-escrow pool."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1964,7 +1944,7 @@
           {
             "name": "cosigner",
             "docs": [
-              "Offchain actor signs off to make sure an offchain condition is met (eg trait present)"
+              "Offchain actor signs off to make sure an offchain condition is met (eg trait present)."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1982,7 +1962,7 @@
           {
             "name": "maxTakerSellCount",
             "docs": [
-              "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya"
+              "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity."
             ],
             "type": "u32"
           },

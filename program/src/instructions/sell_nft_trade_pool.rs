@@ -117,7 +117,6 @@ pub struct SellNftTradePool<'info> {
 
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 
     // --------------------------------------- pNft
     pub associated_token_program: Program<'info, AssociatedToken>,

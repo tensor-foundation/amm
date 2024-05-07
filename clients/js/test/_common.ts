@@ -144,6 +144,12 @@ export const tokenPoolConfig: PoolConfig = {
   mmFeeBps: null,
 };
 
+export const nftPoolConfig: PoolConfig = {
+  ...tradePoolConfig,
+  poolType: PoolType.NFT,
+  mmFeeBps: null,
+};
+
 export interface CreateWhitelistParams {
   client: Client;
   payer?: KeyPairSigner;

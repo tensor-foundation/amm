@@ -68,9 +68,6 @@ export type BuyNftInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
   TAccountBuyerTokenRecord extends string | IAccountMeta<string> = string,
@@ -128,9 +125,6 @@ export type BuyNftInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
       TAccountEdition extends string
         ? ReadonlyAccount<TAccountEdition>
         : TAccountEdition,
@@ -232,7 +226,6 @@ export type BuyNftInput<
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
   TAccountEdition extends string = string,
   TAccountPoolTokenRecord extends string = string,
   TAccountBuyerTokenRecord extends string = string,
@@ -271,7 +264,6 @@ export type BuyNftInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
   edition: Address<TAccountEdition>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord: Address<TAccountPoolTokenRecord>;
@@ -312,7 +304,6 @@ export function getBuyNftInstruction<
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TAccountEdition extends string,
   TAccountPoolTokenRecord extends string,
   TAccountBuyerTokenRecord extends string,
@@ -338,7 +329,6 @@ export function getBuyNftInstruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountEdition,
     TAccountPoolTokenRecord,
     TAccountBuyerTokenRecord,
@@ -365,7 +355,6 @@ export function getBuyNftInstruction<
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
-  TAccountRent,
   TAccountEdition,
   TAccountPoolTokenRecord,
   TAccountBuyerTokenRecord,
@@ -398,7 +387,6 @@ export function getBuyNftInstruction<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
     poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     buyerTokenRecord: {
@@ -437,10 +425,6 @@ export function getBuyNftInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram.value =
       'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
@@ -470,7 +454,6 @@ export function getBuyNftInstruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.rent),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.buyerTokenRecord),
@@ -502,7 +485,6 @@ export function getBuyNftInstruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountEdition,
     TAccountPoolTokenRecord,
     TAccountBuyerTokenRecord,
@@ -553,27 +535,26 @@ export type ParsedBuyNftInstruction<
     tokenProgram: TAccountMetas[9];
     associatedTokenProgram: TAccountMetas[10];
     systemProgram: TAccountMetas[11];
-    rent: TAccountMetas[12];
-    edition: TAccountMetas[13];
+    edition: TAccountMetas[12];
     /** The Token Metadata token record for the pool. */
-    poolTokenRecord: TAccountMetas[14];
+    poolTokenRecord: TAccountMetas[13];
     /** The Token Metadata token record for the buyer. */
-    buyerTokenRecord: TAccountMetas[15];
+    buyerTokenRecord: TAccountMetas[14];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[16];
+    tokenMetadataProgram: TAccountMetas[15];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[17];
+    instructions: TAccountMetas[16];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[18];
+    authorizationRulesProgram: TAccountMetas[17];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[19];
+    authRules: TAccountMetas[18];
     /** The shared escrow account for pools that pool liquidity in a shared account. */
-    sharedEscrow?: TAccountMetas[20] | undefined;
+    sharedEscrow?: TAccountMetas[19] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[21] | undefined;
+    makerBroker?: TAccountMetas[20] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[22] | undefined;
-    ammProgram: TAccountMetas[23];
+    takerBroker?: TAccountMetas[21] | undefined;
+    ammProgram: TAccountMetas[22];
   };
   data: BuyNftInstructionData;
 };
@@ -586,7 +567,7 @@ export function parseBuyNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 24) {
+  if (instruction.accounts.length < 23) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -617,7 +598,6 @@ export function parseBuyNftInstruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      rent: getNextAccount(),
       edition: getNextAccount(),
       poolTokenRecord: getNextAccount(),
       buyerTokenRecord: getNextAccount(),

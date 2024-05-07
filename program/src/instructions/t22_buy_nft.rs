@@ -364,5 +364,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         );
     }
 
+    try_close_pool(pool, ctx.accounts.owner.to_account_info())?;
+
     Ok(())
 }

@@ -111,7 +111,6 @@ pub struct BuyNft<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 
     // --------------------------------------- pNft
 
@@ -242,7 +241,11 @@ pub fn process_buy_nft<'info, 'b>(
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
-    let mm_fee = pool.calc_mm_fee(current_price)?;
+    let mm_fee = if pool.config.pool_type == PoolType::Trade {
+        pool.calc_mm_fee(current_price)?
+    } else {
+        0
+    };
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
@@ -251,11 +254,7 @@ pub fn process_buy_nft<'info, 'b>(
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         taker_fee,
-        mm_fee: if pool.config.pool_type == PoolType::Trade {
-            mm_fee
-        } else {
-            0
-        },
+        mm_fee,
         creators_fee,
     });
 
@@ -447,6 +446,8 @@ pub fn process_buy_nft<'info, 'b>(
             ErrorCode::InvalidPoolAmount
         );
     }
+
+    try_close_pool(pool, ctx.accounts.owner.to_account_info())?;
 
     Ok(())
 }

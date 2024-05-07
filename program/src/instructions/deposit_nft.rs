@@ -85,7 +85,6 @@ pub struct DepositNft<'info> {
 
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 
     /// The Token Metadata metadata account of the NFT.
     /// CHECK: assert_decode_metadata checks seeds, owner, and key
