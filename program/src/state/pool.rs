@@ -3,7 +3,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::{calc_creators_fee, NullableOption};
+use tensor_toolbox::{calc_creators_fee, transfer_lamports_from_pda, NullableOption};
 use vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
@@ -319,25 +319,49 @@ pub enum TakerSide {
     Sell, // Selling into the pool.
 }
 
-pub fn try_close_pool<'info>(
+pub fn try_autoclose_pool<'info>(
     pool: &Account<'info, Pool>,
-    destination: AccountInfo<'info>,
+    rent_payer: AccountInfo<'info>,
+    owner: AccountInfo<'info>,
 ) -> Result<()> {
     match pool.config.pool_type {
         PoolType::Trade => (), // Cannot be auto-closed
         PoolType::Token => {
             // Not enough SOL to purchase another NFT, so we can close the pool.
             if pool.currency.is_sol() && pool.amount < pool.current_price(TakerSide::Sell)? {
-                pool.close(destination)?;
+                close_pool(pool, rent_payer, owner)?;
             }
         }
         PoolType::NFT => {
             // No more NFTs to sell, so we can close the pool.
             if pool.nfts_held == 0 {
-                pool.close(destination)?;
+                close_pool(pool, rent_payer, owner)?;
             }
         }
     }
 
     Ok(())
+}
+
+pub fn close_pool<'info>(
+    pool: &Account<'info, Pool>,
+    rent_payer: AccountInfo<'info>,
+    owner: AccountInfo<'info>,
+) -> Result<()> {
+    // The incoming rent payer account must match what's stored on the pool.
+    if *rent_payer.key != pool.rent_payer {
+        throw_err!(ErrorCode::WrongRentPayer);
+    }
+
+    let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+    let pool_lamports = pool.get_lamports();
+
+    // Any SOL above the minimum rent/state bond goes to the owner.
+    if pool_lamports > pool_state_bond {
+        let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_state_bond));
+        transfer_lamports_from_pda(&pool.to_account_info(), &owner, owner_amount)?;
+    }
+
+    // Rent goes back to the rent payer.
+    pool.close(rent_payer)
 }

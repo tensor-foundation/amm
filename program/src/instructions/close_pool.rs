@@ -1,6 +1,5 @@
 //! User (owner) closing their pool and reclaims rent (+ SOL escrow)
-use tensor_toolbox::transfer_lamports_from_pda;
-use vipers::{throw_err, unwrap_int, Validate};
+use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
@@ -50,26 +49,5 @@ pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info
     let pool = &ctx.accounts.pool;
     let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
 
-    // The incoming rent payer account must match what's stored on the pool.
-    if *rent_payer_info.key != pool.rent_payer {
-        throw_err!(ErrorCode::WrongRentPayer);
-    }
-
-    let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
-    let pool_lamports = pool.get_lamports();
-
-    // Any SOL above the minimum rent/state bond goes to the owner.
-    if pool_lamports > pool_state_bond {
-        let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_state_bond));
-        transfer_lamports_from_pda(
-            &pool.to_account_info(),
-            &ctx.accounts.owner.to_account_info(),
-            owner_amount,
-        )?;
-    }
-
-    // Rent goes back to the rent payer.
-    pool.close(ctx.accounts.rent_payer.to_account_info())?;
-
-    Ok(())
+    state::pool::close_pool(pool, rent_payer_info, ctx.accounts.owner.to_account_info())
 }

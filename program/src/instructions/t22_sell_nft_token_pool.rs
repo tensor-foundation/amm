@@ -31,6 +31,10 @@ pub struct SellNftTokenPoolT22<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    #[account(mut)]
+    pub rent_payer: UncheckedAccount<'info>,
+
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -370,7 +374,9 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         );
     }
 
-    try_close_pool(pool, ctx.accounts.owner.to_account_info())?;
-
-    Ok(())
+    try_autoclose_pool(
+        pool,
+        ctx.accounts.rent_payer.to_account_info(),
+        ctx.accounts.owner.to_account_info(),
+    )
 }

@@ -307,6 +307,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const sellNftIx = getSellNftTokenPoolInstruction({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
+    rentPayer: owner.address,
     feeVault,
     pool,
     whitelist,

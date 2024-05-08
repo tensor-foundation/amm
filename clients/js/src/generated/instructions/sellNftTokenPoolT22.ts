@@ -46,6 +46,7 @@ export type SellNftTokenPoolT22Instruction<
   TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSeller extends string | IAccountMeta<string> = string,
+  TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -78,6 +79,9 @@ export type SellNftTokenPoolT22Instruction<
         ? WritableSignerAccount<TAccountSeller> &
             IAccountSignerMeta<TAccountSeller>
         : TAccountSeller,
+      TAccountRentPayer extends string
+        ? WritableAccount<TAccountRentPayer>
+        : TAccountRentPayer,
       TAccountFeeVault extends string
         ? WritableAccount<TAccountFeeVault>
         : TAccountFeeVault,
@@ -177,6 +181,7 @@ export function getSellNftTokenPoolT22InstructionDataCodec(): Codec<
 export type SellNftTokenPoolT22Input<
   TAccountOwner extends string = string,
   TAccountSeller extends string = string,
+  TAccountRentPayer extends string = string,
   TAccountFeeVault extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
@@ -196,6 +201,7 @@ export type SellNftTokenPoolT22Input<
 > = {
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
+  rentPayer: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation, also checked via has_one on pool */
@@ -229,6 +235,7 @@ export type SellNftTokenPoolT22Input<
 export function getSellNftTokenPoolT22Instruction<
   TAccountOwner extends string,
   TAccountSeller extends string,
+  TAccountRentPayer extends string,
   TAccountFeeVault extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
@@ -249,6 +256,7 @@ export function getSellNftTokenPoolT22Instruction<
   input: SellNftTokenPoolT22Input<
     TAccountOwner,
     TAccountSeller,
+    TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
     TAccountWhitelist,
@@ -270,6 +278,7 @@ export function getSellNftTokenPoolT22Instruction<
   typeof AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountSeller,
+  TAccountRentPayer,
   TAccountFeeVault,
   TAccountPool,
   TAccountWhitelist,
@@ -294,6 +303,7 @@ export function getSellNftTokenPoolT22Instruction<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     seller: { value: input.seller ?? null, isWritable: true },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
@@ -337,6 +347,7 @@ export function getSellNftTokenPoolT22Instruction<
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.seller),
+      getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.feeVault),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -362,6 +373,7 @@ export function getSellNftTokenPoolT22Instruction<
     typeof AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountSeller,
+    TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
     TAccountWhitelist,
@@ -391,33 +403,34 @@ export type ParsedSellNftTokenPoolT22Instruction<
   accounts: {
     owner: TAccountMetas[0];
     seller: TAccountMetas[1];
-    feeVault: TAccountMetas[2];
-    pool: TAccountMetas[3];
+    rentPayer: TAccountMetas[2];
+    feeVault: TAccountMetas[3];
+    pool: TAccountMetas[4];
     /** Needed for pool seeds derivation, also checked via has_one on pool */
-    whitelist: TAccountMetas[4];
-    mintProof: TAccountMetas[5];
+    whitelist: TAccountMetas[5];
+    mintProof: TAccountMetas[6];
     /** The mint account of the NFT being sold. */
-    mint: TAccountMetas[6];
+    mint: TAccountMetas[7];
     /** The ATA of the NFT for the seller's wallet. */
-    sellerAta: TAccountMetas[7];
+    sellerAta: TAccountMetas[8];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
-    ownerAta: TAccountMetas[8];
-    tokenProgram: TAccountMetas[9];
-    associatedTokenProgram: TAccountMetas[10];
-    systemProgram: TAccountMetas[11];
-    sharedEscrow?: TAccountMetas[12] | undefined;
+    ownerAta: TAccountMetas[9];
+    tokenProgram: TAccountMetas[10];
+    associatedTokenProgram: TAccountMetas[11];
+    systemProgram: TAccountMetas[12];
+    sharedEscrow?: TAccountMetas[13] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[13] | undefined;
+    makerBroker?: TAccountMetas[14] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[14] | undefined;
+    takerBroker?: TAccountMetas[15] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
      * Checks are performed in the handler.
      */
 
-    cosigner?: TAccountMetas[15] | undefined;
-    ammProgram: TAccountMetas[16];
-    escrowProgram: TAccountMetas[17];
+    cosigner?: TAccountMetas[16] | undefined;
+    ammProgram: TAccountMetas[17];
+    escrowProgram: TAccountMetas[18];
   };
   data: SellNftTokenPoolT22InstructionData;
 };
@@ -430,7 +443,7 @@ export function parseSellNftTokenPoolT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 19) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -451,6 +464,7 @@ export function parseSellNftTokenPoolT22Instruction<
     accounts: {
       owner: getNextAccount(),
       seller: getNextAccount(),
+      rentPayer: getNextAccount(),
       feeVault: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),

@@ -446,6 +446,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   const sellNftIx = getSellNftTokenPoolInstruction({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
+    rentPayer: owner.address,
     feeVault,
     pool,
     whitelist,
@@ -527,7 +528,7 @@ test('token pool autocloses when currency amount drops below current price', asy
 
   const owner = await generateKeyPairSignerWithSol(client, 100n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
-  const buyer = await generateKeyPairSignerWithSol(client);
+  const rentPayer = await generateKeyPairSignerWithSol(client);
 
   const takerBroker = await generateKeyPairSignerWithSol(client);
   const makerBroker = await generateKeyPairSignerWithSol(client);
@@ -546,7 +547,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   // Create pool and whitelist
   const { pool, cosigner } = await createPool({
     client,
-    payer: buyer,
+    payer: rentPayer,
     whitelist,
     owner,
     makerBroker: makerBroker.address,
@@ -608,6 +609,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   const sellNftIx = getSellNftTokenPoolInstruction({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
+    rentPayer: rentPayer.address,
     feeVault,
     pool,
     whitelist,
@@ -743,6 +745,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   const sellNftIx = getSellNftTokenPoolInstruction({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
+    rentPayer: owner.address,
     feeVault,
     pool,
     whitelist,

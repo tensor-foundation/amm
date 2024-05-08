@@ -612,6 +612,11 @@
           ]
         },
         {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "feeVault",
           "isMut": true,
           "isSigner": false
@@ -806,6 +811,11 @@
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
           ]
+        },
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "feeVault",
@@ -1284,6 +1294,11 @@
           "isSigner": true
         },
         {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "feeVault",
           "isMut": true,
           "isSigner": false
@@ -1474,6 +1489,11 @@
           "name": "seller",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "feeVault",

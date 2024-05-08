@@ -35,6 +35,10 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    #[account(mut)]
+    pub rent_payer: UncheckedAccount<'info>,
+
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
     /// CHECK: Seeds checked here, account has no state.
     #[account(
@@ -537,7 +541,9 @@ pub fn process_sell_nft_token_pool<'info>(
         );
     }
 
-    try_close_pool(pool, ctx.accounts.owner.to_account_info())?;
-
-    Ok(())
+    try_autoclose_pool(
+        pool,
+        ctx.accounts.rent_payer.to_account_info(),
+        ctx.accounts.owner.to_account_info(),
+    )
 }

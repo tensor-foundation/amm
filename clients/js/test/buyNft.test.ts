@@ -146,6 +146,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const buyNftIx = getBuyNftInstruction({
     owner: owner.address,
     buyer,
+    rentPayer: owner.address,
     feeVault,
     pool,
     poolAta,
@@ -313,6 +314,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   const buyNftIx = getBuyNftInstruction({
     owner: owner.address,
     buyer,
+    rentPayer: owner.address,
     feeVault,
     pool,
     poolAta,
@@ -485,6 +487,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   const buyNftIx = getBuyNftInstruction({
     owner: owner.address,
     buyer,
+    rentPayer: owner.address,
     feeVault,
     pool,
     poolAta,
@@ -538,6 +541,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   const owner = await generateKeyPairSignerWithSol(client);
   // Buyer of the NFT.
   const buyer = await generateKeyPairSignerWithSol(client);
+  const rentPayer = await generateKeyPairSignerWithSol(client);
 
   const config = nftPoolConfig;
 
@@ -551,7 +555,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   // Create pool
   const { pool } = await createPool({
     client,
-    payer: buyer,
+    payer: rentPayer,
     whitelist,
     owner,
     config,
@@ -693,6 +697,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   const buyNftIx1 = getBuyNftInstruction({
     owner: owner.address,
     buyer,
+    rentPayer: rentPayer.address,
     feeVault: feeVault1,
     pool,
     poolAta: poolAta1,
@@ -731,6 +736,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   const buyNftIx2 = getBuyNftInstruction({
     owner: owner.address,
     buyer,
+    rentPayer: rentPayer.address,
     feeVault: feeVault2,
     pool,
     poolAta: poolAta2,
