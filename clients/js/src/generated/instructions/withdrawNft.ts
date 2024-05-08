@@ -60,9 +60,6 @@ export type WithdrawNftInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountMetadata extends string | IAccountMeta<string> = string,
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
@@ -108,9 +105,6 @@ export type WithdrawNftInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
       TAccountMetadata extends string
         ? WritableAccount<TAccountMetadata>
         : TAccountMetadata,
@@ -195,7 +189,6 @@ export type WithdrawNftInput<
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
   TAccountOwnerTokenRecord extends string = string,
@@ -218,7 +211,6 @@ export type WithdrawNftInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
   metadata: Address<TAccountMetadata>;
   edition: Address<TAccountEdition>;
   ownerTokenRecord: Address<TAccountOwnerTokenRecord>;
@@ -246,7 +238,6 @@ export function getWithdrawNftInstruction<
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TAccountMetadata extends string,
   TAccountEdition extends string,
   TAccountOwnerTokenRecord extends string,
@@ -266,7 +257,6 @@ export function getWithdrawNftInstruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountMetadata,
     TAccountEdition,
     TAccountOwnerTokenRecord,
@@ -287,7 +277,6 @@ export function getWithdrawNftInstruction<
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
   TAccountSystemProgram,
-  TAccountRent,
   TAccountMetadata,
   TAccountEdition,
   TAccountOwnerTokenRecord,
@@ -314,7 +303,6 @@ export function getWithdrawNftInstruction<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
     ownerTokenRecord: {
@@ -350,10 +338,6 @@ export function getWithdrawNftInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram.value =
       'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
@@ -375,7 +359,6 @@ export function getWithdrawNftInstruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.rent),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.ownerTokenRecord),
@@ -400,7 +383,6 @@ export function getWithdrawNftInstruction<
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountMetadata,
     TAccountEdition,
     TAccountOwnerTokenRecord,
@@ -433,20 +415,19 @@ export type ParsedWithdrawNftInstruction<
     tokenProgram: TAccountMetas[6];
     associatedTokenProgram: TAccountMetas[7];
     systemProgram: TAccountMetas[8];
-    rent: TAccountMetas[9];
-    metadata: TAccountMetas[10];
-    edition: TAccountMetas[11];
-    ownerTokenRecord: TAccountMetas[12];
+    metadata: TAccountMetas[9];
+    edition: TAccountMetas[10];
+    ownerTokenRecord: TAccountMetas[11];
     /** The Token Metadata pool temporary token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[13];
+    poolTokenRecord: TAccountMetas[12];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[14];
+    tokenMetadataProgram: TAccountMetas[13];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[15];
+    instructions: TAccountMetas[14];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[16];
+    authorizationRulesProgram: TAccountMetas[15];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[17];
+    authRules: TAccountMetas[16];
   };
   data: WithdrawNftInstructionData;
 };
@@ -459,7 +440,7 @@ export function parseWithdrawNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 17) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -481,7 +462,6 @@ export function parseWithdrawNftInstruction<
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      rent: getNextAccount(),
       metadata: getNextAccount(),
       edition: getNextAccount(),
       ownerTokenRecord: getNextAccount(),

@@ -35,6 +35,10 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    #[account(mut)]
+    pub rent_payer: UncheckedAccount<'info>,
+
     // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
     /// CHECK: Seeds checked here, account has no state.
     #[account(
@@ -524,6 +528,7 @@ pub fn process_sell_nft_token_pool<'info>(
 
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     if pool.currency.is_sol() {
+        let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_taken =
             unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
@@ -531,10 +536,14 @@ pub fn process_sell_nft_token_pool<'info>(
 
         // Sanity check to avoid edge cases:
         require!(
-            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
             ErrorCode::InvalidPoolAmount
         );
     }
 
-    Ok(())
+    try_autoclose_pool(
+        pool,
+        ctx.accounts.rent_payer.to_account_info(),
+        ctx.accounts.owner.to_account_info(),
+    )
 }

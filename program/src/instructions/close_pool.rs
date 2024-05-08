@@ -6,6 +6,7 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
     /// CHECK: handler logic checks that it's the same as the stored rent payer
+    #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
     /// CHECK: has_one = owner in pool
@@ -31,6 +32,7 @@ impl<'info> Validate<'info> for ClosePool<'info> {
         if self.pool.nfts_held > 0 {
             throw_err!(ErrorCode::ExistingNfts);
         }
+
         //can't close a shared_escrow pool, need to detach first
         //this is needed because we need to reduce the counter on the escrow acc to be able to close it later
         if self.pool.shared_escrow.value().is_some() {
@@ -42,17 +44,10 @@ impl<'info> Validate<'info> for ClosePool<'info> {
 
 #[access_control(ctx.accounts.validate())]
 pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
-    // Must close manually because cannot do this logic in the accounts macro.
+    // Must close manually because we cannot do this logic in the accounts macro.
 
     let pool = &ctx.accounts.pool;
     let rent_payer_info = ctx.accounts.rent_payer.to_account_info();
 
-    // The incoming rent payer account must match what's stored on the pool.
-    if pool.rent_payer == *rent_payer_info.key {
-        pool.close(rent_payer_info)?;
-    } else {
-        throw_err!(ErrorCode::WrongRentPayer);
-    };
-
-    Ok(())
+    state::pool::close_pool(pool, rent_payer_info, ctx.accounts.owner.to_account_info())
 }

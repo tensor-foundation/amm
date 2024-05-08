@@ -27,6 +27,10 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
 
+    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    #[account(mut)]
+    pub rent_payer: UncheckedAccount<'info>,
+
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -352,6 +356,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
     if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+        let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_added =
             unwrap_checked!({ pool_final_balance.checked_sub(pool_initial_balance) });
@@ -359,10 +364,14 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
         // Sanity check to avoid edge cases:
         require!(
-            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(POOL_STATE_BOND)),
+            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
             ErrorCode::InvalidPoolAmount
         );
     }
 
-    Ok(())
+    try_autoclose_pool(
+        pool,
+        ctx.accounts.rent_payer.to_account_info(),
+        ctx.accounts.owner.to_account_info(),
+    )
 }

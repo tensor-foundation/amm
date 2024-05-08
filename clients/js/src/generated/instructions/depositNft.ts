@@ -58,9 +58,6 @@ export type DepositNftInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountRent extends
-    | string
-    | IAccountMeta<string> = 'SysvarRent111111111111111111111111111111111',
   TAccountMetadata extends string | IAccountMeta<string> = string,
   TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountEdition extends string | IAccountMeta<string> = string,
@@ -108,9 +105,6 @@ export type DepositNftInstruction<
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
-      TAccountRent extends string
-        ? ReadonlyAccount<TAccountRent>
-        : TAccountRent,
       TAccountMetadata extends string
         ? ReadonlyAccount<TAccountMetadata>
         : TAccountMetadata,
@@ -197,7 +191,6 @@ export type DepositNftInput<
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
-  TAccountRent extends string = string,
   TAccountMetadata extends string = string,
   TAccountMintProof extends string = string,
   TAccountEdition extends string = string,
@@ -227,7 +220,6 @@ export type DepositNftInput<
   nftReceipt: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  rent?: Address<TAccountRent>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
   mintProof?: Address<TAccountMintProof>;
@@ -259,7 +251,6 @@ export function getDepositNftInstruction<
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountSystemProgram extends string,
-  TAccountRent extends string,
   TAccountMetadata extends string,
   TAccountMintProof extends string,
   TAccountEdition extends string,
@@ -281,7 +272,6 @@ export function getDepositNftInstruction<
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountMetadata,
     TAccountMintProof,
     TAccountEdition,
@@ -304,7 +294,6 @@ export function getDepositNftInstruction<
   TAccountNftReceipt,
   TAccountTokenProgram,
   TAccountSystemProgram,
-  TAccountRent,
   TAccountMetadata,
   TAccountMintProof,
   TAccountEdition,
@@ -330,7 +319,6 @@ export function getDepositNftInstruction<
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    rent: { value: input.rent ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
@@ -371,10 +359,6 @@ export function getDepositNftInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
-  if (!accounts.rent.value) {
-    accounts.rent.value =
-      'SysvarRent111111111111111111111111111111111' as Address<'SysvarRent111111111111111111111111111111111'>;
-  }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram.value =
       'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
@@ -396,7 +380,6 @@ export function getDepositNftInstruction<
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.systemProgram),
-      getAccountMeta(accounts.rent),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.edition),
@@ -423,7 +406,6 @@ export function getDepositNftInstruction<
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountSystemProgram,
-    TAccountRent,
     TAccountMetadata,
     TAccountMintProof,
     TAccountEdition,
@@ -464,25 +446,24 @@ export type ParsedDepositNftInstruction<
     nftReceipt: TAccountMetas[6];
     tokenProgram: TAccountMetas[7];
     systemProgram: TAccountMetas[8];
-    rent: TAccountMetas[9];
     /** The Token Metadata metadata account of the NFT. */
-    metadata: TAccountMetas[10];
-    mintProof?: TAccountMetas[11] | undefined;
+    metadata: TAccountMetas[9];
+    mintProof?: TAccountMetas[10] | undefined;
     /** The Token Metadata edition account of the NFT. */
-    edition: TAccountMetas[12];
+    edition: TAccountMetas[11];
     /** The Token Metadata owner/buyer token record account of the NFT. */
-    ownerTokenRecord: TAccountMetas[13];
+    ownerTokenRecord: TAccountMetas[12];
     /** The Token Metadata pool token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[14];
-    associatedTokenProgram: TAccountMetas[15];
+    poolTokenRecord: TAccountMetas[13];
+    associatedTokenProgram: TAccountMetas[14];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[16];
+    tokenMetadataProgram: TAccountMetas[15];
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[17];
+    instructions: TAccountMetas[16];
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[18];
+    authorizationRulesProgram: TAccountMetas[17];
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[19];
+    authRules: TAccountMetas[18];
   };
   data: DepositNftInstructionData;
 };
@@ -495,7 +476,7 @@ export function parseDepositNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedDepositNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
+  if (instruction.accounts.length < 19) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -523,7 +504,6 @@ export function parseDepositNftInstruction<
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
-      rent: getNextAccount(),
       metadata: getNextAccount(),
       mintProof: getNextOptionalAccount(),
       edition: getNextAccount(),

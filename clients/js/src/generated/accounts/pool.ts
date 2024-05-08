@@ -108,13 +108,13 @@ export type PoolAccountData = {
   priceOffset: number;
   nftsHeld: number;
   stats: PoolStats;
-  /** If an escrow account is present, means it's a shared-escrow pool */
+  /** If an escrow account is present, means it's a shared-escrow pool. */
   sharedEscrow: NullableAddress;
-  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
+  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present). */
   cosigner: NullableAddress;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddress;
-  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
+  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
   config: PoolConfig;
   reserved: Array<number>;
@@ -148,13 +148,13 @@ export type PoolAccountDataArgs = {
   priceOffset: number;
   nftsHeld: number;
   stats: PoolStatsArgs;
-  /** If an escrow account is present, means it's a shared-escrow pool */
+  /** If an escrow account is present, means it's a shared-escrow pool. */
   sharedEscrow: NullableAddressArgs;
-  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present) */
+  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present). */
   cosigner: NullableAddressArgs;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddressArgs;
-  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya */
+  /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
   config: PoolConfigArgs;
   reserved: Array<number>;

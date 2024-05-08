@@ -54,13 +54,13 @@ pub struct Pool {
     pub price_offset: i32,
     pub nfts_held: u32,
     pub stats: PoolStats,
-    /// If an escrow account is present, means it's a shared-escrow pool
+    /// If an escrow account is present, means it's a shared-escrow pool.
     pub shared_escrow: NullableAddress,
-    /// Offchain actor signs off to make sure an offchain condition is met (eg trait present)
+    /// Offchain actor signs off to make sure an offchain condition is met (eg trait present).
     pub cosigner: NullableAddress,
     /// Maker broker fees will be sent to this address if populated.
     pub maker_broker: NullableAddress,
-    /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya
+    /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity.
     pub max_taker_sell_count: u32,
     pub config: PoolConfig,
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]

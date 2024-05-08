@@ -42,8 +42,6 @@ pub struct SellNftTradePool {
 
     pub system_program: solana_program::pubkey::Pubkey,
 
-    pub rent: solana_program::pubkey::Pubkey,
-
     pub associated_token_program: solana_program::pubkey::Pubkey,
 
     pub edition: solana_program::pubkey::Pubkey,
@@ -87,7 +85,7 @@ impl SellNftTradePool {
         args: SellNftTradePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(28 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -142,9 +140,6 @@ impl SellNftTradePool {
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.rent, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.associated_token_program,
@@ -281,21 +276,20 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   10. `[writable]` nft_receipt
 ///   11. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   12. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   13. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-///   14. `[]` associated_token_program
-///   15. `[]` edition
-///   16. `[writable]` seller_token_record
-///   17. `[writable]` pool_token_record
-///   18. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   19. `[]` instructions
-///   20. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   21. `[]` auth_rules
-///   22. `[writable, optional]` shared_escrow
-///   23. `[writable, optional]` maker_broker
-///   24. `[writable, optional]` taker_broker
-///   25. `[signer, optional]` cosigner
-///   26. `[]` amm_program
-///   27. `[]` escrow_program
+///   13. `[]` associated_token_program
+///   14. `[]` edition
+///   15. `[writable]` seller_token_record
+///   16. `[writable]` pool_token_record
+///   17. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
+///   18. `[]` instructions
+///   19. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
+///   20. `[]` auth_rules
+///   21. `[writable, optional]` shared_escrow
+///   22. `[writable, optional]` maker_broker
+///   23. `[writable, optional]` taker_broker
+///   24. `[signer, optional]` cosigner
+///   25. `[]` amm_program
+///   26. `[]` escrow_program
 #[derive(Default)]
 pub struct SellNftTradePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -311,7 +305,6 @@ pub struct SellNftTradePoolBuilder {
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    rent: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
     edition: Option<solana_program::pubkey::Pubkey>,
     seller_token_record: Option<solana_program::pubkey::Pubkey>,
@@ -415,12 +408,6 @@ impl SellNftTradePoolBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
-    #[inline(always)]
-    pub fn rent(&mut self, rent: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.rent = Some(rent);
         self
     }
     #[inline(always)]
@@ -595,9 +582,6 @@ impl SellNftTradePoolBuilder {
                 system_program: self
                     .system_program
                     .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                rent: self.rent.unwrap_or(solana_program::pubkey!(
-                    "SysvarRent111111111111111111111111111111111"
-                )),
                 associated_token_program: self
                     .associated_token_program
                     .expect("associated_token_program is not set"),
@@ -670,8 +654,6 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub rent: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
@@ -737,8 +719,6 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub rent: &'b solana_program::account_info::AccountInfo<'a>,
-
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
@@ -792,7 +772,6 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             nft_receipt: accounts.nft_receipt,
             token_program: accounts.token_program,
             system_program: accounts.system_program,
-            rent: accounts.rent,
             associated_token_program: accounts.associated_token_program,
             edition: accounts.edition,
             seller_token_record: accounts.seller_token_record,
@@ -843,7 +822,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(28 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(27 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -901,10 +880,6 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.rent.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -1007,7 +982,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(28 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(27 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.seller.clone());
@@ -1024,7 +999,6 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.token_program.clone());
         account_infos.push(self.system_program.clone());
-        account_infos.push(self.rent.clone());
         account_infos.push(self.associated_token_program.clone());
         account_infos.push(self.edition.clone());
         account_infos.push(self.seller_token_record.clone());
@@ -1076,21 +1050,20 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   10. `[writable]` nft_receipt
 ///   11. `[]` token_program
 ///   12. `[]` system_program
-///   13. `[]` rent
-///   14. `[]` associated_token_program
-///   15. `[]` edition
-///   16. `[writable]` seller_token_record
-///   17. `[writable]` pool_token_record
-///   18. `[]` token_metadata_program
-///   19. `[]` instructions
-///   20. `[]` authorization_rules_program
-///   21. `[]` auth_rules
-///   22. `[writable, optional]` shared_escrow
-///   23. `[writable, optional]` maker_broker
-///   24. `[writable, optional]` taker_broker
-///   25. `[signer, optional]` cosigner
-///   26. `[]` amm_program
-///   27. `[]` escrow_program
+///   13. `[]` associated_token_program
+///   14. `[]` edition
+///   15. `[writable]` seller_token_record
+///   16. `[writable]` pool_token_record
+///   17. `[]` token_metadata_program
+///   18. `[]` instructions
+///   19. `[]` authorization_rules_program
+///   20. `[]` auth_rules
+///   21. `[writable, optional]` shared_escrow
+///   22. `[writable, optional]` maker_broker
+///   23. `[writable, optional]` taker_broker
+///   24. `[signer, optional]` cosigner
+///   25. `[]` amm_program
+///   26. `[]` escrow_program
 pub struct SellNftTradePoolCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTradePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1112,7 +1085,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             nft_receipt: None,
             token_program: None,
             system_program: None,
-            rent: None,
             associated_token_program: None,
             edition: None,
             seller_token_record: None,
@@ -1241,11 +1213,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.rent = Some(rent);
         self
     }
     #[inline(always)]
@@ -1490,8 +1457,6 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
                 .system_program
                 .expect("system_program is not set"),
 
-            rent: self.instruction.rent.expect("rent is not set"),
-
             associated_token_program: self
                 .instruction
                 .associated_token_program
@@ -1567,7 +1532,6 @@ struct SellNftTradePoolCpiBuilderInstruction<'a, 'b> {
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    rent: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,

@@ -62,11 +62,6 @@
       "value": "8 + (2 * 1) + 32 + 8 * 3 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (32 + 8) + (3 * 4) + (2 * 4) + 8 + (3 * 32) + 4 + 100"
     },
     {
-      "name": "POOL_STATE_BOND",
-      "type": "u64",
-      "value": "3814080"
-    },
-    {
       "name": "SINGLE_LISTING_SIZE",
       "type": {
         "defined": "usize"
@@ -200,7 +195,7 @@
       "accounts": [
         {
           "name": "rentPayer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -311,11 +306,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -463,11 +453,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -627,6 +612,11 @@
           ]
         },
         {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "feeVault",
           "isMut": true,
           "isSigner": false
@@ -689,11 +679,6 @@
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -826,6 +811,11 @@
           "docs": [
             "The seller is the owner of the NFT who is selling the NFT into the pool."
           ]
+        },
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "feeVault",
@@ -1160,11 +1150,6 @@
           "isSigner": false
         },
         {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -1307,6 +1292,11 @@
           "name": "buyer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "feeVault",
@@ -1499,6 +1489,11 @@
           "name": "seller",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "rentPayer",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "feeVault",
@@ -1955,7 +1950,7 @@
           {
             "name": "sharedEscrow",
             "docs": [
-              "If an escrow account is present, means it's a shared-escrow pool"
+              "If an escrow account is present, means it's a shared-escrow pool."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1964,7 +1959,7 @@
           {
             "name": "cosigner",
             "docs": [
-              "Offchain actor signs off to make sure an offchain condition is met (eg trait present)"
+              "Offchain actor signs off to make sure an offchain condition is met (eg trait present)."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1982,7 +1977,7 @@
           {
             "name": "maxTakerSellCount",
             "docs": [
-              "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinitya"
+              "Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity."
             ],
             "type": "u32"
           },
