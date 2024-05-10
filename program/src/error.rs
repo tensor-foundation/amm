@@ -1,5 +1,7 @@
+//! Errors that can be returned by the program.
 use anchor_lang::prelude::*;
 
+/// Errors that can be returned by the program.
 #[error_code]
 pub enum ErrorCode {
     // 6000 | 0x1770

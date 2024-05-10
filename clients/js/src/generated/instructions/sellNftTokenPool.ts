@@ -16,8 +16,6 @@ import {
   combineCodec,
   getArrayDecoder,
   getArrayEncoder,
-  getBooleanDecoder,
-  getBooleanEncoder,
   getOptionDecoder,
   getOptionEncoder,
   getStructDecoder,
@@ -76,14 +74,12 @@ export type SellNftTokenPoolInstruction<
   TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountSellerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountTokenMetadataProgram extends
-    | string
-    | IAccountMeta<string> = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-  TAccountInstructions extends string | IAccountMeta<string> = string,
+  TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
+  TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
+  TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
   TAccountAuthorizationRulesProgram extends
     | string
-    | IAccountMeta<string> = 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
-  TAccountAuthRules extends string | IAccountMeta<string> = string,
+    | IAccountMeta<string> = string,
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
@@ -156,15 +152,15 @@ export type SellNftTokenPoolInstruction<
       TAccountTokenMetadataProgram extends string
         ? ReadonlyAccount<TAccountTokenMetadataProgram>
         : TAccountTokenMetadataProgram,
-      TAccountInstructions extends string
-        ? ReadonlyAccount<TAccountInstructions>
-        : TAccountInstructions,
+      TAccountSysvarInstructions extends string
+        ? ReadonlyAccount<TAccountSysvarInstructions>
+        : TAccountSysvarInstructions,
+      TAccountAuthorizationRules extends string
+        ? ReadonlyAccount<TAccountAuthorizationRules>
+        : TAccountAuthorizationRules,
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
-      TAccountAuthRules extends string
-        ? ReadonlyAccount<TAccountAuthRules>
-        : TAccountAuthRules,
       TAccountSharedEscrow extends string
         ? WritableAccount<TAccountSharedEscrow>
         : TAccountSharedEscrow,
@@ -191,14 +187,12 @@ export type SellNftTokenPoolInstruction<
 export type SellNftTokenPoolInstructionData = {
   discriminator: Array<number>;
   minPrice: bigint;
-  rulesAccPresent: boolean;
   authorizationData: Option<AuthorizationDataLocal>;
   optionalRoyaltyPct: Option<number>;
 };
 
 export type SellNftTokenPoolInstructionDataArgs = {
   minPrice: number | bigint;
-  rulesAccPresent: boolean;
   authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
   optionalRoyaltyPct: OptionOrNullable<number>;
 };
@@ -208,7 +202,6 @@ export function getSellNftTokenPoolInstructionDataEncoder(): Encoder<SellNftToke
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['minPrice', getU64Encoder()],
-      ['rulesAccPresent', getBooleanEncoder()],
       [
         'authorizationData',
         getOptionEncoder(getAuthorizationDataLocalEncoder()),
@@ -223,7 +216,6 @@ export function getSellNftTokenPoolInstructionDataDecoder(): Decoder<SellNftToke
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['minPrice', getU64Decoder()],
-    ['rulesAccPresent', getBooleanDecoder()],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['optionalRoyaltyPct', getOptionDecoder(getU16Decoder())],
   ]);
@@ -260,9 +252,9 @@ export type SellNftTokenPoolInput<
   TAccountSellerTokenRecord extends string = string,
   TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
-  TAccountInstructions extends string = string,
+  TAccountSysvarInstructions extends string = string,
+  TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountAuthRules extends string = string,
   TAccountSharedEscrow extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountTakerBroker extends string = string,
@@ -309,19 +301,19 @@ export type SellNftTokenPoolInput<
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
   /** The Token Metadata owner/buyer token record account of the NFT. */
-  ownerTokenRecord: Address<TAccountOwnerTokenRecord>;
+  ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata seller/source token record account of the NFT. */
-  sellerTokenRecord: Address<TAccountSellerTokenRecord>;
+  sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
   /** The Token Metadata pool temporary token record account of the NFT. */
-  poolTokenRecord: Address<TAccountPoolTokenRecord>;
+  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
   /** The sysvar instructions account. */
-  instructions: Address<TAccountInstructions>;
+  sysvarInstructions?: Address<TAccountSysvarInstructions>;
+  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
+  authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-  authRules: Address<TAccountAuthRules>;
   /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
@@ -336,7 +328,6 @@ export type SellNftTokenPoolInput<
   ammProgram: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
-  rulesAccPresent: SellNftTokenPoolInstructionDataArgs['rulesAccPresent'];
   authorizationData: SellNftTokenPoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
   creators?: Array<Address>;
@@ -363,9 +354,9 @@ export function getSellNftTokenPoolInstruction<
   TAccountSellerTokenRecord extends string,
   TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
-  TAccountInstructions extends string,
+  TAccountSysvarInstructions extends string,
+  TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountAuthRules extends string,
   TAccountSharedEscrow extends string,
   TAccountMakerBroker extends string,
   TAccountTakerBroker extends string,
@@ -394,9 +385,9 @@ export function getSellNftTokenPoolInstruction<
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
-    TAccountInstructions,
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountAuthRules,
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
@@ -426,9 +417,9 @@ export function getSellNftTokenPoolInstruction<
   TAccountSellerTokenRecord,
   TAccountPoolTokenRecord,
   TAccountTokenMetadataProgram,
-  TAccountInstructions,
+  TAccountSysvarInstructions,
+  TAccountAuthorizationRules,
   TAccountAuthorizationRulesProgram,
-  TAccountAuthRules,
   TAccountSharedEscrow,
   TAccountMakerBroker,
   TAccountTakerBroker,
@@ -473,12 +464,18 @@ export function getSellNftTokenPoolInstruction<
       value: input.tokenMetadataProgram ?? null,
       isWritable: false,
     },
-    instructions: { value: input.instructions ?? null, isWritable: false },
+    sysvarInstructions: {
+      value: input.sysvarInstructions ?? null,
+      isWritable: false,
+    },
+    authorizationRules: {
+      value: input.authorizationRules ?? null,
+      isWritable: false,
+    },
     authorizationRulesProgram: {
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    authRules: { value: input.authRules ?? null, isWritable: false },
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
@@ -502,14 +499,6 @@ export function getSellNftTokenPoolInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.tokenMetadataProgram.value) {
-    accounts.tokenMetadataProgram.value =
-      'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
-  }
-  if (!accounts.authorizationRulesProgram.value) {
-    accounts.authorizationRulesProgram.value =
-      'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg' as Address<'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg'>;
   }
 
   // Remaining accounts.
@@ -540,9 +529,9 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.sellerTokenRecord),
       getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
-      getAccountMeta(accounts.instructions),
+      getAccountMeta(accounts.sysvarInstructions),
+      getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.authRules),
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.takerBroker),
@@ -577,9 +566,9 @@ export function getSellNftTokenPoolInstruction<
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
-    TAccountInstructions,
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountAuthRules,
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
@@ -638,19 +627,19 @@ export type ParsedSellNftTokenPoolInstruction<
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[15];
     /** The Token Metadata owner/buyer token record account of the NFT. */
-    ownerTokenRecord: TAccountMetas[16];
+    ownerTokenRecord?: TAccountMetas[16] | undefined;
     /** The Token Metadata seller/source token record account of the NFT. */
-    sellerTokenRecord: TAccountMetas[17];
+    sellerTokenRecord?: TAccountMetas[17] | undefined;
     /** The Token Metadata pool temporary token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[18];
+    poolTokenRecord?: TAccountMetas[18] | undefined;
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[19];
+    tokenMetadataProgram?: TAccountMetas[19] | undefined;
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[20];
-    /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[21];
+    sysvarInstructions?: TAccountMetas[20] | undefined;
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[22];
+    authorizationRules?: TAccountMetas[21] | undefined;
+    /** The Metaplex Token Authority Rules program account. */
+    authorizationRulesProgram?: TAccountMetas[22] | undefined;
     /** The shared escrow account for pools that pool liquidity in a shared account. */
     sharedEscrow?: TAccountMetas[23] | undefined;
     /** The account that receives the maker broker fee. */
@@ -712,13 +701,13 @@ export function parseSellNftTokenPoolInstruction<
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),
       edition: getNextAccount(),
-      ownerTokenRecord: getNextAccount(),
-      sellerTokenRecord: getNextAccount(),
-      poolTokenRecord: getNextAccount(),
-      tokenMetadataProgram: getNextAccount(),
-      instructions: getNextAccount(),
-      authorizationRulesProgram: getNextAccount(),
-      authRules: getNextAccount(),
+      ownerTokenRecord: getNextOptionalAccount(),
+      sellerTokenRecord: getNextOptionalAccount(),
+      poolTokenRecord: getNextOptionalAccount(),
+      tokenMetadataProgram: getNextOptionalAccount(),
+      sysvarInstructions: getNextOptionalAccount(),
+      authorizationRules: getNextOptionalAccount(),
+      authorizationRulesProgram: getNextOptionalAccount(),
       sharedEscrow: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),

@@ -1,9 +1,6 @@
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-  SYSVARS_INSTRUCTIONS,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -26,7 +23,6 @@ import {
   getDepositNftInstruction,
 } from '../src/index.js';
 import {
-  DEFAULT_PUBKEY,
   createPool,
   createWhitelistV2,
   findAtaPda,
@@ -103,10 +99,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-    instructions: SYSVARS_INSTRUCTIONS,
-    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    authRules: DEFAULT_PUBKEY,
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });

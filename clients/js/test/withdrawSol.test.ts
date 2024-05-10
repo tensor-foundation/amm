@@ -8,9 +8,6 @@ import {
 } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-  SYSVARS_INSTRUCTIONS,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -34,7 +31,6 @@ import {
   isSol,
 } from '../src/index.js';
 import {
-  DEFAULT_PUBKEY,
   createPool,
   createWhitelistV2,
   findAtaPda,
@@ -126,13 +122,8 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     sellerTokenRecord,
     poolTokenRecord,
     nftReceipt,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-    instructions: SYSVARS_INSTRUCTIONS,
-    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    authRules: DEFAULT_PUBKEY,
     cosigner,
     minPrice,
-    rulesAccPresent: false,
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),

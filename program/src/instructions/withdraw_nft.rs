@@ -5,7 +5,7 @@ use anchor_spl::{
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::{send_pnft, PnftTransferArgs};
+use tensor_toolbox::token_metadata::{transfer, TransferArgs};
 use vipers::{throw_err, unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
@@ -99,7 +99,7 @@ pub struct WithdrawNft<'info> {
 
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
-    pub owner_token_record: UncheckedAccount<'info>,
+    pub owner_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata pool temporary token record account of the NFT.
     /// CHECK: seeds checked here
@@ -114,28 +114,28 @@ pub struct WithdrawNft<'info> {
         seeds::program = mpl_token_metadata::ID,
         bump
     )]
-    pub pool_token_record: UncheckedAccount<'info>,
+    pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     // Todo: add ProgNftShared back in, if possible
     // pub pnft_shared: ProgNftShared<'info>,
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]
-    pub token_metadata_program: UncheckedAccount<'info>,
+    pub token_metadata_program: Option<UncheckedAccount<'info>>,
 
     /// The sysvar instructions account.
     /// CHECK: address constraint is checked here
     #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
+    pub sysvar_instructions: Option<UncheckedAccount<'info>>,
+
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
+    /// CHECK: validated by mplex's pnft code
+    pub authorization_rules: Option<UncheckedAccount<'info>>,
 
     /// The Metaplex Token Authority Rules program account.
     /// CHECK: address constraint is checked here
     #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
-    pub authorization_rules_program: UncheckedAccount<'info>,
-
-    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    /// CHECK: validated by mplex's pnft code
-    pub auth_rules: UncheckedAccount<'info>,
+    pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 }
 
 impl<'info> WithdrawNft<'info> {
@@ -164,15 +164,7 @@ impl<'info> Validate<'info> for WithdrawNft<'info> {
 pub fn process_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
     authorization_data: Option<AuthorizationDataLocal>,
-    rules_acc_present: bool,
 ) -> Result<()> {
-    let auth_rules_acc_info = &ctx.accounts.auth_rules.to_account_info();
-    let auth_rules = if rules_acc_present {
-        Some(auth_rules_acc_info)
-    } else {
-        None
-    };
-
     let pool = &ctx.accounts.pool;
 
     let owner_pubkey = ctx.accounts.owner.key();
@@ -184,28 +176,29 @@ pub fn process_withdraw_nft<'info>(
         &[pool.bump[0]],
     ]];
 
-    send_pnft(
-        Some(signer_seeds),
-        PnftTransferArgs {
-            authority_and_owner: &ctx.accounts.pool.to_account_info(),
+    transfer(
+        TransferArgs {
             payer: &ctx.accounts.owner.to_account_info(),
+            source: &ctx.accounts.pool.to_account_info(),
             source_ata: &ctx.accounts.pool_ata,
-            dest_ata: &ctx.accounts.owner_ata,
-            dest_owner: &ctx.accounts.owner,
-            nft_mint: &ctx.accounts.mint,
-            nft_metadata: &ctx.accounts.metadata,
-            nft_edition: &ctx.accounts.edition,
+            destination: &ctx.accounts.owner,
+            destination_ata: &ctx.accounts.owner_ata,
+            mint: &ctx.accounts.mint,
+            metadata: &ctx.accounts.metadata,
+            edition: &ctx.accounts.edition,
             system_program: &ctx.accounts.system_program,
-            token_program: &ctx.accounts.token_program,
-            ata_program: &ctx.accounts.associated_token_program,
-            instructions: &ctx.accounts.instructions,
-            owner_token_record: &ctx.accounts.pool_token_record,
-            dest_token_record: &ctx.accounts.owner_token_record,
-            authorization_rules_program: &ctx.accounts.authorization_rules_program,
-            rules_acc: auth_rules,
+            spl_token_program: &ctx.accounts.token_program,
+            spl_ata_program: &ctx.accounts.associated_token_program,
+            token_metadata_program: ctx.accounts.token_metadata_program.as_ref(),
+            sysvar_instructions: ctx.accounts.sysvar_instructions.as_ref(),
+            source_token_record: ctx.accounts.pool_token_record.as_ref(),
+            destination_token_record: ctx.accounts.owner_token_record.as_ref(),
+            authorization_rules_program: ctx.accounts.authorization_rules_program.as_ref(),
+            authorization_rules: ctx.accounts.authorization_rules.as_ref(),
             authorization_data: authorization_data.map(AuthorizationData::from),
             delegate: None,
         },
+        Some(signer_seeds),
     )?;
 
     // close pool ATA

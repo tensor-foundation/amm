@@ -42,6 +42,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount};
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
+use tensor_toolbox::shard_num;
 use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int};
 

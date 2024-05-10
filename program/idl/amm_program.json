@@ -1,6 +1,9 @@
 {
   "version": "0.0.0",
   "name": "amm_program",
+  "docs": [
+    "Program entrypoint"
+  ],
   "constants": [
     {
       "name": "CURRENT_TAMM_VERSION",
@@ -10,7 +13,7 @@
     {
       "name": "CURRENT_POOL_VERSION",
       "type": "u8",
-      "value": "2"
+      "value": "0"
     },
     {
       "name": "MAX_MM_FEES_BPS",
@@ -26,11 +29,6 @@
       "name": "MAX_DELTA_BPS",
       "type": "u16",
       "value": "9999"
-    },
-    {
-      "name": "SPREAD_TICKS",
-      "type": "u8",
-      "value": "1"
     },
     {
       "name": "TAKER_FEE_BPS",
@@ -65,6 +63,9 @@
   "instructions": [
     {
       "name": "tammNoop",
+      "docs": [
+        "Self-cpi logging instruction; can only be called internally by the program itself."
+      ],
       "accounts": [
         {
           "name": "pool",
@@ -82,40 +83,10 @@
       ]
     },
     {
-      "name": "reallocPool",
-      "accounts": [
-        {
-          "name": "pool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "owner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "cosigner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        }
-      ]
-    },
-    {
       "name": "createPool",
+      "docs": [
+        "Create a new pool."
+      ],
       "accounts": [
         {
           "name": "rentPayer",
@@ -157,6 +128,9 @@
     },
     {
       "name": "editPool",
+      "docs": [
+        "Edit an existing pool."
+      ],
       "accounts": [
         {
           "name": "pool",
@@ -185,6 +159,9 @@
     },
     {
       "name": "closePool",
+      "docs": [
+        "Close a pool if it has no NFTs and is not attached to a shared escrow."
+      ],
       "accounts": [
         {
           "name": "rentPayer",
@@ -211,6 +188,9 @@
     },
     {
       "name": "closeExpiredPool",
+      "docs": [
+        "Permissionlessly close an expired pool."
+      ],
       "accounts": [
         {
           "name": "rentPayer",
@@ -237,6 +217,9 @@
     },
     {
       "name": "depositNft",
+      "docs": [
+        "Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -328,6 +311,7 @@
           "name": "ownerTokenRecord",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata owner/buyer token record account of the NFT."
           ]
@@ -336,6 +320,7 @@
           "name": "poolTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata pool token record account of the NFT."
           ]
@@ -349,32 +334,36 @@
           "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata program account."
           ]
         },
         {
-          "name": "instructions",
+          "name": "sysvarInstructions",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The sysvar instructions account."
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules program account."
-          ]
-        },
-        {
-          "name": "authRules",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         }
       ],
@@ -391,6 +380,9 @@
     },
     {
       "name": "withdrawNft",
+      "docs": [
+        "Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -462,12 +454,14 @@
         {
           "name": "ownerTokenRecord",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         },
         {
           "name": "poolTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata pool temporary token record account of the NFT."
           ]
@@ -476,32 +470,36 @@
           "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata program account."
           ]
         },
         {
-          "name": "instructions",
+          "name": "sysvarInstructions",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The sysvar instructions account."
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules program account."
-          ]
-        },
-        {
-          "name": "authRules",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         }
       ],
@@ -513,15 +511,14 @@
               "defined": "AuthorizationDataLocal"
             }
           }
-        },
-        {
-          "name": "rulesAccPresent",
-          "type": "bool"
         }
       ]
     },
     {
       "name": "depositSol",
+      "docs": [
+        "Deposit SOL into a Token or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -553,6 +550,9 @@
     },
     {
       "name": "withdrawSol",
+      "docs": [
+        "Withdraw SOL from a Token or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -585,6 +585,9 @@
     },
     {
       "name": "buyNft",
+      "docs": [
+        "Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -684,6 +687,7 @@
           "name": "poolTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata token record for the pool."
           ]
@@ -692,6 +696,7 @@
           "name": "buyerTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata token record for the buyer."
           ]
@@ -700,14 +705,16 @@
           "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata program account."
           ]
         },
         {
-          "name": "instructions",
+          "name": "sysvarInstructions",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The sysvar instructions account."
           ]
@@ -716,14 +723,16 @@
           "name": "authorizationRulesProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules program account."
           ]
         },
         {
-          "name": "authRules",
+          "name": "authorizationRules",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
@@ -767,10 +776,6 @@
           "type": "u64"
         },
         {
-          "name": "rulesAccPresent",
-          "type": "bool"
-        },
-        {
           "name": "authorizationData",
           "type": {
             "option": {
@@ -788,6 +793,9 @@
     },
     {
       "name": "sellNftTokenPool",
+      "docs": [
+        "Sell a Metaplex legacy NFT or pNFT into a Token pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -920,6 +928,7 @@
           "name": "ownerTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata owner/buyer token record account of the NFT."
           ]
@@ -928,6 +937,7 @@
           "name": "sellerTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata seller/source token record account of the NFT."
           ]
@@ -936,6 +946,7 @@
           "name": "poolTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata pool temporary token record account of the NFT."
           ]
@@ -944,32 +955,36 @@
           "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata program account."
           ]
         },
         {
-          "name": "instructions",
+          "name": "sysvarInstructions",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The sysvar instructions account."
+          ]
+        },
+        {
+          "name": "authorizationRules",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         },
         {
           "name": "authorizationRulesProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules program account."
-          ]
-        },
-        {
-          "name": "authRules",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
         },
         {
@@ -1026,10 +1041,6 @@
           "type": "u64"
         },
         {
-          "name": "rulesAccPresent",
-          "type": "bool"
-        },
-        {
           "name": "authorizationData",
           "type": {
             "option": {
@@ -1047,6 +1058,9 @@
     },
     {
       "name": "sellNftTradePool",
+      "docs": [
+        "Sell a Metaplex legacy NFT or pNFT into a Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -1156,6 +1170,7 @@
           "name": "sellerTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata seller/source token record account of the NFT."
           ]
@@ -1164,6 +1179,7 @@
           "name": "poolTokenRecord",
           "isMut": true,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata pool temporary token record account of the NFT."
           ]
@@ -1172,14 +1188,16 @@
           "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Token Metadata program account."
           ]
         },
         {
-          "name": "instructions",
+          "name": "sysvarInstructions",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The sysvar instructions account."
           ]
@@ -1188,14 +1206,16 @@
           "name": "authorizationRulesProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules program account."
           ]
         },
         {
-          "name": "authRules",
+          "name": "authorizationRules",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
           ]
@@ -1254,10 +1274,6 @@
           "type": "u64"
         },
         {
-          "name": "rulesAccPresent",
-          "type": "bool"
-        },
-        {
           "name": "authorizationData",
           "type": {
             "option": {
@@ -1275,6 +1291,9 @@
     },
     {
       "name": "buyNftT22",
+      "docs": [
+        "Buy a Token22 NFT from a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -1395,6 +1414,9 @@
     },
     {
       "name": "depositNftT22",
+      "docs": [
+        "Deposit a Token22 NFT into a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -1472,6 +1494,9 @@
     },
     {
       "name": "sellNftTokenPoolT22",
+      "docs": [
+        "Sell a Token22 NFT into a Token pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -1610,6 +1635,9 @@
     },
     {
       "name": "sellNftTradePoolT22",
+      "docs": [
+        "Sell a Token22 NFT into a Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
@@ -1745,6 +1773,9 @@
     },
     {
       "name": "withdrawNftT22",
+      "docs": [
+        "Withdraw a Token22 NFT from a NFT or Trade pool."
+      ],
       "accounts": [
         {
           "name": "owner",
