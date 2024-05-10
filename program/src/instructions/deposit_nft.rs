@@ -13,7 +13,7 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
-/// Allows a pool owner to deposit an asset into Trade or NFT pool.
+/// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
     /// The owner of the pool and the NFT.
@@ -193,6 +193,7 @@ impl<'info> Validate<'info> for DepositNft<'info> {
     }
 }
 
+/// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_deposit_nft(
     ctx: Context<DepositNft>,

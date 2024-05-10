@@ -1,4 +1,4 @@
-//! User buying an NFT from an NFT/Trade pool
+//! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -20,7 +20,7 @@ use self::{
 
 use super::*;
 
-/// Allows a buyer to purchase an NFT from a Trade or NFT pool.
+/// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
     /// Owner is the pool owner who created the pool and the nominal owner of the
@@ -222,6 +222,7 @@ impl<'info> Validate<'info> for BuyNft<'info> {
     }
 }
 
+/// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,

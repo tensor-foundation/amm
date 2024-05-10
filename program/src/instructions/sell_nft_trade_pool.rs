@@ -249,6 +249,7 @@ impl<'info> Validate<'info> for SellNftTradePool<'info> {
     }
 }
 
+/// Sell a Metaplex legacy NFT or pNFT into a Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_sell_nft_trade_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,

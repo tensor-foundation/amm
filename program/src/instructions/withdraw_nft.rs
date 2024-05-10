@@ -12,7 +12,7 @@ use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
-/// Allows a Trade or NFT pool owner to withdraw an NFT from the pool.
+/// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
     /// The owner of the pool and will receive the NFT at the owner_ata account.
@@ -160,6 +160,7 @@ impl<'info> Validate<'info> for WithdrawNft<'info> {
     }
 }
 
+/// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,

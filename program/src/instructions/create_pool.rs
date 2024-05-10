@@ -24,6 +24,7 @@ pub struct CreatePoolArgs {
     pub expire_in_sec: Option<u64>,
 }
 
+/// Create a new pool.
 #[derive(Accounts)]
 #[instruction(args: CreatePoolArgs)]
 pub struct CreatePool<'info> {
@@ -93,6 +94,7 @@ impl<'info> Validate<'info> for CreatePool<'info> {
     }
 }
 
+/// Create a new pool.
 #[access_control(ctx.accounts.validate_pool_type(args.config); ctx.accounts.validate())]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;

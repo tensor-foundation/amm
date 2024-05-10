@@ -176,12 +176,18 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool to close."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The system program account."
+          ]
         }
       ],
       "args": []

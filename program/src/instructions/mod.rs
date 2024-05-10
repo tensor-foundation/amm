@@ -1,3 +1,4 @@
+//! Program instruction handlers.
 pub mod admin;
 pub mod buy_nft;
 pub mod close_expired_pool;

@@ -17,6 +17,7 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
+/// Buy a Token22 NFT from a NFT or Trade pool.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
@@ -175,6 +176,7 @@ impl<'info> Validate<'info> for BuyNftT22<'info> {
     }
 }
 
+/// Buy a Token22 NFT from a NFT or Trade pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_t22_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftT22<'info>>,

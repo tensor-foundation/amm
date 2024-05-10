@@ -13,6 +13,7 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
+/// Withdraw a Token22 NFT from a NFT or Trade pool.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct WithdrawNftT22<'info> {
@@ -107,6 +108,7 @@ impl<'info> Validate<'info> for WithdrawNftT22<'info> {
     }
 }
 
+/// Withdraw a Token22 NFT from a NFT or Trade pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_t22_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,

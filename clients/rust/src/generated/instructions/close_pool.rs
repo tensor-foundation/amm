@@ -13,9 +13,9 @@ pub struct ClosePool {
     pub rent_payer: solana_program::pubkey::Pubkey,
 
     pub owner: solana_program::pubkey::Pubkey,
-
+    /// The pool to close.
     pub pool: solana_program::pubkey::Pubkey,
-
+    /// The system program account.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -98,12 +98,14 @@ impl ClosePoolBuilder {
         self.owner = Some(owner);
         self
     }
+    /// The pool to close.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The system program account.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -147,9 +149,9 @@ pub struct ClosePoolCpiAccounts<'a, 'b> {
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to close.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The system program account.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -161,9 +163,9 @@ pub struct ClosePoolCpi<'a, 'b> {
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to close.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The system program account.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -299,11 +301,13 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         self.instruction.owner = Some(owner);
         self
     }
+    /// The pool to close.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
         self
     }
+    /// The system program account.
     #[inline(always)]
     pub fn system_program(
         &mut self,

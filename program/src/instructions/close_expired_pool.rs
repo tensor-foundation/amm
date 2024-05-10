@@ -2,6 +2,7 @@ use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
+/// Permissionlessly close an expired pool.
 #[derive(Accounts)]
 pub struct CloseExpiredPool<'info> {
     /// CHECK: handler logic checks that it's the same as the stored rent payer
@@ -42,6 +43,7 @@ impl<'info> Validate<'info> for CloseExpiredPool<'info> {
     }
 }
 
+/// Permissionlessly close an expired pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_close_expired_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, CloseExpiredPool<'info>>,

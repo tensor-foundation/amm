@@ -5,6 +5,7 @@ use anchor_lang::{
 
 use crate::{Pool, TAmmEvent};
 
+/// Noop instruction accounts.
 #[derive(Accounts)]
 pub struct TAmmNoop<'info> {
     #[account(
@@ -18,6 +19,7 @@ pub struct TAmmNoop<'info> {
     pub pool: Box<Account<'info, Pool>>,
 }
 
+/// Processes the noop instruction for self-cpi logging. Can only be called by the program itself.
 pub fn process_noop(ctx: Context<TAmmNoop>) -> Result<()> {
     msg!("Logging event");
     // State account must sign to use this transaction to ensure it's

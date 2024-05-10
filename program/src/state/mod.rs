@@ -1,3 +1,4 @@
+//! Program state.
 pub mod event;
 pub mod nft_deposit_receipt;
 pub mod pool;
