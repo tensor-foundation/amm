@@ -387,6 +387,11 @@ pub fn close_pool<'info>(
         throw_err!(ErrorCode::WrongRentPayer);
     }
 
+    // Sanity check the owner is the owner of the pool.
+    if *owner.key != pool.owner {
+        throw_err!(ErrorCode::WrongOwner);
+    }
+
     let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
     let pool_lamports = pool.get_lamports();
 

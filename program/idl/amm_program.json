@@ -1841,7 +1841,7 @@
     {
       "name": "Pool",
       "docs": [
-        "Pool is the main state account in the AMM program and represents the AMM pool where trades can happen.",
+        "`Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.",
         "`Pool` accounts are Program Derived Addresses derived  from the seeds: `\"pool\"`, `owner`, and `identifier`."
       ],
       "type": {
@@ -2139,7 +2139,7 @@
     {
       "name": "PoolConfig",
       "docs": [
-        "Configuration values for a pool definie the type of pool, curve, and other parameters."
+        "Configuration values for a pool define the type of pool, curve, and other parameters."
       ],
       "type": {
         "kind": "struct",
@@ -2308,8 +2308,11 @@
       "name": "PoolType",
       "docs": [
         "Enum representing the different types of pools.",
+        "",
         "Token pools are single-sided pools that hold SOL and NFTs can be sold into them.",
+        "",
         "NFT pools are single-sided pools that hold NFTs and NFTs can be purchased from them.",
+        "",
         "Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two."
       ],
       "type": {
@@ -2331,7 +2334,9 @@
       "name": "CurveType",
       "docs": [
         "Enum representing the different types of curves that can be used in a pool.",
+        "",
         "Linear curves have price offsets that increase or decrease linearly.",
+        "",
         "Exponential curves have a price offset that increases or decreases exponentially."
       ],
       "type": {
@@ -2660,6 +2665,11 @@
       "code": 12047,
       "name": "WrongBrokerAccount",
       "msg": "Wrong broker account"
+    },
+    {
+      "code": 12048,
+      "name": "WrongOwner",
+      "msg": "Wrong rent payer"
     }
   ],
   "metadata": {

@@ -13,7 +13,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
-/// Pool is the main state account in the AMM program and represents the AMM pool where trades can happen.
+/// `Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.
 /// `Pool` accounts are Program Derived Addresses derived  from the seeds: `"pool"`, `owner`, and `identifier`.
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]

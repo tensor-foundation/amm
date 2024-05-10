@@ -196,4 +196,8 @@ pub enum ErrorCode {
     // 6044 | 0x179c
     #[msg("Wrong broker account")]
     WrongBrokerAccount,
+
+    // 6045 | 0x179d
+    #[msg("Wrong rent payer")]
+    WrongOwner,
 }

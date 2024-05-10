@@ -103,6 +103,8 @@ export const enum AmmProgramErrorCode {
   INVALID_POOL_AMOUNT = 0x2f0e, // 12046
   /** WrongBrokerAccount: Wrong broker account */
   WRONG_BROKER_ACCOUNT = 0x2f0f, // 12047
+  /** WrongOwner: Wrong rent payer */
+  WRONG_OWNER = 0x2f10, // 12048
 }
 
 export class AmmProgramError extends Error {
@@ -312,6 +314,7 @@ if (__DEV__) {
       'WrongBrokerAccount',
       `Wrong broker account`,
     ],
+    [AmmProgramErrorCode.WRONG_OWNER]: ['WrongOwner', `Wrong rent payer`],
   };
 }
 
