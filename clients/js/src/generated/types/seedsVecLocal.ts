@@ -21,6 +21,7 @@ import {
   getU32Encoder,
 } from '@solana/codecs';
 
+/** Local version of `SeedsVec` for IDL export. */
 export type SeedsVecLocal = {
   /** The vector of derivation seeds. */
   seeds: Array<Uint8Array>;

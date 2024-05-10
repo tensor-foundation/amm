@@ -1,49 +1,22 @@
 pub mod event;
 pub mod nft_deposit_receipt;
 pub mod pool;
-pub mod single_listing;
 
 pub use event::*;
 pub use nft_deposit_receipt::*;
 pub use pool::*;
-pub use single_listing::*;
 
 use anchor_lang::prelude::*;
 use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofInfo, SeedsVec};
-use solana_program::pubkey;
 use std::collections::HashMap;
 
-pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60; // 1 year, 31,536,000 seconds
-
-// TODO: replace with actual treasury address.
-pub const FDN_TREASURY: Pubkey = pubkey!("Hnozy7VdXR1ua2FZQyvxRgoCbn2dnpVZh3vZN9BMzDea");
-
-pub const FEE_KEEP_ALIVE_LAMPORTS: u64 = 890880;
-
-#[derive(Accounts)]
-pub struct DummyCtx<'info> {
-    //have to have 1 entry in order for lifetime arg to be used (else complains during CPI into tensorswap)
-    pub system_program: Program<'info, System>,
-}
-
-/// Sharded fee accounts
-/// Seeds: "fee_vault", number, bump
-/// There are up to 256 fee accounts, and the number in the seed
-/// is found by getting the last byte of mint pubkey.
-#[account]
-pub struct FeeVault {}
-
-// --------------------------------------- events
-
-#[event]
-pub struct DelistEvent {
-    #[index]
-    pub current_price: u64,
-}
+/// Maximum expiration time for a pool--one year.
+pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60;
 
 // --------------------------------------- replicating mplex type for anchor IDL export
 //have to do this because anchor won't include foreign structs in the IDL
 
+/// Local version of `AuthorizationData` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct AuthorizationDataLocal {
     pub payload: Vec<TaggedPayload>,
@@ -64,12 +37,15 @@ impl From<AuthorizationDataLocal> for AuthorizationData {
 // HashMap<String, PayloadType>, nor
 // Vec<(String, PayloadTypeLocal)>
 // so have to create this stupid temp struct for IDL to serialize correctly
+
+/// Local version of `TaggedPayload` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct TaggedPayload {
     pub name: String,
     pub payload: PayloadTypeLocal,
 }
 
+/// Local version of `PayloadType` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub enum PayloadTypeLocal {
     /// A plain `Pubkey`.
@@ -94,6 +70,7 @@ impl From<PayloadTypeLocal> for PayloadType {
     }
 }
 
+/// Local version of `SeedsVec` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct SeedsVecLocal {
     /// The vector of derivation seeds.
@@ -105,6 +82,7 @@ impl From<SeedsVecLocal> for SeedsVec {
     }
 }
 
+/// Local version of `ProofInfo` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ProofInfoLocal {
     /// The merkle proof.

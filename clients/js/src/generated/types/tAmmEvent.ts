@@ -27,6 +27,7 @@ import {
   getBuySellEventEncoder,
 } from '.';
 
+/** Enum for events emitted by the AMM program. */
 export type TAmmEvent = { __kind: 'BuySellEvent'; fields: [BuySellEvent] };
 
 export type TAmmEventArgs = {

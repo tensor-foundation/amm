@@ -23,6 +23,7 @@ import {
   getPayloadTypeLocalEncoder,
 } from '.';
 
+/** Local version of `TaggedPayload` for IDL export. */
 export type TaggedPayload = { name: string; payload: PayloadTypeLocal };
 
 export type TaggedPayloadArgs = { name: string; payload: PayloadTypeLocalArgs };

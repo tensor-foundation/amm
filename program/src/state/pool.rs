@@ -8,10 +8,12 @@ use vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
 
-// (!) INCLUSIVE of discriminator (8 bytes)
+/// Size of the Pool account, inclusive of the 8-byte discriminator.
 #[constant]
 #[allow(clippy::identity_op)]
-pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
+pub const POOL_SIZE: usize =
+        8                                // discriminator
+        + (2 * 1)                        // version + bump
         + 32                             // identifier
         + 8 * 3                          // created_at, updated_at, expiry
         + (2 * 1) + (2 * 8) + 1 + 3      // pool config
@@ -24,14 +26,26 @@ pub const POOL_SIZE: usize = 8 + (2 * 1) // version + bump
         + 100                            // _reserved
         ;
 
+/// Enum representing the different types of pools.
+///
+/// Token pools are single-sided pools that hold SOL and NFTs can be sold into them.
+///
+/// NFT pools are single-sided pools that hold NFTs and NFTs can be purchased from them.
+///
+/// Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two.
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PoolType {
-    Token = 0, //buys NFTs
-    NFT = 1,   //sells NFTs
-    Trade = 2, //both buys & sells
+    Token = 0,
+    NFT = 1,
+    Trade = 2,
 }
 
+/// Enum representing the different types of curves that can be used in a pool.
+///
+/// Linear curves have price offsets that increase or decrease linearly.
+///
+/// Exponential curves have a price offset that increases or decreases exponentially.
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CurveType {
@@ -39,6 +53,7 @@ pub enum CurveType {
     Exponential = 1,
 }
 
+/// Configuration values for a pool define the type of pool, curve, and other parameters.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
 pub struct PoolConfig {
     pub pool_type: PoolType,
@@ -49,6 +64,7 @@ pub struct PoolConfig {
     pub mm_fee_bps: NullableOption<u16>,
 }
 
+/// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
 pub struct PoolStats {
     pub taker_sell_count: u32,
@@ -56,6 +72,7 @@ pub struct PoolStats {
     pub accumulated_mm_profit: u64,
 }
 
+/// A currency is a SPL token mint or SOL native mint.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Currency(Pubkey);
 
@@ -81,6 +98,8 @@ impl Currency {
     }
 }
 
+/// `Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.
+/// `Pool` accounts are Program Derived Addresses derived  from the seeds: `"pool"`, `owner`, and `identifier`.
 #[account]
 pub struct Pool {
     /// Pool version, used to control upgrades.
@@ -102,9 +121,9 @@ pub struct Pool {
     // Store the rent payer, if different from the owner so they can be refunded
     // without signing when the pool is closed.
     pub rent_payer: Pubkey,
-    // Default Pubkey is SOL, otherwise SPL token mint
+    // Default Pubkey is SOL, otherwise SPL token mint.
     pub currency: Currency,
-    /// The amount of currency held in the pool
+    /// The amount of currency held in the pool.
     pub amount: u64,
 
     /// The difference between the number of buys and sells
@@ -112,13 +131,15 @@ pub struct Pool {
     /// and a negative number indicates the taker has SOLD more NFTs than bought.
     /// This is used to calculate the current price of the pool.
     pub price_offset: i32,
+    /// The number of NFTs currently held in the pool.
     pub nfts_held: u32,
 
+    /// Various stats about the pool, including the number of buys and sells.
     pub stats: PoolStats,
 
-    /// If an escrow account is present, means it's a shared-escrow pool.
+    /// If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
     pub shared_escrow: NullableOption<Pubkey>,
-    /// Offchain actor signs off to make sure an offchain condition is met (eg trait present).
+    /// An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
     pub cosigner: NullableOption<Pubkey>,
     /// Maker broker fees will be sent to this address if populated.
     pub maker_broker: NullableOption<Pubkey>,
@@ -126,12 +147,14 @@ pub struct Pool {
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity.
     pub max_taker_sell_count: u32,
 
+    /// Pool configuration values.
     pub config: PoolConfig,
 
-    // (!) make sure aligns with last number in SIZE
+    /// Reserved space for future upgrades.
     pub _reserved: [u8; 100],
 }
 
+/// Calculates a fee generically from the fee_bps and current price.
 pub fn calc_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
     let fee = unwrap_checked!({
         (fee_bps as u64)
@@ -143,6 +166,7 @@ pub fn calc_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
 }
 
 impl Pool {
+    /// Determines if a taker is able to sell into a pool.
     pub fn taker_allowed_to_sell(&self) -> Result<()> {
         //0 indicates no restriction on buy count / if no shared_escrow, not relevant
         if self.max_taker_sell_count == 0 || self.shared_escrow.value().is_none() {
@@ -161,7 +185,7 @@ impl Pool {
         Ok(())
     }
 
-    //used when editing pools to prevent setting a new cap that's too low
+    /// Checks that editing pools does not result in setting a new cap that is too low.
     pub fn valid_max_sell_count(&self, new_count: u32) -> Result<()> {
         //0 indicates no restriction
         if new_count == 0 {
@@ -181,6 +205,7 @@ impl Pool {
         Ok(())
     }
 
+    /// Calculate the fee the MM receives when providing liquidity to a two-sided pool.
     pub fn calc_mm_fee(&self, current_price: u64) -> Result<u64> {
         if self.config.pool_type != PoolType::Trade {
             throw_err!(ErrorCode::WrongPoolType);
@@ -196,10 +221,12 @@ impl Pool {
         Ok(fee)
     }
 
+    /// Calculate the fee the taker has to pay when buying from the pool.
     pub fn calc_taker_fee(&self, current_price: u64) -> Result<u64> {
         calc_fee(TAKER_FEE_BPS, current_price)
     }
 
+    /// Calculate the price of the pool after shifting it by a certain offset.
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
@@ -217,6 +244,7 @@ impl Pool {
         }
     }
 
+    /// Calculate the fee that should be paid to the creators of the NFT.
     pub fn calc_creators_fee(
         &self,
         metadata: &Metadata,
@@ -231,6 +259,7 @@ impl Pool {
         )
     }
 
+    /// Shifts the price of a pool by a certain offset.
     pub fn shift_price(&self, price_offset: i32) -> Result<u64> {
         let direction = if price_offset > 0 {
             Direction::Up
@@ -298,6 +327,7 @@ impl Pool {
         Ok(())
     }
 
+    /// Returns the seeds for the pool account.
     pub fn seeds(&self) -> [&[u8]; 4] {
         [
             b"pool",
@@ -308,17 +338,20 @@ impl Pool {
     }
 }
 
+/// Indicates the direction of a price shift.
 pub enum Direction {
     Up,
     Down,
 }
 
+/// Indicates the side of the taker.
 #[derive(PartialEq, Eq)]
 pub enum TakerSide {
     Buy,  // Buying from the pool.
     Sell, // Selling into the pool.
 }
 
+/// A utitilty function that tries to autoclose a pool if it is possible.
 pub fn try_autoclose_pool<'info>(
     pool: &Account<'info, Pool>,
     rent_payer: AccountInfo<'info>,
@@ -343,6 +376,7 @@ pub fn try_autoclose_pool<'info>(
     Ok(())
 }
 
+/// Closes a pool and returns the rent to the rent payer and any remaining SOL to the owner.
 pub fn close_pool<'info>(
     pool: &Account<'info, Pool>,
     rent_payer: AccountInfo<'info>,

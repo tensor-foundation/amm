@@ -13,6 +13,9 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
 
+/// Pool is the main state account in the AMM program and represents the AMM pool where trades can happen.
+/// `Pool` accounts are Program Derived Addresses derived  from the seeds: `"pool"`, `owner`, and `identifier`.
+
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Pool {
@@ -45,24 +48,28 @@ pub struct Pool {
     )]
     pub rent_payer: Pubkey,
     pub currency: Currency,
-    /// The amount of currency held in the pool
+    /// The amount of currency held in the pool.
     pub amount: u64,
     /// The difference between the number of buys and sells
     /// where a postive number indicates the taker has BOUGHT more NFTs than sold
     /// and a negative number indicates the taker has SOLD more NFTs than bought.
     /// This is used to calculate the current price of the pool.
     pub price_offset: i32,
+    /// The number of NFTs currently held in the pool.
     pub nfts_held: u32,
+    /// Various stats about the pool, including the number of buys and sells.
     pub stats: PoolStats,
-    /// If an escrow account is present, means it's a shared-escrow pool.
+    /// If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
     pub shared_escrow: NullableAddress,
-    /// Offchain actor signs off to make sure an offchain condition is met (eg trait present).
+    /// An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
     pub cosigner: NullableAddress,
     /// Maker broker fees will be sent to this address if populated.
     pub maker_broker: NullableAddress,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity.
     pub max_taker_sell_count: u32,
+    /// Pool configuration values.
     pub config: PoolConfig,
+    /// Reserved space for future upgrades.
     #[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]
     pub reserved: [u8; 100],
 }

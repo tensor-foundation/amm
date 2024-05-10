@@ -8,6 +8,7 @@
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
+/// Local version of `SeedsVec` for IDL export.
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SeedsVecLocal {

@@ -15,6 +15,13 @@ import {
   getScalarEnumEncoder,
 } from '@solana/codecs';
 
+/**
+ * Enum representing the different types of pools.
+ * Token pools are single-sided pools that hold SOL and NFTs can be sold into them.
+ * NFT pools are single-sided pools that hold NFTs and NFTs can be purchased from them.
+ * Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two.
+ */
+
 export enum PoolType {
   Token,
   NFT,

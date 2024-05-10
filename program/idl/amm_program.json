@@ -60,13 +60,6 @@
         "defined": "usize"
       },
       "value": "8 + (2 * 1) + 32 + 8 * 3 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (32 + 8) + (3 * 4) + (2 * 4) + 8 + (3 * 32) + 4 + 100"
-    },
-    {
-      "name": "SINGLE_LISTING_SIZE",
-      "type": {
-        "defined": "usize"
-      },
-      "value": "8 + (32 * 2) + 8 + 1 + 64"
     }
   ],
   "instructions": [
@@ -1847,6 +1840,10 @@
     },
     {
       "name": "Pool",
+      "docs": [
+        "Pool is the main state account in the AMM program and represents the AMM pool where trades can happen.",
+        "`Pool` accounts are Program Derived Addresses derived  from the seeds: `\"pool\"`, `owner`, and `identifier`."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1923,7 +1920,7 @@
           {
             "name": "amount",
             "docs": [
-              "The amount of currency held in the pool"
+              "The amount of currency held in the pool."
             ],
             "type": "u64"
           },
@@ -1939,10 +1936,16 @@
           },
           {
             "name": "nftsHeld",
+            "docs": [
+              "The number of NFTs currently held in the pool."
+            ],
             "type": "u32"
           },
           {
             "name": "stats",
+            "docs": [
+              "Various stats about the pool, including the number of buys and sells."
+            ],
             "type": {
               "defined": "PoolStats"
             }
@@ -1950,7 +1953,7 @@
           {
             "name": "sharedEscrow",
             "docs": [
-              "If an escrow account is present, means it's a shared-escrow pool."
+              "If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1959,7 +1962,7 @@
           {
             "name": "cosigner",
             "docs": [
-              "Offchain actor signs off to make sure an offchain condition is met (eg trait present)."
+              "An offchain actor that signs off to make sure an offchain condition is met (eg trait present)."
             ],
             "type": {
               "defined": "NullableOption<Pubkey>"
@@ -1983,12 +1986,18 @@
           },
           {
             "name": "config",
+            "docs": [
+              "Pool configuration values."
+            ],
             "type": {
               "defined": "PoolConfig"
             }
           },
           {
             "name": "reserved",
+            "docs": [
+              "Reserved space for future upgrades."
+            ],
             "type": {
               "array": [
                 "u8",
@@ -1997,57 +2006,6 @@
             }
           }
         ]
-      }
-    },
-    {
-      "name": "SingleListing",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "owner",
-            "type": "publicKey"
-          },
-          {
-            "name": "nftMint",
-            "type": "publicKey"
-          },
-          {
-            "name": "price",
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "type": {
-              "array": [
-                "u8",
-                1
-              ]
-            }
-          },
-          {
-            "name": "reserved",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "FeeVault",
-      "docs": [
-        "Sharded fee accounts",
-        "Seeds: \"fee_vault\", number, bump",
-        "There are up to 256 fee accounts, and the number in the seed",
-        "is found by getting the last byte of mint pubkey."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": []
       }
     }
   ],
@@ -2153,6 +2111,9 @@
     },
     {
       "name": "BuySellEvent",
+      "docs": [
+        "Event emitted when a user buys or sells tokens."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2177,6 +2138,9 @@
     },
     {
       "name": "PoolConfig",
+      "docs": [
+        "Configuration values for a pool definie the type of pool, curve, and other parameters."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2215,6 +2179,9 @@
     },
     {
       "name": "PoolStats",
+      "docs": [
+        "Stats for a pool include the number of buys and sells, and the accumulated MM profit."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2235,6 +2202,9 @@
     },
     {
       "name": "AuthorizationDataLocal",
+      "docs": [
+        "Local version of `AuthorizationData` for IDL export."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2251,6 +2221,9 @@
     },
     {
       "name": "TaggedPayload",
+      "docs": [
+        "Local version of `TaggedPayload` for IDL export."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2269,6 +2242,9 @@
     },
     {
       "name": "SeedsVecLocal",
+      "docs": [
+        "Local version of `SeedsVec` for IDL export."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2286,6 +2262,9 @@
     },
     {
       "name": "ProofInfoLocal",
+      "docs": [
+        "Local version of `ProofInfo` for IDL export."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2308,6 +2287,9 @@
     },
     {
       "name": "TAmmEvent",
+      "docs": [
+        "Enum for events emitted by the AMM program."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2324,6 +2306,12 @@
     },
     {
       "name": "PoolType",
+      "docs": [
+        "Enum representing the different types of pools.",
+        "Token pools are single-sided pools that hold SOL and NFTs can be sold into them.",
+        "NFT pools are single-sided pools that hold NFTs and NFTs can be purchased from them.",
+        "Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2341,6 +2329,11 @@
     },
     {
       "name": "CurveType",
+      "docs": [
+        "Enum representing the different types of curves that can be used in a pool.",
+        "Linear curves have price offsets that increase or decrease linearly.",
+        "Exponential curves have a price offset that increases or decreases exponentially."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2355,6 +2348,9 @@
     },
     {
       "name": "Direction",
+      "docs": [
+        "Indicates the direction of a price shift."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2369,6 +2365,9 @@
     },
     {
       "name": "TakerSide",
+      "docs": [
+        "Indicates the side of the taker."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2383,6 +2382,9 @@
     },
     {
       "name": "PayloadTypeLocal",
+      "docs": [
+        "Local version of `PayloadType` for IDL export."
+      ],
       "type": {
         "kind": "enum",
         "variants": [
@@ -2416,18 +2418,6 @@
           }
         ]
       }
-    }
-  ],
-  "events": [
-    {
-      "name": "DelistEvent",
-      "fields": [
-        {
-          "name": "currentPrice",
-          "type": "u64",
-          "index": true
-        }
-      ]
     }
   ],
   "errors": [

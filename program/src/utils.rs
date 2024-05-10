@@ -236,7 +236,7 @@ fn nft_transfer_cpi(signer_seeds: Option<&[&[&[u8]]]>, args: NftTransferArgs) ->
 }
 
 /// Handles sending both programmable and non-programmable NFTs.
-/// pNFT specific accounts are Option<AccountInfo> because they are only needed for pNFTs.
+/// pNFT specific accounts are `Option<AccountInfo>` because they are only needed for pNFTs.
 pub fn send_nft(
     //if passed, use signed_invoke() instead of invoke()
     signer_seeds: Option<&[&[&[u8]]]>,

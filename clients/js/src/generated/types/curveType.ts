@@ -15,6 +15,12 @@ import {
   getScalarEnumEncoder,
 } from '@solana/codecs';
 
+/**
+ * Enum representing the different types of curves that can be used in a pool.
+ * Linear curves have price offsets that increase or decrease linearly.
+ * Exponential curves have a price offset that increases or decreases exponentially.
+ */
+
 export enum CurveType {
   Linear,
   Exponential,
