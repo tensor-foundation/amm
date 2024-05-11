@@ -22,6 +22,7 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
+/// Sell a Token22 NFT into a Token pool.
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
     /// CHECK: has_one = owner in pool (owner is the buyer)
@@ -186,6 +187,7 @@ impl<'info> SellNftTokenPoolT22<'info> {
     }
 }
 
+/// Sell a Token22 NFT into a Token pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_t22_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,

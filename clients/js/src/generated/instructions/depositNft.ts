@@ -64,14 +64,12 @@ export type DepositNftInstruction<
   TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
   TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
-  TAccountTokenMetadataProgram extends
-    | string
-    | IAccountMeta<string> = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-  TAccountInstructions extends string | IAccountMeta<string> = string,
+  TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
+  TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
+  TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
   TAccountAuthorizationRulesProgram extends
     | string
-    | IAccountMeta<string> = 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
-  TAccountAuthRules extends string | IAccountMeta<string> = string,
+    | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -126,15 +124,15 @@ export type DepositNftInstruction<
       TAccountTokenMetadataProgram extends string
         ? ReadonlyAccount<TAccountTokenMetadataProgram>
         : TAccountTokenMetadataProgram,
-      TAccountInstructions extends string
-        ? ReadonlyAccount<TAccountInstructions>
-        : TAccountInstructions,
+      TAccountSysvarInstructions extends string
+        ? ReadonlyAccount<TAccountSysvarInstructions>
+        : TAccountSysvarInstructions,
+      TAccountAuthorizationRules extends string
+        ? ReadonlyAccount<TAccountAuthorizationRules>
+        : TAccountAuthorizationRules,
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
-      TAccountAuthRules extends string
-        ? ReadonlyAccount<TAccountAuthRules>
-        : TAccountAuthRules,
       ...TRemainingAccounts,
     ]
   >;
@@ -198,9 +196,9 @@ export type DepositNftInput<
   TAccountPoolTokenRecord extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
   TAccountTokenMetadataProgram extends string = string,
-  TAccountInstructions extends string = string,
+  TAccountSysvarInstructions extends string = string,
+  TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountAuthRules extends string = string,
 > = {
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
@@ -226,18 +224,18 @@ export type DepositNftInput<
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
   /** The Token Metadata owner/buyer token record account of the NFT. */
-  ownerTokenRecord: Address<TAccountOwnerTokenRecord>;
+  ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata pool token record account of the NFT. */
-  poolTokenRecord: Address<TAccountPoolTokenRecord>;
+  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
   /** The sysvar instructions account. */
-  instructions: Address<TAccountInstructions>;
+  sysvarInstructions?: Address<TAccountSysvarInstructions>;
+  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
+  authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-  authRules: Address<TAccountAuthRules>;
   authorizationData: DepositNftInstructionDataArgs['authorizationData'];
 };
 
@@ -258,9 +256,9 @@ export function getDepositNftInstruction<
   TAccountPoolTokenRecord extends string,
   TAccountAssociatedTokenProgram extends string,
   TAccountTokenMetadataProgram extends string,
-  TAccountInstructions extends string,
+  TAccountSysvarInstructions extends string,
+  TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountAuthRules extends string,
 >(
   input: DepositNftInput<
     TAccountOwner,
@@ -279,9 +277,9 @@ export function getDepositNftInstruction<
     TAccountPoolTokenRecord,
     TAccountAssociatedTokenProgram,
     TAccountTokenMetadataProgram,
-    TAccountInstructions,
-    TAccountAuthorizationRulesProgram,
-    TAccountAuthRules
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRules,
+    TAccountAuthorizationRulesProgram
   >
 ): DepositNftInstruction<
   typeof AMM_PROGRAM_ADDRESS,
@@ -301,9 +299,9 @@ export function getDepositNftInstruction<
   TAccountPoolTokenRecord,
   TAccountAssociatedTokenProgram,
   TAccountTokenMetadataProgram,
-  TAccountInstructions,
-  TAccountAuthorizationRulesProgram,
-  TAccountAuthRules
+  TAccountSysvarInstructions,
+  TAccountAuthorizationRules,
+  TAccountAuthorizationRulesProgram
 > {
   // Program address.
   const programAddress = AMM_PROGRAM_ADDRESS;
@@ -335,12 +333,18 @@ export function getDepositNftInstruction<
       value: input.tokenMetadataProgram ?? null,
       isWritable: false,
     },
-    instructions: { value: input.instructions ?? null, isWritable: false },
+    sysvarInstructions: {
+      value: input.sysvarInstructions ?? null,
+      isWritable: false,
+    },
+    authorizationRules: {
+      value: input.authorizationRules ?? null,
+      isWritable: false,
+    },
     authorizationRulesProgram: {
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    authRules: { value: input.authRules ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -358,14 +362,6 @@ export function getDepositNftInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
-  if (!accounts.tokenMetadataProgram.value) {
-    accounts.tokenMetadataProgram.value =
-      'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s' as Address<'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'>;
-  }
-  if (!accounts.authorizationRulesProgram.value) {
-    accounts.authorizationRulesProgram.value =
-      'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg' as Address<'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -387,9 +383,9 @@ export function getDepositNftInstruction<
       getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.tokenMetadataProgram),
-      getAccountMeta(accounts.instructions),
+      getAccountMeta(accounts.sysvarInstructions),
+      getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.authRules),
     ],
     programAddress,
     data: getDepositNftInstructionDataEncoder().encode(
@@ -413,9 +409,9 @@ export function getDepositNftInstruction<
     TAccountPoolTokenRecord,
     TAccountAssociatedTokenProgram,
     TAccountTokenMetadataProgram,
-    TAccountInstructions,
-    TAccountAuthorizationRulesProgram,
-    TAccountAuthRules
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRules,
+    TAccountAuthorizationRulesProgram
   >;
 
   return instruction;
@@ -452,18 +448,18 @@ export type ParsedDepositNftInstruction<
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[11];
     /** The Token Metadata owner/buyer token record account of the NFT. */
-    ownerTokenRecord: TAccountMetas[12];
+    ownerTokenRecord?: TAccountMetas[12] | undefined;
     /** The Token Metadata pool token record account of the NFT. */
-    poolTokenRecord: TAccountMetas[13];
+    poolTokenRecord?: TAccountMetas[13] | undefined;
     associatedTokenProgram: TAccountMetas[14];
     /** The Token Metadata program account. */
-    tokenMetadataProgram: TAccountMetas[15];
+    tokenMetadataProgram?: TAccountMetas[15] | undefined;
     /** The sysvar instructions account. */
-    instructions: TAccountMetas[16];
-    /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram: TAccountMetas[17];
+    sysvarInstructions?: TAccountMetas[16] | undefined;
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authRules: TAccountMetas[18];
+    authorizationRules?: TAccountMetas[17] | undefined;
+    /** The Metaplex Token Authority Rules program account. */
+    authorizationRulesProgram?: TAccountMetas[18] | undefined;
   };
   data: DepositNftInstructionData;
 };
@@ -507,13 +503,13 @@ export function parseDepositNftInstruction<
       metadata: getNextAccount(),
       mintProof: getNextOptionalAccount(),
       edition: getNextAccount(),
-      ownerTokenRecord: getNextAccount(),
-      poolTokenRecord: getNextAccount(),
+      ownerTokenRecord: getNextOptionalAccount(),
+      poolTokenRecord: getNextOptionalAccount(),
       associatedTokenProgram: getNextAccount(),
-      tokenMetadataProgram: getNextAccount(),
-      instructions: getNextAccount(),
-      authorizationRulesProgram: getNextAccount(),
-      authRules: getNextAccount(),
+      tokenMetadataProgram: getNextOptionalAccount(),
+      sysvarInstructions: getNextOptionalAccount(),
+      authorizationRules: getNextOptionalAccount(),
+      authorizationRulesProgram: getNextOptionalAccount(),
     },
     data: getDepositNftInstructionDataDecoder().decode(instruction.data),
   };

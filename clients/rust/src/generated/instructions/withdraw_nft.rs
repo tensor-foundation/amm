@@ -34,17 +34,17 @@ pub struct WithdrawNft {
 
     pub edition: solana_program::pubkey::Pubkey,
 
-    pub owner_token_record: solana_program::pubkey::Pubkey,
+    pub owner_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata pool temporary token record account of the NFT.
-    pub pool_token_record: solana_program::pubkey::Pubkey,
+    pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata program account.
-    pub token_metadata_program: solana_program::pubkey::Pubkey,
+    pub token_metadata_program: Option<solana_program::pubkey::Pubkey>,
     /// The sysvar instructions account.
-    pub instructions: solana_program::pubkey::Pubkey,
-    /// The Metaplex Token Authority Rules program account.
-    pub authorization_rules_program: solana_program::pubkey::Pubkey,
+    pub sysvar_instructions: Option<solana_program::pubkey::Pubkey>,
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    pub auth_rules: solana_program::pubkey::Pubkey,
+    pub authorization_rules: Option<solana_program::pubkey::Pubkey>,
+    /// The Metaplex Token Authority Rules program account.
+    pub authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl WithdrawNft {
@@ -102,30 +102,72 @@ impl WithdrawNft {
             self.edition,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.owner_token_record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool_token_record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_metadata_program,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.instructions,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.authorization_rules_program,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.auth_rules,
-            false,
-        ));
+        if let Some(owner_token_record) = self.owner_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                owner_token_record,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(pool_token_record) = self.pool_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                pool_token_record,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                token_metadata_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(sysvar_instructions) = self.sysvar_instructions {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                sysvar_instructions,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules) = self.authorization_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                authorization_rules,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                authorization_rules_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = WithdrawNftInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -156,7 +198,6 @@ impl WithdrawNftInstructionData {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawNftInstructionArgs {
     pub authorization_data: Option<AuthorizationDataLocal>,
-    pub rules_acc_present: bool,
 }
 
 /// Instruction builder for `WithdrawNft`.
@@ -174,12 +215,12 @@ pub struct WithdrawNftInstructionArgs {
 ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   9. `[writable]` metadata
 ///   10. `[]` edition
-///   11. `[writable]` owner_token_record
-///   12. `[writable]` pool_token_record
-///   13. `[optional]` token_metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-///   14. `[]` instructions
-///   15. `[optional]` authorization_rules_program (default to `auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg`)
-///   16. `[]` auth_rules
+///   11. `[writable, optional]` owner_token_record
+///   12. `[writable, optional]` pool_token_record
+///   13. `[optional]` token_metadata_program
+///   14. `[optional]` sysvar_instructions
+///   15. `[optional]` authorization_rules
+///   16. `[optional]` authorization_rules_program
 #[derive(Default)]
 pub struct WithdrawNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -196,11 +237,10 @@ pub struct WithdrawNftBuilder {
     owner_token_record: Option<solana_program::pubkey::Pubkey>,
     pool_token_record: Option<solana_program::pubkey::Pubkey>,
     token_metadata_program: Option<solana_program::pubkey::Pubkey>,
-    instructions: Option<solana_program::pubkey::Pubkey>,
+    sysvar_instructions: Option<solana_program::pubkey::Pubkey>,
+    authorization_rules: Option<solana_program::pubkey::Pubkey>,
     authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
-    auth_rules: Option<solana_program::pubkey::Pubkey>,
     authorization_data: Option<AuthorizationDataLocal>,
-    rules_acc_present: Option<bool>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -272,64 +312,69 @@ impl WithdrawNftBuilder {
         self.edition = Some(edition);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn owner_token_record(
         &mut self,
-        owner_token_record: solana_program::pubkey::Pubkey,
+        owner_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.owner_token_record = Some(owner_token_record);
+        self.owner_token_record = owner_token_record;
         self
     }
+    /// `[optional account]`
     /// The Token Metadata pool temporary token record account of the NFT.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
-        pool_token_record: solana_program::pubkey::Pubkey,
+        pool_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.pool_token_record = Some(pool_token_record);
+        self.pool_token_record = pool_token_record;
         self
     }
-    /// `[optional account, default to 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s']`
+    /// `[optional account]`
     /// The Token Metadata program account.
     #[inline(always)]
     pub fn token_metadata_program(
         &mut self,
-        token_metadata_program: solana_program::pubkey::Pubkey,
+        token_metadata_program: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.token_metadata_program = Some(token_metadata_program);
+        self.token_metadata_program = token_metadata_program;
         self
     }
+    /// `[optional account]`
     /// The sysvar instructions account.
     #[inline(always)]
-    pub fn instructions(&mut self, instructions: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.instructions = Some(instructions);
+    pub fn sysvar_instructions(
+        &mut self,
+        sysvar_instructions: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.sysvar_instructions = sysvar_instructions;
         self
     }
-    /// `[optional account, default to 'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg']`
+    /// `[optional account]`
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
+    #[inline(always)]
+    pub fn authorization_rules(
+        &mut self,
+        authorization_rules: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.authorization_rules = authorization_rules;
+        self
+    }
+    /// `[optional account]`
     /// The Metaplex Token Authority Rules program account.
     #[inline(always)]
     pub fn authorization_rules_program(
         &mut self,
-        authorization_rules_program: solana_program::pubkey::Pubkey,
+        authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.authorization_rules_program = Some(authorization_rules_program);
-        self
-    }
-    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    #[inline(always)]
-    pub fn auth_rules(&mut self, auth_rules: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.auth_rules = Some(auth_rules);
+        self.authorization_rules_program = authorization_rules_program;
         self
     }
     /// `[optional argument]`
     #[inline(always)]
     pub fn authorization_data(&mut self, authorization_data: AuthorizationDataLocal) -> &mut Self {
         self.authorization_data = Some(authorization_data);
-        self
-    }
-    #[inline(always)]
-    pub fn rules_acc_present(&mut self, rules_acc_present: bool) -> &mut Self {
-        self.rules_acc_present = Some(rules_acc_present);
         self
     }
     /// Add an aditional account to the instruction.
@@ -352,46 +397,33 @@ impl WithdrawNftBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts =
-            WithdrawNft {
-                owner: self.owner.expect("owner is not set"),
-                pool: self.pool.expect("pool is not set"),
-                mint: self.mint.expect("mint is not set"),
-                owner_ata: self.owner_ata.expect("owner_ata is not set"),
-                pool_ata: self.pool_ata.expect("pool_ata is not set"),
-                nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-                token_program: self.token_program.unwrap_or(solana_program::pubkey!(
-                    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-                )),
-                associated_token_program: self
-                    .associated_token_program
-                    .expect("associated_token_program is not set"),
-                system_program: self
-                    .system_program
-                    .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-                metadata: self.metadata.expect("metadata is not set"),
-                edition: self.edition.expect("edition is not set"),
-                owner_token_record: self
-                    .owner_token_record
-                    .expect("owner_token_record is not set"),
-                pool_token_record: self
-                    .pool_token_record
-                    .expect("pool_token_record is not set"),
-                token_metadata_program: self.token_metadata_program.unwrap_or(
-                    solana_program::pubkey!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"),
-                ),
-                instructions: self.instructions.expect("instructions is not set"),
-                authorization_rules_program: self.authorization_rules_program.unwrap_or(
-                    solana_program::pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg"),
-                ),
-                auth_rules: self.auth_rules.expect("auth_rules is not set"),
-            };
+        let accounts = WithdrawNft {
+            owner: self.owner.expect("owner is not set"),
+            pool: self.pool.expect("pool is not set"),
+            mint: self.mint.expect("mint is not set"),
+            owner_ata: self.owner_ata.expect("owner_ata is not set"),
+            pool_ata: self.pool_ata.expect("pool_ata is not set"),
+            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
+            token_program: self.token_program.unwrap_or(solana_program::pubkey!(
+                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+            )),
+            associated_token_program: self
+                .associated_token_program
+                .expect("associated_token_program is not set"),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+            metadata: self.metadata.expect("metadata is not set"),
+            edition: self.edition.expect("edition is not set"),
+            owner_token_record: self.owner_token_record,
+            pool_token_record: self.pool_token_record,
+            token_metadata_program: self.token_metadata_program,
+            sysvar_instructions: self.sysvar_instructions,
+            authorization_rules: self.authorization_rules,
+            authorization_rules_program: self.authorization_rules_program,
+        };
         let args = WithdrawNftInstructionArgs {
             authorization_data: self.authorization_data.clone(),
-            rules_acc_present: self
-                .rules_acc_present
-                .clone()
-                .expect("rules_acc_present is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -423,17 +455,17 @@ pub struct WithdrawNftCpiAccounts<'a, 'b> {
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata pool temporary token record account of the NFT.
-    pub pool_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
-    pub token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The sysvar instructions account.
-    pub instructions: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Metaplex Token Authority Rules program account.
-    pub authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub sysvar_instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The Metaplex Token Authority Rules program account.
+    pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `withdraw_nft` CPI instruction.
@@ -463,17 +495,17 @@ pub struct WithdrawNftCpi<'a, 'b> {
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata pool temporary token record account of the NFT.
-    pub pool_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+    pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
-    pub token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The sysvar instructions account.
-    pub instructions: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Metaplex Token Authority Rules program account.
-    pub authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub sysvar_instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    pub auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
+    pub authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The Metaplex Token Authority Rules program account.
+    pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: WithdrawNftInstructionArgs,
 }
@@ -500,9 +532,9 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             owner_token_record: accounts.owner_token_record,
             pool_token_record: accounts.pool_token_record,
             token_metadata_program: accounts.token_metadata_program,
-            instructions: accounts.instructions,
+            sysvar_instructions: accounts.sysvar_instructions,
+            authorization_rules: accounts.authorization_rules,
             authorization_rules_program: accounts.authorization_rules_program,
-            auth_rules: accounts.auth_rules,
             __args: args,
         }
     }
@@ -584,30 +616,72 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             *self.edition.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.owner_token_record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool_token_record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_metadata_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.instructions.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.authorization_rules_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.auth_rules.key,
-            false,
-        ));
+        if let Some(owner_token_record) = self.owner_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *owner_token_record.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(pool_token_record) = self.pool_token_record {
+            accounts.push(solana_program::instruction::AccountMeta::new(
+                *pool_token_record.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *token_metadata_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(sysvar_instructions) = self.sysvar_instructions {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *sysvar_instructions.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules) = self.authorization_rules {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *authorization_rules.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *authorization_rules_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -637,12 +711,24 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
         account_infos.push(self.system_program.clone());
         account_infos.push(self.metadata.clone());
         account_infos.push(self.edition.clone());
-        account_infos.push(self.owner_token_record.clone());
-        account_infos.push(self.pool_token_record.clone());
-        account_infos.push(self.token_metadata_program.clone());
-        account_infos.push(self.instructions.clone());
-        account_infos.push(self.authorization_rules_program.clone());
-        account_infos.push(self.auth_rules.clone());
+        if let Some(owner_token_record) = self.owner_token_record {
+            account_infos.push(owner_token_record.clone());
+        }
+        if let Some(pool_token_record) = self.pool_token_record {
+            account_infos.push(pool_token_record.clone());
+        }
+        if let Some(token_metadata_program) = self.token_metadata_program {
+            account_infos.push(token_metadata_program.clone());
+        }
+        if let Some(sysvar_instructions) = self.sysvar_instructions {
+            account_infos.push(sysvar_instructions.clone());
+        }
+        if let Some(authorization_rules) = self.authorization_rules {
+            account_infos.push(authorization_rules.clone());
+        }
+        if let Some(authorization_rules_program) = self.authorization_rules_program {
+            account_infos.push(authorization_rules_program.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -670,12 +756,12 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
 ///   8. `[]` system_program
 ///   9. `[writable]` metadata
 ///   10. `[]` edition
-///   11. `[writable]` owner_token_record
-///   12. `[writable]` pool_token_record
-///   13. `[]` token_metadata_program
-///   14. `[]` instructions
-///   15. `[]` authorization_rules_program
-///   16. `[]` auth_rules
+///   11. `[writable, optional]` owner_token_record
+///   12. `[writable, optional]` pool_token_record
+///   13. `[optional]` token_metadata_program
+///   14. `[optional]` sysvar_instructions
+///   15. `[optional]` authorization_rules
+///   16. `[optional]` authorization_rules_program
 pub struct WithdrawNftCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -698,11 +784,10 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
             owner_token_record: None,
             pool_token_record: None,
             token_metadata_program: None,
-            instructions: None,
+            sysvar_instructions: None,
+            authorization_rules: None,
             authorization_rules_program: None,
-            auth_rules: None,
             authorization_data: None,
-            rules_acc_present: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -790,68 +875,69 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self.instruction.edition = Some(edition);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn owner_token_record(
         &mut self,
-        owner_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+        owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.owner_token_record = Some(owner_token_record);
+        self.instruction.owner_token_record = owner_token_record;
         self
     }
+    /// `[optional account]`
     /// The Token Metadata pool temporary token record account of the NFT.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
-        pool_token_record: &'b solana_program::account_info::AccountInfo<'a>,
+        pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.pool_token_record = Some(pool_token_record);
+        self.instruction.pool_token_record = pool_token_record;
         self
     }
+    /// `[optional account]`
     /// The Token Metadata program account.
     #[inline(always)]
     pub fn token_metadata_program(
         &mut self,
-        token_metadata_program: &'b solana_program::account_info::AccountInfo<'a>,
+        token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.token_metadata_program = Some(token_metadata_program);
+        self.instruction.token_metadata_program = token_metadata_program;
         self
     }
+    /// `[optional account]`
     /// The sysvar instructions account.
     #[inline(always)]
-    pub fn instructions(
+    pub fn sysvar_instructions(
         &mut self,
-        instructions: &'b solana_program::account_info::AccountInfo<'a>,
+        sysvar_instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.instructions = Some(instructions);
+        self.instruction.sysvar_instructions = sysvar_instructions;
         self
     }
+    /// `[optional account]`
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
+    #[inline(always)]
+    pub fn authorization_rules(
+        &mut self,
+        authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.authorization_rules = authorization_rules;
+        self
+    }
+    /// `[optional account]`
     /// The Metaplex Token Authority Rules program account.
     #[inline(always)]
     pub fn authorization_rules_program(
         &mut self,
-        authorization_rules_program: &'b solana_program::account_info::AccountInfo<'a>,
+        authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.authorization_rules_program = Some(authorization_rules_program);
-        self
-    }
-    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
-    #[inline(always)]
-    pub fn auth_rules(
-        &mut self,
-        auth_rules: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.auth_rules = Some(auth_rules);
+        self.instruction.authorization_rules_program = authorization_rules_program;
         self
     }
     /// `[optional argument]`
     #[inline(always)]
     pub fn authorization_data(&mut self, authorization_data: AuthorizationDataLocal) -> &mut Self {
         self.instruction.authorization_data = Some(authorization_data);
-        self
-    }
-    #[inline(always)]
-    pub fn rules_acc_present(&mut self, rules_acc_present: bool) -> &mut Self {
-        self.instruction.rules_acc_present = Some(rules_acc_present);
         self
     }
     /// Add an additional account to the instruction.
@@ -897,11 +983,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
     ) -> solana_program::entrypoint::ProgramResult {
         let args = WithdrawNftInstructionArgs {
             authorization_data: self.instruction.authorization_data.clone(),
-            rules_acc_present: self
-                .instruction
-                .rules_acc_present
-                .clone()
-                .expect("rules_acc_present is not set"),
         };
         let instruction = WithdrawNftCpi {
             __program: self.instruction.__program,
@@ -940,32 +1021,17 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
 
             edition: self.instruction.edition.expect("edition is not set"),
 
-            owner_token_record: self
-                .instruction
-                .owner_token_record
-                .expect("owner_token_record is not set"),
+            owner_token_record: self.instruction.owner_token_record,
 
-            pool_token_record: self
-                .instruction
-                .pool_token_record
-                .expect("pool_token_record is not set"),
+            pool_token_record: self.instruction.pool_token_record,
 
-            token_metadata_program: self
-                .instruction
-                .token_metadata_program
-                .expect("token_metadata_program is not set"),
+            token_metadata_program: self.instruction.token_metadata_program,
 
-            instructions: self
-                .instruction
-                .instructions
-                .expect("instructions is not set"),
+            sysvar_instructions: self.instruction.sysvar_instructions,
 
-            authorization_rules_program: self
-                .instruction
-                .authorization_rules_program
-                .expect("authorization_rules_program is not set"),
+            authorization_rules: self.instruction.authorization_rules,
 
-            auth_rules: self.instruction.auth_rules.expect("auth_rules is not set"),
+            authorization_rules_program: self.instruction.authorization_rules_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -991,11 +1057,10 @@ struct WithdrawNftCpiBuilderInstruction<'a, 'b> {
     owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    sysvar_instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    auth_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authorization_data: Option<AuthorizationDataLocal>,
-    rules_acc_present: Option<bool>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

@@ -19,6 +19,7 @@ import {
   getStructEncoder,
 } from '@solana/codecs';
 
+/** Local version of `ProofInfo` for IDL export. */
 export type ProofInfoLocal = {
   /** The merkle proof. */
   proof: Array<Uint8Array>;

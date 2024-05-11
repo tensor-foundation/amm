@@ -103,7 +103,9 @@ export type ClosePoolInput<
 > = {
   rentPayer: Address<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
+  /** The pool to close. */
   pool: Address<TAccountPool>;
+  /** The system program account. */
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
@@ -176,7 +178,9 @@ export type ParsedClosePoolInstruction<
   accounts: {
     rentPayer: TAccountMetas[0];
     owner: TAccountMetas[1];
+    /** The pool to close. */
     pool: TAccountMetas[2];
+    /** The system program account. */
     systemProgram: TAccountMetas[3];
   };
   data: ClosePoolInstructionData;

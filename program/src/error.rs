@@ -1,5 +1,7 @@
+//! Errors that can be returned by the program.
 use anchor_lang::prelude::*;
 
+/// Errors that can be returned by the program.
 #[error_code]
 pub enum ErrorCode {
     // 6000 | 0x1770
@@ -196,4 +198,8 @@ pub enum ErrorCode {
     // 6044 | 0x179c
     #[msg("Wrong broker account")]
     WrongBrokerAccount,
+
+    // 6045 | 0x179d
+    #[msg("Wrong rent payer")]
+    WrongOwner,
 }

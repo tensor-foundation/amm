@@ -1,8 +1,9 @@
-//! User (owner) closing their pool and reclaims rent (+ SOL escrow)
+//! Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
 use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
+/// Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
     /// CHECK: handler logic checks that it's the same as the stored rent payer
@@ -13,6 +14,7 @@ pub struct ClosePool<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    /// The pool to close.
     #[account(mut,
         seeds = [
             b"pool",
@@ -24,6 +26,7 @@ pub struct ClosePool<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    /// The system program account.
     pub system_program: Program<'info, System>,
 }
 
@@ -42,6 +45,7 @@ impl<'info> Validate<'info> for ClosePool<'info> {
     }
 }
 
+/// Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
 #[access_control(ctx.accounts.validate())]
 pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
     // Must close manually because we cannot do this logic in the accounts macro.

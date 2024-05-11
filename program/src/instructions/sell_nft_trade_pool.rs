@@ -11,8 +11,8 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    assert_decode_metadata, send_pnft, transfer_creators_fee, transfer_lamports_from_pda,
-    CreatorFeeMode, FromAcc, PnftTransferArgs,
+    token_metadata::{assert_decode_metadata, transfer, TransferArgs},
+    transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc,
 };
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
@@ -128,7 +128,7 @@ pub struct SellNftTradePool<'info> {
     /// The Token Metadata seller/source token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
-    pub seller_token_record: UncheckedAccount<'info>,
+    pub seller_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata pool temporary token record account of the NFT.
     /// CHECK: seeds checked here
@@ -143,28 +143,28 @@ pub struct SellNftTradePool<'info> {
         seeds::program = mpl_token_metadata::ID,
         bump
     )]
-    pub pool_token_record: UncheckedAccount<'info>,
+    pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     // Todo: add ProgNftShared back in, if possible
     // pub pnft_shared: ProgNftShared<'info>,
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]
-    pub token_metadata_program: UncheckedAccount<'info>,
+    pub token_metadata_program: Option<UncheckedAccount<'info>>,
 
     /// The sysvar instructions account.
     /// CHECK: address constraint is checked here
     #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
+    pub sysvar_instructions: Option<UncheckedAccount<'info>>,
 
     /// The Metaplex Token Authority Rules program account.
     /// CHECK: address constraint is checked here
     #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
-    pub authorization_rules_program: UncheckedAccount<'info>,
+    pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 
     /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
     /// CHECK: validated by mplex's pnft code
-    pub auth_rules: UncheckedAccount<'info>,
+    pub authorization_rules: Option<UncheckedAccount<'info>>,
 
     /// The shared escrow account for pools that pool liquidity in a shared account.
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
@@ -249,12 +249,12 @@ impl<'info> Validate<'info> for SellNftTradePool<'info> {
     }
 }
 
+/// Sell a Metaplex legacy NFT or pNFT into a Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_sell_nft_trade_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,
-    rules_acc_present: bool,
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
@@ -264,34 +264,32 @@ pub fn process_sell_nft_trade_pool<'info>(
 
     // transfer nft to escrow
     // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
-    let auth_rules_acc_info = &ctx.accounts.auth_rules.to_account_info();
-    let auth_rules = if rules_acc_present {
-        Some(auth_rules_acc_info)
-    } else {
-        None
-    };
-    send_pnft(
-        None,
-        PnftTransferArgs {
-            authority_and_owner: &ctx.accounts.seller.to_account_info(),
-            payer: &ctx.accounts.seller.to_account_info(),
+    let seller = &ctx.accounts.seller.to_account_info();
+    let destination = &ctx.accounts.pool.to_account_info();
+
+    transfer(
+        TransferArgs {
+            payer: seller,
+            source: seller,
             source_ata: &ctx.accounts.seller_ata,
-            dest_ata: &ctx.accounts.pool_ata,
-            dest_owner: &ctx.accounts.pool.to_account_info(),
-            nft_mint: &ctx.accounts.mint,
-            nft_metadata: &ctx.accounts.metadata,
-            nft_edition: &ctx.accounts.edition,
+            destination,
+            destination_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
+            mint: &ctx.accounts.mint,
+            metadata: &ctx.accounts.metadata,
+            edition: &ctx.accounts.edition,
             system_program: &ctx.accounts.system_program,
-            token_program: &ctx.accounts.token_program,
-            ata_program: &ctx.accounts.associated_token_program,
-            instructions: &ctx.accounts.instructions,
-            owner_token_record: &ctx.accounts.seller_token_record,
-            dest_token_record: &ctx.accounts.pool_token_record,
-            authorization_rules_program: &ctx.accounts.authorization_rules_program,
-            rules_acc: auth_rules,
-            authorization_data: authorization_data.map(AuthorizationData::from),
+            spl_token_program: &ctx.accounts.token_program,
+            spl_ata_program: &ctx.accounts.associated_token_program,
+            token_metadata_program: ctx.accounts.token_metadata_program.as_ref(),
+            sysvar_instructions: ctx.accounts.sysvar_instructions.as_ref(),
+            source_token_record: ctx.accounts.seller_token_record.as_ref(),
+            destination_token_record: ctx.accounts.pool_token_record.as_ref(),
+            authorization_rules_program: ctx.accounts.authorization_rules_program.as_ref(),
+            authorization_rules: ctx.accounts.authorization_rules.as_ref(),
+            authorization_data: authorization_data.clone().map(AuthorizationData::from),
             delegate: None,
         },
+        None,
     )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs

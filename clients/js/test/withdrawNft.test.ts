@@ -2,9 +2,6 @@ import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budge
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-  SYSVARS_INSTRUCTIONS,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -27,7 +24,6 @@ import {
   getWithdrawNftInstruction,
 } from '../src/index.js';
 import {
-  DEFAULT_PUBKEY,
   createPool,
   createWhitelistV2,
   findAtaPda,
@@ -124,13 +120,8 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     sellerTokenRecord,
     poolTokenRecord,
     nftReceipt,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-    instructions: SYSVARS_INSTRUCTIONS,
-    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    authRules: DEFAULT_PUBKEY,
     cosigner,
     minPrice,
-    rulesAccPresent: false,
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
@@ -176,11 +167,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     poolTokenRecord,
     ownerTokenRecord,
     nftReceipt,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-    instructions: SYSVARS_INSTRUCTIONS,
-    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    authRules: DEFAULT_PUBKEY,
-    rulesAccPresent: false,
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   });

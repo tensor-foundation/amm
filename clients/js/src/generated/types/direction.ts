@@ -15,6 +15,7 @@ import {
   getScalarEnumEncoder,
 } from '@solana/codecs';
 
+/** Indicates the direction of a price shift. */
 export enum Direction {
   Up,
   Down,

@@ -38,6 +38,7 @@ import {
   getSeedsVecLocalEncoder,
 } from '.';
 
+/** Local version of `PayloadType` for IDL export. */
 export type PayloadTypeLocal =
   | { __kind: 'Pubkey'; fields: [Address] }
   | { __kind: 'Seeds'; fields: [SeedsVecLocal] }

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-// (!) INCLUSIVE of discriminator (8 bytes)
+/// Size of the `NftDepositReceipt` account, inclusive of the 8-byte discriminator.
 #[constant]
 #[allow(clippy::identity_op)]
 pub const DEPOSIT_RECEIPT_SIZE: usize = 8 + 1 + 32 * 3;

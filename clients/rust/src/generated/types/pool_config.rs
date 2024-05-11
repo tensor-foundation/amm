@@ -11,6 +11,7 @@ use crate::hooked::NullableU16;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
+/// Configuration values for a pool define the type of pool, curve, and other parameters.
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PoolConfig {

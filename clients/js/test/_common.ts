@@ -28,9 +28,6 @@ import {
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
-  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-  SYSVARS_INSTRUCTIONS,
   TOKEN_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
   createDefaultTransaction,
@@ -623,14 +620,9 @@ export async function mintAndSellIntoPool({
     sellerTokenRecord,
     poolTokenRecord,
     nftReceipt,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-    instructions: SYSVARS_INSTRUCTIONS,
-    authorizationRulesProgram: MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-    authRules: DEFAULT_PUBKEY,
     sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
     takerBroker: poolOwner.address, // No taker broker so we put a dummy here for now
     minPrice,
-    rulesAccPresent: false,
     authorizationData: none(),
     associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),

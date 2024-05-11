@@ -154,6 +154,9 @@ pub enum AmmError {
     /// 12047 (0x2F0F) - Wrong broker account
     #[error("Wrong broker account")]
     WrongBrokerAccount,
+    /// 12048 (0x2F10) - Wrong rent payer
+    #[error("Wrong rent payer")]
+    WrongOwner,
 }
 
 impl solana_program::program_error::PrintProgramError for AmmError {

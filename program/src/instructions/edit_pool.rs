@@ -22,6 +22,7 @@ pub struct EditPoolArgs {
     pub reset_price_offset: bool,
 }
 
+/// Edit an existing pool.
 #[derive(Accounts)]
 #[instruction(args: EditPoolArgs)]
 pub struct EditPool<'info> {
@@ -90,6 +91,7 @@ impl<'info> EditPool<'info> {
     }
 }
 
+/// Edit an existing pool.
 #[access_control(ctx.accounts.validate(); ctx.accounts.validate_pool_type(args.new_config))]
 pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;

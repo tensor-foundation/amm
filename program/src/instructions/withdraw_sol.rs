@@ -54,6 +54,7 @@ impl<'info> WithdrawSol<'info> {
     }
 }
 
+/// Withdraw SOL from a Token or Trade pool.
 #[access_control(ctx.accounts.validate_sol_transfer())]
 pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,

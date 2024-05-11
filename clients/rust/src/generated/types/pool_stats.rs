@@ -8,6 +8,7 @@
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
+/// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PoolStats {

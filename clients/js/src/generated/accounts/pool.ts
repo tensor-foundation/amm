@@ -97,7 +97,7 @@ export type PoolAccountData = {
   whitelist: Address;
   rentPayer: Address;
   currency: Currency;
-  /** The amount of currency held in the pool */
+  /** The amount of currency held in the pool. */
   amount: bigint;
   /**
    * The difference between the number of buys and sells
@@ -106,17 +106,21 @@ export type PoolAccountData = {
    * This is used to calculate the current price of the pool.
    */
   priceOffset: number;
+  /** The number of NFTs currently held in the pool. */
   nftsHeld: number;
+  /** Various stats about the pool, including the number of buys and sells. */
   stats: PoolStats;
-  /** If an escrow account is present, means it's a shared-escrow pool. */
+  /** If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools. */
   sharedEscrow: NullableAddress;
-  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present). */
+  /** An offchain actor that signs off to make sure an offchain condition is met (eg trait present). */
   cosigner: NullableAddress;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddress;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
+  /** Pool configuration values. */
   config: PoolConfig;
+  /** Reserved space for future upgrades. */
   reserved: Array<number>;
 };
 
@@ -137,7 +141,7 @@ export type PoolAccountDataArgs = {
   whitelist: Address;
   rentPayer: Address;
   currency: CurrencyArgs;
-  /** The amount of currency held in the pool */
+  /** The amount of currency held in the pool. */
   amount: number | bigint;
   /**
    * The difference between the number of buys and sells
@@ -146,17 +150,21 @@ export type PoolAccountDataArgs = {
    * This is used to calculate the current price of the pool.
    */
   priceOffset: number;
+  /** The number of NFTs currently held in the pool. */
   nftsHeld: number;
+  /** Various stats about the pool, including the number of buys and sells. */
   stats: PoolStatsArgs;
-  /** If an escrow account is present, means it's a shared-escrow pool. */
+  /** If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools. */
   sharedEscrow: NullableAddressArgs;
-  /** Offchain actor signs off to make sure an offchain condition is met (eg trait present). */
+  /** An offchain actor that signs off to make sure an offchain condition is met (eg trait present). */
   cosigner: NullableAddressArgs;
   /** Maker broker fees will be sent to this address if populated. */
   makerBroker: NullableAddressArgs;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
+  /** Pool configuration values. */
   config: PoolConfigArgs;
+  /** Reserved space for future upgrades. */
   reserved: Array<number>;
 };
 

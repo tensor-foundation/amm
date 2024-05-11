@@ -19,6 +19,7 @@ import {
   getU64Encoder,
 } from '@solana/codecs';
 
+/** Stats for a pool include the number of buys and sells, and the accumulated MM profit. */
 export type PoolStats = {
   takerSellCount: number;
   takerBuyCount: number;

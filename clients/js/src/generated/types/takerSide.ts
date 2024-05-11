@@ -15,6 +15,7 @@ import {
   getScalarEnumEncoder,
 } from '@solana/codecs';
 
+/** Indicates the side of the taker. */
 export enum TakerSide {
   Buy,
   Sell,

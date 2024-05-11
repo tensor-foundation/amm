@@ -23,7 +23,6 @@ import {
   ParsedDepositNftT22Instruction,
   ParsedDepositSolInstruction,
   ParsedEditPoolInstruction,
-  ParsedReallocPoolInstruction,
   ParsedSellNftTokenPoolInstruction,
   ParsedSellNftTokenPoolT22Instruction,
   ParsedSellNftTradePoolInstruction,
@@ -55,8 +54,6 @@ export function getAmmProgram(): AmmProgram {
 export enum AmmAccount {
   NftDepositReceipt,
   Pool,
-  SingleListing,
-  FeeVault,
 }
 
 export function identifyAmmAccount(
@@ -69,12 +66,6 @@ export function identifyAmmAccount(
   if (memcmp(data, new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]), 0)) {
     return AmmAccount.Pool;
   }
-  if (memcmp(data, new Uint8Array([14, 114, 212, 140, 24, 134, 31, 24]), 0)) {
-    return AmmAccount.SingleListing;
-  }
-  if (memcmp(data, new Uint8Array([192, 178, 69, 232, 58, 149, 157, 132]), 0)) {
-    return AmmAccount.FeeVault;
-  }
   throw new Error(
     'The provided account could not be identified as a amm account.'
   );
@@ -82,7 +73,6 @@ export function identifyAmmAccount(
 
 export enum AmmInstruction {
   TammNoop,
-  ReallocPool,
   CreatePool,
   EditPool,
   ClosePool,
@@ -110,9 +100,6 @@ export function identifyAmmInstruction(
     memcmp(data, new Uint8Array([31, 162, 228, 158, 153, 160, 198, 182]), 0)
   ) {
     return AmmInstruction.TammNoop;
-  }
-  if (memcmp(data, new Uint8Array([114, 128, 37, 167, 71, 227, 40, 178]), 0)) {
-    return AmmInstruction.ReallocPool;
   }
   if (
     memcmp(data, new Uint8Array([233, 146, 209, 142, 207, 104, 64, 188]), 0)
@@ -177,9 +164,6 @@ export type ParsedAmmInstruction<
   | ({
       instructionType: AmmInstruction.TammNoop;
     } & ParsedTammNoopInstruction<TProgram>)
-  | ({
-      instructionType: AmmInstruction.ReallocPool;
-    } & ParsedReallocPoolInstruction<TProgram>)
   | ({
       instructionType: AmmInstruction.CreatePool;
     } & ParsedCreatePoolInstruction<TProgram>)

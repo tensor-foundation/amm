@@ -35,6 +35,7 @@ import {
   getNullableU16Encoder,
 } from '../../hooked';
 
+/** Configuration values for a pool define the type of pool, curve, and other parameters. */
 export type PoolConfig = {
   poolType: PoolType;
   curveType: CurveType;

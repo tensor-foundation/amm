@@ -17,6 +17,7 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
+/// Deposit a Token22 NFT into a NFT or Trade pool.
 #[derive(Accounts)]
 #[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
@@ -140,6 +141,7 @@ impl<'info> Validate<'info> for DepositNftT22<'info> {
     }
 }
 
+/// Deposit a Token22 NFT into a NFT or Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     // validate mint account

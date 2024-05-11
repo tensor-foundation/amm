@@ -17,6 +17,7 @@ import {
   getU64Encoder,
 } from '@solana/codecs';
 
+/** Event emitted when a user buys or sells tokens. */
 export type BuySellEvent = {
   currentPrice: bigint;
   takerFee: bigint;

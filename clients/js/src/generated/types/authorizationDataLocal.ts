@@ -23,6 +23,7 @@ import {
   getTaggedPayloadEncoder,
 } from '.';
 
+/** Local version of `AuthorizationData` for IDL export. */
 export type AuthorizationDataLocal = { payload: Array<TaggedPayload> };
 
 export type AuthorizationDataLocalArgs = { payload: Array<TaggedPayloadArgs> };

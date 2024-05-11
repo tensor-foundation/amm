@@ -61,6 +61,7 @@ impl<'info> Validate<'info> for DepositSol<'info> {
     }
 }
 
+/// Allows a pool owner to deposit SOL into a Token or Trade pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_deposit_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
