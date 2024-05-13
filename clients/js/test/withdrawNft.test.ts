@@ -82,7 +82,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });

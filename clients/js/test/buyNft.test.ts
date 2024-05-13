@@ -129,7 +129,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(tokenAmount === 1n);
   t.assert(tokenOwner === pool);
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -291,7 +291,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   t.assert(tokenAmount === 1n);
   t.assert(tokenOwner === pool);
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   // Buy NFT from pool
   const buyNftIx = getBuyNftInstruction({
@@ -455,7 +455,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   t.assert(tokenAmount === 1n);
   t.assert(tokenOwner === pool);
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   // Buy NFT from pool
   const buyNftIx = getBuyNftInstruction({
@@ -651,15 +651,14 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   t.assert(tokenAmount2 === 1n);
   t.assert(tokenOwner2 === pool);
 
-  const feeVault1 = await getAndFundFeeVault(client, mint1);
-  const feeVault2 = await getAndFundFeeVault(client, mint2);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   // Buy the first NFT from pool
   const buyNftIx1 = getBuyNftInstruction({
     owner: owner.address,
     buyer,
     rentPayer: rentPayer.address,
-    feeVault: feeVault1,
+    feeVault,
     pool,
     poolAta: poolAta1,
     buyerAta: buyerAta1,
@@ -693,7 +692,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     owner: owner.address,
     buyer,
     rentPayer: rentPayer.address,
-    feeVault: feeVault2,
+    feeVault,
     pool,
     poolAta: poolAta2,
     buyerAta: buyerAta2,

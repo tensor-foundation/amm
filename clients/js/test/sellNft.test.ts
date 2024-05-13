@@ -2,9 +2,6 @@ import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budge
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
-  MPL_TOKEN_AUTH_RULES_PROGRAM_ID,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
-  SYSVARS_INSTRUCTIONS,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -32,7 +29,6 @@ import {
   isSol,
 } from '../src/index.js';
 import {
-  DEFAULT_PUBKEY,
   ONE_SOL,
   assertTammNoop,
   createAndFundEscrow,
@@ -91,7 +87,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -220,11 +216,8 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     nftOwner
   );
 
-  // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, mint);
-
   // Create a shared escrow account.
-  const sharedEscrow = await createAndFundEscrow(client, owner, feeVault, 1);
+  const sharedEscrow = await createAndFundEscrow(client, owner, 1);
 
   // Starting balance of the shared escrow.
   const preSharedEscrowBalance = (
@@ -243,6 +236,9 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
     funded: false, // cannot deposit to shared escrow pool
   });
+
+  // Derives fee vault from mint and airdrops keep-alive rent to it.
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   t.like(await fetchPool(client.rpc, pool), <Pool>{
     address: pool,
@@ -408,7 +404,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -569,7 +565,7 @@ test('token pool autocloses when currency amount drops below current price', asy
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
@@ -697,7 +693,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
@@ -811,7 +807,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });

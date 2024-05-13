@@ -567,8 +567,8 @@ export async function mintAndSellIntoPool({
   );
 
   // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
+  const poolBytes = bs58.decode(pool);
+  const lastByte = poolBytes[poolBytes.length - 1];
 
   const [feeVault, bump] = await getProgramDerivedAddress({
     programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
@@ -663,10 +663,10 @@ export const assertTammNoop = async (
   );
 };
 
-export const findFeeVaultPda = async (mint: Address) => {
+export const findFeeVaultPda = async (pool: Address) => {
   // Last byte of mint address is the fee vault shard number.
-  const mintBytes = bs58.decode(mint);
-  const lastByte = mintBytes[mintBytes.length - 1];
+  const poolBytes = bs58.decode(pool);
+  const lastByte = poolBytes[poolBytes.length - 1];
 
   return await getProgramDerivedAddress({
     programAddress: address('TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A'),
@@ -678,8 +678,8 @@ export const findFeeVaultPda = async (mint: Address) => {
 };
 
 // Derives fee vault from mint and airdrops keep-alive rent to it.
-export const getAndFundFeeVault = async (client: Client, mint: Address) => {
-  const [feeVault] = await findFeeVaultPda(mint);
+export const getAndFundFeeVault = async (client: Client, pool: Address) => {
+  const [feeVault] = await findFeeVaultPda(pool);
 
   // Fund fee vault with min rent lamports.
   await airdropFactory(client)({
@@ -694,7 +694,6 @@ export const getAndFundFeeVault = async (client: Client, mint: Address) => {
 export const createAndFundEscrow = async (
   client: Client,
   owner: KeyPairSigner,
-  feeVault: Address,
   marginNr: number
 ) => {
   const tswapOwner = await getAndFundOwner(client);
@@ -714,7 +713,7 @@ export const createAndFundEscrow = async (
     tswap,
     owner: tswapOwner,
     newOwner: tswapOwner,
-    feeVault,
+    feeVault: DEFAULT_PUBKEY, // Dummy fee vault
     cosigner: tswapOwner,
     config: { feeBps: 0 },
   });

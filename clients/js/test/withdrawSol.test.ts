@@ -89,7 +89,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });

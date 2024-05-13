@@ -43,7 +43,6 @@ import {
   getSellNftTradePoolInstruction,
 } from '../src/index.js';
 import {
-  DEFAULT_PUBKEY,
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
@@ -276,7 +275,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
@@ -405,7 +404,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, mint);
+  const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
