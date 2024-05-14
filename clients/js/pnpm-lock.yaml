@@ -45,18 +45,15 @@ importers:
       '@tensor-foundation/escrow':
         specifier: 0.0.1
         version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)
-      '@tensor-foundation/fees':
-        specifier: 0.1.0
-        version: 0.1.0(fastestsmallesttextencoderdecoder@1.0.22)
       '@tensor-foundation/resolvers':
-        specifier: 0.0.2
-        version: link:../../../toolkit/resolvers
+        specifier: 0.0.3
+        version: 0.0.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
       '@tensor-foundation/test-helpers':
-        specifier: 0.0.2
-        version: link:../../../toolkit/test-helpers
+        specifier: 0.0.3
+        version: 0.0.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
       '@tensor-foundation/toolkit-token-metadata':
-        specifier: 0.0.1
-        version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
+        specifier: 0.0.2
+        version: link:../../../toolkit/toolkit-token-metadata
       '@tensor-foundation/whitelist':
         specifier: 0.0.1
         version: 0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
@@ -1483,14 +1480,11 @@ packages:
   '@tensor-foundation/escrow@0.0.1':
     resolution: {integrity: sha512-Y7cfIGgIPOhU6DSw2jPB2q/O6gO+Y9MqeBBjDx/GdNK1SVzF5LwoQPW++7fPf7CDh/cR2zL7czsRy2onTqVSYg==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/escrow/0.0.1/dfeb22677400020d8b6ef886dc7efc025c66a5a4}
 
-  '@tensor-foundation/fees@0.1.0':
-    resolution: {integrity: sha512-fxp1j3AfivN5nVXd8kG4kvB+MkH+NqJQOAHKyWPqFIWS9gLorJ03qVHiEsX0KFossgwcZ9ghHVZ440BmKiP1Jg==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/fees/0.1.0/150519bb6cd40bfd93df60f759cf3152e505bbaa}
+  '@tensor-foundation/resolvers@0.0.3':
+    resolution: {integrity: sha512-hA2XCGvgeGL/3mgekRQK0fgCb9CieWPMFyPrv1f4HEqRGxUphf9qWx326fGYMr+oUOfvXHLn8jrGQytA2+d3Hg==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/resolvers/0.0.3/03c6127dd7e9be41fa1242ef98fcd7815836f914}
 
-  '@tensor-foundation/test-helpers@0.0.2':
-    resolution: {integrity: sha512-iLIkIcAknFmLD0LPfO59HsPsO0FjglPLy16j2XD6LB4Akp6Ff5YxE3AJLUwmz0ct3qYxKvOyUaAaC/rM46zDQw==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/test-helpers/0.0.2/feb5036985113625d2192948ecf0ca2328d64d9c}
-
-  '@tensor-foundation/toolkit-token-metadata@0.0.1':
-    resolution: {integrity: sha512-kv0m7JW811RQujQFuIfRZ9snf/18p/vrmxPkey+taUOYOht+rgsdQTsZ/s0HDsRkwfcS1RGs+GhcIHb/NCkB9w==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/toolkit-token-metadata/0.0.1/04659a7ed2db2cde694955a62bfc02f4e1fbc9ab}
+  '@tensor-foundation/test-helpers@0.0.3':
+    resolution: {integrity: sha512-jjXs/d+QSq29rV97qRJS976+7Lq2sWx8AKt18KWbsdIVkzSpbbVFMnd77WbT5I0Tgnr9KN6EGSWxRcE4+GdHVw==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/test-helpers/0.0.3/831925436667c3ddaedfe83644559d1a658cc9f1}
 
   '@tensor-foundation/whitelist@0.0.1':
     resolution: {integrity: sha512-ugNnnBPlD/Idw2+usNkE2kjjkeSJKmC+l67hlm9EjSHvDLQk0SYjA0SHdEoN0oDtpcz8KlZPsWu49NSEh909EQ==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/whitelist/0.0.1/f91c89b567660a41845414cccedf73cbc002ebf5}
@@ -2412,8 +2406,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  electron-to-chromium@1.4.767:
-    resolution: {integrity: sha512-nzzHfmQqBss7CE3apQHkHjXW77+8w3ubGCIoEijKCJebPufREaFETgGXWTkh32t259F3Kcq+R8MZdFdOJROgYw==}
+  electron-to-chromium@1.4.768:
+    resolution: {integrity: sha512-z2U3QcvNuxdkk33YV7R1bVMNq7fL23vq3WfO5BHcqrm4TnDGReouBfYKLEFh5umoK1XACjEwp8mmnhXk2EJigw==}
 
   emittery@1.0.3:
     resolution: {integrity: sha512-tJdCJitoy2lrC2ldJcqN4vkqJ00lT+tOWNT1hBJjO/3FDMJa5TTIiYGCKGkn/WfCyOzUMObeohbVTj00fhiLiA==}
@@ -6589,18 +6583,7 @@ snapshots:
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
 
-  '@tensor-foundation/fees@0.1.0(fastestsmallesttextencoderdecoder@1.0.22)':
-    dependencies:
-      '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
-      '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
-      '@solana/codecs': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
-      '@solana/instructions': 2.0.0-preview.2
-      '@solana/programs': 2.0.0-preview.2
-      '@solana/signers': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
-    transitivePeerDependencies:
-      - fastestsmallesttextencoderdecoder
-
-  '@tensor-foundation/test-helpers@0.0.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
+  '@tensor-foundation/resolvers@0.0.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6613,7 +6596,7 @@ snapshots:
       - fastestsmallesttextencoderdecoder
       - ws
 
-  '@tensor-foundation/toolkit-token-metadata@0.0.1(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
+  '@tensor-foundation/test-helpers@0.0.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)':
     dependencies:
       '@solana/accounts': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/addresses': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
@@ -6622,7 +6605,6 @@ snapshots:
       '@solana/programs': 2.0.0-preview.2
       '@solana/signers': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)
       '@solana/web3.js': 2.0.0-preview.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
-      '@tensor-foundation/test-helpers': 0.0.2(fastestsmallesttextencoderdecoder@1.0.22)(ws@7.5.9)
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
       - ws
@@ -7448,7 +7430,7 @@ snapshots:
   browserslist@4.23.0:
     dependencies:
       caniuse-lite: 1.0.30001618
-      electron-to-chromium: 1.4.767
+      electron-to-chromium: 1.4.768
       node-releases: 2.0.14
       update-browserslist-db: 1.0.16(browserslist@4.23.0)
 
@@ -7824,7 +7806,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  electron-to-chromium@1.4.767: {}
+  electron-to-chromium@1.4.768: {}
 
   emittery@1.0.3: {}
 

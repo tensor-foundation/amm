@@ -35,7 +35,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-// import { findFeeVaultPda } from '@tensor-foundation/resolvers';
+import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   createDefaultNft,
   findTokenRecordPda,
@@ -59,27 +59,6 @@ import {
   getDepositSolInstruction,
   getSellNftTradePoolInstruction,
 } from '../src/index.js';
-
-type FeeVaultSeeds = {
-  /** The address of the state account to derive the shard from: e.g. pool, bid, order etc. */
-  address: Address;
-};
-
-async function findFeeVaultPda(
-  seeds: FeeVaultSeeds
-): Promise<ProgramDerivedAddress> {
-  // Last byte of state account address is the fee vault shard number.
-  const bytes = getAddressEncoder().encode(seeds.address);
-  const lastByte = bytes[bytes.length - 1];
-
-  return await getProgramDerivedAddress({
-    programAddress: address('TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-}
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
