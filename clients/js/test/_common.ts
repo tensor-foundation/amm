@@ -1,4 +1,3 @@
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
   Address,
@@ -11,8 +10,6 @@ import {
   appendTransactionInstruction,
   getAddressEncoder,
   getProgramDerivedAddress,
-  getStringEncoder,
-  getU8Encoder,
   isSolanaError,
   lamports,
   none,
@@ -29,17 +26,12 @@ import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
   TOKEN_PROGRAM_ID,
-  TSWAP_PROGRAM_ID,
   createDefaultTransaction,
   createKeyPairSigner,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
-import {
-  createDefaultNft,
-  findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
 import {
   Condition,
   Mode,
@@ -53,11 +45,9 @@ import {
   CurveType,
   PoolConfig,
   PoolType,
-  findNftDepositReceiptPda,
   findPoolPda,
   getCreatePoolInstruction,
   getDepositSolInstruction,
-  getSellNftTradePoolInstruction,
 } from '../src/index.js';
 
 const OWNER_BYTES = [
@@ -534,114 +524,6 @@ export function getTokenOwner(data: Base64EncodedDataResponse): Address {
     buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
   );
   return address(base58string);
-}
-
-export type MintAndSellParams = {
-  client: Client;
-  pool: Address;
-  whitelist: Address;
-  poolOwner: KeyPairSigner;
-  nftOwner: KeyPairSigner;
-};
-
-export type MintAndSellReturn = {
-  mint: Address;
-  feeVault: Address;
-  index: number;
-  bump: number;
-};
-
-export async function mintAndSellIntoPool({
-  client,
-  pool,
-  whitelist,
-  poolOwner,
-  nftOwner,
-}: MintAndSellParams) {
-  // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
-
-  // Last byte of mint address is the fee vault shard number.
-  const poolBytes = bs58.decode(pool);
-  const lastByte = poolBytes[poolBytes.length - 1];
-
-  const [feeVault, bump] = await getProgramDerivedAddress({
-    programAddress: address('TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
-
-  const feeVaultBalance = (await client.rpc.getBalance(feeVault).send()).value;
-
-  if (feeVaultBalance === 0n) {
-    // Fund fee vault with min rent lamports.
-    await airdropFactory(client)({
-      recipientAddress: feeVault,
-      lamports: lamports(890880n),
-      commitment: 'confirmed',
-    });
-  }
-
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  const minPrice = 900_000n;
-
-  // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
-    owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
-    feeVault,
-    pool,
-    whitelist,
-    sellerAta,
-    poolAta,
-    mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
-    sharedEscrow: poolAta, // No shared escrow so we put a dummy account here for now
-    takerBroker: poolOwner.address, // No taker broker so we put a dummy here for now
-    minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
-    // Remaining accounts
-    creators: [nftOwner.address],
-    escrowProgram: TSWAP_PROGRAM_ID,
-  });
-
-  const computeIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
-  );
-
-  return { mint, feeVault, shard: lastByte, bump };
 }
 
 export const assertTammNoop = async (
