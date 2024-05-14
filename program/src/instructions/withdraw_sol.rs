@@ -62,7 +62,6 @@ pub fn process_withdraw_sol<'info>(
 ) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 
-    // ToDo: If pool has padding for future proofing, the keep-alive rent  can be extracted to a constant.
     let rent = solana_program::rent::Rent::get()?;
     let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
 

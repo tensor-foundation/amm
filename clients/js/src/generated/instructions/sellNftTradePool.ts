@@ -40,7 +40,7 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   AuthorizationDataLocal,
@@ -50,7 +50,7 @@ import {
 } from '../types';
 
 export type SellNftTradePoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSeller extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
@@ -68,7 +68,9 @@ export type SellNftTradePoolInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
+  TAccountAssociatedTokenProgram extends
+    | string
+    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountSellerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
@@ -82,7 +84,9 @@ export type SellNftTradePoolInstruction<
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
   TAccountCosigner extends string | IAccountMeta<string> = string,
-  TAccountAmmProgram extends string | IAccountMeta<string> = string,
+  TAccountAmmProgram extends
+    | string
+    | IAccountMeta<string> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -284,7 +288,7 @@ export type SellNftTradePoolInput<
   nftReceipt: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   edition: Address<TAccountEdition>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
@@ -309,7 +313,7 @@ export type SellNftTradePoolInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
-  ammProgram: Address<TAccountAmmProgram>;
+  ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
   authorizationData: SellNftTradePoolInstructionDataArgs['authorizationData'];
@@ -376,7 +380,7 @@ export function getSellNftTradePoolInstruction<
     TAccountEscrowProgram
   >
 ): SellNftTradePoolInstruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountSeller,
   TAccountFeeVault,
@@ -406,7 +410,7 @@ export function getSellNftTradePoolInstruction<
   TAccountEscrowProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -473,6 +477,14 @@ export function getSellNftTradePoolInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.ammProgram.value) {
+    accounts.ammProgram.value =
+      'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
 
   // Remaining accounts.
   const remainingAccounts: IAccountMeta[] = (args.creators ?? []).map(
@@ -516,7 +528,7 @@ export function getSellNftTradePoolInstruction<
       args as SellNftTradePoolInstructionDataArgs
     ),
   } as SellNftTradePoolInstruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountSeller,
     TAccountFeeVault,
@@ -550,7 +562,7 @@ export function getSellNftTradePoolInstruction<
 }
 
 export type ParsedSellNftTradePoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
@@ -638,7 +650,7 @@ export function parseSellNftTradePoolInstruction<
   };
   const getNextOptionalAccount = () => {
     const accountMeta = getNextAccount();
-    return accountMeta.address === AMM_PROGRAM_ADDRESS
+    return accountMeta.address === TENSOR_AMM_PROGRAM_ADDRESS
       ? undefined
       : accountMeta;
   };

@@ -35,6 +35,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   createDefaultNft,
   findTokenRecordPda,
@@ -49,7 +50,6 @@ import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
 import { v4 } from 'uuid';
 import {
-  AMM_PROGRAM_ADDRESS,
   CurveType,
   PoolConfig,
   PoolType,
@@ -624,11 +624,9 @@ export async function mintAndSellIntoPool({
     takerBroker: poolOwner.address, // No taker broker so we put a dummy here for now
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -661,20 +659,6 @@ export const assertTammNoop = async (
   t.assert(
     tx?.meta?.logMessages?.some((msg) => msg.includes('Instruction: TammNoop'))
   );
-};
-
-export const findFeeVaultPda = async (pool: Address) => {
-  // Last byte of mint address is the fee vault shard number.
-  const poolBytes = bs58.decode(pool);
-  const lastByte = poolBytes[poolBytes.length - 1];
-
-  return await getProgramDerivedAddress({
-    programAddress: address('TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A'),
-    seeds: [
-      getStringEncoder({ size: 'variable' }).encode('fee_vault'),
-      getU8Encoder().encode(lastByte),
-    ],
-  });
 };
 
 // Derives fee vault from mint and airdrops keep-alive rent to it.

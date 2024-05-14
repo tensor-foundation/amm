@@ -11,7 +11,7 @@ const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
 // Update programs.
 kinobi.update(
   new k.updateProgramsVisitor({
-    ammProgram: { name: "amm" },
+    ammProgram: { name: "tensorAmm" },
   }),
 );
 
@@ -96,15 +96,6 @@ kinobi.update(
         }),
       ],
     },
-    feeCrank: {
-      remainingAccounts: [
-        k.instructionRemainingAccountsNode(k.argumentValueNode("feeAccounts"), {
-          isOptional: false,
-          isSigner: false,
-          isWritable: true,
-        }),
-      ],
-    },
   }),
 );
 
@@ -180,6 +171,82 @@ kinobi.update(
   ]),
 );
 
+// Set default account values accross multiple instructions.
+kinobi.update(
+  k.setInstructionAccountDefaultValuesVisitor([
+    // default programs
+    {
+      account: "tokenProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "tokenProgram",
+      ),
+    },
+    {
+      account: "associatedTokenProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+        "associatedTokenProgram",
+      ),
+    },
+    {
+      account: "ammProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA",
+        "ammProgram",
+      ),
+    },
+    {
+      account: "systemProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "11111111111111111111111111111111",
+        "systemProgram",
+      ),
+    },
+    {
+      account: "tokenMetadataProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+        "tokenMetadataProgram",
+      ),
+    },
+    {
+      account: "authorizationRulesProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg",
+        "authorizationRulesProgram",
+      ),
+    },
+    {
+      account: "sysvarInstructions",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "Sysvar1111111111111111111111111111111111111",
+        "sysvarInstructions",
+      ),
+    },
+    // default accounts
+    // {
+    //   account: "feeVault",
+    //   ignoreIfOptional: true,
+    //   defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
+    //     dependsOn: [k.accountValueNode("pool")],
+    //   }),
+    // },
+    {
+      account: "rentPayer",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyTypeNode("owner"),
+    },
+  ]),
+);
+
 // Debug: print the AST.
 // kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
 
@@ -189,6 +256,7 @@ const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
 kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
     prettier,
+    // asyncResolvers: ["resolveFeeVaultPdaFromPool"],
   }),
 );
 

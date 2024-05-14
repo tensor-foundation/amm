@@ -32,7 +32,7 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
@@ -42,7 +42,7 @@ import {
 } from '../types';
 
 export type BuyNftT22Instruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountBuyer extends string | IAccountMeta<string> = string,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
@@ -56,14 +56,18 @@ export type BuyNftT22Instruction<
   TAccountTokenProgram extends
     | string
     | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
+  TAccountAssociatedTokenProgram extends
+    | string
+    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
-  TAccountAmmProgram extends string | IAccountMeta<string> = string,
+  TAccountAmmProgram extends
+    | string
+    | IAccountMeta<string> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -201,14 +205,14 @@ export type BuyNftT22Input<
   mint: Address<TAccountMint>;
   nftReceipt: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
-  associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
-  ammProgram: Address<TAccountAmmProgram>;
+  ammProgram?: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
 };
@@ -252,7 +256,7 @@ export function getBuyNftT22Instruction<
     TAccountAmmProgram
   >
 ): BuyNftT22Instruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountBuyer,
   TAccountRentPayer,
@@ -272,7 +276,7 @@ export function getBuyNftT22Instruction<
   TAccountAmmProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -310,9 +314,17 @@ export function getBuyNftT22Instruction<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!accounts.ammProgram.value) {
+    accounts.ammProgram.value =
+      'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -341,7 +353,7 @@ export function getBuyNftT22Instruction<
       args as BuyNftT22InstructionDataArgs
     ),
   } as BuyNftT22Instruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountBuyer,
     TAccountRentPayer,
@@ -365,7 +377,7 @@ export function getBuyNftT22Instruction<
 }
 
 export type ParsedBuyNftT22Instruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
@@ -416,7 +428,7 @@ export function parseBuyNftT22Instruction<
   };
   const getNextOptionalAccount = () => {
     const accountMeta = getNextAccount();
-    return accountMeta.address === AMM_PROGRAM_ADDRESS
+    return accountMeta.address === TENSOR_AMM_PROGRAM_ADDRESS
       ? undefined
       : accountMeta;
   };

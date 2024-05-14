@@ -47,7 +47,7 @@ impl CloseExpiredPool {
         let data = CloseExpiredPoolInstructionData::new().try_to_vec().unwrap();
 
         solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         }
@@ -240,7 +240,7 @@ impl<'a, 'b> CloseExpiredPoolCpi<'a, 'b> {
         let data = CloseExpiredPoolInstructionData::new().try_to_vec().unwrap();
 
         let instruction = solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         };

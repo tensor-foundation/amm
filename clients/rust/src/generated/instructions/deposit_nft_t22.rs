@@ -95,7 +95,7 @@ impl DepositNftT22 {
         data.append(&mut args);
 
         solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         }
@@ -133,7 +133,7 @@ pub struct DepositNftT22InstructionArgs {
 ///   5. `[writable]` owner_ata
 ///   6. `[writable]` pool_ata
 ///   7. `[writable]` nft_receipt
-///   8. `[]` associated_token_program
+///   8. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
@@ -200,6 +200,7 @@ impl DepositNftT22Builder {
         self.nft_receipt = Some(nft_receipt);
         self
     }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -254,9 +255,9 @@ impl DepositNftT22Builder {
             owner_ata: self.owner_ata.expect("owner_ata is not set"),
             pool_ata: self.pool_ata.expect("pool_ata is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-            associated_token_program: self
-                .associated_token_program
-                .expect("associated_token_program is not set"),
+            associated_token_program: self.associated_token_program.unwrap_or(
+                solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            ),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
@@ -439,7 +440,7 @@ impl<'a, 'b> DepositNftT22Cpi<'a, 'b> {
         data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         };

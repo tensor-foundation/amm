@@ -13,9 +13,7 @@ import {
   signTransactionWithSigners,
 } from '@solana/web3.js';
 import {
-  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
-  MPL_TOKEN_METADATA_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -28,7 +26,6 @@ import {
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  AMM_PROGRAM_ADDRESS,
   CurveType,
   Pool,
   PoolConfig,
@@ -183,7 +180,6 @@ test('close pool fails if nfts still deposited', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });
 
@@ -313,15 +309,12 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     ownerTokenRecord,
     sellerTokenRecord,
     poolTokenRecord,
-    tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -440,11 +433,9 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 

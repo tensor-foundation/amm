@@ -7,5 +7,5 @@
 
 use solana_program::{pubkey, pubkey::Pubkey};
 
-/// `amm` program ID.
-pub const AMM_ID: Pubkey = pubkey!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");
+/// `tensor_amm` program ID.
+pub const TENSOR_AMM_ID: Pubkey = pubkey!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");

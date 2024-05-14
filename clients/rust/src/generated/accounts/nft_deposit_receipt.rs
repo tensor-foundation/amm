@@ -53,14 +53,14 @@ impl NftDepositReceipt {
                 pool.as_ref(),
                 &[bump],
             ],
-            &crate::AMM_ID,
+            &crate::TENSOR_AMM_ID,
         )
     }
 
     pub fn find_pda(mint: &Pubkey, pool: &Pubkey) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
             &["nft_receipt".as_bytes(), mint.as_ref(), pool.as_ref()],
-            &crate::AMM_ID,
+            &crate::TENSOR_AMM_ID,
         )
     }
 

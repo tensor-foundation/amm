@@ -34,7 +34,7 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   AuthorizationDataLocal,
@@ -44,7 +44,7 @@ import {
 } from '../types';
 
 export type DepositNftInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -63,7 +63,9 @@ export type DepositNftInstruction<
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountAssociatedTokenProgram extends string | IAccountMeta<string> = string,
+  TAccountAssociatedTokenProgram extends
+    | string
+    | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
   TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
   TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
   TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
@@ -227,7 +229,7 @@ export type DepositNftInput<
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata pool token record account of the NFT. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
-  associatedTokenProgram: Address<TAccountAssociatedTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
   /** The sysvar instructions account. */
@@ -282,7 +284,7 @@ export function getDepositNftInstruction<
     TAccountAuthorizationRulesProgram
   >
 ): DepositNftInstruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
@@ -304,7 +306,7 @@ export function getDepositNftInstruction<
   TAccountAuthorizationRulesProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -363,6 +365,10 @@ export function getDepositNftInstruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -392,7 +398,7 @@ export function getDepositNftInstruction<
       args as DepositNftInstructionDataArgs
     ),
   } as DepositNftInstruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -418,7 +424,7 @@ export function getDepositNftInstruction<
 }
 
 export type ParsedDepositNftInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;
@@ -484,7 +490,7 @@ export function parseDepositNftInstruction<
   };
   const getNextOptionalAccount = () => {
     const accountMeta = getNextAccount();
-    return accountMeta.address === AMM_PROGRAM_ADDRESS
+    return accountMeta.address === TENSOR_AMM_PROGRAM_ADDRESS
       ? undefined
       : accountMeta;
   };

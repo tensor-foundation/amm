@@ -44,7 +44,7 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
@@ -54,7 +54,7 @@ import {
 } from '../types';
 
 export type EditPoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
@@ -153,13 +153,13 @@ export function getEditPoolInstruction<
 >(
   input: EditPoolInput<TAccountPool, TAccountOwner, TAccountSystemProgram>
 ): EditPoolInstruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountPool,
   TAccountOwner,
   TAccountSystemProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -193,7 +193,7 @@ export function getEditPoolInstruction<
       args as EditPoolInstructionDataArgs
     ),
   } as EditPoolInstruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountPool,
     TAccountOwner,
     TAccountSystemProgram
@@ -203,7 +203,7 @@ export function getEditPoolInstruction<
 }
 
 export type ParsedEditPoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;

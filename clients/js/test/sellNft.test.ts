@@ -1,7 +1,6 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -15,7 +14,6 @@ import {
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  AMM_PROGRAM_ADDRESS,
   CurveType,
   Pool,
   PoolConfig,
@@ -128,11 +126,9 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -285,11 +281,9 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -450,11 +444,9 @@ test('it can sell an NFT into a Token pool', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -608,11 +600,9 @@ test('token pool autocloses when currency amount drops below current price', asy
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 
@@ -737,9 +727,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
     // Remaining accounts
     creators: [nftOwner.address],
@@ -842,9 +830,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
-    ammProgram: AMM_PROGRAM_ADDRESS,
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,

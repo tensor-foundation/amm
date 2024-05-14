@@ -109,7 +109,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -120,7 +120,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -131,7 +131,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -142,7 +142,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -153,7 +153,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -164,7 +164,7 @@ impl WithdrawNft {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -174,7 +174,7 @@ impl WithdrawNft {
         data.append(&mut args);
 
         solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         }
@@ -211,7 +211,7 @@ pub struct WithdrawNftInstructionArgs {
 ///   4. `[writable]` pool_ata
 ///   5. `[writable]` nft_receipt
 ///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   7. `[]` associated_token_program
+///   7. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   9. `[writable]` metadata
 ///   10. `[]` edition
@@ -288,6 +288,7 @@ impl WithdrawNftBuilder {
         self.token_program = Some(token_program);
         self
     }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -407,9 +408,9 @@ impl WithdrawNftBuilder {
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
-            associated_token_program: self
-                .associated_token_program
-                .expect("associated_token_program is not set"),
+            associated_token_program: self.associated_token_program.unwrap_or(
+                solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            ),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -623,7 +624,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -634,7 +635,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -645,7 +646,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -656,7 +657,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -667,7 +668,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -678,7 +679,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -694,7 +695,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
         data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         };

@@ -27,7 +27,7 @@ import {
   IInstructionWithData,
   ReadonlyAccount,
 } from '@solana/instructions';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
   TAmmEvent,
@@ -37,7 +37,7 @@ import {
 } from '../types';
 
 export type TammNoopInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountPool extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -95,9 +95,9 @@ export type TammNoopInput<TAccountPool extends string = string> = {
 
 export function getTammNoopInstruction<TAccountPool extends string>(
   input: TammNoopInput<TAccountPool>
-): TammNoopInstruction<typeof AMM_PROGRAM_ADDRESS, TAccountPool> {
+): TammNoopInstruction<typeof TENSOR_AMM_PROGRAM_ADDRESS, TAccountPool> {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -118,13 +118,13 @@ export function getTammNoopInstruction<TAccountPool extends string>(
     data: getTammNoopInstructionDataEncoder().encode(
       args as TammNoopInstructionDataArgs
     ),
-  } as TammNoopInstruction<typeof AMM_PROGRAM_ADDRESS, TAccountPool>;
+  } as TammNoopInstruction<typeof TENSOR_AMM_PROGRAM_ADDRESS, TAccountPool>;
 
   return instruction;
 }
 
 export type ParsedTammNoopInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;

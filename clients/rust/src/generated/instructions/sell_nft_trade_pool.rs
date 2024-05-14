@@ -110,7 +110,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -156,7 +156,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -167,7 +167,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -178,7 +178,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -189,7 +189,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -200,7 +200,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -211,7 +211,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -222,7 +222,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -233,7 +233,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -244,7 +244,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -254,7 +254,7 @@ impl SellNftTradePool {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -272,7 +272,7 @@ impl SellNftTradePool {
         data.append(&mut args);
 
         solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         }
@@ -317,7 +317,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   10. `[writable]` nft_receipt
 ///   11. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   12. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   13. `[]` associated_token_program
+///   13. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   14. `[]` edition
 ///   15. `[writable, optional]` seller_token_record
 ///   16. `[writable, optional]` pool_token_record
@@ -329,7 +329,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   22. `[writable, optional]` maker_broker
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[signer, optional]` cosigner
-///   25. `[]` amm_program
+///   25. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
 ///   26. `[]` escrow_program
 #[derive(Default)]
 pub struct SellNftTradePoolBuilder {
@@ -450,6 +450,7 @@ impl SellNftTradePoolBuilder {
         self.system_program = Some(system_program);
         self
     }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -561,6 +562,7 @@ impl SellNftTradePoolBuilder {
         self.cosigner = cosigner;
         self
     }
+    /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.amm_program = Some(amm_program);
@@ -626,9 +628,9 @@ impl SellNftTradePoolBuilder {
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            associated_token_program: self
-                .associated_token_program
-                .expect("associated_token_program is not set"),
+            associated_token_program: self.associated_token_program.unwrap_or(
+                solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            ),
             edition: self.edition.expect("edition is not set"),
             seller_token_record: self.seller_token_record,
             pool_token_record: self.pool_token_record,
@@ -640,7 +642,9 @@ impl SellNftTradePoolBuilder {
             maker_broker: self.maker_broker,
             taker_broker: self.taker_broker,
             cosigner: self.cosigner,
-            amm_program: self.amm_program.expect("amm_program is not set"),
+            amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
+                "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
+            )),
             escrow_program: self.escrow_program.expect("escrow_program is not set"),
         };
         let args = SellNftTradePoolInstructionArgs {
@@ -882,7 +886,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -929,7 +933,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -940,7 +944,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -951,7 +955,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -962,7 +966,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -973,7 +977,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -984,7 +988,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -995,7 +999,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -1006,7 +1010,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -1017,7 +1021,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -1028,7 +1032,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             ));
         } else {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::AMM_ID,
+                crate::TENSOR_AMM_ID,
                 false,
             ));
         }
@@ -1052,7 +1056,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         data.append(&mut args);
 
         let instruction = solana_program::instruction::Instruction {
-            program_id: crate::AMM_ID,
+            program_id: crate::TENSOR_AMM_ID,
             accounts,
             data,
         };

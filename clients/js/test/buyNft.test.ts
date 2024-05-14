@@ -1,6 +1,5 @@
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -13,7 +12,6 @@ import {
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  AMM_PROGRAM_ADDRESS,
   PoolType,
   fetchMaybePool,
   fetchPool,
@@ -106,7 +104,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });
 
@@ -151,11 +148,9 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     nftReceipt,
     maxPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   await pipe(
@@ -269,7 +264,6 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     poolTokenRecord,
     ownerTokenRecord,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   });
 
   await pipe(
@@ -312,11 +306,9 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     makerBroker: makerBroker.address,
     maxPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   await pipe(
@@ -433,7 +425,6 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     poolTokenRecord,
     ownerTokenRecord,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   });
 
   await pipe(
@@ -474,11 +465,9 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     nftReceipt,
     maxPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   const sig = await pipe(
@@ -599,7 +588,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     edition: masterEdition1,
     ownerTokenRecord: ownerTokenRecord1,
     poolTokenRecord: poolTokenRecord1,
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });
 
@@ -615,7 +603,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     edition: masterEdition2,
     ownerTokenRecord: ownerTokenRecord2,
     poolTokenRecord: poolTokenRecord2,
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });
 
@@ -670,11 +657,9 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     nftReceipt: nftReceipt1,
     maxPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   await pipe(
@@ -704,11 +689,9 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     nftReceipt: nftReceipt2,
     maxPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
   });
 
   await pipe(

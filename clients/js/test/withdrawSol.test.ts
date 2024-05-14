@@ -7,7 +7,6 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -21,7 +20,6 @@ import {
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  AMM_PROGRAM_ADDRESS,
   PoolType,
   fetchPool,
   findNftDepositReceiptPda,
@@ -125,11 +123,9 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     cosigner,
     minPrice,
     authorizationData: none(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
-    ammProgram: AMM_PROGRAM_ADDRESS,
     escrowProgram: TSWAP_PROGRAM_ID,
   });
 

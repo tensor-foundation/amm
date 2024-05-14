@@ -91,14 +91,14 @@ impl Pool {
     ) -> Result<solana_program::pubkey::Pubkey, solana_program::pubkey::PubkeyError> {
         solana_program::pubkey::Pubkey::create_program_address(
             &["pool".as_bytes(), owner.as_ref(), &pool_id, &[bump]],
-            &crate::AMM_ID,
+            &crate::TENSOR_AMM_ID,
         )
     }
 
     pub fn find_pda(owner: &Pubkey, pool_id: [u8; 32]) -> (solana_program::pubkey::Pubkey, u8) {
         solana_program::pubkey::Pubkey::find_program_address(
             &["pool".as_bytes(), owner.as_ref(), &pool_id],
-            &crate::AMM_ID,
+            &crate::TENSOR_AMM_ID,
         )
     }
 

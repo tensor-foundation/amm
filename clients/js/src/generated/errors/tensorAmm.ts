@@ -6,7 +6,7 @@
  * @see https://github.com/metaplex-foundation/kinobi
  */
 
-export const enum AmmProgramErrorCode {
+export const enum TensorAmmProgramErrorCode {
   /** InvalidProof: invalid merkle proof, token not whitelisted */
   INVALID_PROOF = 0x2ee0, // 12000
   /** WhitelistNotVerified: whitelist not verified -- currently only verified pools supported */
@@ -107,15 +107,15 @@ export const enum AmmProgramErrorCode {
   WRONG_OWNER = 0x2f10, // 12048
 }
 
-export class AmmProgramError extends Error {
-  override readonly name = 'AmmProgramError';
+export class TensorAmmProgramError extends Error {
+  override readonly name = 'TensorAmmProgramError';
 
-  readonly code: AmmProgramErrorCode;
+  readonly code: TensorAmmProgramErrorCode;
 
   readonly cause: Error | undefined;
 
   constructor(
-    code: AmmProgramErrorCode,
+    code: TensorAmmProgramErrorCode,
     name: string,
     message: string,
     cause?: Error
@@ -126,213 +126,219 @@ export class AmmProgramError extends Error {
   }
 }
 
-let ammProgramErrorCodeMap:
-  | Record<AmmProgramErrorCode, [string, string]>
+let tensorAmmProgramErrorCodeMap:
+  | Record<TensorAmmProgramErrorCode, [string, string]>
   | undefined;
 if (__DEV__) {
-  ammProgramErrorCodeMap = {
-    [AmmProgramErrorCode.INVALID_PROOF]: [
+  tensorAmmProgramErrorCodeMap = {
+    [TensorAmmProgramErrorCode.INVALID_PROOF]: [
       'InvalidProof',
       `invalid merkle proof, token not whitelisted`,
     ],
-    [AmmProgramErrorCode.WHITELIST_NOT_VERIFIED]: [
+    [TensorAmmProgramErrorCode.WHITELIST_NOT_VERIFIED]: [
       'WhitelistNotVerified',
       `whitelist not verified -- currently only verified pools supported`,
     ],
-    [AmmProgramErrorCode.BAD_WHITELIST]: [
+    [TensorAmmProgramErrorCode.BAD_WHITELIST]: [
       'BadWhitelist',
       `unexpected whitelist address`,
     ],
-    [AmmProgramErrorCode.WRONG_POOL_TYPE]: [
+    [TensorAmmProgramErrorCode.WRONG_POOL_TYPE]: [
       'WrongPoolType',
       `operation not permitted on this pool type`,
     ],
-    [AmmProgramErrorCode.BAD_FEE_ACCOUNT]: [
+    [TensorAmmProgramErrorCode.BAD_FEE_ACCOUNT]: [
       'BadFeeAccount',
       `fee account doesn't match that stored on pool`,
     ],
-    [AmmProgramErrorCode.BAD_ESCROW_ACCOUNT]: [
+    [TensorAmmProgramErrorCode.BAD_ESCROW_ACCOUNT]: [
       'BadEscrowAccount',
       `escrow account doesn't match that stored on pool`,
     ],
-    [AmmProgramErrorCode.MISSING_FEES]: [
+    [TensorAmmProgramErrorCode.MISSING_FEES]: [
       'MissingFees',
       `when setting up a Trade pool, must provide fee bps`,
     ],
-    [AmmProgramErrorCode.FEES_TOO_HIGH]: [
+    [TensorAmmProgramErrorCode.FEES_TOO_HIGH]: [
       'FeesTooHigh',
       `fees entered above allowed threshold`,
     ],
-    [AmmProgramErrorCode.DELTA_TOO_LARGE]: ['DeltaTooLarge', `delta too large`],
-    [AmmProgramErrorCode.ARITHMETIC_ERROR]: [
+    [TensorAmmProgramErrorCode.DELTA_TOO_LARGE]: [
+      'DeltaTooLarge',
+      `delta too large`,
+    ],
+    [TensorAmmProgramErrorCode.ARITHMETIC_ERROR]: [
       'ArithmeticError',
       `arithmetic error`,
     ],
-    [AmmProgramErrorCode.WRONG_POOL]: [
+    [TensorAmmProgramErrorCode.WRONG_POOL]: [
       'WrongPool',
       `this nft doesnt belong to this pool`,
     ],
-    [AmmProgramErrorCode.ROYALTIES_ENABLED]: [
+    [TensorAmmProgramErrorCode.ROYALTIES_ENABLED]: [
       'RoyaltiesEnabled',
       `royalties are enabled always`,
     ],
-    [AmmProgramErrorCode.PRICE_MISMATCH]: [
+    [TensorAmmProgramErrorCode.PRICE_MISMATCH]: [
       'PriceMismatch',
       `specified price not within current price`,
     ],
-    [AmmProgramErrorCode.EXISTING_NFTS]: [
+    [TensorAmmProgramErrorCode.EXISTING_NFTS]: [
       'ExistingNfts',
       `cannot close pool with nfts in escrow -- withdraw all before closing`,
     ],
-    [AmmProgramErrorCode.WRONG_MINT]: [
+    [TensorAmmProgramErrorCode.WRONG_MINT]: [
       'WrongMint',
       `wrong mint passed for provided accounts`,
     ],
-    [AmmProgramErrorCode.INSUFFICIENT_TSWAP_ACC_BALANCE]: [
+    [TensorAmmProgramErrorCode.INSUFFICIENT_TSWAP_ACC_BALANCE]: [
       'InsufficientTswapAccBalance',
       `insufficient Tswap account balance`,
     ],
-    [AmmProgramErrorCode.BAD_OWNER]: ['BadOwner', `bad owner`],
-    [AmmProgramErrorCode.FEES_NOT_ALLOWED]: [
+    [TensorAmmProgramErrorCode.BAD_OWNER]: ['BadOwner', `bad owner`],
+    [TensorAmmProgramErrorCode.FEES_NOT_ALLOWED]: [
       'FeesNotAllowed',
       `fees not allowed for non-trade pools`,
     ],
-    [AmmProgramErrorCode.BAD_METADATA]: [
+    [TensorAmmProgramErrorCode.BAD_METADATA]: [
       'BadMetadata',
       `metadata account does not match`,
     ],
-    [AmmProgramErrorCode.CREATOR_MISMATCH]: [
+    [TensorAmmProgramErrorCode.CREATOR_MISMATCH]: [
       'CreatorMismatch',
       `provided creator address does not match metadata creator`,
     ],
-    [AmmProgramErrorCode.WRONG_POOL_VERSION]: [
+    [TensorAmmProgramErrorCode.WRONG_POOL_VERSION]: [
       'WrongPoolVersion',
       `wrong pool version provided`,
     ],
-    [AmmProgramErrorCode.POOLS_ARE_THE_SAME]: [
+    [TensorAmmProgramErrorCode.POOLS_ARE_THE_SAME]: [
       'PoolsAreTheSame',
       `new pool should not match old pool`,
     ],
-    [AmmProgramErrorCode.WRONG_AUTHORITY]: [
+    [TensorAmmProgramErrorCode.WRONG_AUTHORITY]: [
       'WrongAuthority',
       `wrong nft authority account provided`,
     ],
-    [AmmProgramErrorCode.FROZEN_AMOUNT_MISMATCH]: [
+    [TensorAmmProgramErrorCode.FROZEN_AMOUNT_MISMATCH]: [
       'FrozenAmountMismatch',
       `amount frozen doesnt match current price`,
     ],
-    [AmmProgramErrorCode.BAD_MINT_PROOF]: [
+    [TensorAmmProgramErrorCode.BAD_MINT_PROOF]: [
       'BadMintProof',
       `mint proof account does not match`,
     ],
-    [AmmProgramErrorCode.BAD_COSIGNER]: [
+    [TensorAmmProgramErrorCode.BAD_COSIGNER]: [
       'BadCosigner',
       `bad cosigner passed - either wrong key or no signature`,
     ],
-    [AmmProgramErrorCode.POOL_FROZEN]: [
+    [TensorAmmProgramErrorCode.POOL_FROZEN]: [
       'PoolFrozen',
       `pool is frozen and cannot execute normal operations`,
     ],
-    [AmmProgramErrorCode.BAD_SHARED_ESCROW]: [
+    [TensorAmmProgramErrorCode.BAD_SHARED_ESCROW]: [
       'BadSharedEscrow',
       `bad shared escrow account passed`,
     ],
-    [AmmProgramErrorCode.POOL_NOT_ON_SHARED_ESCROW]: [
+    [TensorAmmProgramErrorCode.POOL_NOT_ON_SHARED_ESCROW]: [
       'PoolNotOnSharedEscrow',
       `expected a shared escrow pool to be passed in`,
     ],
-    [AmmProgramErrorCode.POOL_ON_SHARED_ESCROW]: [
+    [TensorAmmProgramErrorCode.POOL_ON_SHARED_ESCROW]: [
       'PoolOnSharedEscrow',
       `expected a non-shared escrow pool to be passed in`,
     ],
-    [AmmProgramErrorCode.WRONG_ORDER_TYPE]: [
+    [TensorAmmProgramErrorCode.WRONG_ORDER_TYPE]: [
       'WrongOrderType',
       `wrong order type`,
     ],
-    [AmmProgramErrorCode.WRONG_FROZEN_STATUS]: [
+    [TensorAmmProgramErrorCode.WRONG_FROZEN_STATUS]: [
       'WrongFrozenStatus',
       `wrong frozen status`,
     ],
-    [AmmProgramErrorCode.SHARED_ESCROW_IN_USE]: [
+    [TensorAmmProgramErrorCode.SHARED_ESCROW_IN_USE]: [
       'SharedEscrowInUse',
       `shared escrow account has pools open and is in use`,
     ],
-    [AmmProgramErrorCode.MAX_TAKER_SELL_COUNT_EXCEEDED]: [
+    [TensorAmmProgramErrorCode.MAX_TAKER_SELL_COUNT_EXCEEDED]: [
       'MaxTakerSellCountExceeded',
       `max taker sell count exceeded, pool cannot buy anymore NFTs`,
     ],
-    [AmmProgramErrorCode.MAX_TAKER_SELL_COUNT_TOO_SMALL]: [
+    [TensorAmmProgramErrorCode.MAX_TAKER_SELL_COUNT_TOO_SMALL]: [
       'MaxTakerSellCountTooSmall',
       `max taker sell count is too small`,
     ],
-    [AmmProgramErrorCode.BAD_RULE_SET]: [
+    [TensorAmmProgramErrorCode.BAD_RULE_SET]: [
       'BadRuleSet',
       `rule set for programmable nft does not match`,
     ],
-    [AmmProgramErrorCode.POOL_FEES_COMPOUNDED]: [
+    [TensorAmmProgramErrorCode.POOL_FEES_COMPOUNDED]: [
       'PoolFeesCompounded',
       `this pool compounds fees and they cannot be withdrawn separately`,
     ],
-    [AmmProgramErrorCode.BAD_ROYALTIES_PCT]: [
+    [TensorAmmProgramErrorCode.BAD_ROYALTIES_PCT]: [
       'BadRoyaltiesPct',
       `royalties percentage passed in must be between 0 and 100`,
     ],
-    [AmmProgramErrorCode.STARTING_PRICE_TOO_SMALL]: [
+    [TensorAmmProgramErrorCode.STARTING_PRICE_TOO_SMALL]: [
       'StartingPriceTooSmall',
       `starting price can't be smaller than 1 lamport`,
     ],
-    [AmmProgramErrorCode.POOL_KEEP_ALIVE]: [
+    [TensorAmmProgramErrorCode.POOL_KEEP_ALIVE]: [
       'PoolKeepAlive',
       `Pool must keep minimum rent balance`,
     ],
-    [AmmProgramErrorCode.WRONG_RENT_PAYER]: [
+    [TensorAmmProgramErrorCode.WRONG_RENT_PAYER]: [
       'WrongRentPayer',
       `Wrong rent payer`,
     ],
-    [AmmProgramErrorCode.SPL_TOKENS_NOT_SUPPORTED]: [
+    [TensorAmmProgramErrorCode.SPL_TOKENS_NOT_SUPPORTED]: [
       'SplTokensNotSupported',
       `SPL tokens not supported`,
     ],
-    [AmmProgramErrorCode.EXPIRY_TOO_LARGE]: [
+    [TensorAmmProgramErrorCode.EXPIRY_TOO_LARGE]: [
       'ExpiryTooLarge',
       `Expiry too large`,
     ],
-    [AmmProgramErrorCode.EXPIRED_POOL]: ['ExpiredPool', `Expired Pool`],
-    [AmmProgramErrorCode.POOL_NOT_EXPIRED]: [
+    [TensorAmmProgramErrorCode.EXPIRED_POOL]: ['ExpiredPool', `Expired Pool`],
+    [TensorAmmProgramErrorCode.POOL_NOT_EXPIRED]: [
       'PoolNotExpired',
       `Pool not expired`,
     ],
-    [AmmProgramErrorCode.UNSUPPORTED_CURRENCY]: [
+    [TensorAmmProgramErrorCode.UNSUPPORTED_CURRENCY]: [
       'UnsupportedCurrency',
       `Unsupported currency`,
     ],
-    [AmmProgramErrorCode.INVALID_POOL_AMOUNT]: [
+    [TensorAmmProgramErrorCode.INVALID_POOL_AMOUNT]: [
       'InvalidPoolAmount',
       `Invalid pool amount`,
     ],
-    [AmmProgramErrorCode.WRONG_BROKER_ACCOUNT]: [
+    [TensorAmmProgramErrorCode.WRONG_BROKER_ACCOUNT]: [
       'WrongBrokerAccount',
       `Wrong broker account`,
     ],
-    [AmmProgramErrorCode.WRONG_OWNER]: ['WrongOwner', `Wrong rent payer`],
+    [TensorAmmProgramErrorCode.WRONG_OWNER]: ['WrongOwner', `Wrong rent payer`],
   };
 }
 
-export function getAmmProgramErrorFromCode(
-  code: AmmProgramErrorCode,
+export function getTensorAmmProgramErrorFromCode(
+  code: TensorAmmProgramErrorCode,
   cause?: Error
-): AmmProgramError {
+): TensorAmmProgramError {
   if (__DEV__) {
-    return new AmmProgramError(
+    return new TensorAmmProgramError(
       code,
       ...(
-        ammProgramErrorCodeMap as Record<AmmProgramErrorCode, [string, string]>
+        tensorAmmProgramErrorCodeMap as Record<
+          TensorAmmProgramErrorCode,
+          [string, string]
+        >
       )[code],
       cause
     );
   }
 
-  return new AmmProgramError(
+  return new TensorAmmProgramError(
     code,
     'Unknown',
     'Error message not available in production bundles. Compile with __DEV__ set to true to see more information.',
