@@ -40,6 +40,15 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
+import {
+  TokenStandard,
+  TokenStandardArgs,
+  resolveEditionFromTokenStandard,
+  resolveMetadata,
+  resolveNftReceipt,
+  resolvePoolAta,
+  resolveSellerAta,
+} from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
@@ -231,6 +240,10 @@ export function getSellNftTradePoolInstructionDataCodec(): Codec<
   );
 }
 
+export type SellNftTradePoolInstructionExtraArgs = {
+  tokenStandard?: TokenStandardArgs;
+};
+
 export type SellNftTradePoolAsyncInput<
   TAccountOwner extends string = string,
   TAccountSeller extends string = string,
@@ -282,15 +295,15 @@ export type SellNftTradePoolAsyncInput<
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
   /** The token account of the NFT for the seller's wallet. */
-  sellerAta: Address<TAccountSellerAta>;
-  poolAta: Address<TAccountPoolAta>;
+  sellerAta?: Address<TAccountSellerAta>;
+  poolAta?: Address<TAccountPoolAta>;
   /** The Token Metadata metadata account of the NFT. */
-  metadata: Address<TAccountMetadata>;
-  nftReceipt: Address<TAccountNftReceipt>;
+  metadata?: Address<TAccountMetadata>;
+  nftReceipt?: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  edition: Address<TAccountEdition>;
+  edition?: Address<TAccountEdition>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
   /** The Token Metadata pool temporary token record account of the NFT. */
@@ -319,6 +332,7 @@ export type SellNftTradePoolAsyncInput<
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
   authorizationData: SellNftTradePoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: SellNftTradePoolInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: SellNftTradePoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -485,6 +499,30 @@ export async function getSellNftTradePoolInstructionAsync<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
+  if (!accounts.sellerAta.value) {
+    accounts.sellerAta = {
+      ...accounts.sellerAta,
+      ...(await resolveSellerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolAta.value) {
+    accounts.poolAta = {
+      ...accounts.poolAta,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
+  if (!accounts.metadata.value) {
+    accounts.metadata = {
+      ...accounts.metadata,
+      ...(await resolveMetadata(resolverScope)),
+    };
+  }
+  if (!accounts.nftReceipt.value) {
+    accounts.nftReceipt = {
+      ...accounts.nftReceipt,
+      ...(await resolveNftReceipt(resolverScope)),
+    };
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -493,9 +531,18 @@ export async function getSellNftTradePoolInstructionAsync<
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
+  if (!accounts.edition.value) {
+    accounts.edition = {
+      ...accounts.edition,
+      ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.
@@ -661,6 +708,7 @@ export type SellNftTradePoolInput<
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
   authorizationData: SellNftTradePoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: SellNftTradePoolInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: SellNftTradePoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -827,6 +875,9 @@ export function getSellNftTradePoolInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.

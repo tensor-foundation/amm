@@ -29,7 +29,7 @@ import {
   WritableAccount,
 } from '@solana/instructions';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 
 export type CloseExpiredPoolInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -98,7 +98,7 @@ export type CloseExpiredPoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   owner: Address<TAccountOwner>;
   pool: Address<TAccountPool>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -139,6 +139,9 @@ export function getCloseExpiredPoolInstruction<
   >;
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

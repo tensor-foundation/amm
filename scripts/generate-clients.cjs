@@ -69,7 +69,38 @@ kinobi.update(
 // Update instructions.
 kinobi.update(
   k.updateInstructionsVisitor({
+    depositNft: {
+      arguments: {
+        tokenStandard: {
+          type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
+          defaultValue: k.enumValueNode(
+            k.definedTypeLinkNode("TokenStandard", "resolvers"),
+            "NonFungible",
+          ),
+        },
+      },
+    },
+    withdrawNft: {
+      arguments: {
+        tokenStandard: {
+          type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
+          defaultValue: k.enumValueNode(
+            k.definedTypeLinkNode("TokenStandard", "resolvers"),
+            "NonFungible",
+          ),
+        },
+      },
+    },
     sellNftTokenPool: {
+      arguments: {
+        tokenStandard: {
+          type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
+          defaultValue: k.enumValueNode(
+            k.definedTypeLinkNode("TokenStandard", "resolvers"),
+            "NonFungible",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
@@ -79,6 +110,15 @@ kinobi.update(
       ],
     },
     sellNftTradePool: {
+      arguments: {
+        tokenStandard: {
+          type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
+          defaultValue: k.enumValueNode(
+            k.definedTypeLinkNode("TokenStandard", "resolvers"),
+            "NonFungible",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
@@ -88,6 +128,15 @@ kinobi.update(
       ],
     },
     buyNft: {
+      arguments: {
+        tokenStandard: {
+          type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
+          defaultValue: k.enumValueNode(
+            k.definedTypeLinkNode("TokenStandard", "resolvers"),
+            "NonFungible",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
@@ -240,9 +289,137 @@ kinobi.update(
       }),
     },
     {
+      account: "ownerAta",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveOwnerAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("owner"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram"),
+        ],
+      }),
+    },
+    {
+      account: "buyerAta",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveBuyerAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("buyer"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram"),
+        ],
+      }),
+    },
+    {
+      account: "sellerAta",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveSellerAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("seller"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram"),
+        ],
+      }),
+    },
+    {
+      account: "poolAta",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolvePoolAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("pool"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram"),
+        ],
+      }),
+    },
+    {
+      account: "ownerTokenRecord",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode(
+        "resolveOwnerTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("ownerAta"),
+          ],
+        },
+      ),
+    },
+    {
+      account: "buyerTokenRecord",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode(
+        "resolveBuyerTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("buyerAta"),
+          ],
+        },
+      ),
+    },
+    {
+      account: "sellerTokenRecord",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode(
+        "resolveSellerTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("sellerAta"),
+          ],
+        },
+      ),
+    },
+    {
+      account: "poolTokenRecord",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode(
+        "resolvePoolTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("poolAta"),
+          ],
+        },
+      ),
+    },
+    {
+      account: "nftReceipt",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveNftReceipt", {
+        importFrom: "resolvers",
+        dependsOn: [k.accountValueNode("mint"), k.accountValueNode("pool")],
+      }),
+    },
+    {
+      account: "metadata",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveMetadata", {
+        importFrom: "resolvers",
+        dependsOn: [k.accountValueNode("mint")],
+      }),
+    },
+    {
+      account: "edition",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveEditionFromTokenStandard", {
+        importFrom: "resolvers",
+        dependsOn: [k.accountValueNode("mint")],
+      }),
+    },
+    {
       account: "rentPayer",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyTypeNode("owner"),
+      defaultValue: k.accountValueNode("owner"),
     },
   ]),
 );
@@ -256,7 +433,23 @@ const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
 kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
     prettier,
-    asyncResolvers: ["resolveFeeVaultPdaFromPool"],
+    dependencyMap: {
+      resolvers: "@tensor-foundation/resolvers",
+    },
+    asyncResolvers: [
+      "resolveFeeVaultPdaFromPool",
+      "resolveOwnerAta",
+      "resolveBuyerAta",
+      "resolveSellerAta",
+      "resolvePoolAta",
+      "resolveOwnerTokenRecordFromTokenStandard",
+      "resolveBuyerTokenRecordFromTokenStandard",
+      "resolveSellerTokenRecordFromTokenStandard",
+      "resolvePoolTokenRecordFromTokenStandard",
+      "resolveNftReceipt",
+      "resolveMetadata",
+      "resolveEditionFromTokenStandard",
+    ],
   }),
 );
 

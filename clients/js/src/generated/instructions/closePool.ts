@@ -31,7 +31,11 @@ import {
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import {
+  ResolvedAccount,
+  expectTransactionSigner,
+  getAccountMetaFactory,
+} from '../shared';
 
 export type ClosePoolInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -101,7 +105,7 @@ export type ClosePoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   /** The pool to close. */
   pool: Address<TAccountPool>;
@@ -144,6 +148,11 @@ export function getClosePoolInstruction<
   >;
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectTransactionSigner(
+      accounts.owner.value
+    ).address;
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

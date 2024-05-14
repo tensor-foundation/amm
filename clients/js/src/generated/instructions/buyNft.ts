@@ -39,9 +39,18 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
+import {
+  TokenStandard,
+  TokenStandardArgs,
+  resolveBuyerAta,
+  resolveEditionFromTokenStandard,
+  resolveMetadata,
+  resolveNftReceipt,
+  resolvePoolAta,
+} from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 import {
   AuthorizationDataLocal,
   AuthorizationDataLocalArgs,
@@ -214,6 +223,8 @@ export function getBuyNftInstructionDataCodec(): Codec<
   );
 }
 
+export type BuyNftInstructionExtraArgs = { tokenStandard?: TokenStandardArgs };
+
 export type BuyNftAsyncInput<
   TAccountOwner extends string = string,
   TAccountBuyer extends string = string,
@@ -248,26 +259,26 @@ export type BuyNftAsyncInput<
   owner: Address<TAccountOwner>;
   /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
-  buyerAta: Address<TAccountBuyerAta>;
+  buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT is held. */
-  poolAta: Address<TAccountPoolAta>;
+  poolAta?: Address<TAccountPoolAta>;
   /**
    * The mint account of the NFT. It should be the mint account common
    * to the owner_ata, pool_ata and the mint stored in the nft receipt.
    */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
-  metadata: Address<TAccountMetadata>;
+  metadata?: Address<TAccountMetadata>;
   /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
-  nftReceipt: Address<TAccountNftReceipt>;
+  nftReceipt?: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
-  edition: Address<TAccountEdition>;
+  edition?: Address<TAccountEdition>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata token record for the buyer. */
@@ -290,6 +301,7 @@ export type BuyNftAsyncInput<
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   authorizationData: BuyNftInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -434,6 +446,9 @@ export async function getBuyNftInstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.feeVault.value) {
     accounts.feeVault = {
       ...accounts.feeVault,
@@ -444,6 +459,30 @@ export async function getBuyNftInstructionAsync<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
+  if (!accounts.buyerAta.value) {
+    accounts.buyerAta = {
+      ...accounts.buyerAta,
+      ...(await resolveBuyerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolAta.value) {
+    accounts.poolAta = {
+      ...accounts.poolAta,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
+  if (!accounts.metadata.value) {
+    accounts.metadata = {
+      ...accounts.metadata,
+      ...(await resolveMetadata(resolverScope)),
+    };
+  }
+  if (!accounts.nftReceipt.value) {
+    accounts.nftReceipt = {
+      ...accounts.nftReceipt,
+      ...(await resolveNftReceipt(resolverScope)),
+    };
+  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
@@ -452,9 +491,18 @@ export async function getBuyNftInstructionAsync<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+  if (!accounts.edition.value) {
+    accounts.edition = {
+      ...accounts.edition,
+      ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.
@@ -560,7 +608,7 @@ export type BuyNftInput<
   owner: Address<TAccountOwner>;
   /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
@@ -602,6 +650,7 @@ export type BuyNftInput<
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   authorizationData: BuyNftInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -741,6 +790,9 @@ export function getBuyNftInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -756,6 +808,9 @@ export function getBuyNftInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.

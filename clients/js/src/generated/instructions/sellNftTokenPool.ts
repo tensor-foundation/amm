@@ -40,9 +40,18 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
+import {
+  TokenStandard,
+  TokenStandardArgs,
+  resolveEditionFromTokenStandard,
+  resolveMetadata,
+  resolveOwnerAta,
+  resolvePoolAta,
+  resolveSellerAta,
+} from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 import {
   AuthorizationDataLocal,
   AuthorizationDataLocalArgs,
@@ -236,6 +245,10 @@ export function getSellNftTokenPoolInstructionDataCodec(): Codec<
   );
 }
 
+export type SellNftTokenPoolInstructionExtraArgs = {
+  tokenStandard?: TokenStandardArgs;
+};
+
 export type SellNftTokenPoolAsyncInput<
   TAccountOwner extends string = string,
   TAccountSeller extends string = string,
@@ -271,7 +284,7 @@ export type SellNftTokenPoolAsyncInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
@@ -288,15 +301,15 @@ export type SellNftTokenPoolAsyncInput<
    */
   mintProof?: Address<TAccountMintProof>;
   /** The token account of the NFT for the seller's wallet. */
-  sellerAta: Address<TAccountSellerAta>;
+  sellerAta?: Address<TAccountSellerAta>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
-  ownerAta: Address<TAccountOwnerAta>;
+  ownerAta?: Address<TAccountOwnerAta>;
   /** The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
-  poolAta: Address<TAccountPoolAta>;
+  poolAta?: Address<TAccountPoolAta>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
-  metadata: Address<TAccountMetadata>;
+  metadata?: Address<TAccountMetadata>;
   /** Either the legacy token program or token-2022. */
   tokenProgram?: Address<TAccountTokenProgram>;
   /** The SPL associated token program. */
@@ -304,7 +317,7 @@ export type SellNftTokenPoolAsyncInput<
   /** The SPL system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata edition account of the NFT. */
-  edition: Address<TAccountEdition>;
+  edition?: Address<TAccountEdition>;
   /** The Token Metadata owner/buyer token record account of the NFT. */
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata seller/source token record account of the NFT. */
@@ -335,6 +348,7 @@ export type SellNftTokenPoolAsyncInput<
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData: SellNftTokenPoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: SellNftTokenPoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -502,6 +516,9 @@ export async function getSellNftTokenPoolInstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.feeVault.value) {
     accounts.feeVault = {
       ...accounts.feeVault,
@@ -512,6 +529,30 @@ export async function getSellNftTokenPoolInstructionAsync<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
+  if (!accounts.sellerAta.value) {
+    accounts.sellerAta = {
+      ...accounts.sellerAta,
+      ...(await resolveSellerAta(resolverScope)),
+    };
+  }
+  if (!accounts.ownerAta.value) {
+    accounts.ownerAta = {
+      ...accounts.ownerAta,
+      ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolAta.value) {
+    accounts.poolAta = {
+      ...accounts.poolAta,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
+  if (!accounts.metadata.value) {
+    accounts.metadata = {
+      ...accounts.metadata,
+      ...(await resolveMetadata(resolverScope)),
+    };
+  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
@@ -520,9 +561,18 @@ export async function getSellNftTokenPoolInstructionAsync<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+  if (!accounts.edition.value) {
+    accounts.edition = {
+      ...accounts.edition,
+      ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.
@@ -639,7 +689,7 @@ export type SellNftTokenPoolInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
@@ -703,6 +753,7 @@ export type SellNftTokenPoolInput<
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData: SellNftTokenPoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
+  tokenStandard?: SellNftTokenPoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
 
@@ -865,6 +916,9 @@ export function getSellNftTokenPoolInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -880,6 +934,9 @@ export function getSellNftTokenPoolInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.

@@ -32,9 +32,14 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
+import {
+  resolveBuyerAta,
+  resolveNftReceipt,
+  resolvePoolAta,
+} from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
   PoolConfigArgs,
@@ -194,17 +199,17 @@ export type BuyNftT22AsyncInput<
 > = {
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation, has_one = whitelist on pool */
   whitelist: Address<TAccountWhitelist>;
   /** The ATA of the buyer, where the NFT will be transferred. */
-  buyerAta: Address<TAccountBuyerAta>;
+  buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
-  poolAta: Address<TAccountPoolAta>;
+  poolAta?: Address<TAccountPoolAta>;
   mint: Address<TAccountMint>;
-  nftReceipt: Address<TAccountNftReceipt>;
+  nftReceipt?: Address<TAccountNftReceipt>;
   tokenProgram?: Address<TAccountTokenProgram>;
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -316,6 +321,9 @@ export async function getBuyNftT22InstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.feeVault.value) {
     accounts.feeVault = {
       ...accounts.feeVault,
@@ -325,6 +333,24 @@ export async function getBuyNftT22InstructionAsync<
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.buyerAta.value) {
+    accounts.buyerAta = {
+      ...accounts.buyerAta,
+      ...(await resolveBuyerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolAta.value) {
+    accounts.poolAta = {
+      ...accounts.poolAta,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
+  if (!accounts.nftReceipt.value) {
+    accounts.nftReceipt = {
+      ...accounts.nftReceipt,
+      ...(await resolveNftReceipt(resolverScope)),
+    };
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
@@ -409,7 +435,7 @@ export type BuyNftT22Input<
 > = {
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation, has_one = whitelist on pool */
@@ -526,6 +552,9 @@ export function getBuyNftT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

@@ -46,7 +46,7 @@ import {
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
   PoolConfigArgs,
@@ -167,7 +167,7 @@ export type CreatePoolInput<
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer: TransactionSigner<TAccountRentPayer>;
+  rentPayer?: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation / will be stored inside pool */
@@ -226,6 +226,9 @@ export function getCreatePoolInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

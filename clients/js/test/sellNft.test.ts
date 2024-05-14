@@ -7,10 +7,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-  findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
+import { createDefaultNft } from '@tensor-foundation/toolkit-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
@@ -20,10 +17,9 @@ import {
   PoolType,
   fetchMaybePool,
   fetchPool,
-  findNftDepositReceiptPda,
   getDepositSolInstruction,
-  getSellNftTokenPoolInstruction,
-  getSellNftTradePoolInstruction,
+  getSellNftTokenPoolInstructionAsync,
+  getSellNftTradePoolInstructionAsync,
   isSol,
 } from '../src/index.js';
 import {
@@ -74,12 +70,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.mmFeeBps === 50);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
@@ -91,36 +82,16 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     .value;
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
     cosigner,
@@ -205,12 +176,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const depositAmount = config.startingPrice * 10n;
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Create a shared escrow account.
   const sharedEscrow = await createAndFundEscrow(client, owner, 1);
@@ -234,7 +200,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   });
 
   // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, pool);
+  await getAndFundFeeVault(client, pool);
 
   t.like(await fetchPool(client.rpc, pool), <Pool>{
     address: pool,
@@ -245,36 +211,16 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   });
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
     sharedEscrow,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
@@ -325,13 +271,13 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
 
-  // const updatedPoolAccount = await fetchPool(client.rpc, pool);
+  const updatedPoolAccount = await fetchPool(client.rpc, pool);
 
-  // // Ensure it's a SOL currency.
-  // t.assert(isSol(updatedPoolAccount.data.currency));
+  // Ensure it's a SOL currency.
+  t.assert(isSol(updatedPoolAccount.data.currency));
 
-  // // Shared escrow pools should have an amount of 0.
-  // t.assert(updatedPoolAccount.data.amount === 0n);
+  // Shared escrow pools should have an amount of 0.
+  t.assert(updatedPoolAccount.data.amount === 0n);
 });
 
 test('it can sell an NFT into a Token pool', async (t) => {
@@ -374,12 +320,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   t.assert(poolAccount.data.amount === 0n);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -403,42 +344,17 @@ test('it can sell an NFT into a Token pool', async (t) => {
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTokenPoolInstruction({
+  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    rentPayer: owner.address,
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    ownerAta,
-    sellerTokenRecord,
-    ownerTokenRecord,
-    poolTokenRecord,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
     cosigner,
@@ -536,12 +452,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   t.assert(poolAccount.data.amount === 0n);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -557,44 +468,18 @@ test('token pool autocloses when currency amount drops below current price', asy
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const feeVault = await getAndFundFeeVault(client, pool);
-
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
+  await getAndFundFeeVault(client, pool);
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTokenPoolInstruction({
+  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     rentPayer: rentPayer.address,
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    ownerAta,
-    sellerTokenRecord,
-    ownerTokenRecord,
-    poolTokenRecord,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
     cosigner,
@@ -661,12 +546,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   // Mint NFT
 
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Deposit SOL
 
@@ -683,47 +563,18 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  const feeVault = await getAndFundFeeVault(client, pool);
-
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
+  await getAndFundFeeVault(client, pool);
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
 
-  const sellNftIx = getSellNftTokenPoolInstruction({
+  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    rentPayer: owner.address,
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    ownerAta,
-    sellerTokenRecord,
-    ownerTokenRecord,
-    poolTokenRecord,
     cosigner,
     minPrice,
     authorizationData: none(),
@@ -774,12 +625,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   });
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -795,38 +641,17 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
-  const feeVault = await getAndFundFeeVault(client, pool);
+  await getAndFundFeeVault(client, pool);
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
     cosigner,
     minPrice,
     authorizationData: none(),
