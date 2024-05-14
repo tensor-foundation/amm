@@ -232,13 +232,13 @@ kinobi.update(
       ),
     },
     // default accounts
-    // {
-    //   account: "feeVault",
-    //   ignoreIfOptional: true,
-    //   defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-    //     dependsOn: [k.accountValueNode("pool")],
-    //   }),
-    // },
+    {
+      account: "feeVault",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
+        dependsOn: [k.accountValueNode("pool")],
+      }),
+    },
     {
       account: "rentPayer",
       ignoreIfOptional: true,
@@ -256,7 +256,7 @@ const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
 kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
     prettier,
-    // asyncResolvers: ["resolveFeeVaultPdaFromPool"],
+    asyncResolvers: ["resolveFeeVaultPdaFromPool"],
   }),
 );
 

@@ -39,6 +39,7 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
+import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
 import {
@@ -211,6 +212,318 @@ export function getBuyNftInstructionDataCodec(): Codec<
     getBuyNftInstructionDataEncoder(),
     getBuyNftInstructionDataDecoder()
   );
+}
+
+export type BuyNftAsyncInput<
+  TAccountOwner extends string = string,
+  TAccountBuyer extends string = string,
+  TAccountRentPayer extends string = string,
+  TAccountFeeVault extends string = string,
+  TAccountPool extends string = string,
+  TAccountBuyerAta extends string = string,
+  TAccountPoolAta extends string = string,
+  TAccountMint extends string = string,
+  TAccountMetadata extends string = string,
+  TAccountNftReceipt extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
+  TAccountEdition extends string = string,
+  TAccountPoolTokenRecord extends string = string,
+  TAccountBuyerTokenRecord extends string = string,
+  TAccountTokenMetadataProgram extends string = string,
+  TAccountSysvarInstructions extends string = string,
+  TAccountAuthorizationRulesProgram extends string = string,
+  TAccountAuthorizationRules extends string = string,
+  TAccountSharedEscrow extends string = string,
+  TAccountMakerBroker extends string = string,
+  TAccountTakerBroker extends string = string,
+  TAccountAmmProgram extends string = string,
+> = {
+  /**
+   * Owner is the pool owner who created the pool and the nominal owner of the
+   * escrowed NFT. In this transaction they are the seller, though the transfer
+   * of the NFT is handled by the pool.
+   */
+  owner: Address<TAccountOwner>;
+  /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
+  buyer: TransactionSigner<TAccountBuyer>;
+  rentPayer: Address<TAccountRentPayer>;
+  feeVault?: Address<TAccountFeeVault>;
+  pool: Address<TAccountPool>;
+  /** The ATA of the buyer, where the NFT will be transferred. */
+  buyerAta: Address<TAccountBuyerAta>;
+  /** The ATA of the pool, where the NFT is held. */
+  poolAta: Address<TAccountPoolAta>;
+  /**
+   * The mint account of the NFT. It should be the mint account common
+   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
+   */
+  mint: Address<TAccountMint>;
+  /** The Token Metadata metadata account of the NFT. */
+  metadata: Address<TAccountMetadata>;
+  /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
+  nftReceipt: Address<TAccountNftReceipt>;
+  tokenProgram?: Address<TAccountTokenProgram>;
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  systemProgram?: Address<TAccountSystemProgram>;
+  edition: Address<TAccountEdition>;
+  /** The Token Metadata token record for the pool. */
+  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
+  /** The Token Metadata token record for the buyer. */
+  buyerTokenRecord?: Address<TAccountBuyerTokenRecord>;
+  /** The Token Metadata program account. */
+  tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
+  /** The sysvar instructions account. */
+  sysvarInstructions?: Address<TAccountSysvarInstructions>;
+  /** The Metaplex Token Authority Rules program account. */
+  authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
+  /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
+  authorizationRules?: Address<TAccountAuthorizationRules>;
+  /** The shared escrow account for pools that pool liquidity in a shared account. */
+  sharedEscrow?: Address<TAccountSharedEscrow>;
+  /** The account that receives the maker broker fee. */
+  makerBroker?: Address<TAccountMakerBroker>;
+  /** The account that receives the taker broker fee. */
+  takerBroker?: Address<TAccountTakerBroker>;
+  ammProgram?: Address<TAccountAmmProgram>;
+  maxPrice: BuyNftInstructionDataArgs['maxPrice'];
+  authorizationData: BuyNftInstructionDataArgs['authorizationData'];
+  optionalRoyaltyPct: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
+  creators?: Array<Address>;
+};
+
+export async function getBuyNftInstructionAsync<
+  TAccountOwner extends string,
+  TAccountBuyer extends string,
+  TAccountRentPayer extends string,
+  TAccountFeeVault extends string,
+  TAccountPool extends string,
+  TAccountBuyerAta extends string,
+  TAccountPoolAta extends string,
+  TAccountMint extends string,
+  TAccountMetadata extends string,
+  TAccountNftReceipt extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
+  TAccountEdition extends string,
+  TAccountPoolTokenRecord extends string,
+  TAccountBuyerTokenRecord extends string,
+  TAccountTokenMetadataProgram extends string,
+  TAccountSysvarInstructions extends string,
+  TAccountAuthorizationRulesProgram extends string,
+  TAccountAuthorizationRules extends string,
+  TAccountSharedEscrow extends string,
+  TAccountMakerBroker extends string,
+  TAccountTakerBroker extends string,
+  TAccountAmmProgram extends string,
+>(
+  input: BuyNftAsyncInput<
+    TAccountOwner,
+    TAccountBuyer,
+    TAccountRentPayer,
+    TAccountFeeVault,
+    TAccountPool,
+    TAccountBuyerAta,
+    TAccountPoolAta,
+    TAccountMint,
+    TAccountMetadata,
+    TAccountNftReceipt,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
+    TAccountEdition,
+    TAccountPoolTokenRecord,
+    TAccountBuyerTokenRecord,
+    TAccountTokenMetadataProgram,
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRulesProgram,
+    TAccountAuthorizationRules,
+    TAccountSharedEscrow,
+    TAccountMakerBroker,
+    TAccountTakerBroker,
+    TAccountAmmProgram
+  >
+): Promise<
+  BuyNftInstruction<
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountOwner,
+    TAccountBuyer,
+    TAccountRentPayer,
+    TAccountFeeVault,
+    TAccountPool,
+    TAccountBuyerAta,
+    TAccountPoolAta,
+    TAccountMint,
+    TAccountMetadata,
+    TAccountNftReceipt,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
+    TAccountEdition,
+    TAccountPoolTokenRecord,
+    TAccountBuyerTokenRecord,
+    TAccountTokenMetadataProgram,
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRulesProgram,
+    TAccountAuthorizationRules,
+    TAccountSharedEscrow,
+    TAccountMakerBroker,
+    TAccountTakerBroker,
+    TAccountAmmProgram
+  >
+> {
+  // Program address.
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    owner: { value: input.owner ?? null, isWritable: false },
+    buyer: { value: input.buyer ?? null, isWritable: true },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
+    feeVault: { value: input.feeVault ?? null, isWritable: true },
+    pool: { value: input.pool ?? null, isWritable: true },
+    buyerAta: { value: input.buyerAta ?? null, isWritable: true },
+    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    mint: { value: input.mint ?? null, isWritable: false },
+    metadata: { value: input.metadata ?? null, isWritable: true },
+    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+    edition: { value: input.edition ?? null, isWritable: false },
+    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
+    buyerTokenRecord: {
+      value: input.buyerTokenRecord ?? null,
+      isWritable: true,
+    },
+    tokenMetadataProgram: {
+      value: input.tokenMetadataProgram ?? null,
+      isWritable: false,
+    },
+    sysvarInstructions: {
+      value: input.sysvarInstructions ?? null,
+      isWritable: false,
+    },
+    authorizationRulesProgram: {
+      value: input.authorizationRulesProgram ?? null,
+      isWritable: false,
+    },
+    authorizationRules: {
+      value: input.authorizationRules ?? null,
+      isWritable: false,
+    },
+    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
+    makerBroker: { value: input.makerBroker ?? null, isWritable: true },
+    takerBroker: { value: input.takerBroker ?? null, isWritable: true },
+    ammProgram: { value: input.ammProgram ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
+
+  // Original args.
+  const args = { ...input };
+
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
+  // Resolve default values.
+  if (!accounts.feeVault.value) {
+    accounts.feeVault = {
+      ...accounts.feeVault,
+      ...(await resolveFeeVaultPdaFromPool(resolverScope)),
+    };
+  }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!accounts.ammProgram.value) {
+    accounts.ammProgram.value =
+      'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  }
+
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = (args.creators ?? []).map(
+    (address) => ({ address, role: AccountRole.WRITABLE })
+  );
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
+    accounts: [
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.buyer),
+      getAccountMeta(accounts.rentPayer),
+      getAccountMeta(accounts.feeVault),
+      getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.buyerAta),
+      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.metadata),
+      getAccountMeta(accounts.nftReceipt),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
+      getAccountMeta(accounts.edition),
+      getAccountMeta(accounts.poolTokenRecord),
+      getAccountMeta(accounts.buyerTokenRecord),
+      getAccountMeta(accounts.tokenMetadataProgram),
+      getAccountMeta(accounts.sysvarInstructions),
+      getAccountMeta(accounts.authorizationRulesProgram),
+      getAccountMeta(accounts.authorizationRules),
+      getAccountMeta(accounts.sharedEscrow),
+      getAccountMeta(accounts.makerBroker),
+      getAccountMeta(accounts.takerBroker),
+      getAccountMeta(accounts.ammProgram),
+      ...remainingAccounts,
+    ],
+    programAddress,
+    data: getBuyNftInstructionDataEncoder().encode(
+      args as BuyNftInstructionDataArgs
+    ),
+  } as BuyNftInstruction<
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountOwner,
+    TAccountBuyer,
+    TAccountRentPayer,
+    TAccountFeeVault,
+    TAccountPool,
+    TAccountBuyerAta,
+    TAccountPoolAta,
+    TAccountMint,
+    TAccountMetadata,
+    TAccountNftReceipt,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
+    TAccountEdition,
+    TAccountPoolTokenRecord,
+    TAccountBuyerTokenRecord,
+    TAccountTokenMetadataProgram,
+    TAccountSysvarInstructions,
+    TAccountAuthorizationRulesProgram,
+    TAccountAuthorizationRules,
+    TAccountSharedEscrow,
+    TAccountMakerBroker,
+    TAccountTakerBroker,
+    TAccountAmmProgram
+  >;
+
+  return instruction;
 }
 
 export type BuyNftInput<
