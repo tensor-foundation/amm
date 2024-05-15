@@ -15,7 +15,7 @@ pub struct CreatePoolArgs {
     pub pool_id: [u8; 32],
     pub config: PoolConfig,
     // Here to support future SPL mints, contract enforces this is the native mint currently
-    pub currency: Pubkey,
+    pub currency: Option<Pubkey>,
     pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,

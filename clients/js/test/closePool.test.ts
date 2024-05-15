@@ -7,7 +7,6 @@ import {
   appendTransactionInstruction,
   getSignatureFromTransaction,
   isSolanaError,
-  none,
   pipe,
   sendAndConfirmTransactionFactory,
   signTransactionWithSigners,
@@ -180,7 +179,6 @@ test('close pool fails if nfts still deposited', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    authorizationData: none(),
   });
 
   await pipe(
@@ -311,8 +309,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     poolTokenRecord,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -432,8 +428,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     nftReceipt,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,

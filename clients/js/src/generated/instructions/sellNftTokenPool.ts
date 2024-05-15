@@ -27,6 +27,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   AccountRole,
@@ -207,8 +208,8 @@ export type SellNftTokenPoolInstructionData = {
 
 export type SellNftTokenPoolInstructionDataArgs = {
   minPrice: number | bigint;
-  authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
-  optionalRoyaltyPct: OptionOrNullable<number>;
+  authorizationData?: OptionOrNullable<AuthorizationDataLocalArgs>;
+  optionalRoyaltyPct?: OptionOrNullable<number>;
 };
 
 export function getSellNftTokenPoolInstructionDataEncoder(): Encoder<SellNftTokenPoolInstructionDataArgs> {
@@ -222,7 +223,12 @@ export function getSellNftTokenPoolInstructionDataEncoder(): Encoder<SellNftToke
       ],
       ['optionalRoyaltyPct', getOptionEncoder(getU16Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: [57, 44, 192, 48, 83, 8, 107, 48] })
+    (value) => ({
+      ...value,
+      discriminator: [57, 44, 192, 48, 83, 8, 107, 48],
+      authorizationData: value.authorizationData ?? none(),
+      optionalRoyaltyPct: value.optionalRoyaltyPct ?? none(),
+    })
   );
 }
 
@@ -346,8 +352,8 @@ export type SellNftTokenPoolAsyncInput<
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
-  authorizationData: SellNftTokenPoolInstructionDataArgs['authorizationData'];
-  optionalRoyaltyPct: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
+  authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
+  optionalRoyaltyPct?: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: SellNftTokenPoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
@@ -751,8 +757,8 @@ export type SellNftTokenPoolInput<
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
-  authorizationData: SellNftTokenPoolInstructionDataArgs['authorizationData'];
-  optionalRoyaltyPct: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
+  authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
+  optionalRoyaltyPct?: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: SellNftTokenPoolInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };

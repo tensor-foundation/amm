@@ -33,6 +33,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   IAccountMeta,
@@ -93,7 +94,7 @@ export type CreatePoolInstructionData = {
   discriminator: Array<number>;
   poolId: Uint8Array;
   config: PoolConfig;
-  currency: Address;
+  currency: Option<Address>;
   sharedEscrow: Option<Address>;
   cosigner: Option<Address>;
   makerBroker: Option<Address>;
@@ -105,13 +106,13 @@ export type CreatePoolInstructionData = {
 export type CreatePoolInstructionDataArgs = {
   poolId: Uint8Array;
   config: PoolConfigArgs;
-  currency: Address;
-  sharedEscrow: OptionOrNullable<Address>;
-  cosigner: OptionOrNullable<Address>;
-  makerBroker: OptionOrNullable<Address>;
+  currency?: OptionOrNullable<Address>;
+  sharedEscrow?: OptionOrNullable<Address>;
+  cosigner?: OptionOrNullable<Address>;
+  makerBroker?: OptionOrNullable<Address>;
   orderType: number;
   maxTakerSellCount: OptionOrNullable<number>;
-  expireInSec: OptionOrNullable<number | bigint>;
+  expireInSec?: OptionOrNullable<number | bigint>;
 };
 
 export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstructionDataArgs> {
@@ -120,7 +121,7 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
       ['poolId', getBytesEncoder({ size: 32 })],
       ['config', getPoolConfigEncoder()],
-      ['currency', getAddressEncoder()],
+      ['currency', getOptionEncoder(getAddressEncoder())],
       ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['makerBroker', getOptionEncoder(getAddressEncoder())],
@@ -131,6 +132,11 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
     (value) => ({
       ...value,
       discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
+      currency: value.currency ?? none(),
+      sharedEscrow: value.sharedEscrow ?? none(),
+      cosigner: value.cosigner ?? none(),
+      makerBroker: value.makerBroker ?? none(),
+      expireInSec: value.expireInSec ?? none(),
     })
   );
 }
@@ -140,7 +146,7 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
     ['poolId', getBytesDecoder({ size: 32 })],
     ['config', getPoolConfigDecoder()],
-    ['currency', getAddressDecoder()],
+    ['currency', getOptionDecoder(getAddressDecoder())],
     ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['makerBroker', getOptionDecoder(getAddressDecoder())],
@@ -175,13 +181,13 @@ export type CreatePoolInput<
   systemProgram?: Address<TAccountSystemProgram>;
   poolId: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
-  currency: CreatePoolInstructionDataArgs['currency'];
-  sharedEscrow: CreatePoolInstructionDataArgs['sharedEscrow'];
-  cosigner: CreatePoolInstructionDataArgs['cosigner'];
-  makerBroker: CreatePoolInstructionDataArgs['makerBroker'];
+  currency?: CreatePoolInstructionDataArgs['currency'];
+  sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
+  cosigner?: CreatePoolInstructionDataArgs['cosigner'];
+  makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
   orderType: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
-  expireInSec: CreatePoolInstructionDataArgs['expireInSec'];
+  expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
 
 export function getCreatePoolInstruction<

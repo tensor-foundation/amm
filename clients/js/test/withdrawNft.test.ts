@@ -1,5 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -120,8 +120,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     nftReceipt,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -163,7 +161,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     poolTokenRecord,
     ownerTokenRecord,
     nftReceipt,
-    authorizationData: none(),
   });
 
   await pipe(

@@ -1,4 +1,4 @@
-import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -98,7 +98,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    authorizationData: none(),
   });
 
   await pipe(

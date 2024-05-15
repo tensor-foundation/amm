@@ -86,7 +86,7 @@ impl CreatePoolInstructionData {
 pub struct CreatePoolInstructionArgs {
     pub pool_id: [u8; 32],
     pub config: PoolConfig,
-    pub currency: Pubkey,
+    pub currency: Option<Pubkey>,
     pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
@@ -164,6 +164,7 @@ impl CreatePoolBuilder {
         self.config = Some(config);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.currency = Some(currency);
@@ -236,7 +237,7 @@ impl CreatePoolBuilder {
         let args = CreatePoolInstructionArgs {
             pool_id: self.pool_id.clone().expect("pool_id is not set"),
             config: self.config.clone().expect("config is not set"),
-            currency: self.currency.clone().expect("currency is not set"),
+            currency: self.currency.clone(),
             shared_escrow: self.shared_escrow.clone(),
             cosigner: self.cosigner.clone(),
             maker_broker: self.maker_broker.clone(),
@@ -465,6 +466,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.config = Some(config);
         self
     }
+    /// `[optional argument]`
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.instruction.currency = Some(currency);
@@ -553,11 +555,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .clone()
                 .expect("pool_id is not set"),
             config: self.instruction.config.clone().expect("config is not set"),
-            currency: self
-                .instruction
-                .currency
-                .clone()
-                .expect("currency is not set"),
+            currency: self.instruction.currency.clone(),
             shared_escrow: self.instruction.shared_escrow.clone(),
             cosigner: self.instruction.cosigner.clone(),
             maker_broker: self.instruction.maker_broker.clone(),

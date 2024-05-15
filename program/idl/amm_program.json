@@ -2069,7 +2069,9 @@
           },
           {
             "name": "currency",
-            "type": "publicKey"
+            "type": {
+              "option": "publicKey"
+            }
           },
           {
             "name": "sharedEscrow",
