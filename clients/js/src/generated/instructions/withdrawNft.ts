@@ -23,6 +23,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   IAccountMeta,
@@ -146,7 +147,7 @@ export type WithdrawNftInstructionData = {
 };
 
 export type WithdrawNftInstructionDataArgs = {
-  authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
+  authorizationData?: OptionOrNullable<AuthorizationDataLocalArgs>;
 };
 
 export function getWithdrawNftInstructionDataEncoder(): Encoder<WithdrawNftInstructionDataArgs> {
@@ -161,6 +162,7 @@ export function getWithdrawNftInstructionDataEncoder(): Encoder<WithdrawNftInstr
     (value) => ({
       ...value,
       discriminator: [142, 181, 191, 149, 82, 175, 216, 100],
+      authorizationData: value.authorizationData ?? none(),
     })
   );
 }
@@ -231,7 +233,7 @@ export type WithdrawNftAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  authorizationData: WithdrawNftInstructionDataArgs['authorizationData'];
+  authorizationData?: WithdrawNftInstructionDataArgs['authorizationData'];
   tokenStandard?: WithdrawNftInstructionExtraArgs['tokenStandard'];
 };
 
@@ -488,7 +490,7 @@ export type WithdrawNftInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  authorizationData: WithdrawNftInstructionDataArgs['authorizationData'];
+  authorizationData?: WithdrawNftInstructionDataArgs['authorizationData'];
   tokenStandard?: WithdrawNftInstructionExtraArgs['tokenStandard'];
 };
 

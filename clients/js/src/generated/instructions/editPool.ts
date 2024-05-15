@@ -33,6 +33,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   IAccountMeta,
@@ -90,8 +91,8 @@ export type EditPoolInstructionData = {
 
 export type EditPoolInstructionDataArgs = {
   newConfig: OptionOrNullable<PoolConfigArgs>;
-  cosigner: OptionOrNullable<Address>;
-  expireInSec: OptionOrNullable<number | bigint>;
+  cosigner?: OptionOrNullable<Address>;
+  expireInSec?: OptionOrNullable<number | bigint>;
   maxTakerSellCount: OptionOrNullable<number>;
   resetPriceOffset: boolean;
 };
@@ -106,7 +107,12 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
       ['resetPriceOffset', getBooleanEncoder()],
     ]),
-    (value) => ({ ...value, discriminator: [50, 174, 34, 36, 3, 166, 29, 204] })
+    (value) => ({
+      ...value,
+      discriminator: [50, 174, 34, 36, 3, 166, 29, 204],
+      cosigner: value.cosigner ?? none(),
+      expireInSec: value.expireInSec ?? none(),
+    })
   );
 }
 
@@ -140,8 +146,8 @@ export type EditPoolInput<
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
   newConfig: EditPoolInstructionDataArgs['newConfig'];
-  cosigner: EditPoolInstructionDataArgs['cosigner'];
-  expireInSec: EditPoolInstructionDataArgs['expireInSec'];
+  cosigner?: EditPoolInstructionDataArgs['cosigner'];
+  expireInSec?: EditPoolInstructionDataArgs['expireInSec'];
   maxTakerSellCount: EditPoolInstructionDataArgs['maxTakerSellCount'];
   resetPriceOffset: EditPoolInstructionDataArgs['resetPriceOffset'];
 };

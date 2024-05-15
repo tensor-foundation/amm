@@ -27,6 +27,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   AccountRole,
@@ -185,8 +186,8 @@ export type BuyNftInstructionData = {
 
 export type BuyNftInstructionDataArgs = {
   maxPrice: number | bigint;
-  authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
-  optionalRoyaltyPct: OptionOrNullable<number>;
+  authorizationData?: OptionOrNullable<AuthorizationDataLocalArgs>;
+  optionalRoyaltyPct?: OptionOrNullable<number>;
 };
 
 export function getBuyNftInstructionDataEncoder(): Encoder<BuyNftInstructionDataArgs> {
@@ -200,7 +201,12 @@ export function getBuyNftInstructionDataEncoder(): Encoder<BuyNftInstructionData
       ],
       ['optionalRoyaltyPct', getOptionEncoder(getU16Encoder())],
     ]),
-    (value) => ({ ...value, discriminator: [96, 0, 28, 190, 49, 107, 83, 222] })
+    (value) => ({
+      ...value,
+      discriminator: [96, 0, 28, 190, 49, 107, 83, 222],
+      authorizationData: value.authorizationData ?? none(),
+      optionalRoyaltyPct: value.optionalRoyaltyPct ?? none(),
+    })
   );
 }
 
@@ -299,8 +305,8 @@ export type BuyNftAsyncInput<
   takerBroker?: Address<TAccountTakerBroker>;
   ammProgram?: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
-  authorizationData: BuyNftInstructionDataArgs['authorizationData'];
-  optionalRoyaltyPct: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
+  authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
+  optionalRoyaltyPct?: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };
@@ -648,8 +654,8 @@ export type BuyNftInput<
   takerBroker?: Address<TAccountTakerBroker>;
   ammProgram?: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
-  authorizationData: BuyNftInstructionDataArgs['authorizationData'];
-  optionalRoyaltyPct: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
+  authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
+  optionalRoyaltyPct?: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];
   creators?: Array<Address>;
 };

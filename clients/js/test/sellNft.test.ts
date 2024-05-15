@@ -1,5 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -96,8 +96,6 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     takerBroker: takerBroker.address,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -226,8 +224,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     takerBroker: takerBroker.address,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -359,8 +355,6 @@ test('it can sell an NFT into a Token pool', async (t) => {
     takerBroker: takerBroker.address,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -484,8 +478,6 @@ test('token pool autocloses when currency amount drops below current price', asy
     takerBroker: takerBroker.address,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -577,8 +569,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     mint,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     escrowProgram: TSWAP_PROGRAM_ID,
     // Remaining accounts
     creators: [nftOwner.address],
@@ -654,8 +644,6 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     mint,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,

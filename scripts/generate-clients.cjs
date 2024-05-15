@@ -424,6 +424,39 @@ kinobi.update(
   ]),
 );
 
+// Set more struct default values dynamically.
+kinobi.update(
+  k.bottomUpTransformerVisitor([
+    {
+      select: (node) => {
+        const names = [
+          "cosigner",
+          "sharedEscrow",
+          "makerBroker",
+          "expireInSec",
+          "max_taker_sell_count",
+          "currency",
+          "authorizationData",
+          "optionalRoyaltyPct",
+        ];
+        return (
+          k.isNode(node, ["instructionNode", "instructionArgumentNode"]) &&
+          k.isNode(node.type, "optionTypeNode") &&
+          names.includes(node.name)
+        );
+      },
+      transform: (node) => {
+        k.assertIsNode(node, ["instructionNode", "instructionArgumentNode"]);
+        return {
+          ...node,
+          defaultValueStrategy: "optional",
+          defaultValue: k.noneValueNode(),
+        };
+      },
+    },
+  ]),
+);
+
 // Debug: print the AST.
 // kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
 

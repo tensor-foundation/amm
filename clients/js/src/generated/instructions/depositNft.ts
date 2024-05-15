@@ -23,6 +23,7 @@ import {
   getU8Decoder,
   getU8Encoder,
   mapEncoder,
+  none,
 } from '@solana/codecs';
 import {
   IAccountMeta,
@@ -154,7 +155,7 @@ export type DepositNftInstructionData = {
 };
 
 export type DepositNftInstructionDataArgs = {
-  authorizationData: OptionOrNullable<AuthorizationDataLocalArgs>;
+  authorizationData?: OptionOrNullable<AuthorizationDataLocalArgs>;
 };
 
 export function getDepositNftInstructionDataEncoder(): Encoder<DepositNftInstructionDataArgs> {
@@ -169,6 +170,7 @@ export function getDepositNftInstructionDataEncoder(): Encoder<DepositNftInstruc
     (value) => ({
       ...value,
       discriminator: [93, 226, 132, 166, 141, 9, 48, 101],
+      authorizationData: value.authorizationData ?? none(),
     })
   );
 }
@@ -251,7 +253,7 @@ export type DepositNftAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  authorizationData: DepositNftInstructionDataArgs['authorizationData'];
+  authorizationData?: DepositNftInstructionDataArgs['authorizationData'];
   tokenStandard?: DepositNftInstructionExtraArgs['tokenStandard'];
 };
 
@@ -532,7 +534,7 @@ export type DepositNftInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  authorizationData: DepositNftInstructionDataArgs['authorizationData'];
+  authorizationData?: DepositNftInstructionDataArgs['authorizationData'];
   tokenStandard?: DepositNftInstructionExtraArgs['tokenStandard'];
 };
 

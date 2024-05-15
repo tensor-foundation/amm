@@ -3,7 +3,6 @@ import {
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   appendTransactionInstruction,
   isSolanaError,
-  none,
   pipe,
 } from '@solana/web3.js';
 import {
@@ -122,8 +121,6 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     nftReceipt,
     cosigner,
     minPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [nftOwner.address],
     escrowProgram: TSWAP_PROGRAM_ID,

@@ -1,4 +1,4 @@
-import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
+import { appendTransactionInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -70,7 +70,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     pool,
     whitelist,
     mint,
-    authorizationData: none(),
   });
 
   await pipe(
@@ -106,8 +105,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     pool,
     mint,
     maxPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
   });
@@ -196,7 +193,6 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     pool,
     whitelist,
     mint,
-    authorizationData: none(),
   });
 
   await pipe(
@@ -229,8 +225,6 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     takerBroker: takerBroker.address,
     makerBroker: makerBroker.address,
     maxPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
   });
@@ -320,7 +314,6 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     pool,
     whitelist,
     mint,
-    authorizationData: none(),
   });
 
   await pipe(
@@ -351,8 +344,6 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     pool,
     mint,
     maxPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
   });
@@ -425,7 +416,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     pool,
     whitelist,
     mint: mint1,
-    authorizationData: none(),
   });
 
   const depositNftIx2 = await getDepositNftInstructionAsync({
@@ -433,7 +423,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     pool,
     whitelist,
     mint: mint2,
-    authorizationData: none(),
   });
 
   await pipe(
@@ -478,8 +467,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     pool,
     mint: mint1,
     maxPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
   });
@@ -502,8 +489,6 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     pool,
     mint: mint2,
     maxPrice,
-    authorizationData: none(),
-    optionalRoyaltyPct: none(),
     // Remaining accounts
     creators: [owner.address],
   });
