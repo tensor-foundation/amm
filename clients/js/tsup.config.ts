@@ -20,7 +20,7 @@ export default defineConfig(() => [
   {
     ...SHARED_OPTIONS,
     bundle: false,
-    entry: ['./test/*.ts'],
+    entry: ['./test/**/*.ts'],
     format: 'esm',
     outDir: './dist/test',
   },

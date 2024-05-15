@@ -28,11 +28,11 @@ import {
   ReadonlyAccount,
   WritableAccount,
 } from '@solana/instructions';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 
 export type CloseExpiredPoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
@@ -98,7 +98,7 @@ export type CloseExpiredPoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer: Address<TAccountRentPayer>;
+  rentPayer?: Address<TAccountRentPayer>;
   owner: Address<TAccountOwner>;
   pool: Address<TAccountPool>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -117,14 +117,14 @@ export function getCloseExpiredPoolInstruction<
     TAccountSystemProgram
   >
 ): CloseExpiredPoolInstruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
   TAccountSystemProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -139,6 +139,9 @@ export function getCloseExpiredPoolInstruction<
   >;
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -155,7 +158,7 @@ export function getCloseExpiredPoolInstruction<
     programAddress,
     data: getCloseExpiredPoolInstructionDataEncoder().encode({}),
   } as CloseExpiredPoolInstruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
@@ -166,7 +169,7 @@ export function getCloseExpiredPoolInstruction<
 }
 
 export type ParsedCloseExpiredPoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;

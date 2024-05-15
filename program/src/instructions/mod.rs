@@ -115,8 +115,8 @@ pub struct SellNftShared<'info> {
         mut,
         seeds = [
             b"fee_vault",
-            // Use the last byte of the mint as the fee shard number
-            shard_num!(mint),
+            // Use the last byte of the pool as the fee shard number
+            shard_num!(pool),
         ],
         seeds::program = TFEE_PROGRAM_ID,
         bump

@@ -42,8 +42,8 @@ pub struct BuyNft<'info> {
         mut,
         seeds = [
             b"fee_vault",
-            // Use the last byte of the mint as the fee shard number
-            shard_num!(mint),
+            // Use the last byte of the pool as the fee shard number
+            shard_num!(pool),
         ],
         seeds::program = TFEE_PROGRAM_ID,
         bump
@@ -132,9 +132,6 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub buyer_token_record: Option<UncheckedAccount<'info>>,
 
-    // Todo: add ProgNftShared back in, if possible
-
-    // pub pnft_shared: ProgNftShared<'info>,
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]

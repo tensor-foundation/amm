@@ -9,9 +9,9 @@
 import { Address } from '@solana/addresses';
 import { Program, ProgramWithErrors } from '@solana/programs';
 import {
-  AmmProgramError,
-  AmmProgramErrorCode,
-  getAmmProgramErrorFromCode,
+  TensorAmmProgramError,
+  TensorAmmProgramErrorCode,
+  getTensorAmmProgramErrorFromCode,
 } from '../errors';
 import {
   ParsedBuyNftInstruction,
@@ -34,44 +34,44 @@ import {
 } from '../instructions';
 import { memcmp } from '../shared';
 
-export const AMM_PROGRAM_ADDRESS =
+export const TENSOR_AMM_PROGRAM_ADDRESS =
   'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
 
-export type AmmProgram =
+export type TensorAmmProgram =
   Program<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'> &
-    ProgramWithErrors<AmmProgramErrorCode, AmmProgramError>;
+    ProgramWithErrors<TensorAmmProgramErrorCode, TensorAmmProgramError>;
 
-export function getAmmProgram(): AmmProgram {
+export function getTensorAmmProgram(): TensorAmmProgram {
   return {
-    name: 'amm',
-    address: AMM_PROGRAM_ADDRESS,
-    getErrorFromCode(code: AmmProgramErrorCode, cause?: Error) {
-      return getAmmProgramErrorFromCode(code, cause);
+    name: 'tensorAmm',
+    address: TENSOR_AMM_PROGRAM_ADDRESS,
+    getErrorFromCode(code: TensorAmmProgramErrorCode, cause?: Error) {
+      return getTensorAmmProgramErrorFromCode(code, cause);
     },
   };
 }
 
-export enum AmmAccount {
+export enum TensorAmmAccount {
   NftDepositReceipt,
   Pool,
 }
 
-export function identifyAmmAccount(
+export function identifyTensorAmmAccount(
   account: { data: Uint8Array } | Uint8Array
-): AmmAccount {
+): TensorAmmAccount {
   const data = account instanceof Uint8Array ? account : account.data;
   if (memcmp(data, new Uint8Array([206, 255, 132, 254, 67, 78, 62, 96]), 0)) {
-    return AmmAccount.NftDepositReceipt;
+    return TensorAmmAccount.NftDepositReceipt;
   }
   if (memcmp(data, new Uint8Array([241, 154, 109, 4, 17, 177, 109, 188]), 0)) {
-    return AmmAccount.Pool;
+    return TensorAmmAccount.Pool;
   }
   throw new Error(
-    'The provided account could not be identified as a amm account.'
+    'The provided account could not be identified as a tensorAmm account.'
   );
 }
 
-export enum AmmInstruction {
+export enum TensorAmmInstruction {
   TammNoop,
   CreatePool,
   EditPool,
@@ -91,124 +91,124 @@ export enum AmmInstruction {
   WithdrawNftT22,
 }
 
-export function identifyAmmInstruction(
+export function identifyTensorAmmInstruction(
   instruction: { data: Uint8Array } | Uint8Array
-): AmmInstruction {
+): TensorAmmInstruction {
   const data =
     instruction instanceof Uint8Array ? instruction : instruction.data;
   if (
     memcmp(data, new Uint8Array([31, 162, 228, 158, 153, 160, 198, 182]), 0)
   ) {
-    return AmmInstruction.TammNoop;
+    return TensorAmmInstruction.TammNoop;
   }
   if (
     memcmp(data, new Uint8Array([233, 146, 209, 142, 207, 104, 64, 188]), 0)
   ) {
-    return AmmInstruction.CreatePool;
+    return TensorAmmInstruction.CreatePool;
   }
   if (memcmp(data, new Uint8Array([50, 174, 34, 36, 3, 166, 29, 204]), 0)) {
-    return AmmInstruction.EditPool;
+    return TensorAmmInstruction.EditPool;
   }
   if (memcmp(data, new Uint8Array([140, 189, 209, 23, 239, 62, 239, 11]), 0)) {
-    return AmmInstruction.ClosePool;
+    return TensorAmmInstruction.ClosePool;
   }
   if (memcmp(data, new Uint8Array([108, 212, 233, 53, 132, 83, 63, 219]), 0)) {
-    return AmmInstruction.CloseExpiredPool;
+    return TensorAmmInstruction.CloseExpiredPool;
   }
   if (memcmp(data, new Uint8Array([93, 226, 132, 166, 141, 9, 48, 101]), 0)) {
-    return AmmInstruction.DepositNft;
+    return TensorAmmInstruction.DepositNft;
   }
   if (
     memcmp(data, new Uint8Array([142, 181, 191, 149, 82, 175, 216, 100]), 0)
   ) {
-    return AmmInstruction.WithdrawNft;
+    return TensorAmmInstruction.WithdrawNft;
   }
   if (memcmp(data, new Uint8Array([108, 81, 78, 117, 125, 155, 56, 200]), 0)) {
-    return AmmInstruction.DepositSol;
+    return TensorAmmInstruction.DepositSol;
   }
   if (memcmp(data, new Uint8Array([145, 131, 74, 136, 65, 137, 42, 38]), 0)) {
-    return AmmInstruction.WithdrawSol;
+    return TensorAmmInstruction.WithdrawSol;
   }
   if (memcmp(data, new Uint8Array([96, 0, 28, 190, 49, 107, 83, 222]), 0)) {
-    return AmmInstruction.BuyNft;
+    return TensorAmmInstruction.BuyNft;
   }
   if (memcmp(data, new Uint8Array([57, 44, 192, 48, 83, 8, 107, 48]), 0)) {
-    return AmmInstruction.SellNftTokenPool;
+    return TensorAmmInstruction.SellNftTokenPool;
   }
   if (memcmp(data, new Uint8Array([131, 82, 125, 77, 13, 157, 36, 90]), 0)) {
-    return AmmInstruction.SellNftTradePool;
+    return TensorAmmInstruction.SellNftTradePool;
   }
   if (memcmp(data, new Uint8Array([155, 219, 126, 245, 170, 199, 51, 79]), 0)) {
-    return AmmInstruction.BuyNftT22;
+    return TensorAmmInstruction.BuyNftT22;
   }
   if (memcmp(data, new Uint8Array([208, 34, 6, 147, 95, 218, 49, 160]), 0)) {
-    return AmmInstruction.DepositNftT22;
+    return TensorAmmInstruction.DepositNftT22;
   }
   if (memcmp(data, new Uint8Array([149, 234, 31, 103, 26, 36, 166, 49]), 0)) {
-    return AmmInstruction.SellNftTokenPoolT22;
+    return TensorAmmInstruction.SellNftTokenPoolT22;
   }
   if (memcmp(data, new Uint8Array([124, 145, 23, 52, 72, 113, 85, 9]), 0)) {
-    return AmmInstruction.SellNftTradePoolT22;
+    return TensorAmmInstruction.SellNftTradePoolT22;
   }
   if (memcmp(data, new Uint8Array([112, 55, 80, 231, 181, 190, 92, 12]), 0)) {
-    return AmmInstruction.WithdrawNftT22;
+    return TensorAmmInstruction.WithdrawNftT22;
   }
   throw new Error(
-    'The provided instruction could not be identified as a amm instruction.'
+    'The provided instruction could not be identified as a tensorAmm instruction.'
   );
 }
 
-export type ParsedAmmInstruction<
+export type ParsedTensorAmmInstruction<
   TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
 > =
   | ({
-      instructionType: AmmInstruction.TammNoop;
+      instructionType: TensorAmmInstruction.TammNoop;
     } & ParsedTammNoopInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.CreatePool;
+      instructionType: TensorAmmInstruction.CreatePool;
     } & ParsedCreatePoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.EditPool;
+      instructionType: TensorAmmInstruction.EditPool;
     } & ParsedEditPoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.ClosePool;
+      instructionType: TensorAmmInstruction.ClosePool;
     } & ParsedClosePoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.CloseExpiredPool;
+      instructionType: TensorAmmInstruction.CloseExpiredPool;
     } & ParsedCloseExpiredPoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.DepositNft;
+      instructionType: TensorAmmInstruction.DepositNft;
     } & ParsedDepositNftInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.WithdrawNft;
+      instructionType: TensorAmmInstruction.WithdrawNft;
     } & ParsedWithdrawNftInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.DepositSol;
+      instructionType: TensorAmmInstruction.DepositSol;
     } & ParsedDepositSolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.WithdrawSol;
+      instructionType: TensorAmmInstruction.WithdrawSol;
     } & ParsedWithdrawSolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.BuyNft;
+      instructionType: TensorAmmInstruction.BuyNft;
     } & ParsedBuyNftInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.SellNftTokenPool;
+      instructionType: TensorAmmInstruction.SellNftTokenPool;
     } & ParsedSellNftTokenPoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.SellNftTradePool;
+      instructionType: TensorAmmInstruction.SellNftTradePool;
     } & ParsedSellNftTradePoolInstruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.BuyNftT22;
+      instructionType: TensorAmmInstruction.BuyNftT22;
     } & ParsedBuyNftT22Instruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.DepositNftT22;
+      instructionType: TensorAmmInstruction.DepositNftT22;
     } & ParsedDepositNftT22Instruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.SellNftTokenPoolT22;
+      instructionType: TensorAmmInstruction.SellNftTokenPoolT22;
     } & ParsedSellNftTokenPoolT22Instruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.SellNftTradePoolT22;
+      instructionType: TensorAmmInstruction.SellNftTradePoolT22;
     } & ParsedSellNftTradePoolT22Instruction<TProgram>)
   | ({
-      instructionType: AmmInstruction.WithdrawNftT22;
+      instructionType: TensorAmmInstruction.WithdrawNftT22;
     } & ParsedWithdrawNftT22Instruction<TProgram>);

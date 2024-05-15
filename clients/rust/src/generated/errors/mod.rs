@@ -5,6 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-pub(crate) mod amm;
+pub(crate) mod tensor_amm;
 
-pub use self::amm::AmmError;
+pub use self::tensor_amm::TensorAmmError;

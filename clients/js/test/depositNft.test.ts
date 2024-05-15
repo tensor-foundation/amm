@@ -1,6 +1,5 @@
 import { appendTransactionInstruction, none, pipe } from '@solana/web3.js';
 import {
-  ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -99,7 +98,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     edition: masterEdition,
     ownerTokenRecord,
     poolTokenRecord,
-    associatedTokenProgram: ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
     authorizationData: none(),
   });
 

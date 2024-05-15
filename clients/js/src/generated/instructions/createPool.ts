@@ -45,8 +45,8 @@ import {
   WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
-import { AMM_PROGRAM_ADDRESS } from '../programs';
-import { ResolvedAccount, getAccountMetaFactory } from '../shared';
+import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
+import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
 import {
   PoolConfig,
   PoolConfigArgs,
@@ -55,7 +55,7 @@ import {
 } from '../types';
 
 export type CreatePoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
@@ -167,7 +167,7 @@ export type CreatePoolInput<
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  rentPayer: TransactionSigner<TAccountRentPayer>;
+  rentPayer?: TransactionSigner<TAccountRentPayer>;
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
   /** Needed for pool seeds derivation / will be stored inside pool */
@@ -199,7 +199,7 @@ export function getCreatePoolInstruction<
     TAccountSystemProgram
   >
 ): CreatePoolInstruction<
-  typeof AMM_PROGRAM_ADDRESS,
+  typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountRentPayer,
   TAccountOwner,
   TAccountPool,
@@ -207,7 +207,7 @@ export function getCreatePoolInstruction<
   TAccountSystemProgram
 > {
   // Program address.
-  const programAddress = AMM_PROGRAM_ADDRESS;
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
 
   // Original accounts.
   const originalAccounts = {
@@ -226,6 +226,9 @@ export function getCreatePoolInstruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -245,7 +248,7 @@ export function getCreatePoolInstruction<
       args as CreatePoolInstructionDataArgs
     ),
   } as CreatePoolInstruction<
-    typeof AMM_PROGRAM_ADDRESS,
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountRentPayer,
     TAccountOwner,
     TAccountPool,
@@ -257,7 +260,7 @@ export function getCreatePoolInstruction<
 }
 
 export type ParsedCreatePoolInstruction<
-  TProgram extends string = typeof AMM_PROGRAM_ADDRESS,
+  TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetas extends readonly IAccountMeta[] = readonly IAccountMeta[],
 > = {
   programAddress: Address<TProgram>;

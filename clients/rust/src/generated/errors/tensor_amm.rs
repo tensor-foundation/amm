@@ -9,7 +9,7 @@ use num_derive::FromPrimitive;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
-pub enum AmmError {
+pub enum TensorAmmError {
     /// 12000 (0x2EE0) - invalid merkle proof, token not whitelisted
     #[error("invalid merkle proof, token not whitelisted")]
     InvalidProof,
@@ -159,7 +159,7 @@ pub enum AmmError {
     WrongOwner,
 }
 
-impl solana_program::program_error::PrintProgramError for AmmError {
+impl solana_program::program_error::PrintProgramError for TensorAmmError {
     fn print<E>(&self) {
         solana_program::msg!(&self.to_string());
     }
