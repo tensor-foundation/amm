@@ -44,11 +44,14 @@ import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import {
   TokenStandard,
   TokenStandardArgs,
+  resolveAuthorizationRulesProgramFromTokenStandard,
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveNftReceipt,
   resolvePoolAta,
   resolveSellerAta,
+  resolveSysvarInstructionsFromTokenStandard,
+  resolveTokenMetadataProgramFromTokenStandard,
 } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -540,12 +543,30 @@ export async function getSellNftTradePoolInstructionAsync<
       ...(await resolveEditionFromTokenStandard(resolverScope)),
     };
   }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
+  }
+  if (!accounts.tokenMetadataProgram.value) {
+    accounts.tokenMetadataProgram = {
+      ...accounts.tokenMetadataProgram,
+      ...resolveTokenMetadataProgramFromTokenStandard(resolverScope),
+    };
+  }
+  if (!accounts.sysvarInstructions.value) {
+    accounts.sysvarInstructions = {
+      ...accounts.sysvarInstructions,
+      ...resolveSysvarInstructionsFromTokenStandard(resolverScope),
+    };
+  }
+  if (!accounts.authorizationRulesProgram.value) {
+    accounts.authorizationRulesProgram = {
+      ...accounts.authorizationRulesProgram,
+      ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
+    };
+  }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
-  }
-  if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.
@@ -862,6 +883,9 @@ export function getSellNftTradePoolInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
@@ -875,12 +899,30 @@ export function getSellNftTradePoolInstruction<
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
   }
+  if (!args.tokenStandard) {
+    args.tokenStandard = TokenStandard.NonFungible;
+  }
+  if (!accounts.tokenMetadataProgram.value) {
+    accounts.tokenMetadataProgram = {
+      ...accounts.tokenMetadataProgram,
+      ...resolveTokenMetadataProgramFromTokenStandard(resolverScope),
+    };
+  }
+  if (!accounts.sysvarInstructions.value) {
+    accounts.sysvarInstructions = {
+      ...accounts.sysvarInstructions,
+      ...resolveSysvarInstructionsFromTokenStandard(resolverScope),
+    };
+  }
+  if (!accounts.authorizationRulesProgram.value) {
+    accounts.authorizationRulesProgram = {
+      ...accounts.authorizationRulesProgram,
+      ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
+    };
+  }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
-  }
-  if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
   }
 
   // Remaining accounts.

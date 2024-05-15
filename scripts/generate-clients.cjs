@@ -256,28 +256,35 @@ kinobi.update(
         "systemProgram",
       ),
     },
+    // pNFT specific accounts
     {
       account: "tokenMetadataProgram",
-      ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
-        "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
-        "tokenMetadataProgram",
+      defaultValue: k.resolverValueNode(
+        "resolveTokenMetadataProgramFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [k.argumentValueNode("tokenStandard")],
+        },
       ),
     },
     {
       account: "authorizationRulesProgram",
-      ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
-        "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg",
-        "authorizationRulesProgram",
+      defaultValue: k.resolverValueNode(
+        "resolveAuthorizationRulesProgramFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [k.argumentValueNode("tokenStandard")],
+        },
       ),
     },
     {
       account: "sysvarInstructions",
-      ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
-        "Sysvar1111111111111111111111111111111111111",
-        "sysvarInstructions",
+      defaultValue: k.resolverValueNode(
+        "resolveSysvarInstructionsFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [k.argumentValueNode("tokenStandard")],
+        },
       ),
     },
     // default accounts
