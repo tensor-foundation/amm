@@ -331,7 +331,7 @@ export type SellNftTokenPoolAsyncInput<
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
-  /** The Token Metadata pool temporary token record account of the NFT. */
+  /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
@@ -754,7 +754,7 @@ export type SellNftTokenPoolInput<
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
-  /** The Token Metadata pool temporary token record account of the NFT. */
+  /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
@@ -1116,7 +1116,7 @@ export type ParsedSellNftTokenPoolInstruction<
     ownerTokenRecord?: TAccountMetas[16] | undefined;
     /** The Token Metadata seller/source token record account of the NFT. */
     sellerTokenRecord?: TAccountMetas[17] | undefined;
-    /** The Token Metadata pool temporary token record account of the NFT. */
+    /** The Token Metadata token record for the pool. */
     poolTokenRecord?: TAccountMetas[18] | undefined;
     /** The Token Metadata program account. */
     tokenMetadataProgram?: TAccountMetas[19] | undefined;

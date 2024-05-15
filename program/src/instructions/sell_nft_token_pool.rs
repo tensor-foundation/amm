@@ -111,7 +111,7 @@ pub struct SellNftTokenPool<'info> {
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
-    ///  CHECK: seeds and ownership are checked in assert_decode_metadata.
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
@@ -138,19 +138,9 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub seller_token_record: Option<UncheckedAccount<'info>>,
 
-    /// The Token Metadata pool temporary token record account of the NFT.
-    /// CHECK: seeds checked here
-    #[account(mut,
-            seeds=[
-            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
-            mpl_token_metadata::ID.as_ref(),
-            mint.key().as_ref(),
-            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
-            pool_ata.key().as_ref()
-        ],
-        seeds::program = mpl_token_metadata::ID,
-        bump
-    )]
+    /// The Token Metadata token record for the pool.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     // Todo: add ProgNftShared back in, if possible

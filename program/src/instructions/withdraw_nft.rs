@@ -78,19 +78,9 @@ pub struct WithdrawNft<'info> {
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
-
-    //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: seeds below
-    #[account(
-        mut,
-        seeds=[
-            mpl_token_metadata::accounts::Metadata::PREFIX,
-            mpl_token_metadata::ID.as_ref(),
-            mint.key().as_ref(),
-        ],
-        seeds::program = mpl_token_metadata::ID,
-        bump
-    )]
+    /// The Token Metadata metadata account of the NFT.
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
+    #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
     //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
@@ -101,19 +91,9 @@ pub struct WithdrawNft<'info> {
     #[account(mut)]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 
-    /// The Token Metadata pool temporary token record account of the NFT.
-    /// CHECK: seeds checked here
-    #[account(mut,
-            seeds=[
-            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
-            mpl_token_metadata::ID.as_ref(),
-            mint.key().as_ref(),
-            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
-            pool_ata.key().as_ref()
-        ],
-        seeds::program = mpl_token_metadata::ID,
-        bump
-    )]
+    /// The Token Metadata token record for the pool.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     // Todo: add ProgNftShared back in, if possible

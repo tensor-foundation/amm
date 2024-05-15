@@ -450,7 +450,10 @@
         {
           "name": "metadata",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata metadata account of the NFT."
+          ]
         },
         {
           "name": "edition",
@@ -469,7 +472,7 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
-            "The Token Metadata pool temporary token record account of the NFT."
+            "The Token Metadata token record for the pool."
           ]
         },
         {
@@ -954,7 +957,7 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
-            "The Token Metadata pool temporary token record account of the NFT."
+            "The Token Metadata token record for the pool."
           ]
         },
         {
@@ -1187,7 +1190,7 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
-            "The Token Metadata pool temporary token record account of the NFT."
+            "The Token Metadata token record for the pool."
           ]
         },
         {
