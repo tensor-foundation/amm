@@ -47,7 +47,7 @@ pub struct SellNftTradePool {
     pub edition: solana_program::pubkey::Pubkey,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<solana_program::pubkey::Pubkey>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<solana_program::pubkey::Pubkey>,
@@ -475,7 +475,7 @@ impl SellNftTradePoolBuilder {
         self
     }
     /// `[optional account]`
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
@@ -695,7 +695,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -760,7 +760,7 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1331,7 +1331,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,

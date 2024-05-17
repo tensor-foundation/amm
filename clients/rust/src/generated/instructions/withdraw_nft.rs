@@ -29,13 +29,13 @@ pub struct WithdrawNft {
     pub associated_token_program: solana_program::pubkey::Pubkey,
 
     pub system_program: solana_program::pubkey::Pubkey,
-
+    /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
 
     pub edition: solana_program::pubkey::Pubkey,
 
     pub owner_token_record: Option<solana_program::pubkey::Pubkey>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<solana_program::pubkey::Pubkey>,
@@ -303,6 +303,7 @@ impl WithdrawNftBuilder {
         self.system_program = Some(system_program);
         self
     }
+    /// The Token Metadata metadata account of the NFT.
     #[inline(always)]
     pub fn metadata(&mut self, metadata: solana_program::pubkey::Pubkey) -> &mut Self {
         self.metadata = Some(metadata);
@@ -323,7 +324,7 @@ impl WithdrawNftBuilder {
         self
     }
     /// `[optional account]`
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
@@ -451,13 +452,13 @@ pub struct WithdrawNftCpiAccounts<'a, 'b> {
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -491,13 +492,13 @@ pub struct WithdrawNftCpi<'a, 'b> {
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -860,6 +861,7 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self.instruction.system_program = Some(system_program);
         self
     }
+    /// The Token Metadata metadata account of the NFT.
     #[inline(always)]
     pub fn metadata(
         &mut self,
@@ -886,7 +888,7 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// The Token Metadata pool temporary token record account of the NFT.
+    /// The Token Metadata token record for the pool.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,

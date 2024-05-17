@@ -87,7 +87,7 @@ pub struct DepositNft<'info> {
     pub system_program: Program<'info, System>,
 
     /// The Token Metadata metadata account of the NFT.
-    /// CHECK: assert_decode_metadata checks seeds, owner, and key
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
     pub metadata: UncheckedAccount<'info>,
 
     /// CHECK: seeds below + assert_decode_mint_proof

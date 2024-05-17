@@ -91,14 +91,14 @@ pub struct BuyNft<'info> {
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
-    ///  CHECK: seeds and ownership are checked in assert_decode_metadata.
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
     /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
     #[account(
         mut,
-        seeds=[
+        seeds = [
             b"nft_receipt".as_ref(),
             mint.key().as_ref(),
             pool.key().as_ref(),
