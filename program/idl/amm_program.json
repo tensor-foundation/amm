@@ -50,7 +50,7 @@
       "type": {
         "defined": "usize"
       },
-      "value": "8 + 1 + 32 * 3"
+      "value": "8 + 1 + 32 * 2"
     },
     {
       "name": "POOL_SIZE",
@@ -200,7 +200,7 @@
       "accounts": [
         {
           "name": "rentPayer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

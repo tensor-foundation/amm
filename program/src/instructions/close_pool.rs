@@ -36,16 +36,11 @@ impl<'info> Validate<'info> for ClosePool<'info> {
             throw_err!(ErrorCode::ExistingNfts);
         }
 
-        //can't close a shared_escrow pool, need to detach first
-        //this is needed because we need to reduce the counter on the escrow acc to be able to close it later
-        if self.pool.shared_escrow.value().is_some() {
-            throw_err!(ErrorCode::PoolOnSharedEscrow);
-        }
         Ok(())
     }
 }
 
-/// Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
+/// Allows the owner to close a pool if it has no NFTs.
 #[access_control(ctx.accounts.validate())]
 pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
     // Must close manually because we cannot do this logic in the accounts macro.
