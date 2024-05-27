@@ -139,7 +139,7 @@
         },
         {
           "name": "owner",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {

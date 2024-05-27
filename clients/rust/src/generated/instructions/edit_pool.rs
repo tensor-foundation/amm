@@ -36,7 +36,7 @@ impl EditPool {
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -84,7 +84,7 @@ pub struct EditPoolInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable]` pool
-///   1. `[writable, signer]` owner
+///   1. `[signer]` owner
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct EditPoolBuilder {
@@ -265,7 +265,7 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
             *self.pool.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             true,
         ));
@@ -311,7 +311,7 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable]` pool
-///   1. `[writable, signer]` owner
+///   1. `[signer]` owner
 ///   2. `[]` system_program
 pub struct EditPoolCpiBuilder<'a, 'b> {
     instruction: Box<EditPoolCpiBuilderInstruction<'a, 'b>>,

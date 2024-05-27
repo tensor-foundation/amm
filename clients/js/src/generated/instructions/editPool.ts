@@ -41,8 +41,8 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
+  ReadonlySignerAccount,
   WritableAccount,
-  WritableSignerAccount,
 } from '@solana/instructions';
 import { IAccountSignerMeta, TransactionSigner } from '@solana/signers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -70,7 +70,7 @@ export type EditPoolInstruction<
         ? WritableAccount<TAccountPool>
         : TAccountPool,
       TAccountOwner extends string
-        ? WritableSignerAccount<TAccountOwner> &
+        ? ReadonlySignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
       TAccountSystemProgram extends string
@@ -170,7 +170,7 @@ export function getEditPoolInstruction<
   // Original accounts.
   const originalAccounts = {
     pool: { value: input.pool ?? null, isWritable: true },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
