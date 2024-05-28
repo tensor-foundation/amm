@@ -39,7 +39,6 @@ export type DepositSolInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -55,9 +54,6 @@ export type DepositSolInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountWhitelist extends string
-        ? ReadonlyAccount<TAccountWhitelist>
-        : TAccountWhitelist,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -105,12 +101,10 @@ export function getDepositSolInstructionDataCodec(): Codec<
 export type DepositSolInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
-  TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
-  whitelist: Address<TAccountWhitelist>;
   systemProgram?: Address<TAccountSystemProgram>;
   lamports: DepositSolInstructionDataArgs['lamports'];
 };
@@ -118,20 +112,13 @@ export type DepositSolInput<
 export function getDepositSolInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
-  TAccountWhitelist extends string,
   TAccountSystemProgram extends string,
 >(
-  input: DepositSolInput<
-    TAccountOwner,
-    TAccountPool,
-    TAccountWhitelist,
-    TAccountSystemProgram
-  >
+  input: DepositSolInput<TAccountOwner, TAccountPool, TAccountSystemProgram>
 ): DepositSolInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
-  TAccountWhitelist,
   TAccountSystemProgram
 > {
   // Program address.
@@ -141,7 +128,6 @@ export function getDepositSolInstruction<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    whitelist: { value: input.whitelist ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -163,7 +149,6 @@ export function getDepositSolInstruction<
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -174,7 +159,6 @@ export function getDepositSolInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
-    TAccountWhitelist,
     TAccountSystemProgram
   >;
 
@@ -189,8 +173,7 @@ export type ParsedDepositSolInstruction<
   accounts: {
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
-    whitelist: TAccountMetas[2];
-    systemProgram: TAccountMetas[3];
+    systemProgram: TAccountMetas[2];
   };
   data: DepositSolInstructionData;
 };
@@ -203,7 +186,7 @@ export function parseDepositSolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedDepositSolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
+  if (instruction.accounts.length < 3) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -218,7 +201,6 @@ export function parseDepositSolInstruction<
     accounts: {
       owner: getNextAccount(),
       pool: getNextAccount(),
-      whitelist: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getDepositSolInstructionDataDecoder().decode(instruction.data),

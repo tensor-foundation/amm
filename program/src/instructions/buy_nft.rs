@@ -117,8 +117,6 @@ pub struct BuyNft<'info> {
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
-
-    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
     /// CHECK: seeds checked on Token Metadata CPI
     pub edition: UncheckedAccount<'info>,
 

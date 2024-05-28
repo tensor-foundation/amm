@@ -75,7 +75,6 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: 10_000_000n,
   });
@@ -209,7 +208,6 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositLamports,
   });
@@ -287,7 +285,6 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositLamports,
   });

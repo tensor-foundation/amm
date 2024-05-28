@@ -14,7 +14,7 @@ pub struct DepositNftT22 {
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: solana_program::pubkey::Pubkey,
 
     pub mint_proof: solana_program::pubkey::Pubkey,
@@ -167,7 +167,7 @@ impl DepositNftT22Builder {
         self.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
@@ -278,7 +278,7 @@ pub struct DepositNftT22CpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
@@ -306,7 +306,7 @@ pub struct DepositNftT22Cpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
@@ -518,7 +518,7 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(
         &mut self,

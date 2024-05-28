@@ -213,7 +213,7 @@ export type SellNftTokenPoolT22AsyncInput<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, also checked via has_one on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mintProof: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
@@ -464,7 +464,7 @@ export type SellNftTokenPoolT22Input<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, also checked via has_one on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mintProof: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
@@ -677,7 +677,7 @@ export type ParsedSellNftTokenPoolT22Instruction<
     rentPayer: TAccountMetas[2];
     feeVault: TAccountMetas[3];
     pool: TAccountMetas[4];
-    /** Needed for pool seeds derivation, also checked via has_one on pool */
+    /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
     whitelist: TAccountMetas[5];
     mintProof: TAccountMetas[6];
     /** The mint account of the NFT being sold. */

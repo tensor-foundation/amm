@@ -45,7 +45,7 @@ export type CloseExpiredPoolInstruction<
   IInstructionWithAccounts<
     [
       TAccountRentPayer extends string
-        ? ReadonlyAccount<TAccountRentPayer>
+        ? WritableAccount<TAccountRentPayer>
         : TAccountRentPayer,
       TAccountOwner extends string
         ? WritableAccount<TAccountOwner>
@@ -128,7 +128,7 @@ export function getCloseExpiredPoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    rentPayer: { value: input.rentPayer ?? null, isWritable: false },
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },

@@ -7,7 +7,6 @@ use anchor_spl::{
     },
 };
 use tensor_toolbox::token_2022::validate_mint;
-use tensor_whitelist::{self, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use self::{
@@ -19,7 +18,6 @@ use crate::{error::ErrorCode, *};
 
 /// Buy a Token22 NFT from a NFT or Trade pool.
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct BuyNftT22<'info> {
     /// CHECK: has_one = owner in pool (owner is the seller)
     #[account(mut)]
@@ -53,19 +51,11 @@ pub struct BuyNftT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist,
-        constraint = config.pool_type == PoolType::NFT || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        has_one = owner,
+        constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     /// The ATA of the buyer, where the NFT will be transferred.
     #[account(
@@ -265,7 +255,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     Fees are paid by individual transfers as they go to various accounts depending on the pool type
     and configuration.
-
     */
 
     // Determine the SOL destination: owner, pool or shared escrow account.

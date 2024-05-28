@@ -29,7 +29,7 @@ pub struct WithdrawNft<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner,
-        // can only buy from NFT/Trade pool
+        // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,

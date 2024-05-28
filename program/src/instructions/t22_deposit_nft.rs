@@ -19,7 +19,6 @@ use crate::{error::ErrorCode, *};
 
 /// Deposit a Token22 NFT into a NFT or Trade pool.
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct DepositNftT22<'info> {
     /// CHECK: has_one = owner in pool
     #[account(mut)]
@@ -35,14 +34,14 @@ pub struct DepositNftT22<'info> {
         bump = pool.bump[0],
         has_one = whitelist, has_one = owner,
         // can only deposit to NFT/Trade pool
-        constraint = config.pool_type == PoolType::NFT || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// Needed for pool seeds derivation, also checked via has_one on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]

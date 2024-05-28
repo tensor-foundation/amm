@@ -39,7 +39,6 @@ pub struct EditPool<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    #[account(mut)]
     pub owner: Signer<'info>,
 
     pub system_program: Program<'info, System>,
@@ -101,10 +100,6 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
     }
 
     if let Some(cosigner) = args.cosigner {
-        //currently bids only
-        if pool.config.pool_type != PoolType::Token {
-            throw_err!(ErrorCode::WrongPoolType);
-        }
         pool.cosigner = NullableOption::new(cosigner);
     }
 

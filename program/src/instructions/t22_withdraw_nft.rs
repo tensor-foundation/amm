@@ -15,7 +15,6 @@ use crate::{error::ErrorCode, *};
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
 #[derive(Accounts)]
-#[instruction(config: PoolConfig)]
 pub struct WithdrawNftT22<'info> {
     /// Tied to the pool because used to verify pool seeds
     #[account(mut)]
@@ -31,13 +30,13 @@ pub struct WithdrawNftT22<'info> {
         bump = pool.bump[0],
         has_one = whitelist, has_one = owner,
         // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
-        constraint = config.pool_type == PoolType::NFT || config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// CHECK: has_one = whitelist in pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]
@@ -73,7 +72,7 @@ pub struct WithdrawNftT22<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        //can't withdraw an NFT that's associated with a different pool
+        // can't withdraw an NFT that's associated with a different pool
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         close = owner,
     )]

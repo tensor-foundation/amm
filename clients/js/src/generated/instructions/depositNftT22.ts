@@ -158,7 +158,7 @@ export type DepositNftT22AsyncInput<
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, also checked via has_one on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mintProof: Address<TAccountMintProof>;
   mint: Address<TAccountMint>;
@@ -330,7 +330,7 @@ export type DepositNftT22Input<
 > = {
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, also checked via has_one on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mintProof: Address<TAccountMintProof>;
   mint: Address<TAccountMint>;
@@ -472,7 +472,7 @@ export type ParsedDepositNftT22Instruction<
   accounts: {
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
-    /** Needed for pool seeds derivation, also checked via has_one on pool */
+    /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
     whitelist: TAccountMetas[2];
     mintProof: TAccountMetas[3];
     mint: TAccountMetas[4];

@@ -111,6 +111,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.pool_id = args.pool_id;
     pool.rent_payer = ctx.accounts.rent_payer.key();
+
     // Only SOL currently supported
     pool.currency = Currency::sol();
     pool.amount = 0;

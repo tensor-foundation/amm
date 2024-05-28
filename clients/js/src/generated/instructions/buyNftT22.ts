@@ -54,7 +54,6 @@ export type BuyNftT22Instruction<
   TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountBuyerAta extends string | IAccountMeta<string> = string,
   TAccountPoolAta extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
@@ -95,9 +94,6 @@ export type BuyNftT22Instruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountWhitelist extends string
-        ? ReadonlyAccount<TAccountWhitelist>
-        : TAccountWhitelist,
       TAccountBuyerAta extends string
         ? WritableAccount<TAccountBuyerAta>
         : TAccountBuyerAta,
@@ -184,7 +180,6 @@ export type BuyNftT22AsyncInput<
   TAccountRentPayer extends string = string,
   TAccountFeeVault extends string = string,
   TAccountPool extends string = string,
-  TAccountWhitelist extends string = string,
   TAccountBuyerAta extends string = string,
   TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
@@ -202,8 +197,6 @@ export type BuyNftT22AsyncInput<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, has_one = whitelist on pool */
-  whitelist: Address<TAccountWhitelist>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
@@ -229,7 +222,6 @@ export async function getBuyNftT22InstructionAsync<
   TAccountRentPayer extends string,
   TAccountFeeVault extends string,
   TAccountPool extends string,
-  TAccountWhitelist extends string,
   TAccountBuyerAta extends string,
   TAccountPoolAta extends string,
   TAccountMint extends string,
@@ -248,7 +240,6 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountWhitelist,
     TAccountBuyerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -269,7 +260,6 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountWhitelist,
     TAccountBuyerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -293,7 +283,6 @@ export async function getBuyNftT22InstructionAsync<
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    whitelist: { value: input.whitelist ?? null, isWritable: false },
     buyerAta: { value: input.buyerAta ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
@@ -373,7 +362,6 @@ export async function getBuyNftT22InstructionAsync<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.feeVault),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.buyerAta),
       getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
@@ -397,7 +385,6 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountWhitelist,
     TAccountBuyerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -420,7 +407,6 @@ export type BuyNftT22Input<
   TAccountRentPayer extends string = string,
   TAccountFeeVault extends string = string,
   TAccountPool extends string = string,
-  TAccountWhitelist extends string = string,
   TAccountBuyerAta extends string = string,
   TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
@@ -438,8 +424,6 @@ export type BuyNftT22Input<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, has_one = whitelist on pool */
-  whitelist: Address<TAccountWhitelist>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
@@ -465,7 +449,6 @@ export function getBuyNftT22Instruction<
   TAccountRentPayer extends string,
   TAccountFeeVault extends string,
   TAccountPool extends string,
-  TAccountWhitelist extends string,
   TAccountBuyerAta extends string,
   TAccountPoolAta extends string,
   TAccountMint extends string,
@@ -484,7 +467,6 @@ export function getBuyNftT22Instruction<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountWhitelist,
     TAccountBuyerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -504,7 +486,6 @@ export function getBuyNftT22Instruction<
   TAccountRentPayer,
   TAccountFeeVault,
   TAccountPool,
-  TAccountWhitelist,
   TAccountBuyerAta,
   TAccountPoolAta,
   TAccountMint,
@@ -527,7 +508,6 @@ export function getBuyNftT22Instruction<
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    whitelist: { value: input.whitelist ?? null, isWritable: false },
     buyerAta: { value: input.buyerAta ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
@@ -580,7 +560,6 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.feeVault),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.buyerAta),
       getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
@@ -604,7 +583,6 @@ export function getBuyNftT22Instruction<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountWhitelist,
     TAccountBuyerAta,
     TAccountPoolAta,
     TAccountMint,
@@ -632,23 +610,21 @@ export type ParsedBuyNftT22Instruction<
     rentPayer: TAccountMetas[2];
     feeVault: TAccountMetas[3];
     pool: TAccountMetas[4];
-    /** Needed for pool seeds derivation, has_one = whitelist on pool */
-    whitelist: TAccountMetas[5];
     /** The ATA of the buyer, where the NFT will be transferred. */
-    buyerAta: TAccountMetas[6];
+    buyerAta: TAccountMetas[5];
     /** The ATA of the pool, where the NFT will be escrowed. */
-    poolAta: TAccountMetas[7];
-    mint: TAccountMetas[8];
-    nftReceipt: TAccountMetas[9];
-    tokenProgram: TAccountMetas[10];
-    associatedTokenProgram: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    sharedEscrow?: TAccountMetas[13] | undefined;
+    poolAta: TAccountMetas[6];
+    mint: TAccountMetas[7];
+    nftReceipt: TAccountMetas[8];
+    tokenProgram: TAccountMetas[9];
+    associatedTokenProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
+    sharedEscrow?: TAccountMetas[12] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[14] | undefined;
+    makerBroker?: TAccountMetas[13] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[15] | undefined;
-    ammProgram: TAccountMetas[16];
+    takerBroker?: TAccountMetas[14] | undefined;
+    ammProgram: TAccountMetas[15];
   };
   data: BuyNftT22InstructionData;
 };
@@ -661,7 +637,7 @@ export function parseBuyNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 16) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -685,7 +661,6 @@ export function parseBuyNftT22Instruction<
       rentPayer: getNextAccount(),
       feeVault: getNextAccount(),
       pool: getNextAccount(),
-      whitelist: getNextAccount(),
       buyerAta: getNextAccount(),
       poolAta: getNextAccount(),
       mint: getNextAccount(),
