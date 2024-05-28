@@ -154,6 +154,7 @@ export type WithdrawNftT22AsyncInput<
   /** Tied to the pool because used to verify pool seeds */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mint: Address<TAccountMint>;
   ownerAta?: Address<TAccountOwnerAta>;
@@ -317,6 +318,7 @@ export type WithdrawNftT22Input<
   /** Tied to the pool because used to verify pool seeds */
   owner: TransactionSigner<TAccountOwner>;
   pool: Address<TAccountPool>;
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   mint: Address<TAccountMint>;
   ownerAta: Address<TAccountOwnerAta>;
@@ -451,6 +453,7 @@ export type ParsedWithdrawNftT22Instruction<
     /** Tied to the pool because used to verify pool seeds */
     owner: TAccountMetas[0];
     pool: TAccountMetas[1];
+    /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
     whitelist: TAccountMetas[2];
     mint: TAccountMetas[3];
     ownerAta: TAccountMetas[4];

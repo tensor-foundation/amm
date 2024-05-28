@@ -20,7 +20,7 @@ pub struct BuyNftT22 {
     pub fee_vault: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: solana_program::pubkey::Pubkey,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: solana_program::pubkey::Pubkey,
@@ -252,7 +252,7 @@ impl BuyNftT22Builder {
         self.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
@@ -413,7 +413,7 @@ pub struct BuyNftT22CpiAccounts<'a, 'b> {
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
@@ -453,7 +453,7 @@ pub struct BuyNftT22Cpi<'a, 'b> {
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
@@ -768,7 +768,7 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(
         &mut self,

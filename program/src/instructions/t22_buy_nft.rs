@@ -59,9 +59,9 @@ pub struct BuyNftT22<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// Needed for pool seeds derivation, has_one = whitelist on pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]

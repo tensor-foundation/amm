@@ -540,11 +540,6 @@
           "isSigner": false
         },
         {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -1334,7 +1329,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, has_one = whitelist on pool"
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
           ]
         },
         {
@@ -1442,7 +1437,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, also checked via has_one on pool"
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
           ]
         },
         {
@@ -1537,7 +1532,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, also checked via has_one on pool"
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
           ]
         },
         {
@@ -1673,7 +1668,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation, also checked via has_one on pool"
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
           ]
         },
         {
@@ -1802,7 +1797,10 @@
         {
           "name": "whitelist",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
+          ]
         },
         {
           "name": "mint",

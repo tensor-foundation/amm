@@ -1,6 +1,5 @@
 //! User depositing SOL into their Token/Trade pool (to purchase NFTs)
 use anchor_lang::solana_program::{program::invoke, system_instruction};
-use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, unwrap_checked, Validate};
 
 use crate::{error::ErrorCode, *};
@@ -20,20 +19,12 @@ pub struct DepositSol<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist,
+        has_one = owner,
         // can only deposit SOL into Token/Trade pool
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
-
-    /// CHECK: has_one = whitelist in pool
-    #[account(
-        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     pub system_program: Program<'info, System>,
 }

@@ -442,7 +442,6 @@ export async function createPoolAndWhitelist({
     // Deposit SOL
     const depositSolIx = getDepositSolInstruction({
       pool,
-      whitelist,
       owner,
       lamports: depositAmount,
     });

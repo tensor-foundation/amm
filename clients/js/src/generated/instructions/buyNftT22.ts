@@ -202,7 +202,7 @@ export type BuyNftT22AsyncInput<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, has_one = whitelist on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta?: Address<TAccountBuyerAta>;
@@ -438,7 +438,7 @@ export type BuyNftT22Input<
   rentPayer?: Address<TAccountRentPayer>;
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation, has_one = whitelist on pool */
+  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
   whitelist: Address<TAccountWhitelist>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta: Address<TAccountBuyerAta>;
@@ -632,7 +632,7 @@ export type ParsedBuyNftT22Instruction<
     rentPayer: TAccountMetas[2];
     feeVault: TAccountMetas[3];
     pool: TAccountMetas[4];
-    /** Needed for pool seeds derivation, has_one = whitelist on pool */
+    /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
     whitelist: TAccountMetas[5];
     /** The ATA of the buyer, where the NFT will be transferred. */
     buyerAta: TAccountMetas[6];

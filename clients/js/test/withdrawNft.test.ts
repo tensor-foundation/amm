@@ -69,7 +69,6 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: 10_000_000n,
   });

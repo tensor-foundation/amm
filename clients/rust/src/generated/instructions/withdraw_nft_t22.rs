@@ -15,7 +15,7 @@ pub struct WithdrawNftT22 {
     pub owner: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
-
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: solana_program::pubkey::Pubkey,
 
     pub mint: solana_program::pubkey::Pubkey,
@@ -161,6 +161,7 @@ impl WithdrawNftT22Builder {
         self.pool = Some(pool);
         self
     }
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
@@ -265,7 +266,7 @@ pub struct WithdrawNftT22CpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -291,7 +292,7 @@ pub struct WithdrawNftT22Cpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -494,6 +495,7 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[inline(always)]
     pub fn whitelist(
         &mut self,

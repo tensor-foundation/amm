@@ -258,7 +258,6 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: 10_000_000n,
   });
@@ -382,7 +381,6 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: 10_000_000n,
   });
@@ -485,7 +483,7 @@ test('closing a pool returns excess funds to the owner', async (t) => {
   const poolStateBond = await getPoolStateBond(client);
 
   // Create default pool
-  const { pool, owner, whitelist } = await createPoolAndWhitelist({
+  const { pool, owner } = await createPoolAndWhitelist({
     client,
     payer: rentPayer,
     funded: false,
@@ -494,7 +492,6 @@ test('closing a pool returns excess funds to the owner', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositAmount,
   });

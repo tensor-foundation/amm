@@ -321,7 +321,6 @@ test('it can sell an NFT into a Token pool', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositAmount,
   });
@@ -451,7 +450,6 @@ test('token pool autocloses when currency amount drops below current price', asy
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositAmount,
   });
@@ -544,7 +542,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositAmount,
   });
@@ -620,7 +617,6 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
     pool,
-    whitelist,
     owner,
     lamports: depositAmount,
   });

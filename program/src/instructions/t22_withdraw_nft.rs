@@ -35,9 +35,9 @@ pub struct WithdrawNftT22<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// CHECK: has_one = whitelist in pool
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     #[account(
-        seeds = [&whitelist.uuid],
+        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = tensor_whitelist::ID
     )]
