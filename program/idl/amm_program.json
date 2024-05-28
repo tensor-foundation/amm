@@ -1325,14 +1325,6 @@
           "isSigner": false
         },
         {
-          "name": "whitelist",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
-          ]
-        },
-        {
           "name": "buyerAta",
           "isMut": true,
           "isSigner": false,
