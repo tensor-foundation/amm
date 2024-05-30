@@ -1,4 +1,4 @@
-//! User withdrawing an NFT from their Trade pool
+//! Withdraw a Token22 NFT from a NFT or Trade pool.
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -7,19 +7,19 @@ use anchor_spl::{
     },
 };
 use tensor_toolbox::token_2022::validate_mint;
-use tensor_whitelist::WhitelistV2;
 use vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
-/// Withdraw a Token22 NFT from a NFT or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNftT22<'info> {
-    /// Tied to the pool because used to verify pool seeds
+    /// The owner of the pool--must sign to withdraw an NFT from the pool.
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    /// The pool holding the NFT.
     #[account(
         mut,
         seeds = [
@@ -28,26 +28,20 @@ pub struct WithdrawNftT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist, has_one = owner,
+        has_one = owner,
         // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
-    #[account(
-        seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub whitelist: Box<Account<'info, WhitelistV2>>,
-
+    /// The mint of the NFT.
     #[account(
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
+    /// The ATA of the owner where the NFT will be withdrawn to.
     #[account(
         init_if_needed,
         payer = owner,
@@ -64,6 +58,7 @@ pub struct WithdrawNftT22<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
         seeds=[
@@ -78,10 +73,11 @@ pub struct WithdrawNftT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Program<'info, Token2022>,
-
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
-
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

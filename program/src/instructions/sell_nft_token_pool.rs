@@ -1,6 +1,10 @@
-//! User selling an NFT into a Token pool
-//! We separate this from Trade pool since the owner will receive the NFT directly in their ATA.
-//! (!) Keep common logic in sync with sell_nft_token_pool.rs.
+//! Sell a Metaplex legacy or pNFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
+//! being transferred to the pool owner--the buyer.
+//!
+//! The seller is the NFT owner and receives the pool's current price, minus fees, in return.
+//! This is separated from Trade pool since the owner will receive the NFT directly in their ATA.
+
+// (!) Keep common logic in sync with sell_nft_token_pool.rs.
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -22,9 +26,7 @@ use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
 use super::*;
 use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
-/// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
-/// being transferred to the pool owner--the buyer.
-/// The seller is the NFT owner and receives the pool's current price, minus fees, in return.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
@@ -36,7 +38,8 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,

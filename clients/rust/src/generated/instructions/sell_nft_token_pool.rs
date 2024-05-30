@@ -15,7 +15,8 @@ pub struct SellNftTokenPool {
     pub owner: solana_program::pubkey::Pubkey,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: solana_program::pubkey::Pubkey,
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
@@ -405,7 +406,8 @@ impl SellNftTokenPoolBuilder {
         self.seller = Some(seller);
         self
     }
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
@@ -713,7 +715,8 @@ pub struct SellNftTokenPoolCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
@@ -782,7 +785,8 @@ pub struct SellNftTokenPoolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1294,7 +1298,8 @@ impl<'a, 'b> SellNftTokenPoolCpiBuilder<'a, 'b> {
         self.instruction.seller = Some(seller);
         self
     }
-    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,

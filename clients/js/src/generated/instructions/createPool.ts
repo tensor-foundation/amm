@@ -173,11 +173,18 @@ export type CreatePoolInput<
   TAccountWhitelist extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /**
+   * The account pay for the rent to open the pool. This will be stored on the pool
+   * so it can be refunded when the pool is closed.
+   */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
+  /** The owner of the pool will be stored and used to control permissioned pool instructions. */
   owner: TransactionSigner<TAccountOwner>;
+  /** The pool state account. */
   pool: Address<TAccountPool>;
-  /** Needed for pool seeds derivation / will be stored inside pool */
+  /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
   whitelist: Address<TAccountWhitelist>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   poolId: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
@@ -271,11 +278,19 @@ export type ParsedCreatePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /**
+     * The account pay for the rent to open the pool. This will be stored on the pool
+     * so it can be refunded when the pool is closed.
+     */
+
     rentPayer: TAccountMetas[0];
+    /** The owner of the pool will be stored and used to control permissioned pool instructions. */
     owner: TAccountMetas[1];
+    /** The pool state account. */
     pool: TAccountMetas[2];
-    /** Needed for pool seeds derivation / will be stored inside pool */
+    /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
     whitelist: TAccountMetas[3];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[4];
   };
   data: CreatePoolInstructionData;

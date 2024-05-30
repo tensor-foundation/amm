@@ -1,10 +1,10 @@
-//! User withdrawing SOL from their pool (all 3 types)
+//! Withdraw SOL from a Trade or Token pool.
 use tensor_toolbox::transfer_lamports_from_pda;
 use vipers::{throw_err, unwrap_checked};
 
 use crate::{error::ErrorCode, *};
 
-/// Allows a Trade or Token pool owner to withdraw SOL from the pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawSol<'info> {
     /// The owner of the pool and will receive the SOL.
@@ -25,6 +25,7 @@ pub struct WithdrawSol<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

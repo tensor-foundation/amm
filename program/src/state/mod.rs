@@ -15,7 +15,7 @@ use std::collections::HashMap;
 pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60;
 
 // --------------------------------------- replicating mplex type for anchor IDL export
-//have to do this because anchor won't include foreign structs in the IDL
+// have to do this because anchor won't include foreign structs in the IDL
 
 /// Local version of `AuthorizationData` for IDL export.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]

@@ -98,9 +98,16 @@ export type CloseExpiredPoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** The rent payer to refund pool rent to. */
   rentPayer?: Address<TAccountRentPayer>;
+  /**
+   * The owner account must be specified and match the account stored in the pool but does not have to sign
+   * for expired pools.
+   */
   owner: Address<TAccountOwner>;
+  /** The pool to close. */
   pool: Address<TAccountPool>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
@@ -174,9 +181,17 @@ export type ParsedCloseExpiredPoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** The rent payer to refund pool rent to. */
     rentPayer: TAccountMetas[0];
+    /**
+     * The owner account must be specified and match the account stored in the pool but does not have to sign
+     * for expired pools.
+     */
+
     owner: TAccountMetas[1];
+    /** The pool to close. */
     pool: TAccountMetas[2];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[3];
   };
   data: CloseExpiredPoolInstructionData;

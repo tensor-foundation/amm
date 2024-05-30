@@ -10,12 +10,13 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct ClosePool {
+    /// The rent payer to refund pool rent to.
     pub rent_payer: solana_program::pubkey::Pubkey,
-
+    /// The owner must sign to close the pool.
     pub owner: solana_program::pubkey::Pubkey,
     /// The pool to close.
     pub pool: solana_program::pubkey::Pubkey,
-    /// The system program account.
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -88,11 +89,13 @@ impl ClosePoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// The rent payer to refund pool rent to.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
         self
     }
+    /// The owner must sign to close the pool.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
@@ -105,7 +108,7 @@ impl ClosePoolBuilder {
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
-    /// The system program account.
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -146,12 +149,13 @@ impl ClosePoolBuilder {
 
 /// `close_pool` CPI accounts.
 pub struct ClosePoolCpiAccounts<'a, 'b> {
+    /// The rent payer to refund pool rent to.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner must sign to close the pool.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to close.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The system program account.
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -159,13 +163,13 @@ pub struct ClosePoolCpiAccounts<'a, 'b> {
 pub struct ClosePoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The rent payer to refund pool rent to.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner must sign to close the pool.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to close.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The system program account.
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -288,6 +292,7 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
+    /// The rent payer to refund pool rent to.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,
@@ -296,6 +301,7 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         self.instruction.rent_payer = Some(rent_payer);
         self
     }
+    /// The owner must sign to close the pool.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
@@ -307,7 +313,7 @@ impl<'a, 'b> ClosePoolCpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
-    /// The system program account.
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,

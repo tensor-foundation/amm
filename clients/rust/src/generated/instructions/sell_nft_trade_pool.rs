@@ -29,21 +29,21 @@ pub struct SellNftTradePool {
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     pub seller_ata: solana_program::pubkey::Pubkey,
-
+    /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
-
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: solana_program::pubkey::Pubkey,
-
-    pub system_program: solana_program::pubkey::Pubkey,
-
+    /// The SPL associated token program.
     pub associated_token_program: solana_program::pubkey::Pubkey,
-
+    /// The Solana system program.
+    pub system_program: solana_program::pubkey::Pubkey,
+    /// The Token Metadata edition of the NFT.
     pub edition: solana_program::pubkey::Pubkey,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<solana_program::pubkey::Pubkey>,
@@ -66,7 +66,7 @@ pub struct SellNftTradePool {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
-
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
 
     pub escrow_program: solana_program::pubkey::Pubkey,
@@ -138,11 +138,11 @@ impl SellNftTradePool {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.system_program,
+            self.associated_token_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.associated_token_program,
+            self.system_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -316,8 +316,8 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   9. `[writable]` metadata
 ///   10. `[writable]` nft_receipt
 ///   11. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   12. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   13. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   12. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   13. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   14. `[]` edition
 ///   15. `[writable, optional]` seller_token_record
 ///   16. `[writable, optional]` pool_token_record
@@ -345,8 +345,8 @@ pub struct SellNftTradePoolBuilder {
     metadata: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
-    system_program: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
     edition: Option<solana_program::pubkey::Pubkey>,
     seller_token_record: Option<solana_program::pubkey::Pubkey>,
     pool_token_record: Option<solana_program::pubkey::Pubkey>,
@@ -417,12 +417,13 @@ impl SellNftTradePoolBuilder {
         self.mint = Some(mint);
         self
     }
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     #[inline(always)]
     pub fn seller_ata(&mut self, seller_ata: solana_program::pubkey::Pubkey) -> &mut Self {
         self.seller_ata = Some(seller_ata);
         self
     }
+    /// The ATA of the pool, where the NFT will be transferred to.
     #[inline(always)]
     pub fn pool_ata(&mut self, pool_ata: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool_ata = Some(pool_ata);
@@ -434,24 +435,21 @@ impl SellNftTradePoolBuilder {
         self.metadata = Some(metadata);
         self
     }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
-    /// `[optional account, default to '11111111111111111111111111111111']`
-    #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.system_program = Some(system_program);
-        self
-    }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    /// The SPL associated token program.
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -460,6 +458,14 @@ impl SellNftTradePoolBuilder {
         self.associated_token_program = Some(associated_token_program);
         self
     }
+    /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
+    #[inline(always)]
+    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
+        self
+    }
+    /// The Token Metadata edition of the NFT.
     #[inline(always)]
     pub fn edition(&mut self, edition: solana_program::pubkey::Pubkey) -> &mut Self {
         self.edition = Some(edition);
@@ -564,6 +570,7 @@ impl SellNftTradePoolBuilder {
         self
     }
     /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
+    /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.amm_program = Some(amm_program);
@@ -626,12 +633,12 @@ impl SellNftTradePoolBuilder {
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
             associated_token_program: self.associated_token_program.unwrap_or(
                 solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
             ),
+            system_program: self
+                .system_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
             edition: self.edition.expect("edition is not set"),
             seller_token_record: self.seller_token_record,
             pool_token_record: self.pool_token_record,
@@ -678,21 +685,21 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Token Metadata edition of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -715,7 +722,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -743,21 +750,21 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Token Metadata edition of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata seller/source token record account of the NFT.
     pub seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -780,7 +787,7 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
     /// Checks are performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -808,8 +815,8 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             metadata: accounts.metadata,
             nft_receipt: accounts.nft_receipt,
             token_program: accounts.token_program,
-            system_program: accounts.system_program,
             associated_token_program: accounts.associated_token_program,
+            system_program: accounts.system_program,
             edition: accounts.edition,
             seller_token_record: accounts.seller_token_record,
             pool_token_record: accounts.pool_token_record,
@@ -916,11 +923,11 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.system_program.key,
+            *self.associated_token_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.associated_token_program.key,
+            *self.system_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -1077,8 +1084,8 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         account_infos.push(self.metadata.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.token_program.clone());
-        account_infos.push(self.system_program.clone());
         account_infos.push(self.associated_token_program.clone());
+        account_infos.push(self.system_program.clone());
         account_infos.push(self.edition.clone());
         if let Some(seller_token_record) = self.seller_token_record {
             account_infos.push(seller_token_record.clone());
@@ -1140,8 +1147,8 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   9. `[writable]` metadata
 ///   10. `[writable]` nft_receipt
 ///   11. `[]` token_program
-///   12. `[]` system_program
-///   13. `[]` associated_token_program
+///   12. `[]` associated_token_program
+///   13. `[]` system_program
 ///   14. `[]` edition
 ///   15. `[writable, optional]` seller_token_record
 ///   16. `[writable, optional]` pool_token_record
@@ -1175,8 +1182,8 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             metadata: None,
             nft_receipt: None,
             token_program: None,
-            system_program: None,
             associated_token_program: None,
+            system_program: None,
             edition: None,
             seller_token_record: None,
             pool_token_record: None,
@@ -1256,7 +1263,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.mint = Some(mint);
         self
     }
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     #[inline(always)]
     pub fn seller_ata(
         &mut self,
@@ -1265,6 +1272,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.seller_ata = Some(seller_ata);
         self
     }
+    /// The ATA of the pool, where the NFT will be transferred to.
     #[inline(always)]
     pub fn pool_ata(
         &mut self,
@@ -1282,6 +1290,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.metadata = Some(metadata);
         self
     }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(
         &mut self,
@@ -1290,6 +1299,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
+    /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(
         &mut self,
@@ -1298,14 +1308,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.token_program = Some(token_program);
         self
     }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
+    /// The SPL associated token program.
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -1314,6 +1317,16 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.associated_token_program = Some(associated_token_program);
         self
     }
+    /// The Solana system program.
+    #[inline(always)]
+    pub fn system_program(
+        &mut self,
+        system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.system_program = Some(system_program);
+        self
+    }
+    /// The Token Metadata edition of the NFT.
     #[inline(always)]
     pub fn edition(
         &mut self,
@@ -1423,6 +1436,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.cosigner = cosigner;
         self
     }
+    /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(
         &mut self,
@@ -1539,15 +1553,15 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
                 .token_program
                 .expect("token_program is not set"),
 
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
             associated_token_program: self
                 .instruction
                 .associated_token_program
                 .expect("associated_token_program is not set"),
+
+            system_program: self
+                .instruction
+                .system_program
+                .expect("system_program is not set"),
 
             edition: self.instruction.edition.expect("edition is not set"),
 
@@ -1603,8 +1617,8 @@ struct SellNftTradePoolCpiBuilderInstruction<'a, 'b> {
     metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     seller_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,

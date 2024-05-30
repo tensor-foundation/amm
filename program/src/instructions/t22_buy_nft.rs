@@ -1,4 +1,4 @@
-//! User buying an NFT from an NFT/Trade pool
+//! Buy a Token22 NFT from a NFT or Trade pool.
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -16,16 +16,22 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
-/// Buy a Token22 NFT from a NFT or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct BuyNftT22<'info> {
+    /// Owner is the pool owner who created the pool and the nominal owner of the
+    /// escrowed NFT. In this transaction they are the seller, though the transfer
+    /// of the NFT is handled by the pool.
     /// CHECK: has_one = owner in pool (owner is the seller)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
     #[account(mut)]
     pub buyer: Signer<'info>,
 
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
@@ -44,6 +50,9 @@ pub struct BuyNftT22<'info> {
     )]
     pub fee_vault: UncheckedAccount<'info>,
 
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     #[account(
         mut,
         seeds = [
@@ -74,6 +83,8 @@ pub struct BuyNftT22<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
     #[account(
         constraint = mint.key() == buyer_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
@@ -81,6 +92,7 @@ pub struct BuyNftT22<'info> {
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
         seeds=[
@@ -96,13 +108,15 @@ pub struct BuyNftT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Program<'info, Token2022>,
-
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
-
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
-    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared_escrow acc stored on pool
+    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4) shared escrow acc stored on pool
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
@@ -123,6 +137,7 @@ pub struct BuyNftT22<'info> {
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
 
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
 }
 

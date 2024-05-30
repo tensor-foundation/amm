@@ -1,4 +1,4 @@
-//! User depositing NFTs into their NFT/Trade pool (to sell NFTs)
+//! Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -13,13 +13,14 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
-/// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
     /// The owner of the pool and the NFT.
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    /// The pool to deposit the NFT into.
     #[account(
         mut,
         seeds = [
@@ -36,7 +37,7 @@ pub struct DepositNft<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
@@ -69,7 +70,7 @@ pub struct DepositNft<'info> {
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The NFT receipt account denoting that an NFT has been deposited into a pool.
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[account(
         init,
         payer = owner,
@@ -83,13 +84,19 @@ pub struct DepositNft<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
     /// The Token Metadata metadata account of the NFT.
     /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
     pub metadata: UncheckedAccount<'info>,
 
+    // Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
@@ -126,8 +133,6 @@ pub struct DepositNft<'info> {
         bump
     )]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
-
-    pub associated_token_program: Program<'info, AssociatedToken>,
 
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here

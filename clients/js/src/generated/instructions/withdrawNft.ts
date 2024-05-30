@@ -214,18 +214,25 @@ export type WithdrawNftAsyncInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
   pool: Address<TAccountPool>;
+  /** The mint of the NFT. */
   mint: Address<TAccountMint>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
   ownerAta?: Address<TAccountOwnerAta>;
   /** The ATA of the pool, where the NFT token is escrowed. */
   poolAta?: Address<TAccountPoolAta>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
+  /** The Token Metadata edition of the NFT. */
   edition?: Address<TAccountEdition>;
+  /** The Token Metadata owner's token record account of the NFT. */
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
@@ -490,18 +497,25 @@ export type WithdrawNftInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
   pool: Address<TAccountPool>;
+  /** The mint of the NFT. */
   mint: Address<TAccountMint>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
   ownerAta: Address<TAccountOwnerAta>;
   /** The ATA of the pool, where the NFT token is escrowed. */
   poolAta: Address<TAccountPoolAta>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
+  /** The Token Metadata edition of the NFT. */
   edition: Address<TAccountEdition>;
+  /** The Token Metadata owner's token record account of the NFT. */
   ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
@@ -721,18 +735,25 @@ export type ParsedWithdrawNftInstruction<
     owner: TAccountMetas[0];
     /** The pool from which the NFT will be withdrawn. */
     pool: TAccountMetas[1];
+    /** The mint of the NFT. */
     mint: TAccountMetas[2];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
     ownerAta: TAccountMetas[3];
     /** The ATA of the pool, where the NFT token is escrowed. */
     poolAta: TAccountMetas[4];
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[5];
+    /** The SPL Token program for the Mint and ATAs. */
     tokenProgram: TAccountMetas[6];
+    /** The SPL associated token program. */
     associatedTokenProgram: TAccountMetas[7];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[8];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[9];
+    /** The Token Metadata edition of the NFT. */
     edition: TAccountMetas[10];
+    /** The Token Metadata owner's token record account of the NFT. */
     ownerTokenRecord?: TAccountMetas[11] | undefined;
     /** The Token Metadata token record for the pool. */
     poolTokenRecord?: TAccountMetas[12] | undefined;

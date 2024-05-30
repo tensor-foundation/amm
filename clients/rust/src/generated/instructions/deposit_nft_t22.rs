@@ -11,26 +11,28 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct DepositNftT22 {
+    /// The owner of the pool and the NFT.
     pub owner: solana_program::pubkey::Pubkey,
-
+    /// The pool to deposit the NFT into.
     pub pool: solana_program::pubkey::Pubkey,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: solana_program::pubkey::Pubkey,
 
     pub mint_proof: solana_program::pubkey::Pubkey,
-
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     pub mint: solana_program::pubkey::Pubkey,
     /// The ATA of the owner, where the NFT will be transferred from.
     pub owner_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: solana_program::pubkey::Pubkey,
-
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-
-    pub associated_token_program: solana_program::pubkey::Pubkey,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: solana_program::pubkey::Pubkey,
-
+    /// The SPL associated token program.
+    pub associated_token_program: solana_program::pubkey::Pubkey,
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -78,11 +80,11 @@ impl DepositNftT22 {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.associated_token_program,
+            self.token_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_program,
+            self.associated_token_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -133,8 +135,8 @@ pub struct DepositNftT22InstructionArgs {
 ///   5. `[writable]` owner_ata
 ///   6. `[writable]` pool_ata
 ///   7. `[writable]` nft_receipt
-///   8. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   9. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   9. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   10. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct DepositNftT22Builder {
@@ -146,8 +148,8 @@ pub struct DepositNftT22Builder {
     owner_ata: Option<solana_program::pubkey::Pubkey>,
     pool_ata: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
-    associated_token_program: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
+    associated_token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     config: Option<PoolConfig>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -157,11 +159,13 @@ impl DepositNftT22Builder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// The owner of the pool and the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
         self
     }
+    /// The pool to deposit the NFT into.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
@@ -178,6 +182,8 @@ impl DepositNftT22Builder {
         self.mint_proof = Some(mint_proof);
         self
     }
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     #[inline(always)]
     pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mint = Some(mint);
@@ -195,12 +201,21 @@ impl DepositNftT22Builder {
         self.pool_ata = Some(pool_ata);
         self
     }
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
         self
     }
+    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    /// The SPL Token program for the Mint and ATAs.
+    #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.token_program = Some(token_program);
+        self
+    }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    /// The SPL associated token program.
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -209,13 +224,8 @@ impl DepositNftT22Builder {
         self.associated_token_program = Some(associated_token_program);
         self
     }
-    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
-    #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.token_program = Some(token_program);
-        self
-    }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -255,12 +265,12 @@ impl DepositNftT22Builder {
             owner_ata: self.owner_ata.expect("owner_ata is not set"),
             pool_ata: self.pool_ata.expect("pool_ata is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-            associated_token_program: self.associated_token_program.unwrap_or(
-                solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            ),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
+            associated_token_program: self.associated_token_program.unwrap_or(
+                solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            ),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -275,26 +285,28 @@ impl DepositNftT22Builder {
 
 /// `deposit_nft_t22` CPI accounts.
 pub struct DepositNftT22CpiAccounts<'a, 'b> {
+    /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred from.
     pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
+    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -302,27 +314,28 @@ pub struct DepositNftT22CpiAccounts<'a, 'b> {
 pub struct DepositNftT22Cpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred from.
     pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
+    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: DepositNftT22InstructionArgs,
@@ -344,8 +357,8 @@ impl<'a, 'b> DepositNftT22Cpi<'a, 'b> {
             owner_ata: accounts.owner_ata,
             pool_ata: accounts.pool_ata,
             nft_receipt: accounts.nft_receipt,
-            associated_token_program: accounts.associated_token_program,
             token_program: accounts.token_program,
+            associated_token_program: accounts.associated_token_program,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -417,11 +430,11 @@ impl<'a, 'b> DepositNftT22Cpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.associated_token_program.key,
+            *self.token_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_program.key,
+            *self.associated_token_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -454,8 +467,8 @@ impl<'a, 'b> DepositNftT22Cpi<'a, 'b> {
         account_infos.push(self.owner_ata.clone());
         account_infos.push(self.pool_ata.clone());
         account_infos.push(self.nft_receipt.clone());
-        account_infos.push(self.associated_token_program.clone());
         account_infos.push(self.token_program.clone());
+        account_infos.push(self.associated_token_program.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -481,8 +494,8 @@ impl<'a, 'b> DepositNftT22Cpi<'a, 'b> {
 ///   5. `[writable]` owner_ata
 ///   6. `[writable]` pool_ata
 ///   7. `[writable]` nft_receipt
-///   8. `[]` associated_token_program
-///   9. `[]` token_program
+///   8. `[]` token_program
+///   9. `[]` associated_token_program
 ///   10. `[]` system_program
 pub struct DepositNftT22CpiBuilder<'a, 'b> {
     instruction: Box<DepositNftT22CpiBuilderInstruction<'a, 'b>>,
@@ -500,19 +513,21 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
             owner_ata: None,
             pool_ata: None,
             nft_receipt: None,
-            associated_token_program: None,
             token_program: None,
+            associated_token_program: None,
             system_program: None,
             config: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
+    /// The owner of the pool and the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
     }
+    /// The pool to deposit the NFT into.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
@@ -535,6 +550,8 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self.instruction.mint_proof = Some(mint_proof);
         self
     }
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     #[inline(always)]
     pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.mint = Some(mint);
@@ -558,6 +575,7 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self.instruction.pool_ata = Some(pool_ata);
         self
     }
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[inline(always)]
     pub fn nft_receipt(
         &mut self,
@@ -566,14 +584,7 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
-    }
+    /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(
         &mut self,
@@ -582,6 +593,16 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self.instruction.token_program = Some(token_program);
         self
     }
+    /// The SPL associated token program.
+    #[inline(always)]
+    pub fn associated_token_program(
+        &mut self,
+        associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.associated_token_program = Some(associated_token_program);
+        self
+    }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -661,15 +682,15 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
                 .nft_receipt
                 .expect("nft_receipt is not set"),
 
-            associated_token_program: self
-                .instruction
-                .associated_token_program
-                .expect("associated_token_program is not set"),
-
             token_program: self
                 .instruction
                 .token_program
                 .expect("token_program is not set"),
+
+            associated_token_program: self
+                .instruction
+                .associated_token_program
+                .expect("associated_token_program is not set"),
 
             system_program: self
                 .instruction
@@ -694,8 +715,8 @@ struct DepositNftT22CpiBuilderInstruction<'a, 'b> {
     owner_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<PoolConfig>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

@@ -107,6 +107,7 @@ export type WithdrawSolInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the SOL will be withdrawn. */
   pool: Address<TAccountPool>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   lamports: WithdrawSolInstructionDataArgs['lamports'];
 };
@@ -177,6 +178,7 @@ export type ParsedWithdrawSolInstruction<
     owner: TAccountMetas[0];
     /** The pool from which the SOL will be withdrawn. */
     pool: TAccountMetas[1];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[2];
   };
   data: WithdrawSolInstructionData;

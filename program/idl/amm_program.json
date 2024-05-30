@@ -91,30 +91,43 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The account pay for the rent to open the pool. This will be stored on the pool",
+            "so it can be refunded when the pool is closed."
+          ]
         },
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool will be stored and used to control permissioned pool instructions."
+          ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool state account."
+          ]
         },
         {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "Needed for pool seeds derivation / will be stored inside pool"
+            "The whitelist that gatekeeps which NFTs can be bought or sold with this pool."
           ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -133,19 +146,28 @@
       ],
       "accounts": [
         {
-          "name": "pool",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "owner",
           "isMut": false,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool--must sign to edit the pool."
+          ]
+        },
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The pool to edit."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -166,12 +188,18 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The rent payer to refund pool rent to."
+          ]
         },
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner must sign to close the pool."
+          ]
         },
         {
           "name": "pool",
@@ -186,7 +214,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The system program account."
+            "The Solana system program."
           ]
         }
       ],
@@ -201,22 +229,35 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The rent payer to refund pool rent to."
+          ]
         },
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The owner account must be specified and match the account stored in the pool but does not have to sign",
+            "for expired pools."
+          ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool to close."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": []
@@ -238,14 +279,17 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool to deposit the NFT into."
+          ]
         },
         {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state."
           ]
         },
         {
@@ -278,18 +322,32 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The NFT receipt account denoting that an NFT has been deposited into a pool."
+            "The NFT receipt account denoting that an NFT has been deposited into this pool."
           ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "metadata",
@@ -303,7 +361,10 @@
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "merkle proof condition in the whitelist."
+          ]
         },
         {
           "name": "edition",
@@ -330,11 +391,6 @@
           "docs": [
             "The Token Metadata pool token record account of the NFT."
           ]
-        },
-        {
-          "name": "associatedTokenProgram",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "tokenMetadataProgram",
@@ -409,7 +465,10 @@
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint of the NFT."
+          ]
         },
         {
           "name": "ownerAta",
@@ -430,22 +489,34 @@
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "metadata",
@@ -458,13 +529,19 @@
         {
           "name": "edition",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata edition of the NFT."
+          ]
         },
         {
           "name": "ownerTokenRecord",
           "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The Token Metadata owner's token record account of the NFT."
+          ]
         },
         {
           "name": "poolTokenRecord",
@@ -532,17 +609,26 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool--must sign to deposit SOL."
+          ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool to deposit the SOL into."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -577,7 +663,10 @@
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -614,7 +703,11 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool",
+            "is auto-closed."
+          ]
         },
         {
           "name": "feeVault",
@@ -627,7 +720,12 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Pool state account that holds the NFT to be purchased. Stores pool state and config,",
+            "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
+            "Any active pool can be specified provided it is a Trade or NFT type."
+          ]
         },
         {
           "name": "buyerAta",
@@ -667,28 +765,40 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to."
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "edition",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata edition account for the NFT."
+          ]
         },
         {
           "name": "poolTokenRecord",
@@ -784,7 +894,10 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         }
       ],
       "args": [
@@ -835,7 +948,8 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The original rent-payer account that paid for the pool to be opened. Stored on the pool."
+            "The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool",
+            "is auto-closed."
           ]
         },
         {
@@ -1157,13 +1271,16 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The token account of the NFT for the seller's wallet."
+            "The ATA of the seller, where the NFT will be transferred from."
           ]
         },
         {
           "name": "poolAta",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT will be transferred to."
+          ]
         },
         {
           "name": "metadata",
@@ -1176,27 +1293,42 @@
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "edition",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token Metadata edition of the NFT."
+          ]
         },
         {
           "name": "sellerTokenRecord",
@@ -1292,7 +1424,10 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         },
         {
           "name": "escrowProgram",
@@ -1330,17 +1465,29 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Owner is the pool owner who created the pool and the nominal owner of the",
+            "escrowed NFT. In this transaction they are the seller, though the transfer",
+            "of the NFT is handled by the pool."
+          ]
         },
         {
           "name": "buyer",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT."
+          ]
         },
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool",
+            "is auto-closed."
+          ]
         },
         {
           "name": "feeVault",
@@ -1353,7 +1500,12 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Pool state account that holds the NFT to be purchased. Stores pool state and config,",
+            "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
+            "Any active pool can be specified provided it is a Trade or NFT type."
+          ]
         },
         {
           "name": "buyerAta",
@@ -1374,33 +1526,52 @@
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint account of the NFT. It should be the mint account common",
+            "to the owner_ata, pool_ata and the mint stored in the nft receipt."
+          ]
         },
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The shared escrow account for pools that pool liquidity in a shared account."
+          ]
         },
         {
           "name": "makerBroker",
@@ -1433,7 +1604,10 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         }
       ],
       "args": [
@@ -1458,12 +1632,18 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The owner of the pool and the NFT."
+          ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool to deposit the NFT into."
+          ]
         },
         {
           "name": "whitelist",
@@ -1481,7 +1661,11 @@
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint account of the NFT. It should be the mint account common",
+            "to the owner_ata and pool_ata."
+          ]
         },
         {
           "name": "ownerAta",
@@ -1502,22 +1686,34 @@
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "associatedTokenProgram",
-          "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT receipt account denoting that an NFT has been deposited into this pool."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -1719,12 +1915,18 @@
         {
           "name": "owner",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The owner of the pool and the buyer of the NFT, though the NFT will be escrowed by the pool."
+          ]
         },
         {
           "name": "seller",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The seller is the owner of the NFT who is selling the NFT into the pool."
+          ]
         },
         {
           "name": "feeVault",
@@ -1737,20 +1939,27 @@
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The pool the NFT is sold into."
+          ]
         },
         {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
+            "The whitelist that gatekeeps which NFTs can be sold into the pool."
           ]
         },
         {
           "name": "mintProof",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Optional account which must be passed in if the NFT must be verified against a",
+            "merkle proof condition in the whitelist."
+          ]
         },
         {
           "name": "mint",
@@ -1765,39 +1974,57 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the NFT for the seller's wallet."
+            "The ATA of the seller, where the NFT will be transferred from."
           ]
         },
         {
           "name": "poolAta",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ATA of the pool, where the NFT will be transferred to."
+          ]
         },
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "associatedTokenProgram",
-          "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The shared escrow account for pools that pool liquidity in a shared account."
+          ]
         },
         {
           "name": "makerBroker",
@@ -1830,7 +2057,10 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         },
         {
           "name": "escrowProgram",
@@ -1862,31 +2092,32 @@
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "Tied to the pool because used to verify pool seeds"
+            "The owner of the pool--must sign to withdraw an NFT from the pool."
           ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "whitelist",
-          "isMut": false,
           "isSigner": false,
           "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
+            "The pool holding the NFT."
           ]
         },
         {
           "name": "mint",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The mint of the NFT."
+          ]
         },
         {
           "name": "ownerAta",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The ATA of the owner where the NFT will be withdrawn to."
+          ]
         },
         {
           "name": "poolAta",
@@ -1899,22 +2130,34 @@
         {
           "name": "nftReceipt",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
+          ]
         },
         {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL Token program for the Mint and ATAs."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -2189,6 +2432,9 @@
     },
     {
       "name": "EditPoolArgs",
+      "docs": [
+        "Instruction accounts."
+      ],
       "type": {
         "kind": "struct",
         "fields": [

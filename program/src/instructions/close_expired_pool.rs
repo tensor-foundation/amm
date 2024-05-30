@@ -1,18 +1,23 @@
+//! Permissionlessly close an expired pool.
 use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
-/// Permissionlessly close an expired pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct CloseExpiredPool<'info> {
+    /// The rent payer to refund pool rent to.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// The owner account must be specified and match the account stored in the pool but does not have to sign
+    /// for expired pools.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    /// The pool to close.
     #[account(mut,
         seeds = [
             b"pool",
@@ -26,6 +31,7 @@ pub struct CloseExpiredPool<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

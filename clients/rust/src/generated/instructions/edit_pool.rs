@@ -12,10 +12,11 @@ use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 pub struct EditPool {
-    pub pool: solana_program::pubkey::Pubkey,
-
+    /// The owner of the pool--must sign to edit the pool.
     pub owner: solana_program::pubkey::Pubkey,
-
+    /// The pool to edit.
+    pub pool: solana_program::pubkey::Pubkey,
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -33,11 +34,11 @@ impl EditPool {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool, false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
@@ -83,13 +84,13 @@ pub struct EditPoolInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[signer]` owner
+///   0. `[signer]` owner
+///   1. `[writable]` pool
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Default)]
 pub struct EditPoolBuilder {
-    pool: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
+    pool: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     new_config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,
@@ -103,17 +104,20 @@ impl EditPoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    #[inline(always)]
-    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pool = Some(pool);
-        self
-    }
+    /// The owner of the pool--must sign to edit the pool.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
         self
     }
+    /// The pool to edit.
+    #[inline(always)]
+    pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool = Some(pool);
+        self
+    }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -169,8 +173,8 @@ impl EditPoolBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = EditPool {
-            pool: self.pool.expect("pool is not set"),
             owner: self.owner.expect("owner is not set"),
+            pool: self.pool.expect("pool is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -192,10 +196,11 @@ impl EditPoolBuilder {
 
 /// `edit_pool` CPI accounts.
 pub struct EditPoolCpiAccounts<'a, 'b> {
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner of the pool--must sign to edit the pool.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to edit.
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -203,11 +208,11 @@ pub struct EditPoolCpiAccounts<'a, 'b> {
 pub struct EditPoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner of the pool--must sign to edit the pool.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to edit.
+    pub pool: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: EditPoolInstructionArgs,
@@ -221,8 +226,8 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            pool: accounts.pool,
             owner: accounts.owner,
+            pool: accounts.pool,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -261,13 +266,13 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool.key,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool.key,
+            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
@@ -291,8 +296,8 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
         };
         let mut account_infos = Vec::with_capacity(3 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.pool.clone());
         account_infos.push(self.owner.clone());
+        account_infos.push(self.pool.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -310,8 +315,8 @@ impl<'a, 'b> EditPoolCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` pool
-///   1. `[signer]` owner
+///   0. `[signer]` owner
+///   1. `[writable]` pool
 ///   2. `[]` system_program
 pub struct EditPoolCpiBuilder<'a, 'b> {
     instruction: Box<EditPoolCpiBuilderInstruction<'a, 'b>>,
@@ -321,8 +326,8 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(EditPoolCpiBuilderInstruction {
             __program: program,
-            pool: None,
             owner: None,
+            pool: None,
             system_program: None,
             new_config: None,
             cosigner: None,
@@ -333,16 +338,19 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    #[inline(always)]
-    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.pool = Some(pool);
-        self
-    }
+    /// The owner of the pool--must sign to edit the pool.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
     }
+    /// The pool to edit.
+    #[inline(always)]
+    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.pool = Some(pool);
+        self
+    }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -435,9 +443,9 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
         let instruction = EditPoolCpi {
             __program: self.instruction.__program,
 
-            pool: self.instruction.pool.expect("pool is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
+
+            pool: self.instruction.pool.expect("pool is not set"),
 
             system_program: self
                 .instruction
@@ -454,8 +462,8 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
 
 struct EditPoolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     new_config: Option<PoolConfig>,
     cosigner: Option<Pubkey>,

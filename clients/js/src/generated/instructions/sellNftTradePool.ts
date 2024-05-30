@@ -79,12 +79,12 @@ export type SellNftTradePoolInstruction<
   TAccountTokenProgram extends
     | string
     | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountAssociatedTokenProgram extends
     | string
     | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+  TAccountSystemProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountSellerTokenRecord extends string | IAccountMeta<string> = string,
   TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
@@ -144,12 +144,12 @@ export type SellNftTradePoolInstruction<
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       TAccountAssociatedTokenProgram extends string
         ? ReadonlyAccount<TAccountAssociatedTokenProgram>
         : TAccountAssociatedTokenProgram,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       TAccountEdition extends string
         ? ReadonlyAccount<TAccountEdition>
         : TAccountEdition,
@@ -263,8 +263,8 @@ export type SellNftTradePoolAsyncInput<
   TAccountMetadata extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
   TAccountEdition extends string = string,
   TAccountSellerTokenRecord extends string = string,
   TAccountPoolTokenRecord extends string = string,
@@ -301,15 +301,21 @@ export type SellNftTradePoolAsyncInput<
   mintProof?: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
-  /** The token account of the NFT for the seller's wallet. */
+  /** The ATA of the seller, where the NFT will be transferred from. */
   sellerAta?: Address<TAccountSellerAta>;
+  /** The ATA of the pool, where the NFT will be transferred to. */
   poolAta?: Address<TAccountPoolAta>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
+  systemProgram?: Address<TAccountSystemProgram>;
+  /** The Token Metadata edition of the NFT. */
   edition?: Address<TAccountEdition>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
@@ -334,6 +340,7 @@ export type SellNftTradePoolAsyncInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
@@ -356,8 +363,8 @@ export async function getSellNftTradePoolInstructionAsync<
   TAccountMetadata extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
   TAccountEdition extends string,
   TAccountSellerTokenRecord extends string,
   TAccountPoolTokenRecord extends string,
@@ -385,8 +392,8 @@ export async function getSellNftTradePoolInstructionAsync<
     TAccountMetadata,
     TAccountNftReceipt,
     TAccountTokenProgram,
-    TAccountSystemProgram,
     TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
@@ -416,8 +423,8 @@ export async function getSellNftTradePoolInstructionAsync<
     TAccountMetadata,
     TAccountNftReceipt,
     TAccountTokenProgram,
-    TAccountSystemProgram,
     TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
@@ -450,11 +457,11 @@ export async function getSellNftTradePoolInstructionAsync<
     metadata: { value: input.metadata ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
     },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
     sellerTokenRecord: {
       value: input.sellerTokenRecord ?? null,
@@ -530,13 +537,13 @@ export async function getSellNftTradePoolInstructionAsync<
       ...(await resolveNftReceipt(resolverScope)),
     };
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.edition.value) {
     accounts.edition = {
@@ -590,8 +597,8 @@ export async function getSellNftTradePoolInstructionAsync<
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.sellerTokenRecord),
       getAccountMeta(accounts.poolTokenRecord),
@@ -625,8 +632,8 @@ export async function getSellNftTradePoolInstructionAsync<
     TAccountMetadata,
     TAccountNftReceipt,
     TAccountTokenProgram,
-    TAccountSystemProgram,
     TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
@@ -658,8 +665,8 @@ export type SellNftTradePoolInput<
   TAccountMetadata extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
   TAccountEdition extends string = string,
   TAccountSellerTokenRecord extends string = string,
   TAccountPoolTokenRecord extends string = string,
@@ -696,15 +703,21 @@ export type SellNftTradePoolInput<
   mintProof?: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
-  /** The token account of the NFT for the seller's wallet. */
+  /** The ATA of the seller, where the NFT will be transferred from. */
   sellerAta: Address<TAccountSellerAta>;
+  /** The ATA of the pool, where the NFT will be transferred to. */
   poolAta: Address<TAccountPoolAta>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
-  systemProgram?: Address<TAccountSystemProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
+  systemProgram?: Address<TAccountSystemProgram>;
+  /** The Token Metadata edition of the NFT. */
   edition: Address<TAccountEdition>;
   /** The Token Metadata seller/source token record account of the NFT. */
   sellerTokenRecord?: Address<TAccountSellerTokenRecord>;
@@ -729,6 +742,7 @@ export type SellNftTradePoolInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolInstructionDataArgs['minPrice'];
@@ -751,8 +765,8 @@ export function getSellNftTradePoolInstruction<
   TAccountMetadata extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
   TAccountEdition extends string,
   TAccountSellerTokenRecord extends string,
   TAccountPoolTokenRecord extends string,
@@ -780,8 +794,8 @@ export function getSellNftTradePoolInstruction<
     TAccountMetadata,
     TAccountNftReceipt,
     TAccountTokenProgram,
-    TAccountSystemProgram,
     TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
@@ -810,8 +824,8 @@ export function getSellNftTradePoolInstruction<
   TAccountMetadata,
   TAccountNftReceipt,
   TAccountTokenProgram,
-  TAccountSystemProgram,
   TAccountAssociatedTokenProgram,
+  TAccountSystemProgram,
   TAccountEdition,
   TAccountSellerTokenRecord,
   TAccountPoolTokenRecord,
@@ -843,11 +857,11 @@ export function getSellNftTradePoolInstruction<
     metadata: { value: input.metadata ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     associatedTokenProgram: {
       value: input.associatedTokenProgram ?? null,
       isWritable: false,
     },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
     sellerTokenRecord: {
       value: input.sellerTokenRecord ?? null,
@@ -893,13 +907,13 @@ export function getSellNftTradePoolInstruction<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
       'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!args.tokenStandard) {
     args.tokenStandard = TokenStandard.NonFungible;
@@ -947,8 +961,8 @@ export function getSellNftTradePoolInstruction<
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.sellerTokenRecord),
       getAccountMeta(accounts.poolTokenRecord),
@@ -982,8 +996,8 @@ export function getSellNftTradePoolInstruction<
     TAccountMetadata,
     TAccountNftReceipt,
     TAccountTokenProgram,
-    TAccountSystemProgram,
     TAccountAssociatedTokenProgram,
+    TAccountSystemProgram,
     TAccountEdition,
     TAccountSellerTokenRecord,
     TAccountPoolTokenRecord,
@@ -1032,15 +1046,21 @@ export type ParsedSellNftTradePoolInstruction<
     mintProof?: TAccountMetas[5] | undefined;
     /** The mint account of the NFT being sold. */
     mint: TAccountMetas[6];
-    /** The token account of the NFT for the seller's wallet. */
+    /** The ATA of the seller, where the NFT will be transferred from. */
     sellerAta: TAccountMetas[7];
+    /** The ATA of the pool, where the NFT will be transferred to. */
     poolAta: TAccountMetas[8];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[9];
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[10];
+    /** The SPL Token program for the Mint and ATAs. */
     tokenProgram: TAccountMetas[11];
-    systemProgram: TAccountMetas[12];
-    associatedTokenProgram: TAccountMetas[13];
+    /** The SPL associated token program. */
+    associatedTokenProgram: TAccountMetas[12];
+    /** The Solana system program. */
+    systemProgram: TAccountMetas[13];
+    /** The Token Metadata edition of the NFT. */
     edition: TAccountMetas[14];
     /** The Token Metadata seller/source token record account of the NFT. */
     sellerTokenRecord?: TAccountMetas[15] | undefined;
@@ -1066,6 +1086,7 @@ export type ParsedSellNftTradePoolInstruction<
      */
 
     cosigner?: TAccountMetas[24] | undefined;
+    /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[25];
     escrowProgram: TAccountMetas[26];
   };
@@ -1111,8 +1132,8 @@ export function parseSellNftTradePoolInstruction<
       metadata: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
-      systemProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
+      systemProgram: getNextAccount(),
       edition: getNextAccount(),
       sellerTokenRecord: getNextOptionalAccount(),
       poolTokenRecord: getNextOptionalAccount(),

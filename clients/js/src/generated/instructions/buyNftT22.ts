@@ -199,21 +199,45 @@ export type BuyNftT22AsyncInput<
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
 > = {
+  /**
+   * Owner is the pool owner who created the pool and the nominal owner of the
+   * escrowed NFT. In this transaction they are the seller, though the transfer
+   * of the NFT is handled by the pool.
+   */
   owner: Address<TAccountOwner>;
+  /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
+  /**
+   * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+   * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+   * Any active pool can be specified provided it is a Trade or NFT type.
+   */
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta?: Address<TAccountPoolAta>;
+  /**
+   * The mint account of the NFT. It should be the mint account common
+   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
+   */
   mint: Address<TAccountMint>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
@@ -224,6 +248,7 @@ export type BuyNftT22AsyncInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
@@ -439,21 +464,45 @@ export type BuyNftT22Input<
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
 > = {
+  /**
+   * Owner is the pool owner who created the pool and the nominal owner of the
+   * escrowed NFT. In this transaction they are the seller, though the transfer
+   * of the NFT is handled by the pool.
+   */
   owner: Address<TAccountOwner>;
+  /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
+  /**
+   * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+   * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+   * Any active pool can be specified provided it is a Trade or NFT type.
+   */
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta: Address<TAccountPoolAta>;
+  /**
+   * The mint account of the NFT. It should be the mint account common
+   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
+   */
   mint: Address<TAccountMint>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  /** The shared escrow account for pools that pool liquidity in a shared account. */
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
@@ -464,6 +513,7 @@ export type BuyNftT22Input<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
@@ -637,21 +687,49 @@ export type ParsedBuyNftT22Instruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /**
+     * Owner is the pool owner who created the pool and the nominal owner of the
+     * escrowed NFT. In this transaction they are the seller, though the transfer
+     * of the NFT is handled by the pool.
+     */
+
     owner: TAccountMetas[0];
+    /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
     buyer: TAccountMetas[1];
+    /**
+     * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+     * is auto-closed.
+     */
+
     rentPayer: TAccountMetas[2];
     /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[3];
+    /**
+     * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+     * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+     * Any active pool can be specified provided it is a Trade or NFT type.
+     */
+
     pool: TAccountMetas[4];
     /** The ATA of the buyer, where the NFT will be transferred. */
     buyerAta: TAccountMetas[5];
     /** The ATA of the pool, where the NFT will be escrowed. */
     poolAta: TAccountMetas[6];
+    /**
+     * The mint account of the NFT. It should be the mint account common
+     * to the owner_ata, pool_ata and the mint stored in the nft receipt.
+     */
+
     mint: TAccountMetas[7];
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[8];
+    /** The SPL Token program for the Mint and ATAs. */
     tokenProgram: TAccountMetas[9];
+    /** The SPL associated token program. */
     associatedTokenProgram: TAccountMetas[10];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[11];
+    /** The shared escrow account for pools that pool liquidity in a shared account. */
     sharedEscrow?: TAccountMetas[12] | undefined;
     /** The account that receives the maker broker fee. */
     makerBroker?: TAccountMetas[13] | undefined;
@@ -663,6 +741,7 @@ export type ParsedBuyNftT22Instruction<
      */
 
     cosigner?: TAccountMetas[15] | undefined;
+    /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[16];
   };
   data: BuyNftT22InstructionData;

@@ -1,3 +1,4 @@
+//! Create a new pool.
 use anchor_lang::prelude::*;
 use tensor_toolbox::NullableOption;
 use tensor_whitelist::{self, WhitelistV2};
@@ -24,16 +25,19 @@ pub struct CreatePoolArgs {
     pub expire_in_sec: Option<u64>,
 }
 
-/// Create a new pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 #[instruction(args: CreatePoolArgs)]
 pub struct CreatePool<'info> {
+    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// so it can be refunded when the pool is closed.
     #[account(mut)]
     pub rent_payer: Signer<'info>,
 
+    /// The owner of the pool will be stored and used to control permissioned pool instructions.
     pub owner: Signer<'info>,
 
-    // PDA accounts
+    /// The pool state account.
     #[account(
         init,
         payer = rent_payer,
@@ -47,7 +51,7 @@ pub struct CreatePool<'info> {
     )]
     pub pool: Account<'info, Pool>,
 
-    /// Needed for pool seeds derivation / will be stored inside pool
+    /// The whitelist that gatekeeps which NFTs can be bought or sold with this pool.
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
@@ -55,6 +59,7 @@ pub struct CreatePool<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

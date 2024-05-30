@@ -1,16 +1,18 @@
-//! User depositing SOL into their Token/Trade pool (to purchase NFTs)
+//! Deposit SOL into a Token or Trade pool.
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use vipers::{throw_err, unwrap_checked, Validate};
 
 use crate::{error::ErrorCode, *};
 
-/// Allows a pool owner to deposit SOL into a Token or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositSol<'info> {
+    /// The owner of the pool--must sign to deposit SOL.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    /// The pool to deposit the SOL into.
     #[account(
         mut,
         seeds = [
@@ -26,6 +28,7 @@ pub struct DepositSol<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

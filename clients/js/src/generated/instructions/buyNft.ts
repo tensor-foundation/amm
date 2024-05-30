@@ -275,9 +275,18 @@ export type BuyNftAsyncInput<
   owner: Address<TAccountOwner>;
   /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
+  /**
+   * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+   * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+   * Any active pool can be specified provided it is a Trade or NFT type.
+   */
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta?: Address<TAccountBuyerAta>;
@@ -290,11 +299,15 @@ export type BuyNftAsyncInput<
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
-  /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  /** The Token Metadata edition account for the NFT. */
   edition?: Address<TAccountEdition>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
@@ -319,6 +332,7 @@ export type BuyNftAsyncInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
@@ -655,9 +669,18 @@ export type BuyNftInput<
   owner: Address<TAccountOwner>;
   /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
   buyer: TransactionSigner<TAccountBuyer>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
+  /**
+   * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+   * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+   * Any active pool can be specified provided it is a Trade or NFT type.
+   */
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
   buyerAta: Address<TAccountBuyerAta>;
@@ -670,11 +693,15 @@ export type BuyNftInput<
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
-  /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
+  /** The SPL Token program for the Mint and ATAs. */
   tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  /** The Token Metadata edition account for the NFT. */
   edition: Address<TAccountEdition>;
   /** The Token Metadata token record for the pool. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
@@ -699,6 +726,7 @@ export type BuyNftInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxPrice: BuyNftInstructionDataArgs['maxPrice'];
   authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
@@ -977,9 +1005,20 @@ export type ParsedBuyNftInstruction<
     owner: TAccountMetas[0];
     /** Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT. */
     buyer: TAccountMetas[1];
+    /**
+     * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+     * is auto-closed.
+     */
+
     rentPayer: TAccountMetas[2];
     /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[3];
+    /**
+     * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+     * but is also the owner of any NFTs in the pool, and also escrows any SOL.
+     * Any active pool can be specified provided it is a Trade or NFT type.
+     */
+
     pool: TAccountMetas[4];
     /** The ATA of the buyer, where the NFT will be transferred. */
     buyerAta: TAccountMetas[5];
@@ -993,11 +1032,15 @@ export type ParsedBuyNftInstruction<
     mint: TAccountMetas[7];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[8];
-    /** The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to. */
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[9];
+    /** The SPL Token program for the Mint and ATAs. */
     tokenProgram: TAccountMetas[10];
+    /** The SPL associated token program. */
     associatedTokenProgram: TAccountMetas[11];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[12];
+    /** The Token Metadata edition account for the NFT. */
     edition: TAccountMetas[13];
     /** The Token Metadata token record for the pool. */
     poolTokenRecord?: TAccountMetas[14] | undefined;
@@ -1023,6 +1066,7 @@ export type ParsedBuyNftInstruction<
      */
 
     cosigner?: TAccountMetas[23] | undefined;
+    /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[24];
   };
   data: BuyNftInstructionData;

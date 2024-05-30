@@ -1,6 +1,8 @@
-//! User selling an NFT into a Token pool
-//! We separate this from Trade pool since the owner will receive the NFT directly in their ATA.
-//! (!) Keep common logic in sync with sell_nft_token_pool.rs.
+//! Sell a Token22 NFT into a Token pool.
+//!
+//! This is separated from Trade pool since the owner will receive the NFT directly in their ATA.
+
+// (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
@@ -22,7 +24,7 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
-/// Sell a Token22 NFT into a Token pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.

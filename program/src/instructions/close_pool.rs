@@ -1,15 +1,17 @@
-//! Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
+//! Close a pool if it has no NFTs and is not attached to a shared escrow.
 use vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
-/// Allows the owner to close a pool if it has no NFTs and is not attached to a shared escrow.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
+    /// The rent payer to refund pool rent to.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// The owner must sign to close the pool.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -26,7 +28,7 @@ pub struct ClosePool<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The system program account.
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

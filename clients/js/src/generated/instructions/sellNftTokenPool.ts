@@ -293,7 +293,10 @@ export type SellNftTokenPoolAsyncInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
-  /** The original rent-payer account that paid for the pool to be opened. Stored on the pool. */
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
@@ -720,7 +723,10 @@ export type SellNftTokenPoolInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
-  /** The original rent-payer account that paid for the pool to be opened. Stored on the pool. */
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
   /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
@@ -1084,7 +1090,11 @@ export type ParsedSellNftTokenPoolInstruction<
     owner: TAccountMetas[0];
     /** The seller is the owner of the NFT who is selling the NFT into the pool. */
     seller: TAccountMetas[1];
-    /** The original rent-payer account that paid for the pool to be opened. Stored on the pool. */
+    /**
+     * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+     * is auto-closed.
+     */
+
     rentPayer: TAccountMetas[2];
     /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[3];
