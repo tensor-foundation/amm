@@ -15,7 +15,7 @@ pub struct SellNftTradePool {
     pub owner: solana_program::pubkey::Pubkey,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: solana_program::pubkey::Pubkey,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
     /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
@@ -382,6 +382,7 @@ impl SellNftTradePoolBuilder {
         self.seller = Some(seller);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(&mut self, fee_vault: solana_program::pubkey::Pubkey) -> &mut Self {
         self.fee_vault = Some(fee_vault);
@@ -663,7 +664,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
@@ -728,7 +729,7 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
@@ -1211,6 +1212,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.seller = Some(seller);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(
         &mut self,

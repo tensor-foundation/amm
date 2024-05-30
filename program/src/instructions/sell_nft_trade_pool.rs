@@ -37,6 +37,7 @@ pub struct SellNftTradePool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,

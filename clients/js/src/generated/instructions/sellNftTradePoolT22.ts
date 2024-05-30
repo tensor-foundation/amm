@@ -208,6 +208,7 @@ export type SellNftTradePoolT22AsyncInput<
 > = {
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
@@ -461,6 +462,7 @@ export type SellNftTradePoolT22Input<
 > = {
   owner: Address<TAccountOwner>;
   seller: TransactionSigner<TAccountSeller>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */
@@ -670,6 +672,7 @@ export type ParsedSellNftTradePoolT22Instruction<
   accounts: {
     owner: TAccountMetas[0];
     seller: TAccountMetas[1];
+    /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[2];
     pool: TAccountMetas[3];
     /** The whitelist that gatekeeps which NFTs can be deposited into the pool. */

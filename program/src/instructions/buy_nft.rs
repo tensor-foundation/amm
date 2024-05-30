@@ -37,6 +37,7 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -167,6 +168,10 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<Signer<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
@@ -230,6 +235,15 @@ pub fn process_buy_nft<'info, 'b>(
     let pool_initial_balance = pool.get_lamports();
 
     let owner_pubkey = ctx.accounts.owner.key();
+
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 

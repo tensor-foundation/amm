@@ -619,7 +619,10 @@
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",
@@ -769,6 +772,16 @@
           ]
         },
         {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
+          ]
+        },
+        {
           "name": "ammProgram",
           "isMut": false,
           "isSigner": false
@@ -820,12 +833,18 @@
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The original rent-payer account that paid for the pool to be opened. Stored on the pool."
+          ]
         },
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",
@@ -834,7 +853,7 @@
           "docs": [
             "The Pool state account that the NFT is being sold into. Stores pool state and config,",
             "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
-            "Any pool can be specified provided it is a Token type and the NFT passes at least one",
+            "Any active pool can be specified provided it is a Token type and the NFT passes at least one",
             "whitelist condition."
           ]
         },
@@ -917,7 +936,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The SPL system program."
+            "The Solana system program."
           ]
         },
         {
@@ -997,7 +1016,7 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
-            "The shared escrow account for pools that pool liquidity in a shared account."
+            "The shared escrow account for pools that have liquidity in a shared account."
           ]
         },
         {
@@ -1031,12 +1050,18 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         },
         {
           "name": "escrowProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The escrow program account for shared liquidity pools."
+          ]
         }
       ],
       "args": [
@@ -1085,7 +1110,10 @@
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",
@@ -1317,7 +1345,10 @@
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",
@@ -1387,6 +1418,16 @@
           "isOptional": true,
           "docs": [
             "The account that receives the taker broker fee."
+          ]
+        },
+        {
+          "name": "cosigner",
+          "isMut": false,
+          "isSigner": true,
+          "isOptional": true,
+          "docs": [
+            "The optional cosigner account that must be passed in if the pool has a cosigner.",
+            "Checks are performed in the handler."
           ]
         },
         {
@@ -1497,47 +1538,61 @@
         {
           "name": "owner",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The owner of the pool and the buyer/recipient of the NFT."
+          ]
         },
         {
           "name": "seller",
           "isMut": true,
-          "isSigner": true
+          "isSigner": true,
+          "docs": [
+            "The seller is the owner of the NFT who is selling the NFT into the pool."
+          ]
         },
         {
           "name": "rentPayer",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The original rent-payer account that paid for the pool to be opened. Stored on the pool."
+          ]
         },
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Pool state account that the NFT is being sold into. Stores pool state and config,",
+            "but is also the owner of any NFTs in the pool, and also escrows any SOL.",
+            "Any active pool can be specified provided it is a Token type and the NFT passes at least one",
+            "whitelist condition."
+          ]
         },
         {
           "name": "whitelist",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool."
+            "The whitelist account that the pool uses to verify the NFTs being sold into it."
           ]
         },
         {
           "name": "mintProof",
           "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "mint",
-          "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint account of the NFT being sold."
+            "Optional account which must be passed in if the NFT must be verified against a",
+            "merkle proof condition in the whitelist."
           ]
         },
         {
@@ -1557,25 +1612,45 @@
           ]
         },
         {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The mint account of the NFT being sold."
+          ]
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Token 2022 program."
+          ]
         },
         {
           "name": "associatedTokenProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The SPL associated token program."
+          ]
         },
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         },
         {
           "name": "sharedEscrow",
           "isMut": true,
           "isSigner": false,
-          "isOptional": true
+          "isOptional": true,
+          "docs": [
+            "The shared escrow account for pools that have liquidity in a shared account."
+          ]
         },
         {
           "name": "makerBroker",
@@ -1608,12 +1683,18 @@
         {
           "name": "ammProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The AMM program account, used for self-cpi logging."
+          ]
         },
         {
           "name": "escrowProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The escrow program account for shared liquidity pools."
+          ]
         }
       ],
       "args": [
@@ -1648,7 +1729,10 @@
         {
           "name": "feeVault",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "Fee vault account owned by the TFEE program."
+          ]
         },
         {
           "name": "pool",

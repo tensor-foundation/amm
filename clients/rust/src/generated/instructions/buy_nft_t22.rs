@@ -16,7 +16,7 @@ pub struct BuyNftT22 {
     pub buyer: solana_program::pubkey::Pubkey,
 
     pub rent_payer: solana_program::pubkey::Pubkey,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
@@ -40,6 +40,9 @@ pub struct BuyNftT22 {
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<solana_program::pubkey::Pubkey>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<solana_program::pubkey::Pubkey>,
 
     pub amm_program: solana_program::pubkey::Pubkey,
 }
@@ -57,7 +60,7 @@ impl BuyNftT22 {
         args: BuyNftT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -135,6 +138,16 @@ impl BuyNftT22 {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                cosigner, true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.amm_program,
             false,
@@ -191,7 +204,8 @@ pub struct BuyNftT22InstructionArgs {
 ///   12. `[writable, optional]` shared_escrow
 ///   13. `[writable, optional]` maker_broker
 ///   14. `[writable, optional]` taker_broker
-///   15. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
+///   15. `[signer, optional]` cosigner
+///   16. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
 #[derive(Default)]
 pub struct BuyNftT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -209,6 +223,7 @@ pub struct BuyNftT22Builder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
+    cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     config: Option<PoolConfig>,
     max_price: Option<u64>,
@@ -234,6 +249,7 @@ impl BuyNftT22Builder {
         self.rent_payer = Some(rent_payer);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(&mut self, fee_vault: solana_program::pubkey::Pubkey) -> &mut Self {
         self.fee_vault = Some(fee_vault);
@@ -316,6 +332,14 @@ impl BuyNftT22Builder {
         self.taker_broker = taker_broker;
         self
     }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(&mut self, cosigner: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.cosigner = cosigner;
+        self
+    }
     /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -374,6 +398,7 @@ impl BuyNftT22Builder {
             shared_escrow: self.shared_escrow,
             maker_broker: self.maker_broker,
             taker_broker: self.taker_broker,
+            cosigner: self.cosigner,
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
             )),
@@ -394,7 +419,7 @@ pub struct BuyNftT22CpiAccounts<'a, 'b> {
     pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
@@ -418,6 +443,9 @@ pub struct BuyNftT22CpiAccounts<'a, 'b> {
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -432,7 +460,7 @@ pub struct BuyNftT22Cpi<'a, 'b> {
     pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
@@ -456,6 +484,9 @@ pub struct BuyNftT22Cpi<'a, 'b> {
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -485,6 +516,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             shared_escrow: accounts.shared_escrow,
             maker_broker: accounts.maker_broker,
             taker_broker: accounts.taker_broker,
+            cosigner: accounts.cosigner,
             amm_program: accounts.amm_program,
             __args: args,
         }
@@ -522,7 +554,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -604,6 +636,17 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *cosigner.key,
+                true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.amm_program.key,
             false,
@@ -624,7 +667,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(16 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(17 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.buyer.clone());
@@ -646,6 +689,9 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
         }
         if let Some(taker_broker) = self.taker_broker {
             account_infos.push(taker_broker.clone());
+        }
+        if let Some(cosigner) = self.cosigner {
+            account_infos.push(cosigner.clone());
         }
         account_infos.push(self.amm_program.clone());
         remaining_accounts
@@ -679,7 +725,8 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///   12. `[writable, optional]` shared_escrow
 ///   13. `[writable, optional]` maker_broker
 ///   14. `[writable, optional]` taker_broker
-///   15. `[]` amm_program
+///   15. `[signer, optional]` cosigner
+///   16. `[]` amm_program
 pub struct BuyNftT22CpiBuilder<'a, 'b> {
     instruction: Box<BuyNftT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -703,6 +750,7 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
             shared_escrow: None,
             maker_broker: None,
             taker_broker: None,
+            cosigner: None,
             amm_program: None,
             config: None,
             max_price: None,
@@ -728,6 +776,7 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         self.instruction.rent_payer = Some(rent_payer);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(
         &mut self,
@@ -823,6 +872,17 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.taker_broker = taker_broker;
+        self
+    }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(
+        &mut self,
+        cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.cosigner = cosigner;
         self
     }
     #[inline(always)]
@@ -937,6 +997,8 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
 
             taker_broker: self.instruction.taker_broker,
 
+            cosigner: self.instruction.cosigner,
+
             amm_program: self
                 .instruction
                 .amm_program
@@ -967,6 +1029,7 @@ struct BuyNftT22CpiBuilderInstruction<'a, 'b> {
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     config: Option<PoolConfig>,
     max_price: Option<u64>,

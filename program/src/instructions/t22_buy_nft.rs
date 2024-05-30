@@ -30,6 +30,7 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -118,6 +119,10 @@ pub struct BuyNftT22<'info> {
     #[account(mut)]
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<Signer<'info>>,
+
     pub amm_program: Program<'info, AmmProgram>,
 }
 
@@ -174,12 +179,20 @@ pub fn process_t22_buy_nft<'info, 'b>(
     max_price: u64,
 ) -> Result<()> {
     // validate mint account
-
     validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
+
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
 
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {

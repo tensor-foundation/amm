@@ -14,7 +14,7 @@ pub struct SellNftTradePoolT22 {
     pub owner: solana_program::pubkey::Pubkey,
 
     pub seller: solana_program::pubkey::Pubkey,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
 
     pub pool: solana_program::pubkey::Pubkey,
@@ -263,6 +263,7 @@ impl SellNftTradePoolT22Builder {
         self.seller = Some(seller);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(&mut self, fee_vault: solana_program::pubkey::Pubkey) -> &mut Self {
         self.fee_vault = Some(fee_vault);
@@ -448,7 +449,7 @@ pub struct SellNftTradePoolT22CpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
@@ -493,7 +494,7 @@ pub struct SellNftTradePoolT22Cpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub seller: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
 
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
@@ -828,6 +829,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self.instruction.seller = Some(seller);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(
         &mut self,

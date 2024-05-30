@@ -37,6 +37,7 @@ pub struct SellNftTradePoolT22<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -212,12 +213,19 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // validate mint account
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
 
+    // validate mint account
     validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // initialize escrow token account
-
     safe_initialize_token_account(
         InitializeTokenAccount {
             token_info: &ctx.accounts.pool_ata.to_account_info(),

@@ -23,7 +23,8 @@ use super::*;
 use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /// Sells an NFT into a one-sided ("Token") pool where the NFT is temporarily escrowed before
-/// being transferred to the pool owner--the buyer. The seller is the NFT owner and receives the pool's current price, minus fees, in return.
+/// being transferred to the pool owner--the buyer.
+/// The seller is the NFT owner and receives the pool's current price, minus fees, in return.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
@@ -35,11 +36,12 @@ pub struct SellNftTokenPool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
-    // TODO: Flattened SellNftShared accounts because Kinobi doesn't currently support nested accounts
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -55,7 +57,7 @@ pub struct SellNftTokenPool<'info> {
 
     /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any pool can be specified provided it is a Token type and the NFT passes at least one
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
     /// whitelist condition.
     #[account(mut,
         has_one = whitelist @ ErrorCode::BadWhitelist,
@@ -119,7 +121,7 @@ pub struct SellNftTokenPool<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
-    /// The SPL system program.
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
@@ -164,7 +166,7 @@ pub struct SellNftTokenPool<'info> {
     #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
     pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The shared escrow account for pools that have liquidity in a shared account.
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
@@ -186,8 +188,10 @@ pub struct SellNftTokenPool<'info> {
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
 
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
 
+    /// The escrow program account for shared liquidity pools.
     /// CHECK: address constraint is checked here
     #[account(address = tensor_escrow::ID)]
     pub escrow_program: UncheckedAccount<'info>,
@@ -273,9 +277,18 @@ pub fn process_sell_nft_token_pool<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
+
     // --------------------------------------- send pnft
 
-    // transfer nft directly to owner (ATA)
+    // Transfer NFT to owner (ATA) via pool ATA to get around pNFT restrictions.
     // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
 
     let seller = &ctx.accounts.seller.to_account_info();
@@ -342,24 +355,16 @@ pub fn process_sell_nft_token_pool<'info>(
     )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
-    // don't have the context of manual lamport balance changes so need to come before.
+    // don't have the context of manual lamport balance changes so this needs to come before
+    // manual lamport transfers.
 
     // close temp pool ata account, so it's not dangling
     token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
-    // Close seller ATA to return rent to the rent payer.
+    // Close seller ATA to return rent to seller.
     token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // --------------------------------------- end pnft
-
-    // If the pool has a cosigner, the cosigner must be passed in, and must equal the pool's cosigner.
-    if let Some(cosigner) = pool.cosigner.value() {
-        if ctx.accounts.cosigner.is_none()
-            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
-        {
-            throw_err!(ErrorCode::BadCosigner);
-        }
-    }
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 

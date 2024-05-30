@@ -283,6 +283,7 @@ export type SellNftTradePoolAsyncInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
@@ -677,6 +678,7 @@ export type SellNftTradePoolInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
@@ -1010,6 +1012,7 @@ export type ParsedSellNftTradePoolInstruction<
     owner: TAccountMetas[0];
     /** The seller is the owner of the NFT who is selling the NFT into the pool. */
     seller: TAccountMetas[1];
+    /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[2];
     /**
      * The Pool state account that the NFT is being sold into. Stores pool state and config,

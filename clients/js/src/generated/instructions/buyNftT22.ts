@@ -28,6 +28,7 @@ import {
   IInstructionWithAccounts,
   IInstructionWithData,
   ReadonlyAccount,
+  ReadonlySignerAccount,
   WritableAccount,
   WritableSignerAccount,
 } from '@solana/instructions';
@@ -70,6 +71,7 @@ export type BuyNftT22Instruction<
   TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountMakerBroker extends string | IAccountMeta<string> = string,
   TAccountTakerBroker extends string | IAccountMeta<string> = string,
+  TAccountCosigner extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends
     | string
     | IAccountMeta<string> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
@@ -124,6 +126,10 @@ export type BuyNftT22Instruction<
       TAccountTakerBroker extends string
         ? WritableAccount<TAccountTakerBroker>
         : TAccountTakerBroker,
+      TAccountCosigner extends string
+        ? ReadonlySignerAccount<TAccountCosigner> &
+            IAccountSignerMeta<TAccountCosigner>
+        : TAccountCosigner,
       TAccountAmmProgram extends string
         ? ReadonlyAccount<TAccountAmmProgram>
         : TAccountAmmProgram,
@@ -190,11 +196,13 @@ export type BuyNftT22AsyncInput<
   TAccountSharedEscrow extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountTakerBroker extends string = string,
+  TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
 > = {
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
   rentPayer?: Address<TAccountRentPayer>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
@@ -211,6 +219,11 @@ export type BuyNftT22AsyncInput<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
+  /**
+   * The optional cosigner account that must be passed in if the pool has a cosigner.
+   * Checks are performed in the handler.
+   */
+  cosigner?: TransactionSigner<TAccountCosigner>;
   ammProgram?: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
@@ -232,6 +245,7 @@ export async function getBuyNftT22InstructionAsync<
   TAccountSharedEscrow extends string,
   TAccountMakerBroker extends string,
   TAccountTakerBroker extends string,
+  TAccountCosigner extends string,
   TAccountAmmProgram extends string,
 >(
   input: BuyNftT22AsyncInput<
@@ -250,6 +264,7 @@ export async function getBuyNftT22InstructionAsync<
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram
   >
 ): Promise<
@@ -270,6 +285,7 @@ export async function getBuyNftT22InstructionAsync<
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram
   >
 > {
@@ -296,6 +312,7 @@ export async function getBuyNftT22InstructionAsync<
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
+    cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -372,6 +389,7 @@ export async function getBuyNftT22InstructionAsync<
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.takerBroker),
+      getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
     ],
     programAddress,
@@ -395,6 +413,7 @@ export async function getBuyNftT22InstructionAsync<
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram
   >;
 
@@ -417,11 +436,13 @@ export type BuyNftT22Input<
   TAccountSharedEscrow extends string = string,
   TAccountMakerBroker extends string = string,
   TAccountTakerBroker extends string = string,
+  TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
 > = {
   owner: Address<TAccountOwner>;
   buyer: TransactionSigner<TAccountBuyer>;
   rentPayer?: Address<TAccountRentPayer>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
   pool: Address<TAccountPool>;
   /** The ATA of the buyer, where the NFT will be transferred. */
@@ -438,6 +459,11 @@ export type BuyNftT22Input<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
+  /**
+   * The optional cosigner account that must be passed in if the pool has a cosigner.
+   * Checks are performed in the handler.
+   */
+  cosigner?: TransactionSigner<TAccountCosigner>;
   ammProgram?: Address<TAccountAmmProgram>;
   config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
@@ -459,6 +485,7 @@ export function getBuyNftT22Instruction<
   TAccountSharedEscrow extends string,
   TAccountMakerBroker extends string,
   TAccountTakerBroker extends string,
+  TAccountCosigner extends string,
   TAccountAmmProgram extends string,
 >(
   input: BuyNftT22Input<
@@ -477,6 +504,7 @@ export function getBuyNftT22Instruction<
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram
   >
 ): BuyNftT22Instruction<
@@ -496,6 +524,7 @@ export function getBuyNftT22Instruction<
   TAccountSharedEscrow,
   TAccountMakerBroker,
   TAccountTakerBroker,
+  TAccountCosigner,
   TAccountAmmProgram
 > {
   // Program address.
@@ -521,6 +550,7 @@ export function getBuyNftT22Instruction<
     sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: true },
     makerBroker: { value: input.makerBroker ?? null, isWritable: true },
     takerBroker: { value: input.takerBroker ?? null, isWritable: true },
+    cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -570,6 +600,7 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.makerBroker),
       getAccountMeta(accounts.takerBroker),
+      getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
     ],
     programAddress,
@@ -593,6 +624,7 @@ export function getBuyNftT22Instruction<
     TAccountSharedEscrow,
     TAccountMakerBroker,
     TAccountTakerBroker,
+    TAccountCosigner,
     TAccountAmmProgram
   >;
 
@@ -608,6 +640,7 @@ export type ParsedBuyNftT22Instruction<
     owner: TAccountMetas[0];
     buyer: TAccountMetas[1];
     rentPayer: TAccountMetas[2];
+    /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[3];
     pool: TAccountMetas[4];
     /** The ATA of the buyer, where the NFT will be transferred. */
@@ -624,7 +657,13 @@ export type ParsedBuyNftT22Instruction<
     makerBroker?: TAccountMetas[13] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[14] | undefined;
-    ammProgram: TAccountMetas[15];
+    /**
+     * The optional cosigner account that must be passed in if the pool has a cosigner.
+     * Checks are performed in the handler.
+     */
+
+    cosigner?: TAccountMetas[15] | undefined;
+    ammProgram: TAccountMetas[16];
   };
   data: BuyNftT22InstructionData;
 };
@@ -637,7 +676,7 @@ export function parseBuyNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedBuyNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 16) {
+  if (instruction.accounts.length < 17) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -671,6 +710,7 @@ export function parseBuyNftT22Instruction<
       sharedEscrow: getNextOptionalAccount(),
       makerBroker: getNextOptionalAccount(),
       takerBroker: getNextOptionalAccount(),
+      cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
     },
     data: getBuyNftT22InstructionDataDecoder().decode(instruction.data),
