@@ -110,7 +110,7 @@ pub struct BuyNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        //can't buy an NFT that's associated with a different pool
+        // can't buy an NFT that's associated with a different pool
         // redundant but extra safety
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
