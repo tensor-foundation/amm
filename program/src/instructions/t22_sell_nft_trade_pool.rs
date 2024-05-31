@@ -92,11 +92,6 @@ pub struct SellNftTradePoolT22<'info> {
     pub mint_proof: UncheckedAccount<'info>,
 
     /// The mint account of the NFT being sold.
-    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    #[account(
-        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
-    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The ATA of the seller, where the NFT will be transferred from.

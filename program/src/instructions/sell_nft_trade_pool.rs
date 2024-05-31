@@ -79,10 +79,6 @@ pub struct SellNftTradePool<'info> {
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The ATA of the seller, where the NFT will be transferred from.

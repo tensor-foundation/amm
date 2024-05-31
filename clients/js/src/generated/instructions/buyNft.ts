@@ -292,10 +292,7 @@ export type BuyNftAsyncInput<
   buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT is held. */
   poolAta?: Address<TAccountPoolAta>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-   */
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
@@ -686,10 +683,7 @@ export type BuyNftInput<
   buyerAta: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT is held. */
   poolAta: Address<TAccountPoolAta>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-   */
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
@@ -1024,11 +1018,7 @@ export type ParsedBuyNftInstruction<
     buyerAta: TAccountMetas[5];
     /** The ATA of the pool, where the NFT is held. */
     poolAta: TAccountMetas[6];
-    /**
-     * The mint account of the NFT. It should be the mint account common
-     * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-     */
-
+    /** The mint account of the NFT. */
     mint: TAccountMetas[7];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[8];

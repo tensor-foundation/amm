@@ -224,10 +224,7 @@ export type BuyNftT22AsyncInput<
   buyerAta?: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta?: Address<TAccountPoolAta>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-   */
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
@@ -489,10 +486,7 @@ export type BuyNftT22Input<
   buyerAta: Address<TAccountBuyerAta>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta: Address<TAccountPoolAta>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-   */
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
@@ -715,11 +709,7 @@ export type ParsedBuyNftT22Instruction<
     buyerAta: TAccountMetas[5];
     /** The ATA of the pool, where the NFT will be escrowed. */
     poolAta: TAccountMetas[6];
-    /**
-     * The mint account of the NFT. It should be the mint account common
-     * to the owner_ata, pool_ata and the mint stored in the nft receipt.
-     */
-
+    /** The mint account of the NFT. */
     mint: TAccountMetas[7];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[8];

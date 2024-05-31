@@ -748,8 +748,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ata, pool_ata and the mint stored in the nft receipt."
+            "The mint account of the NFT."
           ]
         },
         {
@@ -1528,8 +1527,7 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ata, pool_ata and the mint stored in the nft receipt."
+            "The mint account of the NFT."
           ]
         },
         {

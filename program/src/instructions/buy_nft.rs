@@ -87,13 +87,7 @@ pub struct BuyNft<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
-    #[account(
-        constraint = mint.key() == buyer_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
+    /// The mint account of the NFT.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
@@ -110,8 +104,7 @@ pub struct BuyNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // can't buy an NFT that's associated with a different pool
-        // redundant but extra safety
+        // Check that the mint and pool match the nft receipt.
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = owner,

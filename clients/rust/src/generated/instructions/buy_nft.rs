@@ -30,8 +30,7 @@ pub struct BuyNft {
     pub buyer_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: solana_program::pubkey::Pubkey,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
@@ -396,8 +395,7 @@ impl BuyNftBuilder {
         self.pool_ata = Some(pool_ata);
         self
     }
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mint = Some(mint);
@@ -653,8 +651,7 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
@@ -716,8 +713,7 @@ pub struct BuyNftCpi<'a, 'b> {
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1201,8 +1197,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.pool_ata = Some(pool_ata);
         self
     }
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.mint = Some(mint);

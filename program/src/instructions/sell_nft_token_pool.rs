@@ -109,10 +109,6 @@ pub struct SellNftTokenPool<'info> {
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
