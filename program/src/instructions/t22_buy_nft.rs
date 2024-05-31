@@ -6,7 +6,11 @@ use anchor_spl::{
         self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
     },
 };
-use tensor_toolbox::token_2022::validate_mint;
+use tensor_toolbox::{
+    calc_creators_fee,
+    token_2022::{validate_mint, RoyaltyInfo},
+    transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
+};
 use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use self::{
@@ -193,9 +197,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Max vs exact so we can add slippage later.
     max_price: u64,
 ) -> Result<()> {
-    // validate mint account
-    validate_mint(&ctx.accounts.mint.to_account_info())?;
-
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
@@ -209,6 +210,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         }
     }
 
+    // Calculate fees.
     let current_price = pool.current_price(TakerSide::Buy)?;
     let Fees {
         taker_fee,
@@ -218,31 +220,10 @@ pub fn process_t22_buy_nft<'info, 'b>(
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
-    // for keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    //
-    // TODO: This needs to be updated once there is a "standard" way to determine
-    // royalties on T22
-    let event = TAmmEvent::BuySellEvent(BuySellEvent {
-        current_price,
-        taker_fee,
-        mm_fee: if pool.config.pool_type == PoolType::Trade {
-            mm_fee
-        } else {
-            0
-        },
-        creators_fee: 0,
-    });
+    // Validate mint account and determine if royalites need to be paid.
+    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
 
-    // Self-CPI log the event.
-    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
-
-    if current_price > max_price {
-        throw_err!(ErrorCode::PriceMismatch);
-    }
-
-    // transfer the NFT
-
+    // Transfer the NFT.
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"pool",
         owner_pubkey.as_ref(),
@@ -250,7 +231,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         &[pool.bump[0]],
     ]];
 
-    let transfer_cpi = CpiContext::new(
+    let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
             from: ctx.accounts.pool_ata.to_account_info(),
@@ -259,6 +240,47 @@ pub fn process_t22_buy_nft<'info, 'b>(
             mint: ctx.accounts.mint.to_account_info(),
         },
     );
+
+    // this will only add the remaining accounts required by a transfer hook if we
+    // recognize the hook as a royalty one
+    let (creators, creator_accounts, creators_fee) = if let Some(RoyaltyInfo {
+        creators,
+        seller_fee,
+    }) = &royalties
+    {
+        // add remaining accounts to the transfer cpi
+        transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
+
+        let mut creator_infos = Vec::with_capacity(creators.len());
+        let mut creator_data = Vec::with_capacity(creators.len());
+        // filter out the creators accounts; the transfer will fail if there
+        // are missing creator accounts – i.e., the creator is on the `creator_data`
+        // but the account is not in the `creator_infos`
+        creators.iter().for_each(|c| {
+            let creator = TCreator {
+                address: c.0,
+                share: c.1,
+                verified: true,
+            };
+
+            if let Some(account) = ctx
+                .remaining_accounts
+                .iter()
+                .find(|account| &creator.address == account.key)
+            {
+                creator_infos.push(account.clone());
+            }
+
+            creator_data.push(creator);
+        });
+
+        // No optional royalties.
+        let creators_fee = calc_creators_fee(*seller_fee, current_price, None, Some(100))?;
+
+        (creator_data, creator_infos, creators_fee)
+    } else {
+        (vec![], vec![], 0)
+    };
 
     transfer_checked(
         transfer_cpi.with_signer(signer_seeds),
@@ -351,7 +373,40 @@ pub fn process_t22_buy_nft<'info, 'b>(
         }
     }
 
-    // TODO: add royalty payment once available on T22
+    // Pay creators royalties.
+    if royalties.is_some() {
+        transfer_creators_fee(
+            &creators,
+            &mut creator_accounts.iter(),
+            creators_fee,
+            &CreatorFeeMode::Sol {
+                from: &FromAcc::External(&FromExternal {
+                    from: &ctx.accounts.buyer.to_account_info(),
+                    sys_prog: &ctx.accounts.system_program,
+                }),
+            },
+        )?;
+    }
+
+    // For keeping track of current price + fees charged (computed dynamically)
+    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
+        current_price,
+        taker_fee,
+        mm_fee: if pool.config.pool_type == PoolType::Trade {
+            mm_fee
+        } else {
+            0
+        },
+        creators_fee,
+    });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
+
+    if current_price > max_price {
+        throw_err!(ErrorCode::PriceMismatch);
+    }
 
     // --------------------------------------- accounting
 
