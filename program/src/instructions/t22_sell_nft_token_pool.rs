@@ -295,11 +295,8 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // Close seller ATA to return rent to the rent payer.
     token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
-    // for keeping track of current price + fees charged (computed dynamically)
+    // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    //
-    // TODO: This needs to be updated once there is a "standard" way to determine
-    // royalties on T22
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         taker_fee,
