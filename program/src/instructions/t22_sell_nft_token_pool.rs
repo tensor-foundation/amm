@@ -1,6 +1,8 @@
-//! User selling an NFT into a Token pool
-//! We separate this from Trade pool since the owner will receive the NFT directly in their ATA.
-//! (!) Keep common logic in sync with sell_nft_token_pool.rs.
+//! Sell a Token22 NFT into a Token pool.
+//!
+//! This is separated from Trade pool since the owner will receive the NFT directly in their ATA.
+
+// (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
@@ -11,7 +13,11 @@ use solana_program::keccak;
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
-use tensor_toolbox::{token_2022::validate_mint, transfer_lamports_from_pda};
+use tensor_toolbox::{
+    calc_creators_fee,
+    token_2022::{validate_mint, RoyaltyInfo},
+    transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
+};
 use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
 
@@ -22,20 +28,24 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
-/// Sell a Token22 NFT into a Token pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
+    /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool (owner is the buyer)
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// The original rent-payer account that paid for the pool to be opened. Stored on the pool.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -49,6 +59,10 @@ pub struct SellNftTokenPoolT22<'info> {
     )]
     pub fee_vault: UncheckedAccount<'info>,
 
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     #[account(mut,
         seeds = [
             b"pool",
@@ -62,7 +76,7 @@ pub struct SellNftTokenPoolT22<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
@@ -70,7 +84,9 @@ pub struct SellNftTokenPoolT22<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
-    /// CHECK: seeds below + assert_decode_mint_proof
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
     #[account(
         seeds = [
             b"mint_proof".as_ref(),
@@ -81,14 +97,6 @@ pub struct SellNftTokenPoolT22<'info> {
         seeds::program = tensor_whitelist::ID
     )]
     pub mint_proof: UncheckedAccount<'info>,
-
-    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The ATA of the NFT for the seller's wallet.
     #[account(
@@ -107,12 +115,17 @@ pub struct SellNftTokenPoolT22<'info> {
     )]
     pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The mint account of the NFT being sold.
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The Token 2022 program.
     pub token_program: Program<'info, Token2022>,
-
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
-
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
+    /// The shared escrow account for pools that have liquidity in a shared account.
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4)shared escrow acc stored on pool
     #[account(mut)]
     pub shared_escrow: Option<UncheckedAccount<'info>>,
@@ -134,8 +147,10 @@ pub struct SellNftTokenPoolT22<'info> {
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
 
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
 
+    /// The escrow program account for shared liquidity pools.
     /// CHECK: address constraint is checked here
     #[account(address = tensor_escrow::ID)]
     pub escrow_program: UncheckedAccount<'info>,
@@ -172,7 +187,7 @@ impl<'info> SellNftTokenPoolT22<'info> {
             proof: proof.clone(),
         });
 
-        // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
+        // Only supporting Merkle proof for now.
         self.whitelist.verify(None, None, full_merkle_proof)
     }
 
@@ -199,13 +214,29 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // validate mint account
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
 
-    validate_mint(&ctx.accounts.mint.to_account_info())?;
+    // Calculate fees.
+    let current_price = pool.current_price(TakerSide::Sell)?;
+    let Fees {
+        taker_fee,
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
+    // Validate mint account and determine if royalites need to be paid.
+    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
-
-    let transfer_cpi = CpiContext::new(
+    let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
             from: ctx.accounts.seller_ata.to_account_info(),
@@ -215,6 +246,47 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         },
     );
 
+    // this will only add the remaining accounts required by a transfer hook if we
+    // recognize the hook as a royalty one
+    let (creators, creator_accounts, creators_fee) = if let Some(RoyaltyInfo {
+        creators,
+        seller_fee,
+    }) = &royalties
+    {
+        // add remaining accounts to the transfer cpi
+        transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
+
+        let mut creator_infos = Vec::with_capacity(creators.len());
+        let mut creator_data = Vec::with_capacity(creators.len());
+        // filter out the creators accounts; the transfer will fail if there
+        // are missing creator accounts – i.e., the creator is on the `creator_data`
+        // but the account is not in the `creator_infos`
+        creators.iter().for_each(|c| {
+            let creator = TCreator {
+                address: c.0,
+                share: c.1,
+                verified: true,
+            };
+
+            if let Some(account) = ctx
+                .remaining_accounts
+                .iter()
+                .find(|account| &creator.address == account.key)
+            {
+                creator_infos.push(account.clone());
+            }
+
+            creator_data.push(creator);
+        });
+
+        // No optional royalties.
+        let creators_fee = calc_creators_fee(*seller_fee, current_price, None, Some(100))?;
+
+        (creator_data, creator_infos, creators_fee)
+    } else {
+        (vec![], vec![], 0)
+    };
+
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
@@ -223,35 +295,13 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // Close seller ATA to return rent to the rent payer.
     token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
-    let remaining_accounts = &mut ctx.remaining_accounts.iter();
-    if pool.cosigner.value().is_some() {
-        let cosigner = next_account_info(remaining_accounts)?;
-        if ctx.accounts.pool.cosigner.value() != Some(cosigner.key) {
-            throw_err!(ErrorCode::BadCosigner);
-        }
-        if !cosigner.is_signer {
-            throw_err!(ErrorCode::BadCosigner);
-        }
-    }
-
-    let current_price = pool.current_price(TakerSide::Sell)?;
-    let Fees {
-        taker_fee,
-        tamm_fee,
-        maker_broker_fee,
-        taker_broker_fee,
-    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
-
-    // for keeping track of current price + fees charged (computed dynamically)
+    // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    //
-    // TODO: This needs to be updated once there is a "standard" way to determine
-    // royalties on T22
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         taker_fee,
-        mm_fee: 0,       // no MM fee for token pool
-        creators_fee: 0, // no royalties on T22,
+        mm_fee: 0, // no MM fee for token pool
+        creators_fee,
     });
 
     // Self-CPI log the event.
@@ -268,7 +318,18 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         &[pool.bump[0]],
     ]];
 
-    // --------------------------------------- SOL transfers
+    /*  **Transfer Fees**
+    The sell price is the total price the seller receives for selling the NFT into the pool.
+
+    sell_price = current_price - taker_fee - creators_fee
+
+    taker_fee = tamm_fee + maker_broker_fee + taker_broker_fee
+
+    No mm_fee for token pools.
+
+    Fees are paid by deducting them from the current price, with the final remainder
+    then being sent to the seller.
+    */
 
     // If the source funds are from a shared escrow account, we first transfer from there
     // to the pool, to make payments cleaner. After this, we can always send from the pool
@@ -339,7 +400,19 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     )?;
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
 
-    // TODO: add royalty payment to T22 once available
+    // Pay creators fee, if required.
+    if royalties.is_some() {
+        transfer_creators_fee(
+            &creators,
+            &mut creator_accounts.iter(),
+            creators_fee,
+            &CreatorFeeMode::Sol {
+                from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
+            },
+        )?;
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(creators_fee));
+    }
+
     // Token pools do not have MM fees.
 
     // transfer remainder to seller

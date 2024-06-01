@@ -56,8 +56,8 @@ import {
 
 export type EditPoolInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
-  TAccountPool extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
+  TAccountPool extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -66,13 +66,13 @@ export type EditPoolInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountPool extends string
-        ? WritableAccount<TAccountPool>
-        : TAccountPool,
       TAccountOwner extends string
         ? ReadonlySignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
         : TAccountOwner,
+      TAccountPool extends string
+        ? WritableAccount<TAccountPool>
+        : TAccountPool,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -138,12 +138,15 @@ export function getEditPoolInstructionDataCodec(): Codec<
 }
 
 export type EditPoolInput<
-  TAccountPool extends string = string,
   TAccountOwner extends string = string,
+  TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  pool: Address<TAccountPool>;
+  /** The owner of the pool--must sign to edit the pool. */
   owner: TransactionSigner<TAccountOwner>;
+  /** The pool to edit. */
+  pool: Address<TAccountPool>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   newConfig: EditPoolInstructionDataArgs['newConfig'];
   cosigner?: EditPoolInstructionDataArgs['cosigner'];
@@ -153,15 +156,15 @@ export type EditPoolInput<
 };
 
 export function getEditPoolInstruction<
-  TAccountPool extends string,
   TAccountOwner extends string,
+  TAccountPool extends string,
   TAccountSystemProgram extends string,
 >(
-  input: EditPoolInput<TAccountPool, TAccountOwner, TAccountSystemProgram>
+  input: EditPoolInput<TAccountOwner, TAccountPool, TAccountSystemProgram>
 ): EditPoolInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
-  TAccountPool,
   TAccountOwner,
+  TAccountPool,
   TAccountSystemProgram
 > {
   // Program address.
@@ -169,8 +172,8 @@ export function getEditPoolInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    pool: { value: input.pool ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: false },
+    pool: { value: input.pool ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -190,8 +193,8 @@ export function getEditPoolInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.pool),
       getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.pool),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -200,8 +203,8 @@ export function getEditPoolInstruction<
     ),
   } as EditPoolInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountPool,
     TAccountOwner,
+    TAccountPool,
     TAccountSystemProgram
   >;
 
@@ -214,8 +217,11 @@ export type ParsedEditPoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    pool: TAccountMetas[0];
-    owner: TAccountMetas[1];
+    /** The owner of the pool--must sign to edit the pool. */
+    owner: TAccountMetas[0];
+    /** The pool to edit. */
+    pool: TAccountMetas[1];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[2];
   };
   data: EditPoolInstructionData;
@@ -242,8 +248,8 @@ export function parseEditPoolInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      pool: getNextAccount(),
       owner: getNextAccount(),
+      pool: getNextAccount(),
       systemProgram: getNextAccount(),
     },
     data: getEditPoolInstructionDataDecoder().decode(instruction.data),

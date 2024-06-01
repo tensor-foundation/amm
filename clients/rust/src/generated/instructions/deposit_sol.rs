@@ -10,10 +10,11 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct DepositSol {
+    /// The owner of the pool--must sign to deposit SOL.
     pub owner: solana_program::pubkey::Pubkey,
-
+    /// The pool to deposit the SOL into.
     pub pool: solana_program::pubkey::Pubkey,
-
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -93,17 +94,20 @@ impl DepositSolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// The owner of the pool--must sign to deposit SOL.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
         self
     }
+    /// The pool to deposit the SOL into.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -151,10 +155,11 @@ impl DepositSolBuilder {
 
 /// `deposit_sol` CPI accounts.
 pub struct DepositSolCpiAccounts<'a, 'b> {
+    /// The owner of the pool--must sign to deposit SOL.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to deposit the SOL into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -162,11 +167,11 @@ pub struct DepositSolCpiAccounts<'a, 'b> {
 pub struct DepositSolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The owner of the pool--must sign to deposit SOL.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The pool to deposit the SOL into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: DepositSolInstructionArgs,
@@ -288,16 +293,19 @@ impl<'a, 'b> DepositSolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
+    /// The owner of the pool--must sign to deposit SOL.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
     }
+    /// The pool to deposit the SOL into.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
         self
     }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,

@@ -1,6 +1,10 @@
-//! User selling an NFT into a Trade pool
-//! We separate this from Token pool since the NFT will go into an NFT escrow w/ a receipt.
-//! (!) Keep common logic in sync with sell_nft_token_pool.rs.
+//! Sell a Metaplex legacy or pNFT into a two-sided ("Trade") pool, where the pool is the buyer and ends up as the
+//! owner of the NFT.
+//!
+//! The seller is the owner of the NFT and receives the pool's current price in return.
+//! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
+
+// (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
@@ -24,8 +28,7 @@ use self::{
 use super::*;
 use crate::{error::ErrorCode, *};
 
-/// Sells an NFT into a two-sided ("Trade") pool, where the pool is the buyer and ends up as the
-/// owner of the NFT. The seller is the owner of the NFT and receives the pool's current price in return.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
@@ -37,6 +40,7 @@ pub struct SellNftTradePool<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -75,13 +79,9 @@ pub struct SellNftTradePool<'info> {
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == seller_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The token account of the NFT for the seller's wallet.
+    /// The ATA of the seller, where the NFT will be transferred from.
     #[account(
         mut,
         associated_token::mint = mint,
@@ -89,6 +89,7 @@ pub struct SellNftTradePool<'info> {
     )]
     pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The ATA of the pool, where the NFT will be transferred to.
     #[account(
         init_if_needed,
         payer = seller,
@@ -102,6 +103,7 @@ pub struct SellNftTradePool<'info> {
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         init,
         payer = seller,
@@ -115,13 +117,16 @@ pub struct SellNftTradePool<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
-    pub associated_token_program: Program<'info, AssociatedToken>,
-
-    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    // Note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    /// The Token Metadata edition of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     pub edition: UncheckedAccount<'info>,
 
@@ -178,6 +183,7 @@ pub struct SellNftTradePool<'info> {
     /// Checks are performed in the handler.
     pub cosigner: Option<Signer<'info>>,
 
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
 
     /// CHECK: address constraint is checked here

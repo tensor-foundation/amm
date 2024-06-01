@@ -17,30 +17,32 @@ pub struct BuyNft {
     pub owner: solana_program::pubkey::Pubkey,
     /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
     pub buyer: solana_program::pubkey::Pubkey,
-
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: solana_program::pubkey::Pubkey,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
-
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     pub pool: solana_program::pubkey::Pubkey,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: solana_program::pubkey::Pubkey,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: solana_program::pubkey::Pubkey,
-
+    /// The SPL associated token program.
     pub associated_token_program: solana_program::pubkey::Pubkey,
-
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
-
+    /// The Token Metadata edition account for the NFT.
     pub edition: solana_program::pubkey::Pubkey,
     /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
@@ -60,7 +62,10 @@ pub struct BuyNft {
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<solana_program::pubkey::Pubkey>,
-
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<solana_program::pubkey::Pubkey>,
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
 }
 
@@ -77,7 +82,7 @@ impl BuyNft {
         args: BuyNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
@@ -229,6 +234,16 @@ impl BuyNft {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                cosigner, true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.amm_program,
             false,
@@ -294,7 +309,8 @@ pub struct BuyNftInstructionArgs {
 ///   20. `[writable, optional]` shared_escrow
 ///   21. `[writable, optional]` maker_broker
 ///   22. `[writable, optional]` taker_broker
-///   23. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
+///   23. `[signer, optional]` cosigner
+///   24. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
 #[derive(Default)]
 pub struct BuyNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -320,6 +336,7 @@ pub struct BuyNftBuilder {
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
+    cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     max_price: Option<u64>,
     authorization_data: Option<AuthorizationDataLocal>,
@@ -345,16 +362,22 @@ impl BuyNftBuilder {
         self.buyer = Some(buyer);
         self
     }
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.rent_payer = Some(rent_payer);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(&mut self, fee_vault: solana_program::pubkey::Pubkey) -> &mut Self {
         self.fee_vault = Some(fee_vault);
         self
     }
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
@@ -372,8 +395,7 @@ impl BuyNftBuilder {
         self.pool_ata = Some(pool_ata);
         self
     }
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mint = Some(mint);
@@ -385,19 +407,21 @@ impl BuyNftBuilder {
         self.metadata = Some(metadata);
         self
     }
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    /// The SPL associated token program.
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -407,11 +431,13 @@ impl BuyNftBuilder {
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
+    /// The Token Metadata edition account for the NFT.
     #[inline(always)]
     pub fn edition(&mut self, edition: solana_program::pubkey::Pubkey) -> &mut Self {
         self.edition = Some(edition);
@@ -507,7 +533,16 @@ impl BuyNftBuilder {
         self.taker_broker = taker_broker;
         self
     }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(&mut self, cosigner: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.cosigner = cosigner;
+        self
+    }
     /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
+    /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.amm_program = Some(amm_program);
@@ -580,6 +615,7 @@ impl BuyNftBuilder {
             shared_escrow: self.shared_escrow,
             maker_broker: self.maker_broker,
             taker_broker: self.taker_broker,
+            cosigner: self.cosigner,
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
             )),
@@ -602,30 +638,32 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
     pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Token Metadata edition account for the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -645,7 +683,10 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -659,30 +700,32 @@ pub struct BuyNftCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
     pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the buyer, where the NFT will be transferred.
     pub buyer_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT is held.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The SPL associated token program.
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Token Metadata edition account for the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata token record for the pool.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -702,7 +745,10 @@ pub struct BuyNftCpi<'a, 'b> {
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: BuyNftInstructionArgs,
@@ -739,6 +785,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             shared_escrow: accounts.shared_escrow,
             maker_broker: accounts.maker_broker,
             taker_broker: accounts.taker_broker,
+            cosigner: accounts.cosigner,
             amm_program: accounts.amm_program,
             __args: args,
         }
@@ -776,7 +823,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(24 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(25 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
@@ -932,6 +979,17 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
                 false,
             ));
         }
+        if let Some(cosigner) = self.cosigner {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *cosigner.key,
+                true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.amm_program.key,
             false,
@@ -952,7 +1010,7 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(24 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(25 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.buyer.clone());
@@ -995,6 +1053,9 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
         if let Some(taker_broker) = self.taker_broker {
             account_infos.push(taker_broker.clone());
         }
+        if let Some(cosigner) = self.cosigner {
+            account_infos.push(cosigner.clone());
+        }
         account_infos.push(self.amm_program.clone());
         remaining_accounts
             .iter()
@@ -1035,7 +1096,8 @@ impl<'a, 'b> BuyNftCpi<'a, 'b> {
 ///   20. `[writable, optional]` shared_escrow
 ///   21. `[writable, optional]` maker_broker
 ///   22. `[writable, optional]` taker_broker
-///   23. `[]` amm_program
+///   23. `[signer, optional]` cosigner
+///   24. `[]` amm_program
 pub struct BuyNftCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1067,6 +1129,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             shared_escrow: None,
             maker_broker: None,
             taker_broker: None,
+            cosigner: None,
             amm_program: None,
             max_price: None,
             authorization_data: None,
@@ -1089,6 +1152,8 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.buyer = Some(buyer);
         self
     }
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     #[inline(always)]
     pub fn rent_payer(
         &mut self,
@@ -1097,6 +1162,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.rent_payer = Some(rent_payer);
         self
     }
+    /// Fee vault account owned by the TFEE program.
     #[inline(always)]
     pub fn fee_vault(
         &mut self,
@@ -1105,6 +1171,9 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.fee_vault = Some(fee_vault);
         self
     }
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
@@ -1128,8 +1197,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.pool_ata = Some(pool_ata);
         self
     }
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.mint = Some(mint);
@@ -1144,7 +1212,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.metadata = Some(metadata);
         self
     }
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(
         &mut self,
@@ -1153,6 +1221,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
+    /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(
         &mut self,
@@ -1161,6 +1230,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.token_program = Some(token_program);
         self
     }
+    /// The SPL associated token program.
     #[inline(always)]
     pub fn associated_token_program(
         &mut self,
@@ -1169,6 +1239,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.associated_token_program = Some(associated_token_program);
         self
     }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -1177,6 +1248,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.system_program = Some(system_program);
         self
     }
+    /// The Token Metadata edition account for the NFT.
     #[inline(always)]
     pub fn edition(
         &mut self,
@@ -1275,6 +1347,18 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self.instruction.taker_broker = taker_broker;
         self
     }
+    /// `[optional account]`
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    #[inline(always)]
+    pub fn cosigner(
+        &mut self,
+        cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.cosigner = cosigner;
+        self
+    }
+    /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(
         &mut self,
@@ -1411,6 +1495,8 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
 
             taker_broker: self.instruction.taker_broker,
 
+            cosigner: self.instruction.cosigner,
+
             amm_program: self
                 .instruction
                 .amm_program
@@ -1449,6 +1535,7 @@ struct BuyNftCpiBuilderInstruction<'a, 'b> {
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     max_price: Option<u64>,
     authorization_data: Option<AuthorizationDataLocal>,

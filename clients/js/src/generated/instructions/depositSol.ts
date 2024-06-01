@@ -103,8 +103,11 @@ export type DepositSolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** The owner of the pool--must sign to deposit SOL. */
   owner: TransactionSigner<TAccountOwner>;
+  /** The pool to deposit the SOL into. */
   pool: Address<TAccountPool>;
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   lamports: DepositSolInstructionDataArgs['lamports'];
 };
@@ -171,8 +174,11 @@ export type ParsedDepositSolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** The owner of the pool--must sign to deposit SOL. */
     owner: TAccountMetas[0];
+    /** The pool to deposit the SOL into. */
     pool: TAccountMetas[1];
+    /** The Solana system program. */
     systemProgram: TAccountMetas[2];
   };
   data: DepositSolInstructionData;

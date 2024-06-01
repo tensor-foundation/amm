@@ -14,7 +14,7 @@ pub struct WithdrawSol {
     pub owner: solana_program::pubkey::Pubkey,
     /// The pool from which the SOL will be withdrawn.
     pub pool: solana_program::pubkey::Pubkey,
-
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -107,6 +107,7 @@ impl WithdrawSolBuilder {
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -158,7 +159,7 @@ pub struct WithdrawSolCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool from which the SOL will be withdrawn.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -170,7 +171,7 @@ pub struct WithdrawSolCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool from which the SOL will be withdrawn.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: WithdrawSolInstructionArgs,
@@ -304,6 +305,7 @@ impl<'a, 'b> WithdrawSolCpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,

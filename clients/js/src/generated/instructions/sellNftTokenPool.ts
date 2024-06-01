@@ -293,12 +293,17 @@ export type SellNftTokenPoolAsyncInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault?: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any pool can be specified provided it is a Token type and the NFT passes at least one
+   * Any active pool can be specified provided it is a Token type and the NFT passes at least one
    * whitelist condition.
    */
   pool: Address<TAccountPool>;
@@ -323,7 +328,7 @@ export type SellNftTokenPoolAsyncInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  /** The SPL system program. */
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata edition account of the NFT. */
   edition?: Address<TAccountEdition>;
@@ -341,7 +346,7 @@ export type SellNftTokenPoolAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The shared escrow account for pools that pool liquidity in a shared account. */
+  /** The shared escrow account for pools that have liquidity in a shared account. */
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
@@ -352,7 +357,9 @@ export type SellNftTokenPoolAsyncInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
+  /** The escrow program account for shared liquidity pools. */
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
@@ -716,12 +723,17 @@ export type SellNftTokenPoolInput<
   owner: Address<TAccountOwner>;
   /** The seller is the owner of the NFT who is selling the NFT into the pool. */
   seller: TransactionSigner<TAccountSeller>;
+  /**
+   * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+   * is auto-closed.
+   */
   rentPayer?: Address<TAccountRentPayer>;
+  /** Fee vault account owned by the TFEE program. */
   feeVault: Address<TAccountFeeVault>;
   /**
    * The Pool state account that the NFT is being sold into. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any pool can be specified provided it is a Token type and the NFT passes at least one
+   * Any active pool can be specified provided it is a Token type and the NFT passes at least one
    * whitelist condition.
    */
   pool: Address<TAccountPool>;
@@ -746,7 +758,7 @@ export type SellNftTokenPoolInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   /** The SPL associated token program. */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  /** The SPL system program. */
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
@@ -764,7 +776,7 @@ export type SellNftTokenPoolInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The shared escrow account for pools that pool liquidity in a shared account. */
+  /** The shared escrow account for pools that have liquidity in a shared account. */
   sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The account that receives the maker broker fee. */
   makerBroker?: Address<TAccountMakerBroker>;
@@ -775,7 +787,9 @@ export type SellNftTokenPoolInput<
    * Checks are performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
+  /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
+  /** The escrow program account for shared liquidity pools. */
   escrowProgram: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
@@ -1076,12 +1090,18 @@ export type ParsedSellNftTokenPoolInstruction<
     owner: TAccountMetas[0];
     /** The seller is the owner of the NFT who is selling the NFT into the pool. */
     seller: TAccountMetas[1];
+    /**
+     * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+     * is auto-closed.
+     */
+
     rentPayer: TAccountMetas[2];
+    /** Fee vault account owned by the TFEE program. */
     feeVault: TAccountMetas[3];
     /**
      * The Pool state account that the NFT is being sold into. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-     * Any pool can be specified provided it is a Token type and the NFT passes at least one
+     * Any active pool can be specified provided it is a Token type and the NFT passes at least one
      * whitelist condition.
      */
 
@@ -1108,7 +1128,7 @@ export type ParsedSellNftTokenPoolInstruction<
     tokenProgram: TAccountMetas[12];
     /** The SPL associated token program. */
     associatedTokenProgram: TAccountMetas[13];
-    /** The SPL system program. */
+    /** The Solana system program. */
     systemProgram: TAccountMetas[14];
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[15];
@@ -1126,7 +1146,7 @@ export type ParsedSellNftTokenPoolInstruction<
     authorizationRules?: TAccountMetas[21] | undefined;
     /** The Metaplex Token Authority Rules program account. */
     authorizationRulesProgram?: TAccountMetas[22] | undefined;
-    /** The shared escrow account for pools that pool liquidity in a shared account. */
+    /** The shared escrow account for pools that have liquidity in a shared account. */
     sharedEscrow?: TAccountMetas[23] | undefined;
     /** The account that receives the maker broker fee. */
     makerBroker?: TAccountMetas[24] | undefined;
@@ -1138,7 +1158,9 @@ export type ParsedSellNftTokenPoolInstruction<
      */
 
     cosigner?: TAccountMetas[26] | undefined;
+    /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[27];
+    /** The escrow program account for shared liquidity pools. */
     escrowProgram: TAccountMetas[28];
   };
   data: SellNftTokenPoolInstructionData;

@@ -105,11 +105,13 @@ export type ClosePoolInput<
   TAccountPool extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** The rent payer to refund pool rent to. */
   rentPayer?: Address<TAccountRentPayer>;
+  /** The owner must sign to close the pool. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool to close. */
   pool: Address<TAccountPool>;
-  /** The system program account. */
+  /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
@@ -185,11 +187,13 @@ export type ParsedClosePoolInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** The rent payer to refund pool rent to. */
     rentPayer: TAccountMetas[0];
+    /** The owner must sign to close the pool. */
     owner: TAccountMetas[1];
     /** The pool to close. */
     pool: TAccountMetas[2];
-    /** The system program account. */
+    /** The Solana system program. */
     systemProgram: TAccountMetas[3];
   };
   data: ClosePoolInstructionData;

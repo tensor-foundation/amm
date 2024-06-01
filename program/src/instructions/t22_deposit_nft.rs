@@ -1,4 +1,4 @@
-//! User depositing NFTs into their NFT/Trade pool (to sell NFTs)
+//! Deposit a Token22 NFT into a NFT or Trade pool.
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -17,13 +17,15 @@ use vipers::{throw_err, unwrap_int, Validate};
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
-/// Deposit a Token22 NFT into a NFT or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNftT22<'info> {
+    /// The owner of the pool and the NFT.
     /// CHECK: has_one = owner in pool
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    /// The pool to deposit the NFT into.
     #[account(
         mut,
         seeds = [
@@ -59,6 +61,8 @@ pub struct DepositNftT22<'info> {
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
+    /// The mint account of the NFT. It should be the mint account common
+    /// to the owner_ata and pool_ata.
     #[account(
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
@@ -82,6 +86,7 @@ pub struct DepositNftT22<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[account(
         init,
         payer = owner,
@@ -95,10 +100,11 @@ pub struct DepositNftT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    pub associated_token_program: Program<'info, AssociatedToken>,
-
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Program<'info, Token2022>,
-
+    /// The SPL associated token program.
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

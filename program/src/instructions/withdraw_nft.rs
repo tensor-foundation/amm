@@ -1,4 +1,4 @@
-//! User withdrawing an NFT from their Trade pool
+//! Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -12,7 +12,7 @@ use crate::{error::ErrorCode, *};
 
 use self::constants::CURRENT_POOL_VERSION;
 
-/// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
     /// The owner of the pool and will receive the NFT at the owner_ata account.
@@ -34,6 +34,7 @@ pub struct WithdrawNft<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
+    /// The mint of the NFT.
     #[account(
         constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
@@ -58,6 +59,7 @@ pub struct WithdrawNft<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
         seeds=[
@@ -73,8 +75,11 @@ pub struct WithdrawNft<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
@@ -83,10 +88,12 @@ pub struct WithdrawNft<'info> {
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
-    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    // Note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    /// The Token Metadata edition of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     pub edition: UncheckedAccount<'info>,
 
+    /// The Token Metadata owner's token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
@@ -96,8 +103,6 @@ pub struct WithdrawNft<'info> {
     #[account(mut)]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 
-    // Todo: add ProgNftShared back in, if possible
-    // pub pnft_shared: ProgNftShared<'info>,
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]

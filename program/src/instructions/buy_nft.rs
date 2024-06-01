@@ -20,7 +20,7 @@ use self::{
 
 use super::*;
 
-/// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
     /// Owner is the pool owner who created the pool and the nominal owner of the
@@ -33,10 +33,13 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
 
+    /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
+    /// is auto-closed.
     /// CHECK: handler logic checks that it's the same as the stored rent payer
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
+    /// Fee vault account owned by the TFEE program.
     /// CHECK: Seeds checked here, account has no state.
     #[account(
         mut,
@@ -50,6 +53,9 @@ pub struct BuyNft<'info> {
     )]
     pub fee_vault: UncheckedAccount<'info>,
 
+    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
+    /// Any active pool can be specified provided it is a Trade or NFT type.
     #[account(
         mut,
         seeds = [
@@ -81,13 +87,7 @@ pub struct BuyNft<'info> {
     )]
     pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata, pool_ata and the mint stored in the nft receipt.
-    #[account(
-        constraint = mint.key() == buyer_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
+    /// The mint account of the NFT.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
@@ -95,7 +95,7 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
-    /// The NFT deposit receipt account, which tracks an NFT to the pool it was deposited to.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
         seeds = [
@@ -104,19 +104,22 @@ pub struct BuyNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        //can't buy an NFT that's associated with a different pool
-        // redundant but extra safety
+        // Check that the mint and pool match the nft receipt.
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The SPL Token program for the Mint and ATAs.
     pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 
     // --------------------------------------- pNft
+    /// The Token Metadata edition account for the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     pub edition: UncheckedAccount<'info>,
 
@@ -167,6 +170,11 @@ pub struct BuyNft<'info> {
     #[account(mut)]
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
+    /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// Checks are performed in the handler.
+    pub cosigner: Option<Signer<'info>>,
+
+    /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
     // remaining accounts:
     // optional 0 to N creator accounts.
@@ -230,6 +238,15 @@ pub fn process_buy_nft<'info, 'b>(
     let pool_initial_balance = pool.get_lamports();
 
     let owner_pubkey = ctx.accounts.owner.key();
+
+    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+    if let Some(cosigner) = pool.cosigner.value() {
+        if ctx.accounts.cosigner.is_none()
+            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
+        {
+            throw_err!(ErrorCode::BadCosigner);
+        }
+    }
 
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 

@@ -1,3 +1,4 @@
+//! Edit an existing pool.
 use tensor_toolbox::NullableOption;
 use vipers::{throw_err, try_or_err, Validate};
 
@@ -13,6 +14,7 @@ macro_rules! unwrap_opt_or_return_ok {
     };
 }
 
+/// Instruction accounts.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct EditPoolArgs {
     pub new_config: Option<PoolConfig>,
@@ -22,10 +24,12 @@ pub struct EditPoolArgs {
     pub reset_price_offset: bool,
 }
 
-/// Edit an existing pool.
 #[derive(Accounts)]
-#[instruction(args: EditPoolArgs)]
 pub struct EditPool<'info> {
+    /// The owner of the pool--must sign to edit the pool.
+    pub owner: Signer<'info>,
+
+    /// The pool to edit.
     #[account(
         mut,
         seeds = [
@@ -39,8 +43,7 @@ pub struct EditPool<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    pub owner: Signer<'info>,
-
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 
