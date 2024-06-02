@@ -368,6 +368,7 @@ pub fn process_buy_nft<'info, 'b>(
     // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .maker_broker
@@ -377,6 +378,7 @@ pub fn process_buy_nft<'info, 'b>(
             .unwrap_or(&ctx.accounts.fee_vault),
         maker_broker_fee,
     )?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .taker_broker
