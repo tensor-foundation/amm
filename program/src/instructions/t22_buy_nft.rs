@@ -212,11 +212,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
-    let mm_fee = if pool.config.pool_type == PoolType::Trade {
-        pool.calc_mm_fee(current_price)?
-    } else {
-        0
-    };
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.
     let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;

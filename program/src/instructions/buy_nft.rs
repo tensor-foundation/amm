@@ -259,11 +259,7 @@ pub fn process_buy_nft<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
-    let mm_fee = if pool.config.pool_type == PoolType::Trade {
-        pool.calc_mm_fee(current_price)?
-    } else {
-        0
-    };
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
