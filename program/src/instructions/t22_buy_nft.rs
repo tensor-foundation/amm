@@ -211,6 +211,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.
@@ -281,6 +282,22 @@ pub fn process_t22_buy_nft<'info, 'b>(
         0, // decimals = 0
     )?;
 
+    // For keeping track of current price + fees charged (computed dynamically)
+    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
+        current_price,
+        taker_fee,
+        mm_fee,
+        creators_fee,
+    });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
+
+    if current_price > max_price {
+        throw_err!(ErrorCode::PriceMismatch);
+    }
+
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
     // don't have the context of manual lamport balance changes so need to come before.
 
@@ -333,6 +350,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .maker_broker
@@ -342,6 +360,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
             .unwrap_or(&ctx.accounts.fee_vault),
         maker_broker_fee,
     )?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .taker_broker
@@ -351,20 +370,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
             .unwrap_or(&ctx.accounts.fee_vault),
         taker_broker_fee,
     )?;
-
-    // Trade pools need to check compounding fees
-    if matches!(pool.config.pool_type, PoolType::Trade) {
-        // If MM fees are compounded they go to the destination to remain
-        // in the pool or escrow.
-        if pool.config.mm_compound_fees {
-            ctx.accounts
-                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
-        } else {
-            // If MM fees are not compounded they go to the owner.
-            ctx.accounts
-                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
-        }
-    }
 
     // Pay creators royalties.
     if royalties.is_some() {
@@ -381,24 +386,22 @@ pub fn process_t22_buy_nft<'info, 'b>(
         )?;
     }
 
-    // For keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    let event = TAmmEvent::BuySellEvent(BuySellEvent {
-        current_price,
-        taker_fee,
-        mm_fee: if pool.config.pool_type == PoolType::Trade {
-            mm_fee
+    // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
+    ctx.accounts
+        .transfer_lamports(&destination, current_price)?;
+
+    // Trade pools need to check compounding fees
+    if matches!(pool.config.pool_type, PoolType::Trade) {
+        // If MM fees are compounded they go to the destination to remain
+        // in the pool or escrow.
+        if pool.config.mm_compound_fees {
+            ctx.accounts
+                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
         } else {
-            0
-        },
-        creators_fee,
-    });
-
-    // Self-CPI log the event.
-    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
-
-    if current_price > max_price {
-        throw_err!(ErrorCode::PriceMismatch);
+            // If MM fees are not compounded they go to the owner.
+            ctx.accounts
+                .transfer_lamports(&ctx.accounts.owner.to_account_info(), mm_fee)?;
+        }
     }
 
     // --------------------------------------- accounting
@@ -415,7 +418,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     //record the entirety of MM fee during the buy tx
     if pool.config.pool_type == PoolType::Trade {
-        let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }

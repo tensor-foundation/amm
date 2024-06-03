@@ -251,17 +251,15 @@ pub fn process_buy_nft<'info, 'b>(
     let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
 
     let current_price = pool.current_price(TakerSide::Buy)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
-    let mm_fee = if pool.config.pool_type == PoolType::Trade {
-        pool.calc_mm_fee(current_price)?
-    } else {
-        0
-    };
+
+    let mm_fee = pool.calc_mm_fee(current_price)?;
 
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
@@ -366,6 +364,7 @@ pub fn process_buy_nft<'info, 'b>(
     // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
     ctx.accounts
         .transfer_lamports(&ctx.accounts.fee_vault.to_account_info(), tamm_fee)?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .maker_broker
@@ -375,6 +374,7 @@ pub fn process_buy_nft<'info, 'b>(
             .unwrap_or(&ctx.accounts.fee_vault),
         maker_broker_fee,
     )?;
+
     ctx.accounts.transfer_lamports_min_balance(
         ctx.accounts
             .taker_broker
@@ -437,7 +437,6 @@ pub fn process_buy_nft<'info, 'b>(
     pool.updated_at = Clock::get()?.unix_timestamp;
 
     if pool.config.pool_type == PoolType::Trade {
-        let mm_fee = pool.calc_mm_fee(current_price)?;
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
     }

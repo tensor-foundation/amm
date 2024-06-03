@@ -207,16 +207,17 @@ impl Pool {
 
     /// Calculate the fee the MM receives when providing liquidity to a two-sided pool.
     pub fn calc_mm_fee(&self, current_price: u64) -> Result<u64> {
-        if self.config.pool_type != PoolType::Trade {
-            throw_err!(ErrorCode::WrongPoolType);
-        }
-
-        let fee = unwrap_checked!({
-            // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
-            (*self.config.mm_fee_bps.value().unwrap_or(&0) as u64)
-                .checked_mul(current_price)?
-                .checked_div(HUNDRED_PCT_BPS as u64)
-        });
+        let fee = match self.config.pool_type {
+            PoolType::Trade => {
+                unwrap_checked!({
+                    // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
+                    (*self.config.mm_fee_bps.value().unwrap_or(&0) as u64)
+                        .checked_mul(current_price)?
+                        .checked_div(HUNDRED_PCT_BPS as u64)
+                })
+            }
+            PoolType::NFT | PoolType::Token => 0, // No mm fees for NFT or Token pools
+        };
 
         Ok(fee)
     }
