@@ -25,5 +25,5 @@
     "@metaplex-foundation/shank-js": "^0.1.0",
     "typescript": "^5.4.2"
   },
-  "packageManager": "pnpm@9.0.6"
+  "packageManager": "pnpm@9.1.0"
 }

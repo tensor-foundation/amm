@@ -1,6 +1,6 @@
 {
   "name": "@tensor-foundation/amm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Version 2 of the Tensor AMM program.",
   "sideEffects": false,
   "module": "./dist/src/index.js",
@@ -79,5 +79,5 @@
       }
     }
   },
-  "packageManager": "pnpm@9.0.6"
+  "packageManager": "pnpm@9.1.0"
 }
