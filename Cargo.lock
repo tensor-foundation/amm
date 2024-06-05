@@ -5297,7 +5297,7 @@ dependencies = [
 [[package]]
 name = "tensor-escrow"
 version = "0.0.0"
-source = "git+ssh://git@github.com/tensor-foundation/escrow?rev=99798aa#99798aa6df1f8cf2ffdb7f6823fba78dfed1101c"
+source = "git+ssh://git@github.com/tensor-foundation/escrow#56634dcfa1dc74764640c7cfb08ca3e56bd47736"
 dependencies = [
  "borsh 0.10.3",
  "num-derive 0.3.3",
