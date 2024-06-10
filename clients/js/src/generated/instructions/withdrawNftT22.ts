@@ -37,12 +37,6 @@ import {
 } from '@tensor-foundation/resolvers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type WithdrawNftT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -98,18 +92,14 @@ export type WithdrawNftT22Instruction<
     ]
   >;
 
-export type WithdrawNftT22InstructionData = {
-  discriminator: Array<number>;
-  config: PoolConfig;
-};
+export type WithdrawNftT22InstructionData = { discriminator: Array<number> };
 
-export type WithdrawNftT22InstructionDataArgs = { config: PoolConfigArgs };
+export type WithdrawNftT22InstructionDataArgs = {};
 
 export function getWithdrawNftT22InstructionDataEncoder(): Encoder<WithdrawNftT22InstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
     ]),
     (value) => ({
       ...value,
@@ -121,7 +111,6 @@ export function getWithdrawNftT22InstructionDataEncoder(): Encoder<WithdrawNftT2
 export function getWithdrawNftT22InstructionDataDecoder(): Decoder<WithdrawNftT22InstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
   ]);
 }
 
@@ -164,7 +153,6 @@ export type WithdrawNftT22AsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  config: WithdrawNftT22InstructionDataArgs['config'];
 };
 
 export async function getWithdrawNftT22InstructionAsync<
@@ -226,11 +214,8 @@ export async function getWithdrawNftT22InstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolver scope.
-  const resolverScope = { programAddress, accounts, args };
+  const resolverScope = { programAddress, accounts };
 
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
@@ -278,9 +263,7 @@ export async function getWithdrawNftT22InstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getWithdrawNftT22InstructionDataEncoder().encode(
-      args as WithdrawNftT22InstructionDataArgs
-    ),
+    data: getWithdrawNftT22InstructionDataEncoder().encode({}),
   } as WithdrawNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
@@ -326,7 +309,6 @@ export type WithdrawNftT22Input<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  config: WithdrawNftT22InstructionDataArgs['config'];
 };
 
 export function getWithdrawNftT22Instruction<
@@ -386,9 +368,6 @@ export function getWithdrawNftT22Instruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
@@ -417,9 +396,7 @@ export function getWithdrawNftT22Instruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getWithdrawNftT22InstructionDataEncoder().encode(
-      args as WithdrawNftT22InstructionDataArgs
-    ),
+    data: getWithdrawNftT22InstructionDataEncoder().encode({}),
   } as WithdrawNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,

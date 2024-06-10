@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -198,7 +197,6 @@ impl SellNftTradePoolT22InstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SellNftTradePoolT22InstructionArgs {
-    pub config: PoolConfig,
     pub min_price: u64,
 }
 
@@ -246,7 +244,6 @@ pub struct SellNftTradePoolT22Builder {
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     escrow_program: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -391,11 +388,6 @@ impl SellNftTradePoolT22Builder {
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
-    #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.min_price = Some(min_price);
         self
@@ -450,7 +442,6 @@ impl SellNftTradePoolT22Builder {
             escrow_program: self.escrow_program.expect("escrow_program is not set"),
         };
         let args = SellNftTradePoolT22InstructionArgs {
-            config: self.config.clone().expect("config is not set"),
             min_price: self.min_price.clone().expect("min_price is not set"),
         };
 
@@ -827,7 +818,6 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
             cosigner: None,
             amm_program: None,
             escrow_program: None,
-            config: None,
             min_price: None,
             __remaining_accounts: Vec::new(),
         });
@@ -1001,11 +991,6 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
-    }
-    #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.instruction.min_price = Some(min_price);
         self
@@ -1052,7 +1037,6 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SellNftTradePoolT22InstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
             min_price: self
                 .instruction
                 .min_price
@@ -1147,7 +1131,6 @@ struct SellNftTradePoolT22CpiBuilderInstruction<'a, 'b> {
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

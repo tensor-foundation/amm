@@ -41,12 +41,6 @@ import {
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, expectSome, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type BuyNftT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -139,20 +133,15 @@ export type BuyNftT22Instruction<
 
 export type BuyNftT22InstructionData = {
   discriminator: Array<number>;
-  config: PoolConfig;
   maxPrice: bigint;
 };
 
-export type BuyNftT22InstructionDataArgs = {
-  config: PoolConfigArgs;
-  maxPrice: number | bigint;
-};
+export type BuyNftT22InstructionDataArgs = { maxPrice: number | bigint };
 
 export function getBuyNftT22InstructionDataEncoder(): Encoder<BuyNftT22InstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
       ['maxPrice', getU64Encoder()],
     ]),
     (value) => ({
@@ -165,7 +154,6 @@ export function getBuyNftT22InstructionDataEncoder(): Encoder<BuyNftT22Instructi
 export function getBuyNftT22InstructionDataDecoder(): Decoder<BuyNftT22InstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
     ['maxPrice', getU64Decoder()],
   ]);
 }
@@ -247,7 +235,6 @@ export type BuyNftT22AsyncInput<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
 };
 
@@ -509,7 +496,6 @@ export type BuyNftT22Input<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  config: BuyNftT22InstructionDataArgs['config'];
   maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
 };
 

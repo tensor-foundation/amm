@@ -133,7 +133,6 @@ pub mod amm_program {
     /// Buy a Token22 NFT from a NFT or Trade pool.
     pub fn buy_nft_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
-        _config: PoolConfig,
         max_price: u64,
     ) -> Result<()> {
         instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_price)
@@ -142,7 +141,6 @@ pub mod amm_program {
     /// Deposit a Token22 NFT into a NFT or Trade pool.
     pub fn deposit_nft_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
-        _config: PoolConfig,
     ) -> Result<()> {
         instructions::t22_deposit_nft::process_t22_deposit_nft(ctx)
     }
@@ -150,7 +148,6 @@ pub mod amm_program {
     /// Sell a Token22 NFT into a Token pool.
     pub fn sell_nft_token_pool_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
-        _config: PoolConfig,
         min_price: u64,
     ) -> Result<()> {
         instructions::t22_sell_nft_token_pool::process_t22_sell_nft_token_pool(ctx, min_price)
@@ -159,7 +156,6 @@ pub mod amm_program {
     /// Sell a Token22 NFT into a Trade pool.
     pub fn sell_nft_trade_pool_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTradePoolT22<'info>>,
-        _config: PoolConfig,
         min_price: u64,
     ) -> Result<()> {
         instructions::t22_sell_nft_trade_pool::process_sell_nft_trade_pool(ctx, min_price)
@@ -168,7 +164,6 @@ pub mod amm_program {
     /// Withdraw a Token22 NFT from a NFT or Trade pool.
     pub fn withdraw_nft_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
-        _config: PoolConfig,
     ) -> Result<()> {
         instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
     }

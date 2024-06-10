@@ -41,12 +41,6 @@ import {
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type SellNftTradePoolT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -147,12 +141,10 @@ export type SellNftTradePoolT22Instruction<
 
 export type SellNftTradePoolT22InstructionData = {
   discriminator: Array<number>;
-  config: PoolConfig;
   minPrice: bigint;
 };
 
 export type SellNftTradePoolT22InstructionDataArgs = {
-  config: PoolConfigArgs;
   minPrice: number | bigint;
 };
 
@@ -160,7 +152,6 @@ export function getSellNftTradePoolT22InstructionDataEncoder(): Encoder<SellNftT
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
       ['minPrice', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: [124, 145, 23, 52, 72, 113, 85, 9] })
@@ -170,7 +161,6 @@ export function getSellNftTradePoolT22InstructionDataEncoder(): Encoder<SellNftT
 export function getSellNftTradePoolT22InstructionDataDecoder(): Decoder<SellNftTradePoolT22InstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
     ['minPrice', getU64Decoder()],
   ]);
 }
@@ -249,7 +239,6 @@ export type SellNftTradePoolT22AsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
-  config: SellNftTradePoolT22InstructionDataArgs['config'];
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
 };
 
@@ -517,7 +506,6 @@ export type SellNftTradePoolT22Input<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram: Address<TAccountEscrowProgram>;
-  config: SellNftTradePoolT22InstructionDataArgs['config'];
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
 };
 

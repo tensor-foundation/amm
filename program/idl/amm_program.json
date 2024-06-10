@@ -1610,12 +1610,6 @@
       ],
       "args": [
         {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
-        {
           "name": "maxPrice",
           "type": "u64"
         }
@@ -1714,14 +1708,7 @@
           ]
         }
       ],
-      "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        }
-      ]
+      "args": []
     },
     {
       "name": "sellNftTokenPoolT22",
@@ -1893,12 +1880,6 @@
       ],
       "args": [
         {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
-        {
           "name": "minPrice",
           "type": "u64"
         }
@@ -2068,12 +2049,6 @@
       ],
       "args": [
         {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        },
-        {
           "name": "minPrice",
           "type": "u64"
         }
@@ -2158,14 +2133,7 @@
           ]
         }
       ],
-      "args": [
-        {
-          "name": "config",
-          "type": {
-            "defined": "PoolConfig"
-          }
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
