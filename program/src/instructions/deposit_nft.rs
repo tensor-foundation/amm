@@ -7,8 +7,8 @@ use anchor_spl::{
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
 use tensor_toolbox::token_metadata::{assert_decode_metadata, transfer, TransferArgs};
-use tensor_whitelist::{self, FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
+use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
@@ -41,7 +41,7 @@ pub struct DepositNft<'info> {
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
@@ -105,7 +105,7 @@ pub struct DepositNft<'info> {
             whitelist.key().as_ref(),
         ],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
@@ -173,7 +173,7 @@ impl<'info> DepositNft<'info> {
         };
 
         self.whitelist
-            .verify(metadata.collection, metadata.creators, full_merkle_proof)
+            .verify(&metadata.collection, &metadata.creators, &full_merkle_proof)
     }
 
     fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {

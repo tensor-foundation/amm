@@ -114,7 +114,7 @@ pub async fn setup_default_whitelist<'a>(
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&context.payer.pubkey()),
-        &[&context.payer, &update_authority_signer, &namespace_signer],
+        &[&context.payer, update_authority_signer, namespace_signer],
         context.last_blockhash,
     );
     context.banks_client.process_transaction(tx).await.unwrap();
@@ -216,7 +216,7 @@ pub async fn setup_default_pool<'a>(
     let tx = Transaction::new_signed_with_payer(
         &[ix],
         Some(&context.payer.pubkey()),
-        &[&context.payer, &owner, &payer],
+        &[&context.payer, owner, payer],
         context.last_blockhash,
     );
     context.banks_client.process_transaction(tx).await.unwrap();

@@ -48,7 +48,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    conditions: [{ mode: 2, value: owner.address }],
   });
 
   // Create pool and whitelist

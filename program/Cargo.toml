@@ -23,11 +23,12 @@ solana-program = "<1.18"
 spl-math = { version = "0.1.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 static_assertions = "1.1.0"
-tensor-escrow = { version = "*", git = "ssh://git@github.com/tensor-foundation/escrow" }
+tensor-escrow = { version = "*", git = "ssh://git@github.com/tensor-foundation/escrow", rev = "99798aa" }
 tensor-toolbox = { version = "0.0.5", git = "ssh://git@github.com/tensor-foundation/toolbox.git", rev = "a6c7423", features = [
     "token-2022",
 ] }
-tensor_whitelist = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", features = [
-    "cpi",
-] }
+# tensor_whitelist = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", features = [
+#     "cpi",
+# ] }
+whitelist-program = { path = "../../whitelist/program", features = ["cpi"] }
 vipers = { version = "2.0.6", git = "ssh://git@github.com/tensor-foundation/toolbox.git" }

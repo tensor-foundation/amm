@@ -49,7 +49,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -190,7 +190,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -263,7 +263,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist

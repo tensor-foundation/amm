@@ -18,8 +18,8 @@ use tensor_toolbox::{
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc,
 };
-use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use self::{
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
@@ -69,7 +69,7 @@ pub struct SellNftTradePool<'info> {
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
@@ -212,7 +212,7 @@ impl<'info> SellNftTradePool<'info> {
         };
 
         self.whitelist
-            .verify(metadata.collection, metadata.creators, full_merkle_proof)
+            .verify(&metadata.collection, &metadata.creators, &full_merkle_proof)
     }
 
     fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {

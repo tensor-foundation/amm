@@ -169,7 +169,7 @@ export async function createWhitelistV2({
   payer = updateAuthority,
   namespace,
   freezeAuthority = DEFAULT_PUBKEY,
-  conditions = [{ mode: Mode.FVC, value: updateAuthority.address }],
+  conditions = [{ mode: 2, value: updateAuthority.address }],
 }: CreateWhitelistParams): Promise<CreateWhitelistReturns> {
   const uuid = generateUuid();
   namespace = namespace || (await generateKeyPairSigner());
@@ -415,7 +415,7 @@ export async function createPoolAndWhitelist({
     poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
   if (conditions === undefined) {
-    conditions = [{ mode: Mode.FVC, value: updateAuthority.address }];
+    conditions = [{ mode: 2, value: updateAuthority.address }];
   }
 
   // Setup a basic whitelist to use with the pool.
@@ -471,7 +471,7 @@ export async function createPoolAndWhitelistThrows({
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: 2, value: updateAuthority.address },
     { mode: Mode.VOC, value: voc },
   ];
 

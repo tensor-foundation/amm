@@ -59,7 +59,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     makerBroker: makerBroker.address,
     config,
     depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
     funded: true,
   });
 
@@ -193,7 +193,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     config,
     sharedEscrow,
     depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
     funded: false, // cannot deposit to shared escrow pool
   });
 
@@ -294,7 +294,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -423,7 +423,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -513,7 +513,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -599,7 +599,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
+    conditions: [{ mode: 2, value: nftOwner.address }],
   });
 
   // Create pool and whitelist

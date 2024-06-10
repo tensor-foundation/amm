@@ -44,8 +44,8 @@ use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
 use tensor_toolbox::shard_num;
-use tensor_whitelist::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 use vipers::{throw_err, unwrap_checked, unwrap_int};
+use whitelist_program::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 
 use self::constants::{BROKER_FEE_PCT, TFEE_PROGRAM_ID};
 
@@ -63,13 +63,13 @@ pub fn assert_decode_mint_proof(
             nft_mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],
-        &tensor_whitelist::ID,
+        &whitelist_program::ID,
     );
     if key != *mint_proof.key {
         throw_err!(ErrorCode::BadMintProof);
     }
     // Check program owner (redundant because of find_program_address above, but why not).
-    if *mint_proof.owner != tensor_whitelist::ID {
+    if *mint_proof.owner != whitelist_program::ID {
         throw_err!(ErrorCode::BadMintProof);
     }
 
@@ -90,13 +90,13 @@ pub fn assert_decode_mint_proof_v2(
             nft_mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],
-        &tensor_whitelist::ID,
+        &whitelist_program::ID,
     );
     if key != *mint_proof.key {
         throw_err!(ErrorCode::BadMintProof);
     }
     // Check program owner (redundant because of find_program_address above, but why not).
-    if *mint_proof.owner != tensor_whitelist::ID {
+    if *mint_proof.owner != whitelist_program::ID {
         throw_err!(ErrorCode::BadMintProof);
     }
 
@@ -140,7 +140,7 @@ pub struct SellNftShared<'info> {
     #[account(
         seeds = [&whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, Whitelist>>,
 
@@ -153,7 +153,7 @@ pub struct SellNftShared<'info> {
             whitelist.key().as_ref(),
         ],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
@@ -217,7 +217,7 @@ pub struct SellNftSharedT22<'info> {
     #[account(
         seeds = [&whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, Whitelist>>,
 
@@ -230,7 +230,7 @@ pub struct SellNftSharedT22<'info> {
             whitelist.key().as_ref(),
         ],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
