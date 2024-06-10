@@ -246,7 +246,7 @@ export type SellNftTokenPoolT22AsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
-  escrowProgram: Address<TAccountEscrowProgram>;
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolT22InstructionDataArgs['minPrice'];
 };
 
@@ -516,7 +516,7 @@ export type SellNftTokenPoolT22Input<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
-  escrowProgram: Address<TAccountEscrowProgram>;
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolT22InstructionDataArgs['minPrice'];
 };
 
@@ -751,7 +751,7 @@ export type ParsedSellNftTokenPoolT22Instruction<
     /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[17];
     /** The escrow program account for shared liquidity pools. */
-    escrowProgram: TAccountMetas[18];
+    escrowProgram?: TAccountMetas[18] | undefined;
   };
   data: SellNftTokenPoolT22InstructionData;
 };
@@ -801,7 +801,7 @@ export function parseSellNftTokenPoolT22Instruction<
       takerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
-      escrowProgram: getNextAccount(),
+      escrowProgram: getNextOptionalAccount(),
     },
     data: getSellNftTokenPoolT22InstructionDataDecoder().decode(
       instruction.data

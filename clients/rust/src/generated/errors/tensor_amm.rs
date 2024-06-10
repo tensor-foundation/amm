@@ -157,6 +157,9 @@ pub enum TensorAmmError {
     /// 12048 (0x2F10) - Wrong rent payer
     #[error("Wrong rent payer")]
     WrongOwner,
+    /// 12049 (0x2F11) - Escrow program not set
+    #[error("Escrow program not set")]
+    EscrowProgramNotSet,
 }
 
 impl solana_program::program_error::PrintProgramError for TensorAmmError {

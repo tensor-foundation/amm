@@ -1172,6 +1172,7 @@
           "name": "escrowProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The escrow program account for shared liquidity pools."
           ]
@@ -1431,7 +1432,11 @@
         {
           "name": "escrowProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true,
+          "docs": [
+            "The escrow program account for shared liquidity pools."
+          ]
         }
       ],
       "args": [
@@ -1873,6 +1878,7 @@
           "name": "escrowProgram",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "The escrow program account for shared liquidity pools."
           ]
@@ -2044,7 +2050,8 @@
         {
           "name": "escrowProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "isOptional": true
         }
       ],
       "args": [
@@ -2998,6 +3005,11 @@
       "code": 12048,
       "name": "WrongOwner",
       "msg": "Wrong rent payer"
+    },
+    {
+      "code": 12049,
+      "name": "EscrowProgramNotSet",
+      "msg": "Escrow program not set"
     }
   ],
   "metadata": {

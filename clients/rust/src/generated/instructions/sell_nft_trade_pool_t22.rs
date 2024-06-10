@@ -49,7 +49,7 @@ pub struct SellNftTradePoolT22 {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
 
-    pub escrow_program: solana_program::pubkey::Pubkey,
+    pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl SellNftTradePoolT22 {
@@ -162,10 +162,17 @@ impl SellNftTradePoolT22 {
             self.amm_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.escrow_program,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                escrow_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SellNftTradePoolT22InstructionData::new()
             .try_to_vec()
@@ -222,7 +229,7 @@ pub struct SellNftTradePoolT22InstructionArgs {
 ///   15. `[writable, optional]` taker_broker
 ///   16. `[signer, optional]` cosigner
 ///   17. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
-///   18. `[]` escrow_program
+///   18. `[optional]` escrow_program
 #[derive(Default)]
 pub struct SellNftTradePoolT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -382,9 +389,13 @@ impl SellNftTradePoolT22Builder {
         self.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn escrow_program(&mut self, escrow_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.escrow_program = Some(escrow_program);
+    pub fn escrow_program(
+        &mut self,
+        escrow_program: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -439,7 +450,7 @@ impl SellNftTradePoolT22Builder {
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
             )),
-            escrow_program: self.escrow_program.expect("escrow_program is not set"),
+            escrow_program: self.escrow_program,
         };
         let args = SellNftTradePoolT22InstructionArgs {
             min_price: self.min_price.clone().expect("min_price is not set"),
@@ -490,7 +501,7 @@ pub struct SellNftTradePoolT22CpiAccounts<'a, 'b> {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `sell_nft_trade_pool_t22` CPI instruction.
@@ -536,7 +547,7 @@ pub struct SellNftTradePoolT22Cpi<'a, 'b> {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: SellNftTradePoolT22InstructionArgs,
 }
@@ -705,10 +716,17 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             *self.amm_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.escrow_program.key,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *escrow_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -755,7 +773,9 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             account_infos.push(cosigner.clone());
         }
         account_infos.push(self.amm_program.clone());
-        account_infos.push(self.escrow_program.clone());
+        if let Some(escrow_program) = self.escrow_program {
+            account_infos.push(escrow_program.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -790,7 +810,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
 ///   15. `[writable, optional]` taker_broker
 ///   16. `[signer, optional]` cosigner
 ///   17. `[]` amm_program
-///   18. `[]` escrow_program
+///   18. `[optional]` escrow_program
 pub struct SellNftTradePoolT22CpiBuilder<'a, 'b> {
     instruction: Box<SellNftTradePoolT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -982,12 +1002,13 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self.instruction.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn escrow_program(
         &mut self,
-        escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+        escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.escrow_program = Some(escrow_program);
+        self.instruction.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -1097,10 +1118,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
                 .amm_program
                 .expect("amm_program is not set"),
 
-            escrow_program: self
-                .instruction
-                .escrow_program
-                .expect("escrow_program is not set"),
+            escrow_program: self.instruction.escrow_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(

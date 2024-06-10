@@ -202,4 +202,8 @@ pub enum ErrorCode {
     // 6045 | 0x179d
     #[msg("Wrong rent payer")]
     WrongOwner,
+
+    // 6046 | 0x179e
+    #[msg("Escrow program not set")]
+    EscrowProgramNotSet,
 }

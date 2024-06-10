@@ -14,7 +14,7 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee,
+    calc_creators_fee, escrow,
     token_2022::{validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
@@ -152,8 +152,8 @@ pub struct SellNftTokenPoolT22<'info> {
 
     /// The escrow program account for shared liquidity pools.
     /// CHECK: address constraint is checked here
-    #[account(address = tensor_escrow::ID)]
-    pub escrow_program: UncheckedAccount<'info>,
+    #[account(address = escrow::ID)]
+    pub escrow_program: Option<UncheckedAccount<'info>>,
 }
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
@@ -341,6 +341,12 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         )
         .to_account_info();
 
+        let escrow_program = unwrap_opt!(
+            ctx.accounts.escrow_program.as_ref(),
+            ErrorCode::EscrowProgramNotSet
+        )
+        .to_account_info();
+
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
             &incoming_shared_escrow,
@@ -354,7 +360,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
-            __program: &ctx.accounts.escrow_program.to_account_info(),
+            __program: &escrow_program,
             margin_account: &incoming_shared_escrow,
             pool: &ctx.accounts.pool.to_account_info(),
             owner: &ctx.accounts.owner.to_account_info(),

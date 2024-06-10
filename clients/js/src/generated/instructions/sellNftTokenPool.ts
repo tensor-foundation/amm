@@ -360,7 +360,7 @@ export type SellNftTokenPoolAsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
-  escrowProgram: Address<TAccountEscrowProgram>;
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct?: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
@@ -790,7 +790,7 @@ export type SellNftTokenPoolInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
-  escrowProgram: Address<TAccountEscrowProgram>;
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTokenPoolInstructionDataArgs['minPrice'];
   authorizationData?: SellNftTokenPoolInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct?: SellNftTokenPoolInstructionDataArgs['optionalRoyaltyPct'];
@@ -1161,7 +1161,7 @@ export type ParsedSellNftTokenPoolInstruction<
     /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[27];
     /** The escrow program account for shared liquidity pools. */
-    escrowProgram: TAccountMetas[28];
+    escrowProgram?: TAccountMetas[28] | undefined;
   };
   data: SellNftTokenPoolInstructionData;
 };
@@ -1221,7 +1221,7 @@ export function parseSellNftTokenPoolInstruction<
       takerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
-      escrowProgram: getNextAccount(),
+      escrowProgram: getNextOptionalAccount(),
     },
     data: getSellNftTokenPoolInstructionDataDecoder().decode(instruction.data),
   };
