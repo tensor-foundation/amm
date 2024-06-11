@@ -219,7 +219,7 @@ export type SellNftTokenPoolT22AsyncInput<
    * Optional account which must be passed in if the NFT must be verified against a
    * merkle proof condition in the whitelist.
    */
-  mintProof: Address<TAccountMintProof>;
+  mintProof?: Address<TAccountMintProof>;
   /** The ATA of the NFT for the seller's wallet. */
   sellerAta?: Address<TAccountSellerAta>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -489,7 +489,7 @@ export type SellNftTokenPoolT22Input<
    * Optional account which must be passed in if the NFT must be verified against a
    * merkle proof condition in the whitelist.
    */
-  mintProof: Address<TAccountMintProof>;
+  mintProof?: Address<TAccountMintProof>;
   /** The ATA of the NFT for the seller's wallet. */
   sellerAta: Address<TAccountSellerAta>;
   /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -723,7 +723,7 @@ export type ParsedSellNftTokenPoolT22Instruction<
      * merkle proof condition in the whitelist.
      */
 
-    mintProof: TAccountMetas[6];
+    mintProof?: TAccountMetas[6] | undefined;
     /** The ATA of the NFT for the seller's wallet. */
     sellerAta: TAccountMetas[7];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -789,7 +789,7 @@ export function parseSellNftTokenPoolT22Instruction<
       feeVault: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
-      mintProof: getNextAccount(),
+      mintProof: getNextOptionalAccount(),
       sellerAta: getNextAccount(),
       ownerAta: getNextAccount(),
       mint: getNextAccount(),

@@ -27,7 +27,7 @@ pub struct SellNftTokenPoolT22 {
     pub whitelist: solana_program::pubkey::Pubkey,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: solana_program::pubkey::Pubkey,
+    pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The ATA of the NFT for the seller's wallet.
     pub seller_ata: solana_program::pubkey::Pubkey,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
@@ -91,10 +91,16 @@ impl SellNftTokenPoolT22 {
             self.whitelist,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint_proof,
-            false,
-        ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                mint_proof, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.seller_ata,
             false,
@@ -220,7 +226,7 @@ pub struct SellNftTokenPoolT22InstructionArgs {
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
-///   6. `[]` mint_proof
+///   6. `[optional]` mint_proof
 ///   7. `[writable]` seller_ata
 ///   8. `[writable]` owner_ata
 ///   9. `[]` mint
@@ -301,11 +307,12 @@ impl SellNftTokenPoolT22Builder {
         self.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
-    pub fn mint_proof(&mut self, mint_proof: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.mint_proof = Some(mint_proof);
+    pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.mint_proof = mint_proof;
         self
     }
     /// The ATA of the NFT for the seller's wallet.
@@ -437,7 +444,7 @@ impl SellNftTokenPoolT22Builder {
             fee_vault: self.fee_vault.expect("fee_vault is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
-            mint_proof: self.mint_proof.expect("mint_proof is not set"),
+            mint_proof: self.mint_proof,
             seller_ata: self.seller_ata.expect("seller_ata is not set"),
             owner_ata: self.owner_ata.expect("owner_ata is not set"),
             mint: self.mint.expect("mint is not set"),
@@ -486,7 +493,7 @@ pub struct SellNftTokenPoolT22CpiAccounts<'a, 'b> {
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The ATA of the NFT for the seller's wallet.
     pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
@@ -535,7 +542,7 @@ pub struct SellNftTokenPoolT22Cpi<'a, 'b> {
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The ATA of the NFT for the seller's wallet.
     pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
@@ -653,10 +660,17 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             *self.whitelist.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint_proof.key,
-            false,
-        ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *mint_proof.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.seller_ata.key,
             false,
@@ -766,7 +780,9 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
         account_infos.push(self.fee_vault.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.mint_proof.clone());
+        if let Some(mint_proof) = self.mint_proof {
+            account_infos.push(mint_proof.clone());
+        }
         account_infos.push(self.seller_ata.clone());
         account_infos.push(self.owner_ata.clone());
         account_infos.push(self.mint.clone());
@@ -811,7 +827,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
 ///   3. `[writable]` fee_vault
 ///   4. `[writable]` pool
 ///   5. `[]` whitelist
-///   6. `[]` mint_proof
+///   6. `[optional]` mint_proof
 ///   7. `[writable]` seller_ata
 ///   8. `[writable]` owner_ata
 ///   9. `[]` mint
@@ -907,14 +923,15 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
         self.instruction.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
     pub fn mint_proof(
         &mut self,
-        mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.mint_proof = Some(mint_proof);
+        self.instruction.mint_proof = mint_proof;
         self
     }
     /// The ATA of the NFT for the seller's wallet.
@@ -1096,7 +1113,7 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            mint_proof: self.instruction.mint_proof.expect("mint_proof is not set"),
+            mint_proof: self.instruction.mint_proof,
 
             seller_ata: self.instruction.seller_ata.expect("seller_ata is not set"),
 

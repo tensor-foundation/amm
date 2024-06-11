@@ -160,6 +160,9 @@ pub enum TensorAmmError {
     /// 12049 (0x2F11) - Escrow program not set
     #[error("Escrow program not set")]
     EscrowProgramNotSet,
+    /// 12050 (0x2F12) - Mint proof not set
+    #[error("Mint proof not set")]
+    MintProofNotSet,
 }
 
 impl solana_program::program_error::PrintProgramError for TensorAmmError {

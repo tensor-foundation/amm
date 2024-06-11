@@ -107,6 +107,8 @@ export const enum TensorAmmProgramErrorCode {
   WRONG_OWNER = 0x2f10, // 12048
   /** EscrowProgramNotSet: Escrow program not set */
   ESCROW_PROGRAM_NOT_SET = 0x2f11, // 12049
+  /** MintProofNotSet: Mint proof not set */
+  MINT_PROOF_NOT_SET = 0x2f12, // 12050
 }
 
 export class TensorAmmProgramError extends Error {
@@ -323,6 +325,10 @@ if (__DEV__) {
     [TensorAmmProgramErrorCode.ESCROW_PROGRAM_NOT_SET]: [
       'EscrowProgramNotSet',
       `Escrow program not set`,
+    ],
+    [TensorAmmProgramErrorCode.MINT_PROOF_NOT_SET]: [
+      'MintProofNotSet',
+      `Mint proof not set`,
     ],
   };
 }

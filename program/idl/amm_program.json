@@ -1776,6 +1776,7 @@
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "Optional account which must be passed in if the NFT must be verified against a",
             "merkle proof condition in the whitelist."
@@ -1941,6 +1942,7 @@
           "name": "mintProof",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "Optional account which must be passed in if the NFT must be verified against a",
             "merkle proof condition in the whitelist."
@@ -3010,6 +3012,11 @@
       "code": 12049,
       "name": "EscrowProgramNotSet",
       "msg": "Escrow program not set"
+    },
+    {
+      "code": 12050,
+      "name": "MintProofNotSet",
+      "msg": "Mint proof not set"
     }
   ],
   "metadata": {

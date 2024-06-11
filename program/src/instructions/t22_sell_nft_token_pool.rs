@@ -87,16 +87,9 @@ pub struct SellNftTokenPoolT22<'info> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
-    #[account(
-        seeds = [
-            b"mint_proof".as_ref(),
-            mint.key().as_ref(),
-            whitelist.key().as_ref(),
-        ],
-        bump,
-        seeds::program = whitelist_program::ID
-    )]
-    pub mint_proof: UncheckedAccount<'info>,
+    // Merkle Trees are the only mode that can be used for whitelists in T22 but we set this as an
+    // option to support the ability to use other modes in the future, e.g. FVC w/ T22 Metadata.
+    pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The ATA of the NFT for the seller's wallet.
     #[account(
@@ -176,16 +169,20 @@ impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
 
 impl<'info> SellNftTokenPoolT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        let mint_proof =
-            assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, mint_proof)?;
 
-        let leaf = keccak::hash(self.mint.key().as_ref());
-        let proof = &mut mint_proof.proof.to_vec();
-        proof.truncate(mint_proof.proof_len as usize);
-        let full_merkle_proof = Some(FullMerkleProof {
-            leaf: leaf.0,
-            proof: proof.clone(),
-        });
+            let leaf = keccak::hash(self.mint.key().as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            // Requires a mint proof unless other Whitelist modes are supported for T22.
+            return Err(ErrorCode::MintProofNotSet.into());
+        };
 
         // Only supporting Merkle proof for now.
         self.whitelist.verify(&None, &None, &full_merkle_proof)
