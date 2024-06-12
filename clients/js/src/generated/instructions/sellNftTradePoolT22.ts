@@ -41,12 +41,6 @@ import {
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type SellNftTradePoolT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -147,12 +141,10 @@ export type SellNftTradePoolT22Instruction<
 
 export type SellNftTradePoolT22InstructionData = {
   discriminator: Array<number>;
-  config: PoolConfig;
   minPrice: bigint;
 };
 
 export type SellNftTradePoolT22InstructionDataArgs = {
-  config: PoolConfigArgs;
   minPrice: number | bigint;
 };
 
@@ -160,7 +152,6 @@ export function getSellNftTradePoolT22InstructionDataEncoder(): Encoder<SellNftT
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
       ['minPrice', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: [124, 145, 23, 52, 72, 113, 85, 9] })
@@ -170,7 +161,6 @@ export function getSellNftTradePoolT22InstructionDataEncoder(): Encoder<SellNftT
 export function getSellNftTradePoolT22InstructionDataDecoder(): Decoder<SellNftTradePoolT22InstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
     ['minPrice', getU64Decoder()],
   ]);
 }
@@ -220,7 +210,7 @@ export type SellNftTradePoolT22AsyncInput<
    * Optional account which must be passed in if the NFT must be verified against a
    * merkle proof condition in the whitelist.
    */
-  mintProof: Address<TAccountMintProof>;
+  mintProof?: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
   /** The ATA of the seller, where the NFT will be transferred from. */
@@ -248,8 +238,7 @@ export type SellNftTradePoolT22AsyncInput<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  escrowProgram: Address<TAccountEscrowProgram>;
-  config: SellNftTradePoolT22InstructionDataArgs['config'];
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
 };
 
@@ -488,7 +477,7 @@ export type SellNftTradePoolT22Input<
    * Optional account which must be passed in if the NFT must be verified against a
    * merkle proof condition in the whitelist.
    */
-  mintProof: Address<TAccountMintProof>;
+  mintProof?: Address<TAccountMintProof>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
   /** The ATA of the seller, where the NFT will be transferred from. */
@@ -516,8 +505,7 @@ export type SellNftTradePoolT22Input<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  escrowProgram: Address<TAccountEscrowProgram>;
-  config: SellNftTradePoolT22InstructionDataArgs['config'];
+  escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
 };
 
@@ -713,7 +701,7 @@ export type ParsedSellNftTradePoolT22Instruction<
      * merkle proof condition in the whitelist.
      */
 
-    mintProof: TAccountMetas[5];
+    mintProof?: TAccountMetas[5] | undefined;
     /** The mint account of the NFT being sold. */
     mint: TAccountMetas[6];
     /** The ATA of the seller, where the NFT will be transferred from. */
@@ -742,7 +730,7 @@ export type ParsedSellNftTradePoolT22Instruction<
     cosigner?: TAccountMetas[16] | undefined;
     /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[17];
-    escrowProgram: TAccountMetas[18];
+    escrowProgram?: TAccountMetas[18] | undefined;
   };
   data: SellNftTradePoolT22InstructionData;
 };
@@ -779,7 +767,7 @@ export function parseSellNftTradePoolT22Instruction<
       feeVault: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
-      mintProof: getNextAccount(),
+      mintProof: getNextOptionalAccount(),
       mint: getNextAccount(),
       sellerAta: getNextAccount(),
       poolAta: getNextAccount(),
@@ -792,7 +780,7 @@ export function parseSellNftTradePoolT22Instruction<
       takerBroker: getNextOptionalAccount(),
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
-      escrowProgram: getNextAccount(),
+      escrowProgram: getNextOptionalAccount(),
     },
     data: getSellNftTradePoolT22InstructionDataDecoder().decode(
       instruction.data

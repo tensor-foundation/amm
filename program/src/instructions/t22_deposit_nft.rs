@@ -11,8 +11,8 @@ use tensor_toolbox::token_2022::{
     token::{safe_initialize_token_account, InitializeTokenAccount},
     validate_mint,
 };
-use tensor_whitelist::{self, FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, Validate};
+use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
@@ -45,7 +45,7 @@ pub struct DepositNftT22<'info> {
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
@@ -57,7 +57,7 @@ pub struct DepositNftT22<'info> {
             whitelist.key().as_ref(),
         ],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub mint_proof: UncheckedAccount<'info>,
 
@@ -122,7 +122,7 @@ impl<'info> DepositNftT22<'info> {
         });
 
         // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
-        self.whitelist.verify(None, None, full_merkle_proof)
+        self.whitelist.verify(&None, &None, &full_merkle_proof)
     }
 
     fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {

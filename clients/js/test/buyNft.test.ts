@@ -43,7 +43,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    conditions: [{ mode: 2, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -157,7 +157,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    conditions: [{ mode: 2, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -282,7 +282,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    conditions: [{ mode: 2, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -385,7 +385,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    conditions: [{ mode: 2, value: owner.address }],
   });
 
   // Create pool

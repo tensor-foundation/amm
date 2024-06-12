@@ -37,12 +37,6 @@ import {
 } from '@tensor-foundation/resolvers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { ResolvedAccount, getAccountMetaFactory } from '../shared';
-import {
-  PoolConfig,
-  PoolConfigArgs,
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-} from '../types';
 
 export type DepositNftT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -106,18 +100,14 @@ export type DepositNftT22Instruction<
     ]
   >;
 
-export type DepositNftT22InstructionData = {
-  discriminator: Array<number>;
-  config: PoolConfig;
-};
+export type DepositNftT22InstructionData = { discriminator: Array<number> };
 
-export type DepositNftT22InstructionDataArgs = { config: PoolConfigArgs };
+export type DepositNftT22InstructionDataArgs = {};
 
 export function getDepositNftT22InstructionDataEncoder(): Encoder<DepositNftT22InstructionDataArgs> {
   return mapEncoder(
     getStructEncoder([
       ['discriminator', getArrayEncoder(getU8Encoder(), { size: 8 })],
-      ['config', getPoolConfigEncoder()],
     ]),
     (value) => ({
       ...value,
@@ -129,7 +119,6 @@ export function getDepositNftT22InstructionDataEncoder(): Encoder<DepositNftT22I
 export function getDepositNftT22InstructionDataDecoder(): Decoder<DepositNftT22InstructionData> {
   return getStructDecoder([
     ['discriminator', getArrayDecoder(getU8Decoder(), { size: 8 })],
-    ['config', getPoolConfigDecoder()],
   ]);
 }
 
@@ -180,7 +169,6 @@ export type DepositNftT22AsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  config: DepositNftT22InstructionDataArgs['config'];
 };
 
 export async function getDepositNftT22InstructionAsync<
@@ -250,11 +238,8 @@ export async function getDepositNftT22InstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolver scope.
-  const resolverScope = { programAddress, accounts, args };
+  const resolverScope = { programAddress, accounts };
 
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
@@ -304,9 +289,7 @@ export async function getDepositNftT22InstructionAsync<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getDepositNftT22InstructionDataEncoder().encode(
-      args as DepositNftT22InstructionDataArgs
-    ),
+    data: getDepositNftT22InstructionDataEncoder().encode({}),
   } as DepositNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
@@ -362,7 +345,6 @@ export type DepositNftT22Input<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  config: DepositNftT22InstructionDataArgs['config'];
 };
 
 export function getDepositNftT22Instruction<
@@ -430,9 +412,6 @@ export function getDepositNftT22Instruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
@@ -463,9 +442,7 @@ export function getDepositNftT22Instruction<
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
-    data: getDepositNftT22InstructionDataEncoder().encode(
-      args as DepositNftT22InstructionDataArgs
-    ),
+    data: getDepositNftT22InstructionDataEncoder().encode({}),
   } as DepositNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,

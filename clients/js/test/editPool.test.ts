@@ -24,8 +24,8 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: Mode.FVC, value: updateAuthority.address },
-    { mode: Mode.VOC, value: voc },
+    { mode: 2, value: updateAuthority.address },
+    { mode: 1, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({

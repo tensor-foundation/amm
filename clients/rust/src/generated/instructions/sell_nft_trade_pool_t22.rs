@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -23,7 +22,7 @@ pub struct SellNftTradePoolT22 {
     pub whitelist: solana_program::pubkey::Pubkey,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: solana_program::pubkey::Pubkey,
+    pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
     /// The ATA of the seller, where the NFT will be transferred from.
@@ -50,7 +49,7 @@ pub struct SellNftTradePoolT22 {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
 
-    pub escrow_program: solana_program::pubkey::Pubkey,
+    pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl SellNftTradePoolT22 {
@@ -85,10 +84,16 @@ impl SellNftTradePoolT22 {
             self.whitelist,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint_proof,
-            false,
-        ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                mint_proof, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.mint, false,
         ));
@@ -163,10 +168,17 @@ impl SellNftTradePoolT22 {
             self.amm_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.escrow_program,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                escrow_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SellNftTradePoolT22InstructionData::new()
             .try_to_vec()
@@ -198,7 +210,6 @@ impl SellNftTradePoolT22InstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SellNftTradePoolT22InstructionArgs {
-    pub config: PoolConfig,
     pub min_price: u64,
 }
 
@@ -211,7 +222,7 @@ pub struct SellNftTradePoolT22InstructionArgs {
 ///   2. `[writable]` fee_vault
 ///   3. `[writable]` pool
 ///   4. `[]` whitelist
-///   5. `[]` mint_proof
+///   5. `[optional]` mint_proof
 ///   6. `[]` mint
 ///   7. `[writable]` seller_ata
 ///   8. `[writable]` pool_ata
@@ -224,7 +235,7 @@ pub struct SellNftTradePoolT22InstructionArgs {
 ///   15. `[writable, optional]` taker_broker
 ///   16. `[signer, optional]` cosigner
 ///   17. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
-///   18. `[]` escrow_program
+///   18. `[optional]` escrow_program
 #[derive(Default)]
 pub struct SellNftTradePoolT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -246,7 +257,6 @@ pub struct SellNftTradePoolT22Builder {
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     escrow_program: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -285,11 +295,12 @@ impl SellNftTradePoolT22Builder {
         self.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
-    pub fn mint_proof(&mut self, mint_proof: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.mint_proof = Some(mint_proof);
+    pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.mint_proof = mint_proof;
         self
     }
     /// The mint account of the NFT being sold.
@@ -385,14 +396,13 @@ impl SellNftTradePoolT22Builder {
         self.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
-    pub fn escrow_program(&mut self, escrow_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.escrow_program = Some(escrow_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
+    pub fn escrow_program(
+        &mut self,
+        escrow_program: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -426,7 +436,7 @@ impl SellNftTradePoolT22Builder {
             fee_vault: self.fee_vault.expect("fee_vault is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
-            mint_proof: self.mint_proof.expect("mint_proof is not set"),
+            mint_proof: self.mint_proof,
             mint: self.mint.expect("mint is not set"),
             seller_ata: self.seller_ata.expect("seller_ata is not set"),
             pool_ata: self.pool_ata.expect("pool_ata is not set"),
@@ -447,10 +457,9 @@ impl SellNftTradePoolT22Builder {
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
             )),
-            escrow_program: self.escrow_program.expect("escrow_program is not set"),
+            escrow_program: self.escrow_program,
         };
         let args = SellNftTradePoolT22InstructionArgs {
-            config: self.config.clone().expect("config is not set"),
             min_price: self.min_price.clone().expect("min_price is not set"),
         };
 
@@ -472,7 +481,7 @@ pub struct SellNftTradePoolT22CpiAccounts<'a, 'b> {
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the seller, where the NFT will be transferred from.
@@ -499,7 +508,7 @@ pub struct SellNftTradePoolT22CpiAccounts<'a, 'b> {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `sell_nft_trade_pool_t22` CPI instruction.
@@ -518,7 +527,7 @@ pub struct SellNftTradePoolT22Cpi<'a, 'b> {
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    pub mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the seller, where the NFT will be transferred from.
@@ -545,7 +554,7 @@ pub struct SellNftTradePoolT22Cpi<'a, 'b> {
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
 
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: SellNftTradePoolT22InstructionArgs,
 }
@@ -634,10 +643,17 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             *self.whitelist.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint_proof.key,
-            false,
-        ));
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *mint_proof.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.mint.key,
             false,
@@ -714,10 +730,17 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             *self.amm_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.escrow_program.key,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *escrow_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -743,7 +766,9 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
         account_infos.push(self.fee_vault.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.mint_proof.clone());
+        if let Some(mint_proof) = self.mint_proof {
+            account_infos.push(mint_proof.clone());
+        }
         account_infos.push(self.mint.clone());
         account_infos.push(self.seller_ata.clone());
         account_infos.push(self.pool_ata.clone());
@@ -764,7 +789,9 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             account_infos.push(cosigner.clone());
         }
         account_infos.push(self.amm_program.clone());
-        account_infos.push(self.escrow_program.clone());
+        if let Some(escrow_program) = self.escrow_program {
+            account_infos.push(escrow_program.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -786,7 +813,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
 ///   2. `[writable]` fee_vault
 ///   3. `[writable]` pool
 ///   4. `[]` whitelist
-///   5. `[]` mint_proof
+///   5. `[optional]` mint_proof
 ///   6. `[]` mint
 ///   7. `[writable]` seller_ata
 ///   8. `[writable]` pool_ata
@@ -799,7 +826,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
 ///   15. `[writable, optional]` taker_broker
 ///   16. `[signer, optional]` cosigner
 ///   17. `[]` amm_program
-///   18. `[]` escrow_program
+///   18. `[optional]` escrow_program
 pub struct SellNftTradePoolT22CpiBuilder<'a, 'b> {
     instruction: Box<SellNftTradePoolT22CpiBuilderInstruction<'a, 'b>>,
 }
@@ -827,7 +854,6 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
             cosigner: None,
             amm_program: None,
             escrow_program: None,
-            config: None,
             min_price: None,
             __remaining_accounts: Vec::new(),
         });
@@ -872,14 +898,15 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self.instruction.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
     pub fn mint_proof(
         &mut self,
-        mint_proof: &'b solana_program::account_info::AccountInfo<'a>,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.mint_proof = Some(mint_proof);
+        self.instruction.mint_proof = mint_proof;
         self
     }
     /// The mint account of the NFT being sold.
@@ -992,17 +1019,13 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self.instruction.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
     #[inline(always)]
     pub fn escrow_program(
         &mut self,
-        escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+        escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.escrow_program = Some(escrow_program);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
+        self.instruction.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -1052,7 +1075,6 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = SellNftTradePoolT22InstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
             min_price: self
                 .instruction
                 .min_price
@@ -1072,7 +1094,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            mint_proof: self.instruction.mint_proof.expect("mint_proof is not set"),
+            mint_proof: self.instruction.mint_proof,
 
             mint: self.instruction.mint.expect("mint is not set"),
 
@@ -1113,10 +1135,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
                 .amm_program
                 .expect("amm_program is not set"),
 
-            escrow_program: self
-                .instruction
-                .escrow_program
-                .expect("escrow_program is not set"),
+            escrow_program: self.instruction.escrow_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1147,7 +1166,6 @@ struct SellNftTradePoolT22CpiBuilderInstruction<'a, 'b> {
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
     min_price: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

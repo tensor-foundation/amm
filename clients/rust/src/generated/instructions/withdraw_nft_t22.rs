@@ -5,7 +5,6 @@
 //! [https://github.com/metaplex-foundation/kinobi]
 //!
 
-use crate::generated::types::PoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -32,16 +31,12 @@ pub struct WithdrawNftT22 {
 }
 
 impl WithdrawNftT22 {
-    pub fn instruction(
-        &self,
-        args: WithdrawNftT22InstructionArgs,
-    ) -> solana_program::instruction::Instruction {
-        self.instruction_with_remaining_accounts(args, &[])
+    pub fn instruction(&self) -> solana_program::instruction::Instruction {
+        self.instruction_with_remaining_accounts(&[])
     }
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: WithdrawNftT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
@@ -79,9 +74,7 @@ impl WithdrawNftT22 {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = WithdrawNftT22InstructionData::new().try_to_vec().unwrap();
-        let mut args = args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = WithdrawNftT22InstructionData::new().try_to_vec().unwrap();
 
         solana_program::instruction::Instruction {
             program_id: crate::TENSOR_AMM_ID,
@@ -102,12 +95,6 @@ impl WithdrawNftT22InstructionData {
             discriminator: [112, 55, 80, 231, 181, 190, 92, 12],
         }
     }
-}
-
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct WithdrawNftT22InstructionArgs {
-    pub config: PoolConfig,
 }
 
 /// Instruction builder for `WithdrawNftT22`.
@@ -134,7 +121,6 @@ pub struct WithdrawNftT22Builder {
     token_program: Option<solana_program::pubkey::Pubkey>,
     associated_token_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    config: Option<PoolConfig>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -202,11 +188,6 @@ impl WithdrawNftT22Builder {
         self.system_program = Some(system_program);
         self
     }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.config = Some(config);
-        self
-    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -244,11 +225,8 @@ impl WithdrawNftT22Builder {
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = WithdrawNftT22InstructionArgs {
-            config: self.config.clone().expect("config is not set"),
-        };
 
-        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
@@ -296,15 +274,12 @@ pub struct WithdrawNftT22Cpi<'a, 'b> {
     pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The arguments for the instruction.
-    pub __args: WithdrawNftT22InstructionArgs,
 }
 
 impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
         accounts: WithdrawNftT22CpiAccounts<'a, 'b>,
-        args: WithdrawNftT22InstructionArgs,
     ) -> Self {
         Self {
             __program: program,
@@ -317,7 +292,6 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
             token_program: accounts.token_program,
             associated_token_program: accounts.associated_token_program,
             system_program: accounts.system_program,
-            __args: args,
         }
     }
     #[inline(always)]
@@ -397,9 +371,7 @@ impl<'a, 'b> WithdrawNftT22Cpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = WithdrawNftT22InstructionData::new().try_to_vec().unwrap();
-        let mut args = self.__args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = WithdrawNftT22InstructionData::new().try_to_vec().unwrap();
 
         let instruction = solana_program::instruction::Instruction {
             program_id: crate::TENSOR_AMM_ID,
@@ -459,7 +431,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
             token_program: None,
             associated_token_program: None,
             system_program: None,
-            config: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -536,11 +507,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
         self.instruction.system_program = Some(system_program);
         self
     }
-    #[inline(always)]
-    pub fn config(&mut self, config: PoolConfig) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -582,9 +548,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = WithdrawNftT22InstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
-        };
         let instruction = WithdrawNftT22Cpi {
             __program: self.instruction.__program,
 
@@ -617,7 +580,6 @@ impl<'a, 'b> WithdrawNftT22CpiBuilder<'a, 'b> {
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-            __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -637,7 +599,6 @@ struct WithdrawNftT22CpiBuilderInstruction<'a, 'b> {
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    config: Option<PoolConfig>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

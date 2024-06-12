@@ -68,8 +68,8 @@ pub struct SellNftTradePool {
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
-
-    pub escrow_program: solana_program::pubkey::Pubkey,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl SellNftTradePool {
@@ -262,10 +262,17 @@ impl SellNftTradePool {
             self.amm_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.escrow_program,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                escrow_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SellNftTradePoolInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -330,7 +337,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[signer, optional]` cosigner
 ///   25. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
-///   26. `[]` escrow_program
+///   26. `[optional]` escrow_program
 #[derive(Default)]
 pub struct SellNftTradePoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -576,9 +583,14 @@ impl SellNftTradePoolBuilder {
         self.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
+    /// The escrow program account for shared liquidity pools.
     #[inline(always)]
-    pub fn escrow_program(&mut self, escrow_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.escrow_program = Some(escrow_program);
+    pub fn escrow_program(
+        &mut self,
+        escrow_program: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -653,7 +665,7 @@ impl SellNftTradePoolBuilder {
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
             )),
-            escrow_program: self.escrow_program.expect("escrow_program is not set"),
+            escrow_program: self.escrow_program,
         };
         let args = SellNftTradePoolInstructionArgs {
             min_price: self.min_price.clone().expect("min_price is not set"),
@@ -724,8 +736,8 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `sell_nft_trade_pool` CPI instruction.
@@ -789,8 +801,8 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: SellNftTradePoolInstructionArgs,
 }
@@ -1048,10 +1060,17 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             *self.amm_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.escrow_program.key,
-            false,
-        ));
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *escrow_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -1118,7 +1137,9 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             account_infos.push(cosigner.clone());
         }
         account_infos.push(self.amm_program.clone());
-        account_infos.push(self.escrow_program.clone());
+        if let Some(escrow_program) = self.escrow_program {
+            account_infos.push(escrow_program.clone());
+        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -1161,7 +1182,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[signer, optional]` cosigner
 ///   25. `[]` amm_program
-///   26. `[]` escrow_program
+///   26. `[optional]` escrow_program
 pub struct SellNftTradePoolCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTradePoolCpiBuilderInstruction<'a, 'b>>,
 }
@@ -1445,12 +1466,14 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
         self.instruction.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account]`
+    /// The escrow program account for shared liquidity pools.
     #[inline(always)]
     pub fn escrow_program(
         &mut self,
-        escrow_program: &'b solana_program::account_info::AccountInfo<'a>,
+        escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.escrow_program = Some(escrow_program);
+        self.instruction.escrow_program = escrow_program;
         self
     }
     #[inline(always)]
@@ -1590,10 +1613,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
                 .amm_program
                 .expect("amm_program is not set"),
 
-            escrow_program: self
-                .instruction
-                .escrow_program
-                .expect("escrow_program is not set"),
+            escrow_program: self.instruction.escrow_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(

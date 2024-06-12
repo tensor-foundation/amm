@@ -16,12 +16,12 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee,
+    calc_creators_fee, escrow,
     token_2022::{validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
-use tensor_whitelist::{FullMerkleProof, WhitelistV2};
 use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use self::{
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
@@ -73,23 +73,16 @@ pub struct SellNftTradePoolT22<'info> {
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
-        seeds::program = tensor_whitelist::ID
+        seeds::program = whitelist_program::ID
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
-    /// CHECK: seeds below + assert_decode_mint_proof
-    #[account(
-        seeds = [
-            b"mint_proof".as_ref(),
-            mint.key().as_ref(),
-            whitelist.key().as_ref(),
-        ],
-        bump,
-        seeds::program = tensor_whitelist::ID
-    )]
-    pub mint_proof: UncheckedAccount<'info>,
+    /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
+    // Merkle Trees are the only mode that can be used for whitelists in T22 but we set this as an
+    // option to support the ability to use other modes in the future, e.g. FVC w/ T22 Metadata.
+    pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The mint account of the NFT being sold.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -158,8 +151,8 @@ pub struct SellNftTradePoolT22<'info> {
     pub amm_program: Program<'info, AmmProgram>,
 
     /// CHECK: address constraint is checked here
-    #[account(address = tensor_escrow::ID)]
-    pub escrow_program: UncheckedAccount<'info>,
+    #[account(address = escrow::ID)]
+    pub escrow_program: Option<UncheckedAccount<'info>>,
 }
 
 impl<'info> Validate<'info> for SellNftTradePoolT22<'info> {
@@ -182,19 +175,22 @@ impl<'info> Validate<'info> for SellNftTradePoolT22<'info> {
 
 impl<'info> SellNftTradePoolT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        let mint_proof =
-            assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, mint_proof)?;
 
-        let leaf = keccak::hash(self.mint.key().as_ref());
-        let proof = &mut mint_proof.proof.to_vec();
-        proof.truncate(mint_proof.proof_len as usize);
-        let full_merkle_proof = Some(FullMerkleProof {
-            leaf: leaf.0,
-            proof: proof.clone(),
-        });
+            let leaf = keccak::hash(self.mint.key().as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            return Err(ErrorCode::MintProofNotSet.into());
+        };
 
-        // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
-        self.whitelist.verify(None, None, full_merkle_proof)
+        // Only supporting Merkle proof for now.
+        self.whitelist.verify(&None, &None, &full_merkle_proof)
     }
 
     fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
@@ -350,6 +346,12 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         )
         .to_account_info();
 
+        let escrow_program = unwrap_opt!(
+            ctx.accounts.escrow_program.as_ref(),
+            ErrorCode::EscrowProgramNotSet
+        )
+        .to_account_info();
+
         // Validate it's a valid escrow account.
         assert_decode_margin_account(
             &incoming_shared_escrow,
@@ -363,7 +365,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
 
         // Withdraw from escrow account to pool.
         WithdrawMarginAccountCpiTammCpi {
-            __program: &ctx.accounts.escrow_program.to_account_info(),
+            __program: &escrow_program,
             margin_account: &incoming_shared_escrow,
             pool: &ctx.accounts.pool.to_account_info(),
             owner: &ctx.accounts.owner.to_account_info(),
