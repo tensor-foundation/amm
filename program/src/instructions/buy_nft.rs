@@ -186,7 +186,7 @@ impl<'info> BuyNft<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.pool_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
         )
