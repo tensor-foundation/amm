@@ -226,7 +226,7 @@ impl<'info> SellNftTokenPool<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.seller_ata.to_account_info(),
-                destination: self.owner.to_account_info(),
+                destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
         )
