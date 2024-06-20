@@ -34,8 +34,8 @@ import {
   type WritableSignerAccount,
 } from '@solana/web3.js';
 import {
-  resolveNftReceipt,
   resolvePoolAta,
+  resolvePoolNftReceipt,
   resolveSellerAta,
 } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
@@ -376,7 +376,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
-      ...(await resolveNftReceipt(resolverScope)),
+      ...(await resolvePoolNftReceipt(resolverScope)),
     };
   }
   if (!accounts.associatedTokenProgram.value) {

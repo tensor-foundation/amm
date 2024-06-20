@@ -406,7 +406,7 @@ kinobi.update(
     {
       account: "nftReceipt",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveNftReceipt", {
+      defaultValue: k.resolverValueNode("resolvePoolNftReceipt", {
         importFrom: "resolvers",
         dependsOn: [k.accountValueNode("mint"), k.accountValueNode("pool")],
       }),
@@ -489,7 +489,7 @@ kinobi.accept(
       "resolveBuyerTokenRecordFromTokenStandard",
       "resolveSellerTokenRecordFromTokenStandard",
       "resolvePoolTokenRecordFromTokenStandard",
-      "resolveNftReceipt",
+      "resolvePoolNftReceipt",
       "resolveMetadata",
       "resolveEditionFromTokenStandard",
     ],

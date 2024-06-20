@@ -35,8 +35,8 @@ import {
 } from '@solana/web3.js';
 import {
   resolveBuyerAta,
-  resolveNftReceipt,
   resolvePoolAta,
+  resolvePoolNftReceipt,
 } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -368,7 +368,7 @@ export async function getBuyNftT22InstructionAsync<
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
-      ...(await resolveNftReceipt(resolverScope)),
+      ...(await resolvePoolNftReceipt(resolverScope)),
     };
   }
   if (!accounts.associatedTokenProgram.value) {

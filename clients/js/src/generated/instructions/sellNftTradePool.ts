@@ -46,8 +46,8 @@ import {
   resolveAuthorizationRulesProgramFromTokenStandard,
   resolveEditionFromTokenStandard,
   resolveMetadata,
-  resolveNftReceipt,
   resolvePoolAta,
+  resolvePoolNftReceipt,
   resolveSellerAta,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -535,7 +535,7 @@ export async function getSellNftTradePoolInstructionAsync<
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
-      ...(await resolveNftReceipt(resolverScope)),
+      ...(await resolvePoolNftReceipt(resolverScope)),
     };
   }
   if (!accounts.associatedTokenProgram.value) {

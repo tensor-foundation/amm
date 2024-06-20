@@ -40,9 +40,9 @@ import {
   resolveAuthorizationRulesProgramFromTokenStandard,
   resolveEditionFromTokenStandard,
   resolveMetadata,
-  resolveNftReceipt,
   resolveOwnerAta,
   resolvePoolAta,
+  resolvePoolNftReceipt,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
@@ -405,7 +405,7 @@ export async function getDepositNftInstructionAsync<
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
-      ...(await resolveNftReceipt(resolverScope)),
+      ...(await resolvePoolNftReceipt(resolverScope)),
     };
   }
   if (!accounts.associatedTokenProgram.value) {

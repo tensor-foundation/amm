@@ -31,9 +31,9 @@ import {
   type WritableSignerAccount,
 } from '@solana/web3.js';
 import {
-  resolveNftReceipt,
   resolveOwnerAta,
   resolvePoolAta,
+  resolvePoolNftReceipt,
 } from '@tensor-foundation/resolvers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
@@ -237,7 +237,7 @@ export async function getWithdrawNftT22InstructionAsync<
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
-      ...(await resolveNftReceipt(resolverScope)),
+      ...(await resolvePoolNftReceipt(resolverScope)),
     };
   }
   if (!accounts.associatedTokenProgram.value) {
