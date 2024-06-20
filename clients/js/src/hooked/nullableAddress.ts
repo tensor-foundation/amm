@@ -3,9 +3,9 @@ import {
   address,
   getAddressDecoder,
   getAddressEncoder,
-  combineCodec, 
-  createDecoder, 
-  createEncoder
+  combineCodec,
+  createDecoder,
+  createEncoder,
 } from '@solana/web3.js';
 
 export type NullableAddress = Address | null;

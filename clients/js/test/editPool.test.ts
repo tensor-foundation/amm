@@ -1,5 +1,9 @@
 import test from 'ava';
-import { appendTransactionMessageInstruction, pipe, generateKeyPairSigner } from '@solana/web3.js';
+import {
+  appendTransactionMessageInstruction,
+  pipe,
+  generateKeyPairSigner,
+} from '@solana/web3.js';
 import {
   Mode,
   WhitelistV2,

@@ -10,7 +10,7 @@ import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
-  signAndSendTransaction
+  signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
   createDefaultNft,
