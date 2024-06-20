@@ -3,15 +3,15 @@
   "version": "0.0.2",
   "description": "Version 2 of the Tensor AMM program.",
   "sideEffects": false,
-  "module": "./dist/src/index.js",
-  "main": "dist/src/index.cjs",
-  "types": "dist/types/src/index.d.ts",
-  "type": "module",
+  "module": "./dist/src/index.mjs",
+  "main": "./dist/src/index.js",
+  "types": "./dist/types/index.d.ts",
+  "type": "commonjs",
   "exports": {
     ".": {
-      "types": "./dist/types/src/index.d.ts",
-      "import": "./dist/src/index.js",
-      "require": "./dist/src/index.cjs"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/src/index.mjs",
+      "require": "./dist/src/index.js"
     }
   },
   "files": ["./dist/src", "./dist/types"],
@@ -30,27 +30,20 @@
   },
   "homepage": "https://github.com/tensor-foundation",
   "repository": "https://github.com/tensor-foundation/amm.git",
-  "author": "Tensor Protocol Foundation <maintainers.foundation>",
+  "author": "Tensor Protocol Foundation <maintainers@tensor.foundation>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@solana-program/compute-budget": "0.2.0",
-    "@solana/accounts": "2.0.0-preview.2",
-    "@solana/addresses": "2.0.0-preview.2",
-    "@solana/codecs": "2.0.0-preview.2",
-    "@solana/errors": "2.0.0-preview.2",
-    "@solana/instructions": "2.0.0-preview.2",
-    "@solana/programs": "2.0.0-preview.2",
-    "@solana/signers": "2.0.0-preview.2",
-    "@solana/web3.js": "2.0.0-preview.2"
+    "@solana/web3.js": "2.0.0-preview.3"
   },
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
     "@solana/eslint-config-solana": "^3.0.0",
-    "@tensor-foundation/escrow": "0.0.1",
-    "@tensor-foundation/resolvers": "0.0.5",
-    "@tensor-foundation/test-helpers": "0.0.3",
-    "@tensor-foundation/toolkit-token-metadata": "0.0.3",
-    "@tensor-foundation/whitelist": "0.0.1",
+    "@solana-program/compute-budget":"^0.3.2",
+    "@tensor-foundation/escrow": "0.1.1",
+    "@tensor-foundation/resolvers": "0.1.0",
+    "@tensor-foundation/test-helpers": "0.0.5",
+    "@tensor-foundation/mpl-token-metadata": "0.0.2",
+    "@tensor-foundation/whitelist": "0.1.0",
     "@types/node": "20.12.7",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
@@ -69,7 +62,8 @@
     "typedoc-plugin-missing-exports": "^2.2.0",
     "typescript": "^5.4.2",
     "uuid": "^9.0.1",
-    "vercel": "^28.16.0"
+    "vercel": "^28.16.0",
+    "ws": "^8.14.0"
   },
   "ava": {
     "typescript": {

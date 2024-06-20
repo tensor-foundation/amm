@@ -1,12 +1,11 @@
-import { appendTransactionInstruction, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/toolkit-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
@@ -74,7 +73,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -111,7 +110,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -197,7 +196,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -231,7 +230,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -318,7 +317,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -350,7 +349,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
 
   const sig = await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -427,8 +426,8 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositNftIx1, tx),
-    (tx) => appendTransactionInstruction(depositNftIx2, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx1, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx2, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -473,7 +472,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionInstruction(buyNftIx1, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx1, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -495,7 +494,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionInstruction(buyNftIx2, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx2, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 

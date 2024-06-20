@@ -1,7 +1,7 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  appendTransactionInstruction,
+  appendTransactionMessageInstruction,
   isSolanaError,
   pipe,
 } from '@solana/web3.js';
@@ -15,8 +15,7 @@ import {
 import {
   createDefaultNft,
   findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
+} from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
@@ -81,7 +80,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -131,8 +130,8 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -164,7 +163,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(withdrawSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -214,7 +213,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -227,7 +226,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
 
   const promise = pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(withdrawSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -291,7 +290,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -312,7 +311,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(withdrawSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 

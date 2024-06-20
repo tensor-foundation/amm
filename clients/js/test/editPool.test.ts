@@ -1,6 +1,5 @@
 import test from 'ava';
-import { generateKeyPairSigner } from '@solana/signers';
-import { appendTransactionInstruction, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe, generateKeyPairSigner } from '@solana/web3.js';
 import {
   Mode,
   WhitelistV2,
@@ -68,7 +67,7 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, updateAuthority),
-    (tx) => appendTransactionInstruction(editPoolIx, tx),
+    (tx) => appendTransactionMessageInstruction(editPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 

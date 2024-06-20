@@ -1,4 +1,4 @@
-import { appendTransactionInstruction, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -8,8 +8,7 @@ import {
 import {
   createDefaultNft,
   findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
+} from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
@@ -102,7 +101,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
