@@ -4,7 +4,7 @@ import {
   createEncoder,
   getU16Decoder,
   getU16Encoder,
-} from '@solana/codecs';
+} from '@solana/web3.js';
 
 export type NullableU16 = number | null;
 export type NullableU16Args = NullableU16;
