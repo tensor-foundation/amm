@@ -7,10 +7,10 @@ import { renderVisitor as renderRustVisitor } from "@kinobi-so/renderers-rust";
 import { getAllProgramIdls } from "./utils.mjs";
 
 // Instanciate Kinobi.
-const [idl] = getAllProgramIdls()
-  .filter((idl) => idl.includes("program/idl.json"))
-  .map((idl) => rootNodeFromAnchor(require(idl)));
-const kinobi = k.createFromRoot(idl);
+const [idl, ...additionalIdls] = getAllProgramIdls().map((idl) =>
+  rootNodeFromAnchor(require(idl))
+);
+const kinobi = k.createFromRoot(idl, additionalIdls);
 
 // Update programs.
 kinobi.update(
@@ -24,7 +24,7 @@ kinobi.update(
   k.updateAccountsVisitor({
     pool: {
       seeds: [
-        k.constantPdaSeedNodeFromString("pool"),
+        k.constantPdaSeedNodeFromString("utf8", "pool"),
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
@@ -39,7 +39,7 @@ kinobi.update(
     },
     sharedEscrow: {
       seeds: [
-        k.constantPdaSeedNodeFromString("shared_escrow"),
+        k.constantPdaSeedNodeFromString("utf8", "shared_escrow"),
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
@@ -54,7 +54,7 @@ kinobi.update(
     },
     nftDepositReceipt: {
       seeds: [
-        k.constantPdaSeedNodeFromString("nft_receipt"),
+        k.constantPdaSeedNodeFromString("utf8", "nft_receipt"),
         k.variablePdaSeedNode(
           "mint",
           k.publicKeyTypeNode(),
@@ -472,11 +472,10 @@ kinobi.update(
 // kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
 
 // Render JavaScript.
-const jsDir = path.join(clientDir, "js", "src", "generated");
-const prettier = require(path.join(clientDir, "js", ".prettierrc.json"));
+const jsClient = path.join(__dirname, "..", "clients", "js");
 kinobi.accept(
-  new k.renderJavaScriptExperimentalVisitor(jsDir, {
-    prettier,
+  renderJavaScriptVisitor(path.join(jsClient, "src", "generated"), {
+    prettier: require(path.join(jsClient, ".prettierrc.json")),
     dependencyMap: {
       resolvers: "@tensor-foundation/resolvers",
     },
@@ -498,11 +497,10 @@ kinobi.accept(
 );
 
 // Render Rust.
-const crateDir = path.join(clientDir, "rust");
-const rustDir = path.join(clientDir, "rust", "src", "generated");
+const rustClient = path.join(__dirname, "..", "clients", "rust");
 kinobi.accept(
-  k.renderRustVisitor(rustDir, {
+  renderRustVisitor(path.join(rustClient, "src", "generated"), {
     formatCode: true,
-    crateFolder: crateDir,
+    crateFolder: rustClient,
   }),
 );
