@@ -1,12 +1,16 @@
-const path = require("path");
-const k = require("@metaplex-foundation/kinobi");
-
-// Paths.
-const clientDir = path.join(__dirname, "..", "clients");
-const idlDir = path.join(__dirname, "..", "program", "idl");
+#!/usr/bin/env zx
+import "zx/globals";
+import * as k from "kinobi";
+import { rootNodeFromAnchor } from "@kinobi-so/nodes-from-anchor";
+import { renderVisitor as renderJavaScriptVisitor } from "@kinobi-so/renderers-js";
+import { renderVisitor as renderRustVisitor } from "@kinobi-so/renderers-rust";
+import { getAllProgramIdls } from "./utils.mjs";
 
 // Instanciate Kinobi.
-const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
+const [idl] = getAllProgramIdls()
+  .filter((idl) => idl.includes("program/idl.json"))
+  .map((idl) => rootNodeFromAnchor(require(idl)));
+const kinobi = k.createFromRoot(idl);
 
 // Update programs.
 kinobi.update(
@@ -28,7 +32,7 @@ kinobi.update(
         ),
         k.variablePdaSeedNode(
           "pool_id",
-          k.bytesTypeNode(k.fixedSizeNode(32)),
+          k.fixedSizeTypeNode(k.bytesTypeNode(), 32),
           "Pool unique ID",
         ),
       ],
