@@ -67,6 +67,11 @@ jobs:
           version: ${{ inputs.node || env.NODE_VERSION }}
           cache: ${{ env.CACHE }}
           dependencies: true
+      
+      - name: Configure npm authentication
+        run: |
+          echo "@tensor-foundation:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
 
       - name: Cache program dependencies
         if: env.CACHE == 'true'
