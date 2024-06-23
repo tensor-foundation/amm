@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
+    "binaries:fetch": "zx ./scripts/fetch-external-binaries.mjs",
     "programs:build": "zx ./scripts/program/build.mjs",
     "programs:test": "zx ./scripts/program/test.mjs",
     "programs:clean": "zx ./scripts/program/clean.mjs",
@@ -22,6 +23,8 @@
     "@kinobi-so/renderers-js": "^0.20.5",
     "@kinobi-so/renderers-rust": "^0.20.6",
     "@metaplex-foundation/shank-js": "^0.1.7",
+    "@octokit/rest": "^21.0.0",
+    "jszip": "^3.10.1",
     "kinobi": "^0.20.3",
     "typescript": "^5.4.2",
     "zx": "^7.2.3"

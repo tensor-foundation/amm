@@ -1,3 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["clients/rust", "program"]
+
+[workspace.metadata.solana]
+external-programs-repositories = [
+    ["tensor-foundation/escrow", "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN"], 
+    ["tensor-foundation/whitelist", "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW"]
+] 
