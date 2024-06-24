@@ -66,7 +66,7 @@ jobs:
       - name: Configure npm authentication
         run: |
           echo "@tensor-foundation:registry=https://npm.pkg.github.com" > ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ARTIFACTS_TOKEN }}" >> ~/.npmrc
           
       - uses: tensor-foundation/actions/install-node-dependencies@v2
         with:
