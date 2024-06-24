@@ -54,6 +54,9 @@ externalRepos.forEach(async repoInfo => {
 // Helper func that fetches Personal Access Token from ~/.npmrc
 function getPAT() {
   try {
+    if (process.env.ARTIFACTS_TOKEN) {
+      return process.env.ARTIFACTS_TOKEN;
+    }
     const npmrcPath = path.join(os.homedir(), '.npmrc');
     const data = fs.readFileSync(npmrcPath, 'utf8');
     const lines = data.split('\n');

@@ -10,6 +10,7 @@ on:
 env:
   CACHE: true
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  ARTIFACTS_TOKEN: ${{ secrets.ARTIFACTS_TOKEN }}
 
 permissions: read-all
 
@@ -66,7 +67,7 @@ jobs:
       - name: Configure npm authentication
         run: |
           echo "@tensor-foundation:registry=https://npm.pkg.github.com" > ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.ARTIFACTS_TOKEN }}" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
           
       - uses: tensor-foundation/actions/install-node-dependencies@v2
         with:
