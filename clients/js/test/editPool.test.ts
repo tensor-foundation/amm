@@ -56,7 +56,7 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
     expireInSec: ONE_WEEK,
   });
 
-  const editPoolIx = getEditPoolInstruction({
+  const editPoolIx = await getEditPoolInstruction({
     owner: updateAuthority,
     pool,
     expireInSec: 2 * ONE_WEEK,

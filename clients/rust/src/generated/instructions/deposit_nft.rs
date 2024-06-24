@@ -18,7 +18,7 @@ pub struct DepositNft {
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
     pub whitelist: solana_program::pubkey::Pubkey,
     /// The ATA of the owner, where the NFT will be transferred from.
-    pub owner_ata: solana_program::pubkey::Pubkey,
+    pub owner_ta: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT. It should be the mint account common
@@ -77,7 +77,7 @@ impl DepositNft {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.owner_ata,
+            self.owner_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -226,7 +226,7 @@ pub struct DepositNftInstructionArgs {
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
-///   3. `[writable]` owner_ata
+///   3. `[writable]` owner_ta
 ///   4. `[writable]` pool_ata
 ///   5. `[]` mint
 ///   6. `[writable]` nft_receipt
@@ -247,7 +247,7 @@ pub struct DepositNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
-    owner_ata: Option<solana_program::pubkey::Pubkey>,
+    owner_ta: Option<solana_program::pubkey::Pubkey>,
     pool_ata: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
@@ -291,8 +291,8 @@ impl DepositNftBuilder {
     }
     /// The ATA of the owner, where the NFT will be transferred from.
     #[inline(always)]
-    pub fn owner_ata(&mut self, owner_ata: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.owner_ata = Some(owner_ata);
+    pub fn owner_ta(&mut self, owner_ta: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.owner_ta = Some(owner_ta);
         self
     }
     /// The ATA of the pool, where the NFT will be escrowed.
@@ -447,7 +447,7 @@ impl DepositNftBuilder {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
-            owner_ata: self.owner_ata.expect("owner_ata is not set"),
+            owner_ta: self.owner_ta.expect("owner_ta is not set"),
             pool_ata: self.pool_ata.expect("pool_ata is not set"),
             mint: self.mint.expect("mint is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
@@ -487,7 +487,7 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred from.
-    pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
@@ -532,7 +532,7 @@ pub struct DepositNftCpi<'a, 'b> {
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the owner, where the NFT will be transferred from.
-    pub owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be escrowed.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
@@ -579,7 +579,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
-            owner_ata: accounts.owner_ata,
+            owner_ta: accounts.owner_ta,
             pool_ata: accounts.pool_ata,
             mint: accounts.mint,
             nft_receipt: accounts.nft_receipt,
@@ -645,7 +645,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.owner_ata.key,
+            *self.owner_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -778,7 +778,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
-        account_infos.push(self.owner_ata.clone());
+        account_infos.push(self.owner_ta.clone());
         account_infos.push(self.pool_ata.clone());
         account_infos.push(self.mint.clone());
         account_infos.push(self.nft_receipt.clone());
@@ -827,7 +827,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
 ///   2. `[]` whitelist
-///   3. `[writable]` owner_ata
+///   3. `[writable]` owner_ta
 ///   4. `[writable]` pool_ata
 ///   5. `[]` mint
 ///   6. `[writable]` nft_receipt
@@ -854,7 +854,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
             owner: None,
             pool: None,
             whitelist: None,
-            owner_ata: None,
+            owner_ta: None,
             pool_ata: None,
             mint: None,
             nft_receipt: None,
@@ -898,11 +898,11 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
     }
     /// The ATA of the owner, where the NFT will be transferred from.
     #[inline(always)]
-    pub fn owner_ata(
+    pub fn owner_ta(
         &mut self,
-        owner_ata: &'b solana_program::account_info::AccountInfo<'a>,
+        owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.owner_ata = Some(owner_ata);
+        self.instruction.owner_ta = Some(owner_ta);
         self
     }
     /// The ATA of the pool, where the NFT will be escrowed.
@@ -1104,7 +1104,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
 
-            owner_ata: self.instruction.owner_ata.expect("owner_ata is not set"),
+            owner_ta: self.instruction.owner_ta.expect("owner_ta is not set"),
 
             pool_ata: self.instruction.pool_ata.expect("pool_ata is not set"),
 
@@ -1161,7 +1161,7 @@ struct DepositNftCpiBuilderInstruction<'a, 'b> {
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    owner_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    owner_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,

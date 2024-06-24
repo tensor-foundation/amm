@@ -48,10 +48,10 @@ pub struct DepositNft<'info> {
     /// The ATA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = owner,
+        token::mint = mint,
+        token::authority = owner,
     )]
-    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The ATA of the pool, where the NFT will be escrowed.
     #[account(
@@ -66,7 +66,7 @@ pub struct DepositNft<'info> {
     /// to the owner_ata and pool_ata.
     #[account(
         constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -180,7 +180,7 @@ impl<'info> DepositNft<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.owner_ata.to_account_info(),
+                account: self.owner_ta.to_account_info(),
                 destination: self.owner.to_account_info(),
                 authority: self.owner.to_account_info(),
             },
@@ -207,7 +207,7 @@ pub fn process_deposit_nft(
         TransferArgs {
             payer: &ctx.accounts.owner.to_account_info(),
             source: &ctx.accounts.owner.to_account_info(),
-            source_ata: &ctx.accounts.owner_ata,
+            source_ata: &ctx.accounts.owner_ta,
             destination: &ctx.accounts.pool.to_account_info(),
             destination_ata: &ctx.accounts.pool_ata,
             mint: &ctx.accounts.mint,
