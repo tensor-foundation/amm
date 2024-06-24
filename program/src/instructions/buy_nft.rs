@@ -230,7 +230,7 @@ impl<'info> Validate<'info> for BuyNft<'info> {
 pub fn process_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,
     // Max vs exact so we can add slippage later.
-    max_price: u64,
+    max_amount: u64,
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
@@ -275,7 +275,7 @@ pub fn process_buy_nft<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    if current_price > max_price {
+    if current_price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
     }
 

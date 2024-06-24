@@ -901,7 +901,7 @@
       ],
       "args": [
         {
-          "name": "maxPrice",
+          "name": "maxAmount",
           "type": "u64"
         },
         {
@@ -1615,7 +1615,7 @@
       ],
       "args": [
         {
-          "name": "maxPrice",
+          "name": "maxAmount",
           "type": "u64"
         }
       ]
