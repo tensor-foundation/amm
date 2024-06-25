@@ -1,4 +1,8 @@
 .anchor
+.amman
+.bin
+.cargo
+.crates
 .DS_Store
 **/.DS_Store
 **/target
@@ -6,6 +10,3 @@
 node_modules
 test-ledger
 dist
-.amman
-.crates
-.bin
