@@ -17,6 +17,8 @@ getProgramFolders().forEach((folder) => {
     idlName: "idl",
     programDir,
     binaryInstallDir,
-    locked: true,
+    rustbin: {
+      locked: true
+    }
   });
 });
