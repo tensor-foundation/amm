@@ -55,7 +55,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     config,
   });
 
-  const maxPrice = 1_100_000n;
+  const maxAmount = 1_100_000n;
 
   const poolAccount = await fetchPool(client.rpc, pool);
 
@@ -104,7 +104,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     buyer,
     pool,
     mint,
-    maxPrice,
+    maxAmount,
     // Remaining accounts
     creators: [owner.address],
   });
@@ -151,7 +151,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     mmCompoundFees: true,
   };
 
-  const maxPrice = 1_100_000n;
+  const maxAmount = 1_100_000n;
 
   // Create whitelist with FVC where the owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -224,7 +224,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     mint,
     takerBroker: takerBroker.address,
     makerBroker: makerBroker.address,
-    maxPrice,
+    maxAmount,
     // Remaining accounts
     creators: [owner.address],
   });
@@ -276,7 +276,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
 
   const config = tradePoolConfig;
 
-  const maxPrice = 1_100_000n;
+  const maxAmount = 1_100_000n;
 
   // Create whitelist with FVC where the owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -343,7 +343,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
     buyer,
     pool,
     mint,
-    maxPrice,
+    maxAmount,
     // Remaining accounts
     creators: [owner.address],
   });
@@ -397,7 +397,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     config,
   });
 
-  const maxPrice = 1_100_000n;
+  const maxAmount = 1_100_000n;
 
   let poolAccount = await fetchPool(client.rpc, pool);
 
@@ -466,7 +466,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     rentPayer: rentPayer.address,
     pool,
     mint: mint1,
-    maxPrice,
+    maxAmount,
     // Remaining accounts
     creators: [owner.address],
   });
@@ -488,7 +488,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     rentPayer: rentPayer.address,
     pool,
     mint: mint2,
-    maxPrice,
+    maxAmount,
     // Remaining accounts
     creators: [owner.address],
   });

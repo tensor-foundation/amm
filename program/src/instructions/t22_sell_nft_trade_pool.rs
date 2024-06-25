@@ -87,13 +87,13 @@ pub struct SellNftTradePoolT22<'info> {
     /// The mint account of the NFT being sold.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The ATA of the seller, where the NFT will be transferred from.
+    /// The token account of the seller, where the NFT will be transferred from.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = seller
+        token::mint = mint,
+        token::authority = seller
     )]
-    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The ATA of the pool, where the NFT will be transferred to.
     #[account(
@@ -197,7 +197,7 @@ impl<'info> SellNftTradePoolT22<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.seller_ata.to_account_info(),
+                account: self.seller_ta.to_account_info(),
                 destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
@@ -242,7 +242,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.seller_ata.to_account_info(),
+            from: ctx.accounts.seller_ta.to_account_info(),
             to: ctx.accounts.pool_ata.to_account_info(),
             authority: ctx.accounts.seller.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),

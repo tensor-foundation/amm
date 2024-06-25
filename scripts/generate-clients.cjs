@@ -11,8 +11,8 @@ const kinobi = k.createFromIdls([path.join(idlDir, "amm_program.json")]);
 // Update programs.
 kinobi.update(
   new k.updateProgramsVisitor({
-    ammProgram: { name: "tensorAmm" },
-  }),
+    ammProgram: { name: "tensorAmm" }
+  })
 );
 
 // Update accounts.
@@ -24,14 +24,14 @@ kinobi.update(
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
-          "The address of the pool owner",
+          "The address of the pool owner"
         ),
         k.variablePdaSeedNode(
           "pool_id",
           k.bytesTypeNode(k.fixedSizeNode(32)),
-          "Pool unique ID",
-        ),
-      ],
+          "Pool unique ID"
+        )
+      ]
     },
     sharedEscrow: {
       seeds: [
@@ -39,14 +39,14 @@ kinobi.update(
         k.variablePdaSeedNode(
           "owner",
           k.publicKeyTypeNode(),
-          "The owner address",
+          "The owner address"
         ),
         k.variablePdaSeedNode(
           "nr",
           k.numberTypeNode("u16"),
-          "The escrow number",
-        ),
-      ],
+          "The escrow number"
+        )
+      ]
     },
     nftDepositReceipt: {
       seeds: [
@@ -54,16 +54,12 @@ kinobi.update(
         k.variablePdaSeedNode(
           "mint",
           k.publicKeyTypeNode(),
-          "The nft mint address",
+          "The nft mint address"
         ),
-        k.variablePdaSeedNode(
-          "pool",
-          k.publicKeyTypeNode(),
-          "The pool address",
-        ),
-      ],
-    },
-  }),
+        k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
+      ]
+    }
+  })
 );
 
 // Update instructions.
@@ -75,10 +71,10 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible",
-          ),
-        },
-      },
+            "NonFungible"
+          )
+        }
+      }
     },
     withdrawNft: {
       arguments: {
@@ -86,10 +82,10 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible",
-          ),
-        },
-      },
+            "NonFungible"
+          )
+        }
+      }
     },
     sellNftTokenPool: {
       arguments: {
@@ -97,17 +93,17 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible",
-          ),
-        },
+            "NonFungible"
+          )
+        }
       },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true,
-        }),
-      ],
+          isWritable: true
+        })
+      ]
     },
     sellNftTradePool: {
       arguments: {
@@ -115,17 +111,17 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible",
-          ),
-        },
+            "NonFungible"
+          )
+        }
       },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true,
-        }),
-      ],
+          isWritable: true
+        })
+      ]
     },
     buyNft: {
       arguments: {
@@ -133,19 +129,19 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible",
-          ),
-        },
+            "NonFungible"
+          )
+        }
       },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
           isSigner: false,
-          isWritable: true,
-        }),
-      ],
-    },
-  }),
+          isWritable: true
+        })
+      ]
+    }
+  })
 );
 
 // Add missing types from the IDL.
@@ -158,9 +154,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+          type: k.definedTypeLinkNode("nullableAddress", "hooked")
         };
-      },
+      }
     },
     {
       select:
@@ -169,9 +165,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+          type: k.definedTypeLinkNode("nullableAddress", "hooked")
         };
-      },
+      }
     },
     {
       select:
@@ -180,9 +176,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+          type: k.definedTypeLinkNode("nullableAddress", "hooked")
         };
-      },
+      }
     },
     {
       select:
@@ -191,9 +187,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked"),
+          type: k.definedTypeLinkNode("nullableAddress", "hooked")
         };
-      },
+      }
     },
     {
       select:
@@ -202,9 +198,9 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("currency", "hooked"),
+          type: k.definedTypeLinkNode("currency", "hooked")
         };
-      },
+      }
     },
     {
       select:
@@ -213,11 +209,11 @@ kinobi.update(
         k.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableU16", "hooked"),
+          type: k.definedTypeLinkNode("nullableU16", "hooked")
         };
-      },
-    },
-  ]),
+      }
+    }
+  ])
 );
 
 // Set default account values accross multiple instructions.
@@ -229,32 +225,32 @@ kinobi.update(
       ignoreIfOptional: true,
       defaultValue: k.publicKeyValueNode(
         "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-        "tokenProgram",
-      ),
+        "tokenProgram"
+      )
     },
     {
       account: "associatedTokenProgram",
       ignoreIfOptional: true,
       defaultValue: k.publicKeyValueNode(
         "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-        "associatedTokenProgram",
-      ),
+        "associatedTokenProgram"
+      )
     },
     {
       account: "ammProgram",
       ignoreIfOptional: true,
       defaultValue: k.publicKeyValueNode(
         "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA",
-        "ammProgram",
-      ),
+        "ammProgram"
+      )
     },
     {
       account: "systemProgram",
       ignoreIfOptional: true,
       defaultValue: k.publicKeyValueNode(
         "11111111111111111111111111111111",
-        "systemProgram",
-      ),
+        "systemProgram"
+      )
     },
     // pNFT specific accounts
     {
@@ -263,9 +259,9 @@ kinobi.update(
         "resolveTokenMetadataProgramFromTokenStandard",
         {
           importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")],
-        },
-      ),
+          dependsOn: [k.argumentValueNode("tokenStandard")]
+        }
+      )
     },
     {
       account: "authorizationRulesProgram",
@@ -273,9 +269,9 @@ kinobi.update(
         "resolveAuthorizationRulesProgramFromTokenStandard",
         {
           importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")],
-        },
-      ),
+          dependsOn: [k.argumentValueNode("tokenStandard")]
+        }
+      )
     },
     {
       account: "sysvarInstructions",
@@ -283,17 +279,41 @@ kinobi.update(
         "resolveSysvarInstructionsFromTokenStandard",
         {
           importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")],
-        },
-      ),
+          dependsOn: [k.argumentValueNode("tokenStandard")]
+        }
+      )
     },
     // default accounts
     {
       account: "feeVault",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-        dependsOn: [k.accountValueNode("pool")],
-      }),
+        dependsOn: [k.accountValueNode("pool")]
+      })
+    },
+    {
+      account: "ownerTa",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode("resolveOwnerAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("owner"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+    {
+      account: "sellerTa",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode("resolveSellerAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("owner"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
     },
     {
       account: "ownerAta",
@@ -303,9 +323,9 @@ kinobi.update(
         dependsOn: [
           k.accountValueNode("owner"),
           k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram"),
-        ],
-      }),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
     },
     {
       account: "buyerAta",
@@ -315,9 +335,9 @@ kinobi.update(
         dependsOn: [
           k.accountValueNode("buyer"),
           k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram"),
-        ],
-      }),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
     },
     {
       account: "sellerAta",
@@ -327,9 +347,9 @@ kinobi.update(
         dependsOn: [
           k.accountValueNode("seller"),
           k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram"),
-        ],
-      }),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
     },
     {
       account: "poolAta",
@@ -339,9 +359,9 @@ kinobi.update(
         dependsOn: [
           k.accountValueNode("pool"),
           k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram"),
-        ],
-      }),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
     },
     {
       account: "ownerTokenRecord",
@@ -352,10 +372,10 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("ownerAta"),
-          ],
-        },
-      ),
+            k.accountValueNode("ownerAta")
+          ]
+        }
+      )
     },
     {
       account: "buyerTokenRecord",
@@ -366,10 +386,10 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("buyerAta"),
-          ],
-        },
-      ),
+            k.accountValueNode("buyerAta")
+          ]
+        }
+      )
     },
     {
       account: "sellerTokenRecord",
@@ -380,10 +400,10 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("sellerAta"),
-          ],
-        },
-      ),
+            k.accountValueNode("sellerAta")
+          ]
+        }
+      )
     },
     {
       account: "poolTokenRecord",
@@ -392,43 +412,40 @@ kinobi.update(
         "resolvePoolTokenRecordFromTokenStandard",
         {
           importFrom: "resolvers",
-          dependsOn: [
-            k.accountValueNode("mint"),
-            k.accountValueNode("poolAta"),
-          ],
-        },
-      ),
+          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("poolAta")]
+        }
+      )
     },
     {
       account: "nftReceipt",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveNftReceipt", {
         importFrom: "resolvers",
-        dependsOn: [k.accountValueNode("mint"), k.accountValueNode("pool")],
-      }),
+        dependsOn: [k.accountValueNode("mint"), k.accountValueNode("pool")]
+      })
     },
     {
       account: "metadata",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveMetadata", {
         importFrom: "resolvers",
-        dependsOn: [k.accountValueNode("mint")],
-      }),
+        dependsOn: [k.accountValueNode("mint")]
+      })
     },
     {
       account: "edition",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveEditionFromTokenStandard", {
         importFrom: "resolvers",
-        dependsOn: [k.accountValueNode("mint")],
-      }),
+        dependsOn: [k.accountValueNode("mint")]
+      })
     },
     {
       account: "rentPayer",
       ignoreIfOptional: true,
-      defaultValue: k.accountValueNode("owner"),
-    },
-  ]),
+      defaultValue: k.accountValueNode("owner")
+    }
+  ])
 );
 
 // Set more struct default values dynamically.
@@ -444,7 +461,7 @@ kinobi.update(
           "max_taker_sell_count",
           "currency",
           "authorizationData",
-          "optionalRoyaltyPct",
+          "optionalRoyaltyPct"
         ];
         return (
           k.isNode(node, ["instructionNode", "instructionArgumentNode"]) &&
@@ -457,11 +474,11 @@ kinobi.update(
         return {
           ...node,
           defaultValueStrategy: "optional",
-          defaultValue: k.noneValueNode(),
+          defaultValue: k.noneValueNode()
         };
-      },
-    },
-  ]),
+      }
+    }
+  ])
 );
 
 // Debug: print the AST.
@@ -474,7 +491,7 @@ kinobi.accept(
   new k.renderJavaScriptExperimentalVisitor(jsDir, {
     prettier,
     dependencyMap: {
-      resolvers: "@tensor-foundation/resolvers",
+      resolvers: "@tensor-foundation/resolvers"
     },
     asyncResolvers: [
       "resolveFeeVaultPdaFromPool",
@@ -488,9 +505,9 @@ kinobi.accept(
       "resolvePoolTokenRecordFromTokenStandard",
       "resolveNftReceipt",
       "resolveMetadata",
-      "resolveEditionFromTokenStandard",
-    ],
-  }),
+      "resolveEditionFromTokenStandard"
+    ]
+  })
 );
 
 // Render Rust.
@@ -499,6 +516,6 @@ const rustDir = path.join(clientDir, "rust", "src", "generated");
 kinobi.accept(
   k.renderRustVisitor(rustDir, {
     formatCode: true,
-    crateFolder: crateDir,
-  }),
+    crateFolder: crateDir
+  })
 );

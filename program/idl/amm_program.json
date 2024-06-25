@@ -293,7 +293,7 @@
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -901,7 +901,7 @@
       ],
       "args": [
         {
-          "name": "maxPrice",
+          "name": "maxAmount",
           "type": "u64"
         },
         {
@@ -989,7 +989,7 @@
           ]
         },
         {
-          "name": "sellerAta",
+          "name": "sellerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1267,11 +1267,11 @@
           ]
         },
         {
-          "name": "sellerAta",
+          "name": "sellerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the seller, where the NFT will be transferred from."
+            "The token account of the seller, where the NFT will be transferred from."
           ]
         },
         {
@@ -1615,7 +1615,7 @@
       ],
       "args": [
         {
-          "name": "maxPrice",
+          "name": "maxAmount",
           "type": "u64"
         }
       ]
@@ -1783,11 +1783,11 @@
           ]
         },
         {
-          "name": "sellerAta",
+          "name": "sellerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the NFT for the seller's wallet."
+            "The token account of the NFT for the seller's wallet."
           ]
         },
         {
@@ -1957,11 +1957,11 @@
           ]
         },
         {
-          "name": "sellerAta",
+          "name": "sellerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the seller, where the NFT will be transferred from."
+            "The token account of the seller, where the NFT will be transferred from."
           ]
         },
         {

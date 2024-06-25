@@ -277,7 +277,7 @@ impl BuyNftInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BuyNftInstructionArgs {
-    pub max_price: u64,
+    pub max_amount: u64,
     pub authorization_data: Option<AuthorizationDataLocal>,
     pub optional_royalty_pct: Option<u16>,
 }
@@ -338,7 +338,7 @@ pub struct BuyNftBuilder {
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
-    max_price: Option<u64>,
+    max_amount: Option<u64>,
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -549,8 +549,8 @@ impl BuyNftBuilder {
         self
     }
     #[inline(always)]
-    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
-        self.max_price = Some(max_price);
+    pub fn max_amount(&mut self, max_amount: u64) -> &mut Self {
+        self.max_amount = Some(max_amount);
         self
     }
     /// `[optional argument]`
@@ -621,7 +621,7 @@ impl BuyNftBuilder {
             )),
         };
         let args = BuyNftInstructionArgs {
-            max_price: self.max_price.clone().expect("max_price is not set"),
+            max_amount: self.max_amount.clone().expect("max_amount is not set"),
             authorization_data: self.authorization_data.clone(),
             optional_royalty_pct: self.optional_royalty_pct.clone(),
         };
@@ -1131,7 +1131,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
             taker_broker: None,
             cosigner: None,
             amm_program: None,
-            max_price: None,
+            max_amount: None,
             authorization_data: None,
             optional_royalty_pct: None,
             __remaining_accounts: Vec::new(),
@@ -1368,8 +1368,8 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
-        self.instruction.max_price = Some(max_price);
+    pub fn max_amount(&mut self, max_amount: u64) -> &mut Self {
+        self.instruction.max_amount = Some(max_amount);
         self
     }
     /// `[optional argument]`
@@ -1426,11 +1426,11 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = BuyNftInstructionArgs {
-            max_price: self
+            max_amount: self
                 .instruction
-                .max_price
+                .max_amount
                 .clone()
-                .expect("max_price is not set"),
+                .expect("max_amount is not set"),
             authorization_data: self.instruction.authorization_data.clone(),
             optional_royalty_pct: self.instruction.optional_royalty_pct.clone(),
         };
@@ -1537,7 +1537,7 @@ struct BuyNftCpiBuilderInstruction<'a, 'b> {
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    max_price: Option<u64>,
+    max_amount: Option<u64>,
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

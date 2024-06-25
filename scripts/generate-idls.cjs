@@ -11,5 +11,8 @@ generateIdl({
   programId: "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA",
   idlDir,
   binaryInstallDir,
-  programDir: path.join(programDir, "program")
+  programDir: path.join(programDir, "program"),
+  rustbin: {
+    locked: true,
+  },
 });

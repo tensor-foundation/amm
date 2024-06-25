@@ -20,6 +20,7 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getDepositNftInstruction,
+  getDepositNftInstructionAsync,
 } from '../src/index.js';
 import {
   createPool,
@@ -86,18 +87,12 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   // Deposit NFT
-  const depositNftIx = getDepositNftInstruction({
+  const depositNftIx = await getDepositNftInstructionAsync({
     owner,
     pool,
     whitelist,
-    ownerAta,
-    poolAta,
     mint,
-    metadata,
     nftReceipt,
-    edition: masterEdition,
-    ownerTokenRecord,
-    poolTokenRecord,
   });
 
   await pipe(

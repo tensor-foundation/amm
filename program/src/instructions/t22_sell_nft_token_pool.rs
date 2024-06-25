@@ -91,13 +91,13 @@ pub struct SellNftTokenPoolT22<'info> {
     // option to support the ability to use other modes in the future, e.g. FVC w/ T22 Metadata.
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
-    /// The ATA of the NFT for the seller's wallet.
+    /// The token account of the NFT for the seller's wallet.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = seller
+        token::mint = mint,
+        token::authority = seller
     )]
-    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
@@ -192,7 +192,7 @@ impl<'info> SellNftTokenPoolT22<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.seller_ata.to_account_info(),
+                account: self.seller_ta.to_account_info(),
                 destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
@@ -236,7 +236,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.seller_ata.to_account_info(),
+            from: ctx.accounts.seller_ta.to_account_info(),
             to: ctx.accounts.owner_ata.to_account_info(),
             authority: ctx.accounts.seller.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),

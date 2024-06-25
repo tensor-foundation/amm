@@ -186,7 +186,7 @@ impl BuyNftT22InstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BuyNftT22InstructionArgs {
-    pub max_price: u64,
+    pub max_amount: u64,
 }
 
 /// Instruction builder for `BuyNftT22`.
@@ -229,7 +229,7 @@ pub struct BuyNftT22Builder {
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
-    max_price: Option<u64>,
+    max_amount: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -366,8 +366,8 @@ impl BuyNftT22Builder {
         self
     }
     #[inline(always)]
-    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
-        self.max_price = Some(max_price);
+    pub fn max_amount(&mut self, max_amount: u64) -> &mut Self {
+        self.max_amount = Some(max_amount);
         self
     }
     /// Add an aditional account to the instruction.
@@ -418,7 +418,7 @@ impl BuyNftT22Builder {
             )),
         };
         let args = BuyNftT22InstructionArgs {
-            max_price: self.max_price.clone().expect("max_price is not set"),
+            max_amount: self.max_amount.clone().expect("max_amount is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -776,7 +776,7 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
             taker_broker: None,
             cosigner: None,
             amm_program: None,
-            max_price: None,
+            max_amount: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -933,8 +933,8 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn max_price(&mut self, max_price: u64) -> &mut Self {
-        self.instruction.max_price = Some(max_price);
+    pub fn max_amount(&mut self, max_amount: u64) -> &mut Self {
+        self.instruction.max_amount = Some(max_amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -979,11 +979,11 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
         let args = BuyNftT22InstructionArgs {
-            max_price: self
+            max_amount: self
                 .instruction
-                .max_price
+                .max_amount
                 .clone()
-                .expect("max_price is not set"),
+                .expect("max_amount is not set"),
         };
         let instruction = BuyNftT22Cpi {
             __program: self.instruction.__program,
@@ -1064,7 +1064,7 @@ struct BuyNftT22CpiBuilderInstruction<'a, 'b> {
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    max_price: Option<u64>,
+    max_amount: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,
