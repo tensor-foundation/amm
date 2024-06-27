@@ -192,13 +192,13 @@ export type BuyNftInstruction<
 
 export type BuyNftInstructionData = {
   discriminator: ReadonlyUint8Array;
-  maxPrice: bigint;
+  maxAmount: bigint;
   authorizationData: Option<AuthorizationDataLocal>;
   optionalRoyaltyPct: Option<number>;
 };
 
 export type BuyNftInstructionDataArgs = {
-  maxPrice: number | bigint;
+  maxAmount: number | bigint;
   authorizationData?: OptionOrNullable<AuthorizationDataLocalArgs>;
   optionalRoyaltyPct?: OptionOrNullable<number>;
 };
@@ -207,7 +207,7 @@ export function getBuyNftInstructionDataEncoder(): Encoder<BuyNftInstructionData
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['maxPrice', getU64Encoder()],
+      ['maxAmount', getU64Encoder()],
       [
         'authorizationData',
         getOptionEncoder(getAuthorizationDataLocalEncoder()),
@@ -226,7 +226,7 @@ export function getBuyNftInstructionDataEncoder(): Encoder<BuyNftInstructionData
 export function getBuyNftInstructionDataDecoder(): Decoder<BuyNftInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['maxPrice', getU64Decoder()],
+    ['maxAmount', getU64Decoder()],
     ['authorizationData', getOptionDecoder(getAuthorizationDataLocalDecoder())],
     ['optionalRoyaltyPct', getOptionDecoder(getU16Decoder())],
   ]);
@@ -335,7 +335,7 @@ export type BuyNftAsyncInput<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  maxPrice: BuyNftInstructionDataArgs['maxPrice'];
+  maxAmount: BuyNftInstructionDataArgs['maxAmount'];
   authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct?: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];
@@ -726,7 +726,7 @@ export type BuyNftInput<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  maxPrice: BuyNftInstructionDataArgs['maxPrice'];
+  maxAmount: BuyNftInstructionDataArgs['maxAmount'];
   authorizationData?: BuyNftInstructionDataArgs['authorizationData'];
   optionalRoyaltyPct?: BuyNftInstructionDataArgs['optionalRoyaltyPct'];
   tokenStandard?: BuyNftInstructionExtraArgs['tokenStandard'];

@@ -26,10 +26,10 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getClosePoolInstruction,
-  getDepositNftInstruction,
+  getDepositNftInstructionAsync,
   getDepositSolInstruction,
-  getSellNftTokenPoolInstruction,
-  getSellNftTradePoolInstruction,
+  getSellNftTokenPoolInstructionAsync,
+  getSellNftTradePoolInstructionAsync,
 } from '../src/index.js';
 import {
   createPool,
@@ -125,30 +125,12 @@ test('close pool fails if nfts still deposited', async (t) => {
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  // Deposit NFT1 into pool
-  const depositNftIx = getDepositNftInstruction({
+  // Deposit NFT into pool
+  const depositNftIx = await getDepositNftInstructionAsync({
     owner,
     pool,
     whitelist,
-    ownerAta,
-    poolAta,
     mint,
-    metadata,
-    nftReceipt,
-    edition: masterEdition,
-    ownerTokenRecord,
-    poolTokenRecord,
   });
 
   await pipe(
@@ -240,42 +222,17 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
   const minPrice = 1_000_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTokenPoolInstruction({
+  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     rentPayer: owner.address,
     feeVault,
     pool,
     whitelist,
-    sellerAta,
-    ownerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    ownerTokenRecord,
-    sellerTokenRecord,
-    poolTokenRecord,
     cosigner,
     minPrice,
     // Remaining accounts
@@ -341,12 +298,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
-    client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -363,37 +315,16 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
     cosigner,
     minPrice,
     // Remaining accounts

@@ -25,8 +25,8 @@ pub struct SellNftTradePoolT22 {
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
-    /// The ATA of the seller, where the NFT will be transferred from.
-    pub seller_ata: solana_program::pubkey::Pubkey,
+    /// The token account of the seller, where the NFT will be transferred from.
+    pub seller_ta: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: solana_program::pubkey::Pubkey,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -98,7 +98,7 @@ impl SellNftTradePoolT22 {
             self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.seller_ata,
+            self.seller_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -230,7 +230,7 @@ pub struct SellNftTradePoolT22InstructionArgs {
 ///   4. `[]` whitelist
 ///   5. `[optional]` mint_proof
 ///   6. `[]` mint
-///   7. `[writable]` seller_ata
+///   7. `[writable]` seller_ta
 ///   8. `[writable]` pool_ata
 ///   9. `[writable]` nft_receipt
 ///   10. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
@@ -251,7 +251,7 @@ pub struct SellNftTradePoolT22Builder {
     whitelist: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
-    seller_ata: Option<solana_program::pubkey::Pubkey>,
+    seller_ta: Option<solana_program::pubkey::Pubkey>,
     pool_ata: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
@@ -315,10 +315,10 @@ impl SellNftTradePoolT22Builder {
         self.mint = Some(mint);
         self
     }
-    /// The ATA of the seller, where the NFT will be transferred from.
+    /// The token account of the seller, where the NFT will be transferred from.
     #[inline(always)]
-    pub fn seller_ata(&mut self, seller_ata: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.seller_ata = Some(seller_ata);
+    pub fn seller_ta(&mut self, seller_ta: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.seller_ta = Some(seller_ta);
         self
     }
     /// The ATA of the pool, where the NFT will be transferred to.
@@ -444,7 +444,7 @@ impl SellNftTradePoolT22Builder {
             whitelist: self.whitelist.expect("whitelist is not set"),
             mint_proof: self.mint_proof,
             mint: self.mint.expect("mint is not set"),
-            seller_ata: self.seller_ata.expect("seller_ata is not set"),
+            seller_ta: self.seller_ta.expect("seller_ta is not set"),
             pool_ata: self.pool_ata.expect("pool_ata is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
@@ -490,8 +490,8 @@ pub struct SellNftTradePoolT22CpiAccounts<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The ATA of the seller, where the NFT will be transferred from.
-    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The token account of the seller, where the NFT will be transferred from.
+    pub seller_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -536,8 +536,8 @@ pub struct SellNftTradePoolT22Cpi<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The ATA of the seller, where the NFT will be transferred from.
-    pub seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The token account of the seller, where the NFT will be transferred from.
+    pub seller_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be transferred to.
     pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -580,7 +580,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             whitelist: accounts.whitelist,
             mint_proof: accounts.mint_proof,
             mint: accounts.mint,
-            seller_ata: accounts.seller_ata,
+            seller_ta: accounts.seller_ta,
             pool_ata: accounts.pool_ata,
             nft_receipt: accounts.nft_receipt,
             token_program: accounts.token_program,
@@ -665,7 +665,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.seller_ata.key,
+            *self.seller_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -776,7 +776,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
             account_infos.push(mint_proof.clone());
         }
         account_infos.push(self.mint.clone());
-        account_infos.push(self.seller_ata.clone());
+        account_infos.push(self.seller_ta.clone());
         account_infos.push(self.pool_ata.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.token_program.clone());
@@ -821,7 +821,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
 ///   4. `[]` whitelist
 ///   5. `[optional]` mint_proof
 ///   6. `[]` mint
-///   7. `[writable]` seller_ata
+///   7. `[writable]` seller_ta
 ///   8. `[writable]` pool_ata
 ///   9. `[writable]` nft_receipt
 ///   10. `[]` token_program
@@ -849,7 +849,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
             whitelist: None,
             mint_proof: None,
             mint: None,
-            seller_ata: None,
+            seller_ta: None,
             pool_ata: None,
             nft_receipt: None,
             token_program: None,
@@ -922,13 +922,13 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
         self.instruction.mint = Some(mint);
         self
     }
-    /// The ATA of the seller, where the NFT will be transferred from.
+    /// The token account of the seller, where the NFT will be transferred from.
     #[inline(always)]
-    pub fn seller_ata(
+    pub fn seller_ta(
         &mut self,
-        seller_ata: &'b solana_program::account_info::AccountInfo<'a>,
+        seller_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.seller_ata = Some(seller_ata);
+        self.instruction.seller_ta = Some(seller_ta);
         self
     }
     /// The ATA of the pool, where the NFT will be transferred to.
@@ -1105,7 +1105,7 @@ impl<'a, 'b> SellNftTradePoolT22CpiBuilder<'a, 'b> {
 
             mint: self.instruction.mint.expect("mint is not set"),
 
-            seller_ata: self.instruction.seller_ata.expect("seller_ata is not set"),
+            seller_ta: self.instruction.seller_ta.expect("seller_ta is not set"),
 
             pool_ata: self.instruction.pool_ata.expect("pool_ata is not set"),
 
@@ -1162,7 +1162,7 @@ struct SellNftTradePoolT22CpiBuilderInstruction<'a, 'b> {
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    seller_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    seller_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

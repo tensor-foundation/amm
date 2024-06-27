@@ -22,7 +22,7 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getDepositSolInstruction,
-  getSellNftTradePoolInstruction,
+  getSellNftTradePoolInstructionAsync,
   getWithdrawSolInstruction,
   isSol,
 } from '../src/index.js';
@@ -87,36 +87,17 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const feeVault = await getAndFundFeeVault(client, pool);
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const [sellerAta] = await findAtaPda({ mint, owner: nftOwner.address });
-
-  const [sellerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: sellerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 
   const minPrice = 850_000n;
 
   // Sell NFT into pool
-  const sellNftIx = getSellNftTradePoolInstruction({
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     feeVault,
     pool,
     whitelist,
-    sellerAta,
-    poolAta,
     mint,
-    metadata,
-    edition: masterEdition,
-    sellerTokenRecord,
-    poolTokenRecord,
-    nftReceipt,
     cosigner,
     minPrice,
     // Remaining accounts

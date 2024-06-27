@@ -84,13 +84,13 @@ pub mod amm_program {
     /// Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
     pub fn buy_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
-        max_price: u64,
+        max_amount: u64,
         authorization_data: Option<AuthorizationDataLocal>,
         optional_royalty_pct: Option<u16>,
     ) -> Result<()> {
         instructions::buy_nft::process_buy_nft(
             ctx,
-            max_price,
+            max_amount,
             authorization_data,
             optional_royalty_pct,
         )
@@ -133,9 +133,9 @@ pub mod amm_program {
     /// Buy a Token22 NFT from a NFT or Trade pool.
     pub fn buy_nft_t22<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
-        max_price: u64,
+        max_amount: u64,
     ) -> Result<()> {
-        instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_price)
+        instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_amount)
     }
 
     /// Deposit a Token22 NFT into a NFT or Trade pool.

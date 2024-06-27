@@ -137,16 +137,16 @@ export type BuyNftT22Instruction<
 
 export type BuyNftT22InstructionData = {
   discriminator: ReadonlyUint8Array;
-  maxPrice: bigint;
+  maxAmount: bigint;
 };
 
-export type BuyNftT22InstructionDataArgs = { maxPrice: number | bigint };
+export type BuyNftT22InstructionDataArgs = { maxAmount: number | bigint };
 
 export function getBuyNftT22InstructionDataEncoder(): Encoder<BuyNftT22InstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['maxPrice', getU64Encoder()],
+      ['maxAmount', getU64Encoder()],
     ]),
     (value) => ({
       ...value,
@@ -158,7 +158,7 @@ export function getBuyNftT22InstructionDataEncoder(): Encoder<BuyNftT22Instructi
 export function getBuyNftT22InstructionDataDecoder(): Decoder<BuyNftT22InstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['maxPrice', getU64Decoder()],
+    ['maxAmount', getU64Decoder()],
   ]);
 }
 
@@ -239,7 +239,7 @@ export type BuyNftT22AsyncInput<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
+  maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
 };
 
 export async function getBuyNftT22InstructionAsync<
@@ -500,7 +500,7 @@ export type BuyNftT22Input<
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
-  maxPrice: BuyNftT22InstructionDataArgs['maxPrice'];
+  maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
 };
 
 export function getBuyNftT22Instruction<

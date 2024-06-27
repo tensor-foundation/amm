@@ -61,7 +61,7 @@ export type DepositNftInstruction<
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountOwnerAta extends string | IAccountMeta<string> = string,
+  TAccountOwnerTa extends string | IAccountMeta<string> = string,
   TAccountPoolAta extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
@@ -100,9 +100,9 @@ export type DepositNftInstruction<
       TAccountWhitelist extends string
         ? ReadonlyAccount<TAccountWhitelist>
         : TAccountWhitelist,
-      TAccountOwnerAta extends string
-        ? WritableAccount<TAccountOwnerAta>
-        : TAccountOwnerAta,
+      TAccountOwnerTa extends string
+        ? WritableAccount<TAccountOwnerTa>
+        : TAccountOwnerTa,
       TAccountPoolAta extends string
         ? WritableAccount<TAccountPoolAta>
         : TAccountPoolAta,
@@ -203,7 +203,7 @@ export type DepositNftAsyncInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
-  TAccountOwnerAta extends string = string,
+  TAccountOwnerTa extends string = string,
   TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
@@ -227,7 +227,7 @@ export type DepositNftAsyncInput<
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
   whitelist: Address<TAccountWhitelist>;
   /** The ATA of the owner, where the NFT will be transferred from. */
-  ownerAta?: Address<TAccountOwnerAta>;
+  ownerTa?: Address<TAccountOwnerTa>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta?: Address<TAccountPoolAta>;
   /**
@@ -269,7 +269,7 @@ export async function getDepositNftInstructionAsync<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
-  TAccountOwnerAta extends string,
+  TAccountOwnerTa extends string,
   TAccountPoolAta extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
@@ -290,7 +290,7 @@ export async function getDepositNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountOwnerAta,
+    TAccountOwnerTa,
     TAccountPoolAta,
     TAccountMint,
     TAccountNftReceipt,
@@ -313,7 +313,7 @@ export async function getDepositNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountOwnerAta,
+    TAccountOwnerTa,
     TAccountPoolAta,
     TAccountMint,
     TAccountNftReceipt,
@@ -339,7 +339,7 @@ export async function getDepositNftInstructionAsync<
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
-    ownerAta: { value: input.ownerAta ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
@@ -390,9 +390,9 @@ export async function getDepositNftInstructionAsync<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
-  if (!accounts.ownerAta.value) {
-    accounts.ownerAta = {
-      ...accounts.ownerAta,
+  if (!accounts.ownerTa.value) {
+    accounts.ownerTa = {
+      ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
     };
   }
@@ -456,7 +456,7 @@ export async function getDepositNftInstructionAsync<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
-      getAccountMeta(accounts.ownerAta),
+      getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
@@ -482,7 +482,7 @@ export async function getDepositNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountOwnerAta,
+    TAccountOwnerTa,
     TAccountPoolAta,
     TAccountMint,
     TAccountNftReceipt,
@@ -507,7 +507,7 @@ export type DepositNftInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
-  TAccountOwnerAta extends string = string,
+  TAccountOwnerTa extends string = string,
   TAccountPoolAta extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
@@ -531,7 +531,7 @@ export type DepositNftInput<
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
   whitelist: Address<TAccountWhitelist>;
   /** The ATA of the owner, where the NFT will be transferred from. */
-  ownerAta: Address<TAccountOwnerAta>;
+  ownerTa: Address<TAccountOwnerTa>;
   /** The ATA of the pool, where the NFT will be escrowed. */
   poolAta: Address<TAccountPoolAta>;
   /**
@@ -573,7 +573,7 @@ export function getDepositNftInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
-  TAccountOwnerAta extends string,
+  TAccountOwnerTa extends string,
   TAccountPoolAta extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
@@ -594,7 +594,7 @@ export function getDepositNftInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountOwnerAta,
+    TAccountOwnerTa,
     TAccountPoolAta,
     TAccountMint,
     TAccountNftReceipt,
@@ -616,7 +616,7 @@ export function getDepositNftInstruction<
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
-  TAccountOwnerAta,
+  TAccountOwnerTa,
   TAccountPoolAta,
   TAccountMint,
   TAccountNftReceipt,
@@ -641,7 +641,7 @@ export function getDepositNftInstruction<
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
-    ownerAta: { value: input.ownerAta ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolAta: { value: input.poolAta ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
@@ -728,7 +728,7 @@ export function getDepositNftInstruction<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
-      getAccountMeta(accounts.ownerAta),
+      getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolAta),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
@@ -754,7 +754,7 @@ export function getDepositNftInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
-    TAccountOwnerAta,
+    TAccountOwnerTa,
     TAccountPoolAta,
     TAccountMint,
     TAccountNftReceipt,
@@ -788,7 +788,7 @@ export type ParsedDepositNftInstruction<
     /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
     whitelist: TAccountMetas[2];
     /** The ATA of the owner, where the NFT will be transferred from. */
-    ownerAta: TAccountMetas[3];
+    ownerTa: TAccountMetas[3];
     /** The ATA of the pool, where the NFT will be escrowed. */
     poolAta: TAccountMetas[4];
     /**
@@ -857,7 +857,7 @@ export function parseDepositNftInstruction<
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
-      ownerAta: getNextAccount(),
+      ownerTa: getNextAccount(),
       poolAta: getNextAccount(),
       mint: getNextAccount(),
       nftReceipt: getNextAccount(),

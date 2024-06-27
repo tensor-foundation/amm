@@ -188,7 +188,7 @@ impl<'info> Validate<'info> for BuyNftT22<'info> {
 pub fn process_t22_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftT22<'info>>,
     // Max vs exact so we can add slippage later.
-    max_price: u64,
+    max_amount: u64,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
@@ -294,7 +294,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    if current_price > max_price {
+    if current_price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
     }
 

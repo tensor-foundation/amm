@@ -86,10 +86,10 @@ pub struct SellNftTokenPool<'info> {
     /// The token account of the NFT for the seller's wallet.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = seller
+        token::mint = mint,
+        token::authority = seller
     )]
-    pub seller_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
@@ -225,7 +225,7 @@ impl<'info> SellNftTokenPool<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.seller_ata.to_account_info(),
+                account: self.seller_ta.to_account_info(),
                 destination: self.seller.to_account_info(),
                 authority: self.seller.to_account_info(),
             },
@@ -297,7 +297,7 @@ pub fn process_sell_nft_token_pool<'info>(
     let transfer_args = Box::new(TransferArgs {
         payer: seller,
         source: seller,
-        source_ata: &ctx.accounts.seller_ata,
+        source_ata: &ctx.accounts.seller_ta,
         destination,
         destination_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
         mint: &ctx.accounts.mint,
