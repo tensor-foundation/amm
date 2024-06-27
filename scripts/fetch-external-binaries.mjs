@@ -27,7 +27,7 @@ await Promise.all(
         status,
       })
       .then((resp) => {
-        // Sort response by desc. date just in case and return latest run
+        // Sort response by desc. date and return latest run
         return resp.data.workflow_runs.sort(
           (wfr1, wfr2) =>
             new Date(wfr2.run_started_at) - new Date(wfr1.run_started_at),
