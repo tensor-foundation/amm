@@ -1,9 +1,9 @@
-import { combineCodec } from '@solana/codecs';
 import {
   Address,
   address,
   getAddressDecoder,
   getAddressEncoder,
+  combineCodec,
 } from '@solana/web3.js';
 
 const SOL_ADDRESS = address('11111111111111111111111111111111');

@@ -1,5 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { appendTransactionInstruction, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -10,7 +10,7 @@ import {
 import {
   createDefaultNft,
   findTokenRecordPda,
-} from '@tensor-foundation/toolkit-token-metadata';
+} from '@tensor-foundation/mpl-token-metadata';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
@@ -77,7 +77,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -109,8 +109,8 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -136,7 +136,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 

@@ -1,6 +1,6 @@
-import { ProgramDerivedAddress } from '@solana/addresses';
+import { ProgramDerivedAddress } from '@solana/web3.js';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
-import { ResolvedAccount, expectAddress } from '../generated';
+import { ResolvedAccount, expectAddress } from '../generated/shared';
 
 export const resolveFeeVaultPdaFromPool = async ({
   accounts,

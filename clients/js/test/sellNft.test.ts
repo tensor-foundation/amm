@@ -1,5 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { appendTransactionInstruction, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -7,8 +7,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/toolkit-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
@@ -107,8 +106,8 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -235,8 +234,8 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -327,7 +326,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -365,8 +364,8 @@ test('it can sell an NFT into a Token pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -456,7 +455,7 @@ test('token pool autocloses when currency amount drops below current price', asy
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -487,8 +486,8 @@ test('token pool autocloses when currency amount drops below current price', asy
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -548,7 +547,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -577,8 +576,8 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   const sig = await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -623,7 +622,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(depositSolIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 
@@ -651,8 +650,8 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 
   const sig = await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionInstruction(computeIx, tx),
-    (tx) => appendTransactionInstruction(sellNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
   );
 

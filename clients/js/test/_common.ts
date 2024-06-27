@@ -1,13 +1,14 @@
-import { KeyPairSigner, generateKeyPairSigner } from '@solana/signers';
 import {
   Address,
   Base64EncodedDataResponse,
   ProgramDerivedAddress,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   Signature,
+  KeyPairSigner,
+  generateKeyPairSigner,
   address,
   airdropFactory,
-  appendTransactionInstruction,
+  appendTransactionMessageInstruction,
   getAddressEncoder,
   getProgramDerivedAddress,
   isSolanaError,
@@ -191,7 +192,7 @@ export async function createWhitelistV2({
 
   await pipe(
     await createDefaultTransaction(client, payer),
-    (tx) => appendTransactionInstruction(createWhitelistIx, tx),
+    (tx) => appendTransactionMessageInstruction(createWhitelistIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -292,7 +293,7 @@ export async function createPool({
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(createPoolIx, tx),
+    (tx) => appendTransactionMessageInstruction(createPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -355,7 +356,7 @@ export async function createPoolThrows({
 
   const promise = pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(createPoolIx, tx),
+    (tx) => appendTransactionMessageInstruction(createPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -448,7 +449,7 @@ export async function createPoolAndWhitelist({
 
     await pipe(
       await createDefaultTransaction(client, owner),
-      (tx) => appendTransactionInstruction(depositSolIx, tx),
+      (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
   }
@@ -561,14 +562,11 @@ export const createAndFundEscrow = async (
   const tswapOwner = await getAndFundOwner(client);
 
   const tswap = TSWAP_SINGLETON;
-  const nr = new Uint8Array(2);
-  nr[0] = marginNr & 0xff;
-  nr[1] = (marginNr >> 8) & 0xff;
 
   const [marginAccount] = await findMarginAccountPda({
     owner: owner.address,
     tswap,
-    marginNr: nr,
+    marginNr: marginNr,
   });
 
   const initTswapIx = getInitUpdateTswapInstruction({
@@ -597,9 +595,9 @@ export const createAndFundEscrow = async (
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionInstruction(initTswapIx, tx),
-    (tx) => appendTransactionInstruction(createEscrowIx, tx),
-    (tx) => appendTransactionInstruction(depositEscrowIx, tx),
+    (tx) => appendTransactionMessageInstruction(initTswapIx, tx),
+    (tx) => appendTransactionMessageInstruction(createEscrowIx, tx),
+    (tx) => appendTransactionMessageInstruction(depositEscrowIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
