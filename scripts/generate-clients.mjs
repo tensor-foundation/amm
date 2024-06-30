@@ -70,6 +70,14 @@ kinobi.update(
 kinobi.update(
   k.updateInstructionsVisitor({
     createPool: {
+      accounts: {
+        pool: {
+          defaultValue: k.pdaValueNode("pool", [
+            k.pdaSeedValueNode("owner", k.accountValueNode("owner")),
+            k.pdaSeedValueNode("poolId", k.argumentValueNode("poolId"))
+          ])
+        }
+      },
       arguments: {
         poolId: {
           defaultValue: k.resolverValueNode("resolvePoolIdOnCreate"),
