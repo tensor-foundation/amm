@@ -69,6 +69,13 @@ kinobi.update(
 // Update instructions.
 kinobi.update(
   k.updateInstructionsVisitor({
+    createPool: {
+      arguments: {
+        poolId: {
+          defaultValue: k.resolverValueNode("resolvePoolIdOnCreate"),
+        }
+      }
+    },
     depositNft: {
       arguments: {
         tokenStandard: {

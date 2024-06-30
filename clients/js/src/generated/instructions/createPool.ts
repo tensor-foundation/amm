@@ -44,6 +44,7 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
+import { resolvePoolIdOnCreate } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
   expectSome,
@@ -188,7 +189,7 @@ export type CreatePoolInput<
   whitelist: Address<TAccountWhitelist>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  poolId: CreatePoolInstructionDataArgs['poolId'];
+  poolId?: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
   currency?: CreatePoolInstructionDataArgs['currency'];
   sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
@@ -240,6 +241,9 @@ export function getCreatePoolInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
   // Resolve default values.
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
@@ -247,6 +251,9 @@ export function getCreatePoolInstruction<
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!args.poolId) {
+    args.poolId = resolvePoolIdOnCreate(resolverScope);
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
