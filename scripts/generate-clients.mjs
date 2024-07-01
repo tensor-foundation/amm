@@ -81,6 +81,12 @@ kinobi.update(
       arguments: {
         poolId: {
           defaultValue: k.resolverValueNode("resolvePoolIdOnCreate"),
+        },
+        orderType: {
+          defaultValue: k.numberValueNode(0),
+        },
+        maxTakerSellCount: {
+          defaultValue: k.noneValueNode(),
         }
       }
     },

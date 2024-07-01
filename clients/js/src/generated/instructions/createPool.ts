@@ -115,8 +115,8 @@ export type CreatePoolInstructionDataArgs = {
   sharedEscrow?: OptionOrNullable<Address>;
   cosigner?: OptionOrNullable<Address>;
   makerBroker?: OptionOrNullable<Address>;
-  orderType: number;
-  maxTakerSellCount: OptionOrNullable<number>;
+  orderType?: number;
+  maxTakerSellCount?: OptionOrNullable<number>;
   expireInSec?: OptionOrNullable<number | bigint>;
 };
 
@@ -141,6 +141,8 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       sharedEscrow: value.sharedEscrow ?? none(),
       cosigner: value.cosigner ?? none(),
       makerBroker: value.makerBroker ?? none(),
+      orderType: value.orderType ?? 0,
+      maxTakerSellCount: value.maxTakerSellCount ?? none(),
       expireInSec: value.expireInSec ?? none(),
     })
   );
@@ -197,8 +199,8 @@ export type CreatePoolAsyncInput<
   sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
-  orderType: CreatePoolInstructionDataArgs['orderType'];
-  maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
+  orderType?: CreatePoolInstructionDataArgs['orderType'];
+  maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
 
@@ -317,8 +319,8 @@ export type CreatePoolInput<
   sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
-  orderType: CreatePoolInstructionDataArgs['orderType'];
-  maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
+  orderType?: CreatePoolInstructionDataArgs['orderType'];
+  maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
 
