@@ -11,6 +11,9 @@ importers:
       '@solana/web3.js':
         specifier: 2.0.0-preview.3
         version: 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1)
+      '@tensor-foundation/resolvers':
+        specifier: 0.1.0
+        version: 0.1.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
     devDependencies:
       '@ava/typescript':
         specifier: ^4.1.0
@@ -27,9 +30,6 @@ importers:
       '@tensor-foundation/mpl-token-metadata':
         specifier: 0.0.2
         version: 0.0.2(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
-      '@tensor-foundation/resolvers':
-        specifier: 0.1.0
-        version: 0.1.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
       '@tensor-foundation/test-helpers':
         specifier: 0.0.5
         version: 0.0.5(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
