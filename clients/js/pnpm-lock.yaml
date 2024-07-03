@@ -12,8 +12,8 @@ importers:
         specifier: 2.0.0-preview.3
         version: 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1)
       '@tensor-foundation/resolvers':
-        specifier: 0.1.0
-        version: 0.1.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
+        specifier: 0.2.0
+        version: 0.2.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
     devDependencies:
       '@ava/typescript':
         specifier: ^4.1.0
@@ -1475,8 +1475,8 @@ packages:
     peerDependencies:
       '@solana/web3.js': 2.0.0-preview.3
 
-  '@tensor-foundation/resolvers@0.1.0':
-    resolution: {integrity: sha512-KiK2ualUfcgcwAG5biaLqcZxYuFTABvfGKop16RsTuv+Xhrca/6UPaWR+6pdXtyxUMeVtHbLOqlQqt+6da6ceA==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/resolvers/0.1.0/ce958c22fde984fd53af6c98bfa76ef6176832b8}
+  '@tensor-foundation/resolvers@0.2.0':
+    resolution: {integrity: sha512-Uzk5Fq8yexkrIMD6IbGaTsFcyGHQPBxSCUgRyUvHb/3vPka3XoH4P0JrAOWL9l1qIJavjgNY4l+SSE8jGpdvhQ==, tarball: https://npm.pkg.github.com/download/@tensor-foundation/resolvers/0.2.0/d585173a41dc04d8c0a94c67d721eccc9598bc75}
     peerDependencies:
       '@solana/web3.js': 2.0.0-preview.3
 
@@ -6622,7 +6622,7 @@ snapshots:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1)
       '@tensor-foundation/test-helpers': 0.0.5(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))
 
-  '@tensor-foundation/resolvers@0.1.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))':
+  '@tensor-foundation/resolvers@0.2.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1))':
     dependencies:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.17.1)
 

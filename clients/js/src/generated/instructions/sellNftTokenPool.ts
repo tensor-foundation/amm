@@ -588,7 +588,7 @@ export async function getSellNftTokenPoolInstructionAsync<
     };
   }
   if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
+    args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram = {
@@ -980,7 +980,7 @@ export function getSellNftTokenPoolInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
+    args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram = {
