@@ -15,7 +15,7 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
-    /// The owner of the pool and will receive the NFT at the owner_ata account.
+    /// The owner of the pool and will receive the NFT at the owner_ta account.
     #[account(mut)]
     pub owner: Signer<'info>,
 
@@ -36,28 +36,28 @@ pub struct WithdrawNft<'info> {
 
     /// The mint of the NFT.
     #[account(
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The ATA of the owner, where the NFT will be transferred to as a result of this action.
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT token is escrowed.
+    /// The TA of the pool, where the NFT token is escrowed.
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
@@ -128,7 +128,7 @@ impl<'info> WithdrawNft<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.pool_ata.to_account_info(),
+                account: self.pool_ta.to_account_info(),
                 destination: self.owner.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -166,9 +166,9 @@ pub fn process_withdraw_nft<'info>(
         TransferArgs {
             payer: &ctx.accounts.owner.to_account_info(),
             source: &ctx.accounts.pool.to_account_info(),
-            source_ata: &ctx.accounts.pool_ata,
+            source_ata: &ctx.accounts.pool_ta,
             destination: &ctx.accounts.owner,
-            destination_ata: &ctx.accounts.owner_ata,
+            destination_ata: &ctx.accounts.owner_ta,
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.metadata,
             edition: &ctx.accounts.edition,

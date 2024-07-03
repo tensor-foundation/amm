@@ -45,7 +45,7 @@ pub struct DepositNft<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
-    /// The ATA of the owner, where the NFT will be transferred from.
+    /// The TA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
         token::mint = mint,
@@ -53,19 +53,19 @@ pub struct DepositNft<'info> {
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT will be escrowed.
+    /// The TA of the pool, where the NFT will be escrowed.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata and pool_ata.
+    /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -127,7 +127,7 @@ pub struct DepositNft<'info> {
             mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
             mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
-            pool_ata.key().as_ref()
+            pool_ta.key().as_ref()
         ],
         seeds::program = mpl_token_metadata::ID,
         bump
@@ -209,7 +209,7 @@ pub fn process_deposit_nft(
             source: &ctx.accounts.owner.to_account_info(),
             source_ata: &ctx.accounts.owner_ta,
             destination: &ctx.accounts.pool.to_account_info(),
-            destination_ata: &ctx.accounts.pool_ata,
+            destination_ata: &ctx.accounts.pool_ta,
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.metadata,
             edition: &ctx.accounts.edition,

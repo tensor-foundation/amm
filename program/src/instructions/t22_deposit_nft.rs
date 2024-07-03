@@ -62,29 +62,29 @@ pub struct DepositNftT22<'info> {
     pub mint_proof: UncheckedAccount<'info>,
 
     /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ata and pool_ata.
+    /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == owner_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The ATA of the owner, where the NFT will be transferred from.
+    /// The TA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT will be escrowed.
+    /// The TA of the pool, where the NFT will be escrowed.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[account(
@@ -129,7 +129,7 @@ impl<'info> DepositNftT22<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.owner_ata.to_account_info(),
+                account: self.owner_ta.to_account_info(),
                 destination: self.owner.to_account_info(),
                 authority: self.owner.to_account_info(),
             },
@@ -157,7 +157,7 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
 
     safe_initialize_token_account(
         InitializeTokenAccount {
-            token_info: &ctx.accounts.pool_ata.to_account_info(),
+            token_info: &ctx.accounts.pool_ta.to_account_info(),
             mint: &ctx.accounts.mint.to_account_info(),
             authority: &ctx.accounts.pool.to_account_info(),
             payer: &ctx.accounts.owner,
@@ -173,8 +173,8 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
     let transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.owner_ata.to_account_info(),
-            to: ctx.accounts.pool_ata.to_account_info(),
+            from: ctx.accounts.owner_ta.to_account_info(),
+            to: ctx.accounts.pool_ta.to_account_info(),
             authority: ctx.accounts.owner.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         },

@@ -34,7 +34,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@solana/web3.js": "2.0.0-preview.3",
-    "@tensor-foundation/resolvers": "0.1.0"
+    "@tensor-foundation/resolvers": "0.2.0"
   },
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
