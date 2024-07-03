@@ -46,6 +46,7 @@ import {
   resolveAuthorizationRulesProgramFromTokenStandard,
   resolveEditionFromTokenStandard,
   resolveMetadata,
+  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSellerAta,
   resolveSysvarInstructionsFromTokenStandard,
@@ -303,7 +304,7 @@ export type SellNftTradePoolAsyncInput<
   /** The token account of the seller, where the NFT will be transferred from. */
   sellerTa?: Address<TAccountSellerTa>;
   /** The ATA of the pool, where the NFT will be transferred to. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
@@ -517,6 +518,12 @@ export async function getSellNftTradePoolInstructionAsync<
     accounts.sellerTa = {
       ...accounts.sellerTa,
       ...(await resolveSellerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.metadata.value) {

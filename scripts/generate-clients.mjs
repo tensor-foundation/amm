@@ -320,7 +320,7 @@ kinobi.update(
       })
     },
     {
-      account: "ownerAta",
+      account: "ownerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveOwnerAta", {
         importFrom: "resolvers",
@@ -332,7 +332,7 @@ kinobi.update(
       })
     },
     {
-      account: "buyerAta",
+      account: "buyerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveBuyerAta", {
         importFrom: "resolvers",
@@ -344,7 +344,7 @@ kinobi.update(
       })
     },
     {
-      account: "sellerAta",
+      account: "sellerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveSellerAta", {
         importFrom: "resolvers",
@@ -356,7 +356,7 @@ kinobi.update(
       })
     },
     {
-      account: "poolAta",
+      account: "poolTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolvePoolAta", {
         importFrom: "resolvers",
@@ -376,7 +376,7 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("ownerAta")
+            k.accountValueNode("ownerTa")
           ]
         }
       )
@@ -390,7 +390,7 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("buyerAta")
+            k.accountValueNode("buyerTa")
           ]
         }
       )
@@ -404,7 +404,7 @@ kinobi.update(
           importFrom: "resolvers",
           dependsOn: [
             k.accountValueNode("mint"),
-            k.accountValueNode("sellerAta")
+            k.accountValueNode("sellerTa")
           ]
         }
       )
@@ -416,7 +416,7 @@ kinobi.update(
         "resolvePoolTokenRecordFromTokenStandard",
         {
           importFrom: "resolvers",
-          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("poolAta")]
+          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("poolTa")]
         }
       )
     },

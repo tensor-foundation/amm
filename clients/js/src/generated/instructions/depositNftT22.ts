@@ -32,6 +32,7 @@ import {
 } from '@solana/web3.js';
 import {
   resolveOwnerAta,
+  resolvePoolAta,
   resolvePoolNftReceipt,
 } from '@tensor-foundation/resolvers';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -159,7 +160,7 @@ export type DepositNftT22AsyncInput<
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT will be escrowed. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -249,6 +250,12 @@ export async function getDepositNftT22InstructionAsync<
     accounts.ownerTa = {
       ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.nftReceipt.value) {

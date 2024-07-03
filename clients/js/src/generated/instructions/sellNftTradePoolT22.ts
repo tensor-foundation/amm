@@ -34,6 +34,7 @@ import {
   type WritableSignerAccount,
 } from '@solana/web3.js';
 import {
+  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSellerAta,
 } from '@tensor-foundation/resolvers';
@@ -218,7 +219,7 @@ export type SellNftTradePoolT22AsyncInput<
   /** The token account of the seller, where the NFT will be transferred from. */
   sellerTa?: Address<TAccountSellerTa>;
   /** The TA of the pool, where the NFT will be transferred to. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -364,6 +365,12 @@ export async function getSellNftTradePoolT22InstructionAsync<
     accounts.sellerTa = {
       ...accounts.sellerTa,
       ...(await resolveSellerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.nftReceipt.value) {

@@ -41,6 +41,7 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
+  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -228,7 +229,7 @@ export type DepositNftAsyncInput<
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT will be escrowed. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /**
    * The mint account of the NFT. It should be the mint account common
    * to the owner_ta and pool_ta.
@@ -393,6 +394,12 @@ export async function getDepositNftInstructionAsync<
     accounts.ownerTa = {
       ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.nftReceipt.value) {

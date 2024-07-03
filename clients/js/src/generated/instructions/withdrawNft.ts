@@ -41,6 +41,7 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
+  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -218,7 +219,7 @@ export type WithdrawNftAsyncInput<
   /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
   ownerTa?: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT token is escrowed. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -368,6 +369,12 @@ export async function getWithdrawNftInstructionAsync<
     accounts.ownerTa = {
       ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.nftReceipt.value) {

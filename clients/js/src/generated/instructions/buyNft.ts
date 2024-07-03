@@ -44,8 +44,10 @@ import {
 import {
   TokenStandard,
   resolveAuthorizationRulesProgramFromTokenStandard,
+  resolveBuyerAta,
   resolveEditionFromTokenStandard,
   resolveMetadata,
+  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -291,9 +293,9 @@ export type BuyNftAsyncInput<
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
-  buyerTa: Address<TAccountBuyerTa>;
+  buyerTa?: Address<TAccountBuyerTa>;
   /** The TA of the pool, where the NFT is held. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
@@ -494,6 +496,22 @@ export async function getBuyNftInstructionAsync<
       ...(await resolveFeeVaultPdaFromPool(resolverScope)),
     };
   }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.buyerTa.value) {
+    accounts.buyerTa = {
+      ...accounts.buyerTa,
+      ...(await resolveBuyerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
   if (!accounts.metadata.value) {
     accounts.metadata = {
       ...accounts.metadata,
@@ -505,10 +523,6 @@ export async function getBuyNftInstructionAsync<
       ...accounts.nftReceipt,
       ...(await resolvePoolNftReceipt(resolverScope)),
     };
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =

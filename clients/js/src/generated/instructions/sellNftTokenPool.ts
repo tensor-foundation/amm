@@ -47,6 +47,7 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
+  resolvePoolAta,
   resolveSellerAta,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -322,7 +323,7 @@ export type SellNftTokenPoolAsyncInput<
   /** The TA of the owner, where the NFT will be transferred to as a result of this sale. */
   ownerTa?: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT token is temporarily escrowed as a result of this sale. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The mint account of the NFT being sold. */
   mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
@@ -558,6 +559,12 @@ export async function getSellNftTokenPoolInstructionAsync<
     accounts.ownerTa = {
       ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.metadata.value) {

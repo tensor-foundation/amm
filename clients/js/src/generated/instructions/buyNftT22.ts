@@ -33,7 +33,11 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
-import { resolvePoolNftReceipt } from '@tensor-foundation/resolvers';
+import {
+  resolveBuyerAta,
+  resolvePoolAta,
+  resolvePoolNftReceipt,
+} from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
@@ -209,9 +213,9 @@ export type BuyNftT22AsyncInput<
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
-  buyerTa: Address<TAccountBuyerTa>;
+  buyerTa?: Address<TAccountBuyerTa>;
   /** The TA of the pool, where the NFT will be escrowed. */
-  poolTa: Address<TAccountPoolTa>;
+  poolTa?: Address<TAccountPoolTa>;
   /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
@@ -345,15 +349,27 @@ export async function getBuyNftT22InstructionAsync<
       ...(await resolveFeeVaultPdaFromPool(resolverScope)),
     };
   }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.buyerTa.value) {
+    accounts.buyerTa = {
+      ...accounts.buyerTa,
+      ...(await resolveBuyerAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
       ...(await resolvePoolNftReceipt(resolverScope)),
     };
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
