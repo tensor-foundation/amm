@@ -33,11 +33,7 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
-import {
-  resolveBuyerAta,
-  resolvePoolAta,
-  resolvePoolNftReceipt,
-} from '@tensor-foundation/resolvers';
+import { resolvePoolNftReceipt } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
@@ -53,8 +49,8 @@ export type BuyNftT22Instruction<
   TAccountRentPayer extends string | IAccountMeta<string> = string,
   TAccountFeeVault extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountBuyerAta extends string | IAccountMeta<string> = string,
-  TAccountPoolAta extends string | IAccountMeta<string> = string,
+  TAccountBuyerTa extends string | IAccountMeta<string> = string,
+  TAccountPoolTa extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
@@ -94,12 +90,12 @@ export type BuyNftT22Instruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
-      TAccountBuyerAta extends string
-        ? WritableAccount<TAccountBuyerAta>
-        : TAccountBuyerAta,
-      TAccountPoolAta extends string
-        ? ReadonlyAccount<TAccountPoolAta>
-        : TAccountPoolAta,
+      TAccountBuyerTa extends string
+        ? WritableAccount<TAccountBuyerTa>
+        : TAccountBuyerTa,
+      TAccountPoolTa extends string
+        ? ReadonlyAccount<TAccountPoolTa>
+        : TAccountPoolTa,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
@@ -178,8 +174,8 @@ export type BuyNftT22AsyncInput<
   TAccountRentPayer extends string = string,
   TAccountFeeVault extends string = string,
   TAccountPool extends string = string,
-  TAccountBuyerAta extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountBuyerTa extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
@@ -212,10 +208,10 @@ export type BuyNftT22AsyncInput<
    * Any active pool can be specified provided it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
-  /** The ATA of the buyer, where the NFT will be transferred. */
-  buyerAta?: Address<TAccountBuyerAta>;
-  /** The ATA of the pool, where the NFT will be escrowed. */
-  poolAta?: Address<TAccountPoolAta>;
+  /** The TA of the buyer, where the NFT will be transferred. */
+  buyerTa: Address<TAccountBuyerTa>;
+  /** The TA of the pool, where the NFT will be escrowed. */
+  poolTa: Address<TAccountPoolTa>;
   /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
@@ -248,8 +244,8 @@ export async function getBuyNftT22InstructionAsync<
   TAccountRentPayer extends string,
   TAccountFeeVault extends string,
   TAccountPool extends string,
-  TAccountBuyerAta extends string,
-  TAccountPoolAta extends string,
+  TAccountBuyerTa extends string,
+  TAccountPoolTa extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
@@ -267,8 +263,8 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountBuyerAta,
-    TAccountPoolAta,
+    TAccountBuyerTa,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -288,8 +284,8 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountBuyerAta,
-    TAccountPoolAta,
+    TAccountBuyerTa,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -312,8 +308,8 @@ export async function getBuyNftT22InstructionAsync<
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    buyerAta: { value: input.buyerAta ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: false },
+    buyerTa: { value: input.buyerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -349,27 +345,15 @@ export async function getBuyNftT22InstructionAsync<
       ...(await resolveFeeVaultPdaFromPool(resolverScope)),
     };
   }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-  if (!accounts.buyerAta.value) {
-    accounts.buyerAta = {
-      ...accounts.buyerAta,
-      ...(await resolveBuyerAta(resolverScope)),
-    };
-  }
-  if (!accounts.poolAta.value) {
-    accounts.poolAta = {
-      ...accounts.poolAta,
-      ...(await resolvePoolAta(resolverScope)),
-    };
-  }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt = {
       ...accounts.nftReceipt,
       ...(await resolvePoolNftReceipt(resolverScope)),
     };
+  }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
@@ -392,8 +376,8 @@ export async function getBuyNftT22InstructionAsync<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.feeVault),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.buyerAta),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.buyerTa),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
@@ -416,8 +400,8 @@ export async function getBuyNftT22InstructionAsync<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountBuyerAta,
-    TAccountPoolAta,
+    TAccountBuyerTa,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -439,8 +423,8 @@ export type BuyNftT22Input<
   TAccountRentPayer extends string = string,
   TAccountFeeVault extends string = string,
   TAccountPool extends string = string,
-  TAccountBuyerAta extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountBuyerTa extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
@@ -473,10 +457,10 @@ export type BuyNftT22Input<
    * Any active pool can be specified provided it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
-  /** The ATA of the buyer, where the NFT will be transferred. */
-  buyerAta: Address<TAccountBuyerAta>;
-  /** The ATA of the pool, where the NFT will be escrowed. */
-  poolAta: Address<TAccountPoolAta>;
+  /** The TA of the buyer, where the NFT will be transferred. */
+  buyerTa: Address<TAccountBuyerTa>;
+  /** The TA of the pool, where the NFT will be escrowed. */
+  poolTa: Address<TAccountPoolTa>;
   /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
@@ -509,8 +493,8 @@ export function getBuyNftT22Instruction<
   TAccountRentPayer extends string,
   TAccountFeeVault extends string,
   TAccountPool extends string,
-  TAccountBuyerAta extends string,
-  TAccountPoolAta extends string,
+  TAccountBuyerTa extends string,
+  TAccountPoolTa extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
@@ -528,8 +512,8 @@ export function getBuyNftT22Instruction<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountBuyerAta,
-    TAccountPoolAta,
+    TAccountBuyerTa,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -548,8 +532,8 @@ export function getBuyNftT22Instruction<
   TAccountRentPayer,
   TAccountFeeVault,
   TAccountPool,
-  TAccountBuyerAta,
-  TAccountPoolAta,
+  TAccountBuyerTa,
+  TAccountPoolTa,
   TAccountMint,
   TAccountNftReceipt,
   TAccountTokenProgram,
@@ -571,8 +555,8 @@ export function getBuyNftT22Instruction<
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
-    buyerAta: { value: input.buyerAta ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: false },
+    buyerTa: { value: input.buyerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -624,8 +608,8 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.rentPayer),
       getAccountMeta(accounts.feeVault),
       getAccountMeta(accounts.pool),
-      getAccountMeta(accounts.buyerAta),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.buyerTa),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
@@ -648,8 +632,8 @@ export function getBuyNftT22Instruction<
     TAccountRentPayer,
     TAccountFeeVault,
     TAccountPool,
-    TAccountBuyerAta,
-    TAccountPoolAta,
+    TAccountBuyerTa,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -695,10 +679,10 @@ export type ParsedBuyNftT22Instruction<
      */
 
     pool: TAccountMetas[4];
-    /** The ATA of the buyer, where the NFT will be transferred. */
-    buyerAta: TAccountMetas[5];
-    /** The ATA of the pool, where the NFT will be escrowed. */
-    poolAta: TAccountMetas[6];
+    /** The TA of the buyer, where the NFT will be transferred. */
+    buyerTa: TAccountMetas[5];
+    /** The TA of the pool, where the NFT will be escrowed. */
+    poolTa: TAccountMetas[6];
     /** The mint account of the NFT. */
     mint: TAccountMetas[7];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
@@ -759,8 +743,8 @@ export function parseBuyNftT22Instruction<
       rentPayer: getNextAccount(),
       feeVault: getNextAccount(),
       pool: getNextAccount(),
-      buyerAta: getNextAccount(),
-      poolAta: getNextAccount(),
+      buyerTa: getNextAccount(),
+      poolTa: getNextAccount(),
       mint: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),

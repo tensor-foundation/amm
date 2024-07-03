@@ -41,7 +41,6 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
-  resolvePoolAta,
   resolvePoolNftReceipt,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
@@ -62,7 +61,7 @@ export type DepositNftInstruction<
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountOwnerTa extends string | IAccountMeta<string> = string,
-  TAccountPoolAta extends string | IAccountMeta<string> = string,
+  TAccountPoolTa extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
@@ -103,9 +102,9 @@ export type DepositNftInstruction<
       TAccountOwnerTa extends string
         ? WritableAccount<TAccountOwnerTa>
         : TAccountOwnerTa,
-      TAccountPoolAta extends string
-        ? WritableAccount<TAccountPoolAta>
-        : TAccountPoolAta,
+      TAccountPoolTa extends string
+        ? WritableAccount<TAccountPoolTa>
+        : TAccountPoolTa,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
@@ -204,7 +203,7 @@ export type DepositNftAsyncInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountOwnerTa extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
@@ -226,13 +225,13 @@ export type DepositNftAsyncInput<
   pool: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
   whitelist: Address<TAccountWhitelist>;
-  /** The ATA of the owner, where the NFT will be transferred from. */
+  /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
-  /** The ATA of the pool, where the NFT will be escrowed. */
-  poolAta?: Address<TAccountPoolAta>;
+  /** The TA of the pool, where the NFT will be escrowed. */
+  poolTa: Address<TAccountPoolTa>;
   /**
    * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata and pool_ata.
+   * to the owner_ta and pool_ta.
    */
   mint: Address<TAccountMint>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
@@ -270,7 +269,7 @@ export async function getDepositNftInstructionAsync<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountOwnerTa extends string,
-  TAccountPoolAta extends string,
+  TAccountPoolTa extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
@@ -291,7 +290,7 @@ export async function getDepositNftInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountOwnerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -314,7 +313,7 @@ export async function getDepositNftInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountOwnerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -340,7 +339,7 @@ export async function getDepositNftInstructionAsync<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -394,12 +393,6 @@ export async function getDepositNftInstructionAsync<
     accounts.ownerTa = {
       ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
-    };
-  }
-  if (!accounts.poolAta.value) {
-    accounts.poolAta = {
-      ...accounts.poolAta,
-      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.nftReceipt.value) {
@@ -457,7 +450,7 @@ export async function getDepositNftInstructionAsync<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.ownerTa),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
@@ -483,7 +476,7 @@ export async function getDepositNftInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountOwnerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -508,7 +501,7 @@ export type DepositNftInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountOwnerTa extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountMint extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
@@ -530,13 +523,13 @@ export type DepositNftInput<
   pool: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
   whitelist: Address<TAccountWhitelist>;
-  /** The ATA of the owner, where the NFT will be transferred from. */
+  /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa: Address<TAccountOwnerTa>;
-  /** The ATA of the pool, where the NFT will be escrowed. */
-  poolAta: Address<TAccountPoolAta>;
+  /** The TA of the pool, where the NFT will be escrowed. */
+  poolTa: Address<TAccountPoolTa>;
   /**
    * The mint account of the NFT. It should be the mint account common
-   * to the owner_ata and pool_ata.
+   * to the owner_ta and pool_ta.
    */
   mint: Address<TAccountMint>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
@@ -574,7 +567,7 @@ export function getDepositNftInstruction<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountOwnerTa extends string,
-  TAccountPoolAta extends string,
+  TAccountPoolTa extends string,
   TAccountMint extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
@@ -595,7 +588,7 @@ export function getDepositNftInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountOwnerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -617,7 +610,7 @@ export function getDepositNftInstruction<
   TAccountPool,
   TAccountWhitelist,
   TAccountOwnerTa,
-  TAccountPoolAta,
+  TAccountPoolTa,
   TAccountMint,
   TAccountNftReceipt,
   TAccountTokenProgram,
@@ -642,7 +635,7 @@ export function getDepositNftInstruction<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -729,7 +722,7 @@ export function getDepositNftInstruction<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.ownerTa),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
@@ -755,7 +748,7 @@ export function getDepositNftInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountOwnerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountMint,
     TAccountNftReceipt,
     TAccountTokenProgram,
@@ -787,13 +780,13 @@ export type ParsedDepositNftInstruction<
     pool: TAccountMetas[1];
     /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
     whitelist: TAccountMetas[2];
-    /** The ATA of the owner, where the NFT will be transferred from. */
+    /** The TA of the owner, where the NFT will be transferred from. */
     ownerTa: TAccountMetas[3];
-    /** The ATA of the pool, where the NFT will be escrowed. */
-    poolAta: TAccountMetas[4];
+    /** The TA of the pool, where the NFT will be escrowed. */
+    poolTa: TAccountMetas[4];
     /**
      * The mint account of the NFT. It should be the mint account common
-     * to the owner_ata and pool_ata.
+     * to the owner_ta and pool_ta.
      */
 
     mint: TAccountMetas[5];
@@ -858,7 +851,7 @@ export function parseDepositNftInstruction<
       pool: getNextAccount(),
       whitelist: getNextAccount(),
       ownerTa: getNextAccount(),
-      poolAta: getNextAccount(),
+      poolTa: getNextAccount(),
       mint: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),

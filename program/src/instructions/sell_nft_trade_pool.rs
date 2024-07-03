@@ -97,7 +97,7 @@ pub struct SellNftTradePool<'info> {
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The Token Metadata metadata account of the NFT.
     /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
@@ -271,7 +271,7 @@ pub fn process_sell_nft_trade_pool<'info>(
             source: seller,
             source_ata: &ctx.accounts.seller_ta,
             destination,
-            destination_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
+            destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.metadata,
             edition: &ctx.accounts.edition,

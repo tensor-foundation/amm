@@ -32,7 +32,7 @@ pub struct SellNftTradePool {
     /// The token account of the seller, where the NFT will be transferred from.
     pub seller_ta: solana_program::pubkey::Pubkey,
     /// The ATA of the pool, where the NFT will be transferred to.
-    pub pool_ata: solana_program::pubkey::Pubkey,
+    pub pool_ta: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -122,7 +122,7 @@ impl SellNftTradePool {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool_ata,
+            self.pool_ta,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -325,7 +325,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   5. `[optional]` mint_proof
 ///   6. `[]` mint
 ///   7. `[writable]` seller_ta
-///   8. `[writable]` pool_ata
+///   8. `[writable]` pool_ta
 ///   9. `[writable]` metadata
 ///   10. `[writable]` nft_receipt
 ///   11. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
@@ -354,7 +354,7 @@ pub struct SellNftTradePoolBuilder {
     mint_proof: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
     seller_ta: Option<solana_program::pubkey::Pubkey>,
-    pool_ata: Option<solana_program::pubkey::Pubkey>,
+    pool_ta: Option<solana_program::pubkey::Pubkey>,
     metadata: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
@@ -438,8 +438,8 @@ impl SellNftTradePoolBuilder {
     }
     /// The ATA of the pool, where the NFT will be transferred to.
     #[inline(always)]
-    pub fn pool_ata(&mut self, pool_ata: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pool_ata = Some(pool_ata);
+    pub fn pool_ta(&mut self, pool_ta: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool_ta = Some(pool_ta);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -645,7 +645,7 @@ impl SellNftTradePoolBuilder {
             mint_proof: self.mint_proof,
             mint: self.mint.expect("mint is not set"),
             seller_ta: self.seller_ta.expect("seller_ta is not set"),
-            pool_ata: self.pool_ata.expect("pool_ata is not set"),
+            pool_ta: self.pool_ta.expect("pool_ta is not set"),
             metadata: self.metadata.expect("metadata is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
@@ -706,7 +706,7 @@ pub struct SellNftTradePoolCpiAccounts<'a, 'b> {
     /// The token account of the seller, where the NFT will be transferred from.
     pub seller_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be transferred to.
-    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -771,7 +771,7 @@ pub struct SellNftTradePoolCpi<'a, 'b> {
     /// The token account of the seller, where the NFT will be transferred from.
     pub seller_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The ATA of the pool, where the NFT will be transferred to.
-    pub pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
+    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -829,7 +829,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             mint_proof: accounts.mint_proof,
             mint: accounts.mint,
             seller_ta: accounts.seller_ta,
-            pool_ata: accounts.pool_ata,
+            pool_ta: accounts.pool_ta,
             metadata: accounts.metadata,
             nft_receipt: accounts.nft_receipt,
             token_program: accounts.token_program,
@@ -925,7 +925,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool_ata.key,
+            *self.pool_ta.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -1105,7 +1105,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
         }
         account_infos.push(self.mint.clone());
         account_infos.push(self.seller_ta.clone());
-        account_infos.push(self.pool_ata.clone());
+        account_infos.push(self.pool_ta.clone());
         account_infos.push(self.metadata.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.token_program.clone());
@@ -1170,7 +1170,7 @@ impl<'a, 'b> SellNftTradePoolCpi<'a, 'b> {
 ///   5. `[optional]` mint_proof
 ///   6. `[]` mint
 ///   7. `[writable]` seller_ta
-///   8. `[writable]` pool_ata
+///   8. `[writable]` pool_ta
 ///   9. `[writable]` metadata
 ///   10. `[writable]` nft_receipt
 ///   11. `[]` token_program
@@ -1206,7 +1206,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
             mint_proof: None,
             mint: None,
             seller_ta: None,
-            pool_ata: None,
+            pool_ta: None,
             metadata: None,
             nft_receipt: None,
             token_program: None,
@@ -1302,11 +1302,11 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
     }
     /// The ATA of the pool, where the NFT will be transferred to.
     #[inline(always)]
-    pub fn pool_ata(
+    pub fn pool_ta(
         &mut self,
-        pool_ata: &'b solana_program::account_info::AccountInfo<'a>,
+        pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
-        self.instruction.pool_ata = Some(pool_ata);
+        self.instruction.pool_ta = Some(pool_ta);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -1569,7 +1569,7 @@ impl<'a, 'b> SellNftTradePoolCpiBuilder<'a, 'b> {
 
             seller_ta: self.instruction.seller_ta.expect("seller_ta is not set"),
 
-            pool_ata: self.instruction.pool_ata.expect("pool_ata is not set"),
+            pool_ta: self.instruction.pool_ta.expect("pool_ta is not set"),
 
             metadata: self.instruction.metadata.expect("metadata is not set"),
 
@@ -1641,7 +1641,7 @@ struct SellNftTradePoolCpiBuilderInstruction<'a, 'b> {
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     seller_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pool_ata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
