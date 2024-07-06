@@ -11,7 +11,7 @@ import {
 export type NullableAddress = Address | null;
 export type NullableAddressArgs = NullableAddress;
 
-const DEFAULT_ADDRESS = address('11111111111111111111111111111111');
+export const DEFAULT_ADDRESS = address('11111111111111111111111111111111');
 
 export const getNullableAddressEncoder = () =>
   createEncoder<NullableAddress>({
