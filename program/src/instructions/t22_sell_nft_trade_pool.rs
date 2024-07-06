@@ -95,14 +95,14 @@ pub struct SellNftTradePoolT22<'info> {
     )]
     pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT will be transferred to.
+    /// The TA of the pool, where the NFT will be transferred to.
     #[account(
         init_if_needed,
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
@@ -243,7 +243,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
             from: ctx.accounts.seller_ta.to_account_info(),
-            to: ctx.accounts.pool_ata.to_account_info(),
+            to: ctx.accounts.pool_ta.to_account_info(),
             authority: ctx.accounts.seller.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         },

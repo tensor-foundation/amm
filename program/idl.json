@@ -297,15 +297,15 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the owner, where the NFT will be transferred from."
+            "The TA of the owner, where the NFT will be transferred from."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT will be escrowed."
+            "The TA of the pool, where the NFT will be escrowed."
           ]
         },
         {
@@ -314,7 +314,7 @@
           "isSigner": false,
           "docs": [
             "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ata and pool_ata."
+            "to the owner_ta and pool_ta."
           ]
         },
         {
@@ -451,7 +451,7 @@
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "The owner of the pool and will receive the NFT at the owner_ata account."
+            "The owner of the pool and will receive the NFT at the owner_ta account."
           ]
         },
         {
@@ -471,19 +471,19 @@
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the owner, where the NFT will be transferred to as a result of this action."
+            "The TA of the owner, where the NFT will be transferred to as a result of this action."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT token is escrowed."
+            "The TA of the pool, where the NFT token is escrowed."
           ]
         },
         {
@@ -728,19 +728,19 @@
           ]
         },
         {
-          "name": "buyerAta",
+          "name": "buyerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the buyer, where the NFT will be transferred."
+            "The TA of the buyer, where the NFT will be transferred."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT is held."
+            "The TA of the pool, where the NFT is held."
           ]
         },
         {
@@ -997,19 +997,19 @@
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the owner, where the NFT will be transferred to as a result of this sale."
+            "The TA of the owner, where the NFT will be transferred to as a result of this sale."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale."
+            "The TA of the pool, where the NFT token is temporarily escrowed as a result of this sale."
           ]
         },
         {
@@ -1275,7 +1275,7 @@
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1512,19 +1512,19 @@
           ]
         },
         {
-          "name": "buyerAta",
+          "name": "buyerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the buyer, where the NFT will be transferred."
+            "The TA of the buyer, where the NFT will be transferred."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT will be escrowed."
+            "The TA of the pool, where the NFT will be escrowed."
           ]
         },
         {
@@ -1661,23 +1661,23 @@
           "isSigner": false,
           "docs": [
             "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ata and pool_ata."
+            "to the owner_ta and pool_ta."
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the owner, where the NFT will be transferred from."
+            "The TA of the owner, where the NFT will be transferred from."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT will be escrowed."
+            "The TA of the pool, where the NFT will be escrowed."
           ]
         },
         {
@@ -1791,7 +1791,7 @@
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
@@ -1965,11 +1965,11 @@
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT will be transferred to."
+            "The TA of the pool, where the NFT will be transferred to."
           ]
         },
         {
@@ -2094,19 +2094,19 @@
           ]
         },
         {
-          "name": "ownerAta",
+          "name": "ownerTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the owner where the NFT will be withdrawn to."
+            "The TA of the owner where the NFT will be withdrawn to."
           ]
         },
         {
-          "name": "poolAta",
+          "name": "poolTa",
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The ATA of the pool, where the NFT token is escrowed."
+            "The TA of the pool, where the NFT token is escrowed."
           ]
         },
         {

@@ -91,23 +91,23 @@ pub struct SellNftTokenPool<'info> {
     )]
     pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
+    /// The TA of the owner, where the NFT will be transferred to as a result of this sale.
     #[account(
         init_if_needed,
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
+    /// The TA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
     #[account(
         init_if_needed,
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT being sold.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -256,7 +256,7 @@ impl<'info> SellNftTokenPool<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.pool_ata.to_account_info(),
+                account: self.pool_ta.to_account_info(),
                 destination: self.seller.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -299,7 +299,7 @@ pub fn process_sell_nft_token_pool<'info>(
         source: seller,
         source_ata: &ctx.accounts.seller_ta,
         destination,
-        destination_ata: &ctx.accounts.pool_ata, //<- send to pool as escrow first
+        destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
         mint: &ctx.accounts.mint,
         metadata: &ctx.accounts.metadata,
         edition: &ctx.accounts.edition,
@@ -333,9 +333,9 @@ pub fn process_sell_nft_token_pool<'info>(
         TransferArgs {
             payer: &ctx.accounts.seller.to_account_info(),
             source: &ctx.accounts.pool.to_account_info(),
-            source_ata: &ctx.accounts.pool_ata,
+            source_ata: &ctx.accounts.pool_ta,
             destination: &ctx.accounts.owner.to_account_info(),
-            destination_ata: &ctx.accounts.owner_ata,
+            destination_ata: &ctx.accounts.owner_ta,
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.metadata,
             edition: &ctx.accounts.edition,

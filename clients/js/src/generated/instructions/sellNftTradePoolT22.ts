@@ -52,7 +52,7 @@ export type SellNftTradePoolT22Instruction<
   TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
   TAccountSellerTa extends string | IAccountMeta<string> = string,
-  TAccountPoolAta extends string | IAccountMeta<string> = string,
+  TAccountPoolTa extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
@@ -101,9 +101,9 @@ export type SellNftTradePoolT22Instruction<
       TAccountSellerTa extends string
         ? WritableAccount<TAccountSellerTa>
         : TAccountSellerTa,
-      TAccountPoolAta extends string
-        ? WritableAccount<TAccountPoolAta>
-        : TAccountPoolAta,
+      TAccountPoolTa extends string
+        ? WritableAccount<TAccountPoolTa>
+        : TAccountPoolTa,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -187,7 +187,7 @@ export type SellNftTradePoolT22AsyncInput<
   TAccountMintProof extends string = string,
   TAccountMint extends string = string,
   TAccountSellerTa extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -218,8 +218,8 @@ export type SellNftTradePoolT22AsyncInput<
   mint: Address<TAccountMint>;
   /** The token account of the seller, where the NFT will be transferred from. */
   sellerTa?: Address<TAccountSellerTa>;
-  /** The ATA of the pool, where the NFT will be transferred to. */
-  poolAta?: Address<TAccountPoolAta>;
+  /** The TA of the pool, where the NFT will be transferred to. */
+  poolTa?: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -254,7 +254,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
   TAccountMintProof extends string,
   TAccountMint extends string,
   TAccountSellerTa extends string,
-  TAccountPoolAta extends string,
+  TAccountPoolTa extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -275,7 +275,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
     TAccountMintProof,
     TAccountMint,
     TAccountSellerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -298,7 +298,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
     TAccountMintProof,
     TAccountMint,
     TAccountSellerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -324,7 +324,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
     sellerTa: { value: input.sellerTa ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
@@ -367,9 +367,9 @@ export async function getSellNftTradePoolT22InstructionAsync<
       ...(await resolveSellerAta(resolverScope)),
     };
   }
-  if (!accounts.poolAta.value) {
-    accounts.poolAta = {
-      ...accounts.poolAta,
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
       ...(await resolvePoolAta(resolverScope)),
     };
   }
@@ -403,7 +403,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
       getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.sellerTa),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
@@ -429,7 +429,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
     TAccountMintProof,
     TAccountMint,
     TAccountSellerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -454,7 +454,7 @@ export type SellNftTradePoolT22Input<
   TAccountMintProof extends string = string,
   TAccountMint extends string = string,
   TAccountSellerTa extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -485,8 +485,8 @@ export type SellNftTradePoolT22Input<
   mint: Address<TAccountMint>;
   /** The token account of the seller, where the NFT will be transferred from. */
   sellerTa: Address<TAccountSellerTa>;
-  /** The ATA of the pool, where the NFT will be transferred to. */
-  poolAta: Address<TAccountPoolAta>;
+  /** The TA of the pool, where the NFT will be transferred to. */
+  poolTa: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -521,7 +521,7 @@ export function getSellNftTradePoolT22Instruction<
   TAccountMintProof extends string,
   TAccountMint extends string,
   TAccountSellerTa extends string,
-  TAccountPoolAta extends string,
+  TAccountPoolTa extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -542,7 +542,7 @@ export function getSellNftTradePoolT22Instruction<
     TAccountMintProof,
     TAccountMint,
     TAccountSellerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -564,7 +564,7 @@ export function getSellNftTradePoolT22Instruction<
   TAccountMintProof,
   TAccountMint,
   TAccountSellerTa,
-  TAccountPoolAta,
+  TAccountPoolTa,
   TAccountNftReceipt,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -589,7 +589,7 @@ export function getSellNftTradePoolT22Instruction<
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
     sellerTa: { value: input.sellerTa ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
@@ -641,7 +641,7 @@ export function getSellNftTradePoolT22Instruction<
       getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.mint),
       getAccountMeta(accounts.sellerTa),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
@@ -667,7 +667,7 @@ export function getSellNftTradePoolT22Instruction<
     TAccountMintProof,
     TAccountMint,
     TAccountSellerTa,
-    TAccountPoolAta,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -709,8 +709,8 @@ export type ParsedSellNftTradePoolT22Instruction<
     mint: TAccountMetas[6];
     /** The token account of the seller, where the NFT will be transferred from. */
     sellerTa: TAccountMetas[7];
-    /** The ATA of the pool, where the NFT will be transferred to. */
-    poolAta: TAccountMetas[8];
+    /** The TA of the pool, where the NFT will be transferred to. */
+    poolTa: TAccountMetas[8];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[9];
     /** The SPL Token program for the Mint and ATAs. */
@@ -773,7 +773,7 @@ export function parseSellNftTradePoolT22Instruction<
       mintProof: getNextOptionalAccount(),
       mint: getNextAccount(),
       sellerTa: getNextAccount(),
-      poolAta: getNextAccount(),
+      poolTa: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

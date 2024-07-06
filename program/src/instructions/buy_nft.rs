@@ -70,22 +70,22 @@ pub struct BuyNft<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The ATA of the buyer, where the NFT will be transferred.
+    /// The TA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
         payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
-    pub buyer_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT is held.
+    /// The TA of the pool, where the NFT is held.
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -185,7 +185,7 @@ impl<'info> BuyNft<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.pool_ata.to_account_info(),
+                account: self.pool_ta.to_account_info(),
                 destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -292,9 +292,9 @@ pub fn process_buy_nft<'info, 'b>(
         TransferArgs {
             payer: &ctx.accounts.buyer.to_account_info(),
             source: &ctx.accounts.pool.to_account_info(),
-            source_ata: &ctx.accounts.pool_ata,
+            source_ata: &ctx.accounts.pool_ta,
             destination: &ctx.accounts.buyer,
-            destination_ata: &ctx.accounts.buyer_ata,
+            destination_ata: &ctx.accounts.buyer_ta,
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.metadata,
             edition: &ctx.accounts.edition,

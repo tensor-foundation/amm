@@ -61,8 +61,8 @@ export type WithdrawNftInstruction<
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
-  TAccountOwnerAta extends string | IAccountMeta<string> = string,
-  TAccountPoolAta extends string | IAccountMeta<string> = string,
+  TAccountOwnerTa extends string | IAccountMeta<string> = string,
+  TAccountPoolTa extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
@@ -98,12 +98,12 @@ export type WithdrawNftInstruction<
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
-      TAccountOwnerAta extends string
-        ? WritableAccount<TAccountOwnerAta>
-        : TAccountOwnerAta,
-      TAccountPoolAta extends string
-        ? WritableAccount<TAccountPoolAta>
-        : TAccountPoolAta,
+      TAccountOwnerTa extends string
+        ? WritableAccount<TAccountOwnerTa>
+        : TAccountOwnerTa,
+      TAccountPoolTa extends string
+        ? WritableAccount<TAccountPoolTa>
+        : TAccountPoolTa,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -195,8 +195,8 @@ export type WithdrawNftAsyncInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountMint extends string = string,
-  TAccountOwnerAta extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountOwnerTa extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -210,16 +210,16 @@ export type WithdrawNftAsyncInput<
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
 > = {
-  /** The owner of the pool and will receive the NFT at the owner_ata account. */
+  /** The owner of the pool and will receive the NFT at the owner_ta account. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
   pool: Address<TAccountPool>;
   /** The mint of the NFT. */
   mint: Address<TAccountMint>;
-  /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
-  ownerAta?: Address<TAccountOwnerAta>;
-  /** The ATA of the pool, where the NFT token is escrowed. */
-  poolAta?: Address<TAccountPoolAta>;
+  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+  ownerTa?: Address<TAccountOwnerTa>;
+  /** The TA of the pool, where the NFT token is escrowed. */
+  poolTa?: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -252,8 +252,8 @@ export async function getWithdrawNftInstructionAsync<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountMint extends string,
-  TAccountOwnerAta extends string,
-  TAccountPoolAta extends string,
+  TAccountOwnerTa extends string,
+  TAccountPoolTa extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -271,8 +271,8 @@ export async function getWithdrawNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountMint,
-    TAccountOwnerAta,
-    TAccountPoolAta,
+    TAccountOwnerTa,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -292,8 +292,8 @@ export async function getWithdrawNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountMint,
-    TAccountOwnerAta,
-    TAccountPoolAta,
+    TAccountOwnerTa,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -316,8 +316,8 @@ export async function getWithdrawNftInstructionAsync<
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
-    ownerAta: { value: input.ownerAta ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
@@ -365,15 +365,15 @@ export async function getWithdrawNftInstructionAsync<
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
-  if (!accounts.ownerAta.value) {
-    accounts.ownerAta = {
-      ...accounts.ownerAta,
+  if (!accounts.ownerTa.value) {
+    accounts.ownerTa = {
+      ...accounts.ownerTa,
       ...(await resolveOwnerAta(resolverScope)),
     };
   }
-  if (!accounts.poolAta.value) {
-    accounts.poolAta = {
-      ...accounts.poolAta,
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
       ...(await resolvePoolAta(resolverScope)),
     };
   }
@@ -404,7 +404,7 @@ export async function getWithdrawNftInstructionAsync<
     };
   }
   if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
+    args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram = {
@@ -431,8 +431,8 @@ export async function getWithdrawNftInstructionAsync<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.mint),
-      getAccountMeta(accounts.ownerAta),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.ownerTa),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
@@ -455,8 +455,8 @@ export async function getWithdrawNftInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountMint,
-    TAccountOwnerAta,
-    TAccountPoolAta,
+    TAccountOwnerTa,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -478,8 +478,8 @@ export type WithdrawNftInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountMint extends string = string,
-  TAccountOwnerAta extends string = string,
-  TAccountPoolAta extends string = string,
+  TAccountOwnerTa extends string = string,
+  TAccountPoolTa extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountTokenProgram extends string = string,
   TAccountAssociatedTokenProgram extends string = string,
@@ -493,16 +493,16 @@ export type WithdrawNftInput<
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
 > = {
-  /** The owner of the pool and will receive the NFT at the owner_ata account. */
+  /** The owner of the pool and will receive the NFT at the owner_ta account. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool from which the NFT will be withdrawn. */
   pool: Address<TAccountPool>;
   /** The mint of the NFT. */
   mint: Address<TAccountMint>;
-  /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
-  ownerAta: Address<TAccountOwnerAta>;
-  /** The ATA of the pool, where the NFT token is escrowed. */
-  poolAta: Address<TAccountPoolAta>;
+  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+  ownerTa: Address<TAccountOwnerTa>;
+  /** The TA of the pool, where the NFT token is escrowed. */
+  poolTa: Address<TAccountPoolTa>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   /** The SPL Token program for the Mint and ATAs. */
@@ -535,8 +535,8 @@ export function getWithdrawNftInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountMint extends string,
-  TAccountOwnerAta extends string,
-  TAccountPoolAta extends string,
+  TAccountOwnerTa extends string,
+  TAccountPoolTa extends string,
   TAccountNftReceipt extends string,
   TAccountTokenProgram extends string,
   TAccountAssociatedTokenProgram extends string,
@@ -554,8 +554,8 @@ export function getWithdrawNftInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountMint,
-    TAccountOwnerAta,
-    TAccountPoolAta,
+    TAccountOwnerTa,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -574,8 +574,8 @@ export function getWithdrawNftInstruction<
   TAccountOwner,
   TAccountPool,
   TAccountMint,
-  TAccountOwnerAta,
-  TAccountPoolAta,
+  TAccountOwnerTa,
+  TAccountPoolTa,
   TAccountNftReceipt,
   TAccountTokenProgram,
   TAccountAssociatedTokenProgram,
@@ -597,8 +597,8 @@ export function getWithdrawNftInstruction<
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
-    ownerAta: { value: input.ownerAta ?? null, isWritable: true },
-    poolAta: { value: input.poolAta ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
     associatedTokenProgram: {
@@ -655,7 +655,7 @@ export function getWithdrawNftInstruction<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!args.tokenStandard) {
-    args.tokenStandard = TokenStandard.NonFungible;
+    args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
   if (!accounts.tokenMetadataProgram.value) {
     accounts.tokenMetadataProgram = {
@@ -682,8 +682,8 @@ export function getWithdrawNftInstruction<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.mint),
-      getAccountMeta(accounts.ownerAta),
-      getAccountMeta(accounts.poolAta),
+      getAccountMeta(accounts.ownerTa),
+      getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
@@ -706,8 +706,8 @@ export function getWithdrawNftInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountMint,
-    TAccountOwnerAta,
-    TAccountPoolAta,
+    TAccountOwnerTa,
+    TAccountPoolTa,
     TAccountNftReceipt,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
@@ -731,16 +731,16 @@ export type ParsedWithdrawNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** The owner of the pool and will receive the NFT at the owner_ata account. */
+    /** The owner of the pool and will receive the NFT at the owner_ta account. */
     owner: TAccountMetas[0];
     /** The pool from which the NFT will be withdrawn. */
     pool: TAccountMetas[1];
     /** The mint of the NFT. */
     mint: TAccountMetas[2];
-    /** The ATA of the owner, where the NFT will be transferred to as a result of this action. */
-    ownerAta: TAccountMetas[3];
-    /** The ATA of the pool, where the NFT token is escrowed. */
-    poolAta: TAccountMetas[4];
+    /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+    ownerTa: TAccountMetas[3];
+    /** The TA of the pool, where the NFT token is escrowed. */
+    poolTa: TAccountMetas[4];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[5];
     /** The SPL Token program for the Mint and ATAs. */
@@ -799,8 +799,8 @@ export function parseWithdrawNftInstruction<
       owner: getNextAccount(),
       pool: getNextAccount(),
       mint: getNextAccount(),
-      ownerAta: getNextAccount(),
-      poolAta: getNextAccount(),
+      ownerTa: getNextAccount(),
+      poolTa: getNextAccount(),
       nftReceipt: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),

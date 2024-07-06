@@ -71,21 +71,21 @@ pub struct BuyNftT22<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The ATA of the buyer, where the NFT will be transferred.
+    /// The TA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
         payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
     )]
-    pub buyer_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT will be escrowed.
+    /// The TA of the pool, where the NFT will be escrowed.
     #[account(
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT.
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -143,7 +143,7 @@ impl<'info> BuyNftT22<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.pool_ata.to_account_info(),
+                account: self.pool_ta.to_account_info(),
                 destination: self.buyer.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -228,8 +228,8 @@ pub fn process_t22_buy_nft<'info, 'b>(
     let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.pool_ata.to_account_info(),
-            to: ctx.accounts.buyer_ata.to_account_info(),
+            from: ctx.accounts.pool_ta.to_account_info(),
+            to: ctx.accounts.buyer_ta.to_account_info(),
             authority: ctx.accounts.pool.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         },

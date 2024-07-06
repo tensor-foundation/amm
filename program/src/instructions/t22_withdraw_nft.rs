@@ -36,27 +36,27 @@ pub struct WithdrawNftT22<'info> {
 
     /// The mint of the NFT.
     #[account(
-        constraint = mint.key() == pool_ata.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
-    /// The ATA of the owner where the NFT will be withdrawn to.
+    /// The TA of the owner where the NFT will be withdrawn to.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
     )]
-    pub owner_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The ATA of the pool, where the NFT token is escrowed.
+    /// The TA of the pool, where the NFT token is escrowed.
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
     )]
-    pub pool_ata: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
@@ -86,7 +86,7 @@ impl<'info> WithdrawNftT22<'info> {
         CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.pool_ata.to_account_info(),
+                account: self.pool_ta.to_account_info(),
                 destination: self.owner.to_account_info(),
                 authority: self.pool.to_account_info(),
             },
@@ -117,8 +117,8 @@ pub fn process_t22_withdraw_nft<'info>(
     let transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
-            from: ctx.accounts.pool_ata.to_account_info(),
-            to: ctx.accounts.owner_ata.to_account_info(),
+            from: ctx.accounts.pool_ta.to_account_info(),
+            to: ctx.accounts.owner_ta.to_account_info(),
             authority: ctx.accounts.pool.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
         },
