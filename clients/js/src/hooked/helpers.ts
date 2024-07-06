@@ -9,9 +9,10 @@ import { DEFAULT_ADDRESS } from './nullableAddress';
 export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
   pool: Pool
-): Promise<bigint | null> {
-  const bidPrice = calculateBidPrice(pool);
+): Promise<number | null> {
+  var bidPrice = calculateBidPrice(pool);
   if (!bidPrice) return bidPrice;
+  bidPrice = Math.floor(bidPrice);
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
   const [poolAddress] = await findPoolPda({
@@ -30,8 +31,9 @@ export async function getCurrentBidPrice(
     .send();
   return BigInt(escrowLamports) - rentExemption >= bidPrice ? bidPrice : null;
 }
-
-function calculateBidPrice(pool: Pool): bigint | null {
+// converting startingPrice to number, if any pool's starting price is higher
+// than 9m sol (2^53-1 lamports) then feel free to blame me - leant
+function calculateBidPrice(pool: Pool): number | null {
   if (
     pool.config.poolType === PoolType.NFT ||
     (pool.priceOffset === pool.maxTakerSellCount &&
@@ -40,17 +42,50 @@ function calculateBidPrice(pool: Pool): bigint | null {
       pool.sharedEscrow !== DEFAULT_ADDRESS)
   )
     return null;
-  if (pool.priceOffset === 0) return pool.config.startingPrice;
+  const tradePoolOffset = pool.config.poolType === PoolType.Trade ? 1 : 0;
+  const bps = 100_00;
+  const tradePoolMult =
+    pool.config.poolType === PoolType.Trade
+      ? 1 - (pool.config.mmFeeBps ?? 0) / 100_00
+      : 1;
+  const offset = pool.priceOffset + tradePoolOffset;
+  if (offset === 0) return Number(pool.config.startingPrice) * tradePoolMult;
   if (pool.config.curveType === CurveType.Exponential) {
-    return pool.priceOffset > 0
-      ? pool.config.startingPrice /
-          (1n + pool.config.delta / 100_00n) ** BigInt(pool.priceOffset)
-      : pool.config.startingPrice *
-          (1n + pool.config.delta / 100_00n) ** BigInt(pool.priceOffset * -1);
+    const base = BigInt(bps) + pool.config.delta;
+    const exponent = BigInt(Math.abs(offset));
+    const scaling = powerBigInt(base, exponent);
+    return offset > 0
+      ? (Number(pool.config.startingPrice) / scaling) * tradePoolMult
+      : Number(pool.config.startingPrice) * scaling * tradePoolMult;
   } else if (pool.config.curveType === CurveType.Linear) {
     return (
-      pool.config.startingPrice - pool.config.delta * BigInt(pool.priceOffset)
+      Number(pool.config.startingPrice - pool.config.delta * BigInt(offset)) *
+      tradePoolMult
     );
   }
   return null;
+}
+
+function powerBigInt(base: bigint, exponent: bigint): number {
+  // Calculate power for BigInt using exponentiation by squaring
+  let result = 1n;
+  let power = base;
+  let originalExponent = exponent;
+  while (exponent > 0n) {
+    if (exponent % 2n === 1n) {
+      result *= power;
+    }
+    power *= power;
+    exponent /= 2n;
+  }
+  var zerosToGetRidOff = originalExponent * 4n;
+
+  // start scaling down until MAX_SAFE_INTEGER
+  while (result > Number.MAX_SAFE_INTEGER) {
+    result / 10n;
+    zerosToGetRidOff -= 1n;
+  }
+  // scaling down to a number, it _should_ be fine
+  // to lose precision after the previous step
+  return Number(result) / Number(10n ** zerosToGetRidOff);
 }
