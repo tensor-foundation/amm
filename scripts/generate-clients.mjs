@@ -90,13 +90,20 @@ kinobi.update(
         }
       }
     },
+    editPool: {
+      arguments: {
+        maxTakerSellCount: {
+          defaultValue: k.noneValueNode(),
+        }
+      }
+    },
     depositNft: {
       arguments: {
         tokenStandard: {
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible"
+            "ProgrammableNonFungible"
           )
         }
       }
@@ -107,7 +114,7 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible"
+            "ProgrammableNonFungible"
           )
         }
       }
@@ -118,7 +125,7 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible"
+            "ProgrammableNonFungible"
           )
         }
       },
@@ -136,7 +143,7 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible"
+            "ProgrammableNonFungible"
           )
         }
       },
@@ -154,7 +161,7 @@ kinobi.update(
           type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
           defaultValue: k.enumValueNode(
             k.definedTypeLinkNode("TokenStandard", "resolvers"),
-            "NonFungible"
+            "ProgrammableNonFungible"
           )
         }
       },

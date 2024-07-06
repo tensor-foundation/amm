@@ -91,7 +91,7 @@ export type EditPoolInstructionDataArgs = {
   newConfig: OptionOrNullable<PoolConfigArgs>;
   cosigner?: OptionOrNullable<Address>;
   expireInSec?: OptionOrNullable<number | bigint>;
-  maxTakerSellCount: OptionOrNullable<number>;
+  maxTakerSellCount?: OptionOrNullable<number>;
   resetPriceOffset: boolean;
 };
 
@@ -110,6 +110,7 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
       discriminator: new Uint8Array([50, 174, 34, 36, 3, 166, 29, 204]),
       cosigner: value.cosigner ?? none(),
       expireInSec: value.expireInSec ?? none(),
+      maxTakerSellCount: value.maxTakerSellCount ?? none(),
     })
   );
 }
@@ -149,7 +150,7 @@ export type EditPoolInput<
   newConfig: EditPoolInstructionDataArgs['newConfig'];
   cosigner?: EditPoolInstructionDataArgs['cosigner'];
   expireInSec?: EditPoolInstructionDataArgs['expireInSec'];
-  maxTakerSellCount: EditPoolInstructionDataArgs['maxTakerSellCount'];
+  maxTakerSellCount?: EditPoolInstructionDataArgs['maxTakerSellCount'];
   resetPriceOffset: EditPoolInstructionDataArgs['resetPriceOffset'];
 };
 
