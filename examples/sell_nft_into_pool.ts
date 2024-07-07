@@ -7,7 +7,7 @@ import {
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync
 } from "@tensor-foundation/amm";
-import { IInstruction, KeyPairSigner, address, createKeyPairSignerFromBytes, isSome, Address, unwrapOption, parseBase64RpcAccount, EncodedAccount } from "@solana/web3.js";
+import { IInstruction, KeyPairSigner, address, createKeyPairSignerFromBytes, isSome, Address, unwrapOption, parseBase64RpcAccount, EncodedAccount, assertAccountDecoded, assertAccountExists } from "@solana/web3.js";
 import { TensorWhitelistAccount, decodeWhitelistV2, identifyTensorWhitelistAccount } from "@tensor-foundation/whitelist";
 import { decodeWhitelist } from "@tensor-foundation/whitelist";
 import { Mode } from "@tensor-foundation/whitelist";
@@ -36,21 +36,21 @@ export async function sellNftIntoPool(mint: string, poolAddress: string) {
 
   // check if whitelist is v1 or v2 
   // and retrieve creators if given
-  const whitelistData = await rpc
+  const whitelistAccount = await rpc
     .getAccountInfo(whitelist, {encoding: "base64"})
     .send()
     .then(resp => parseBase64RpcAccount(whitelist, resp.value));
-  if(!whitelistData.exists) throw new Error("Whitelist Account doesn't exist anymore");
-  const whitelistAccountType = identifyTensorWhitelistAccount(whitelistData);
+  assertAccountExists(whitelistAccount);
+  const whitelistAccountType = identifyTensorWhitelistAccount(whitelistAccount);
   var isVerifiedViaFVC: boolean = false;
   var creators: Address[] = [];
   if(whitelistAccountType === TensorWhitelistAccount.Whitelist) {
-    const decodedWhitelist = decodeWhitelist(whitelistData);
+    const decodedWhitelist = decodeWhitelist(whitelistAccount);
     isVerifiedViaFVC = isSome(decodedWhitelist.data.fvc);
     if(isVerifiedViaFVC) creators.push(unwrapOption(decodedWhitelist.data.fvc)!);
   }
   else if(whitelistAccountType == TensorWhitelistAccount.WhitelistV2) {
-    const decodedWhitelistV2 = decodeWhitelistV2(whitelistData);
+    const decodedWhitelistV2 = decodeWhitelistV2(whitelistAccount);
     isVerifiedViaFVC = !!decodedWhitelistV2.data.conditions.find((condition) => condition.mode === Mode.FVC);
     if(isVerifiedViaFVC) decodedWhitelistV2.data.conditions
     .filter((condition) => condition.mode === Mode.FVC)
