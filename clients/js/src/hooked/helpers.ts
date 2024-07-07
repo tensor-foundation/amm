@@ -8,7 +8,7 @@ import { DEFAULT_ADDRESS } from './nullableAddress';
 
 export function getCurrentAskPrice(pool: Pool): number | null {
   if (pool.nftsHeld < 1) return null;
-  var askPrice = calculateCurrentPrice(pool, TakerSide.Buy);
+  const askPrice = calculateCurrentPrice(pool, TakerSide.Buy);
   if (!askPrice) return null;
   return Math.ceil(askPrice);
 }
@@ -17,7 +17,7 @@ export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
   pool: Pool
 ): Promise<number | null> {
-  var bidPrice = calculateCurrentPrice(pool, TakerSide.Sell);
+  let bidPrice = calculateCurrentPrice(pool, TakerSide.Sell);
   if (!bidPrice || Math.floor(bidPrice) == 0) return null;
   bidPrice = Math.floor(bidPrice);
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
@@ -82,7 +82,7 @@ function powerBigInt(base: bigint, exponent: bigint): number {
   // Calculate power for BigInt using exponentiation by squaring
   let result = 1n;
   let power = base;
-  let originalExponent = exponent;
+  const originalExponent = exponent;
   while (exponent > 0n) {
     if (exponent % 2n === 1n) {
       result *= power;
@@ -90,7 +90,7 @@ function powerBigInt(base: bigint, exponent: bigint): number {
     power *= power;
     exponent /= 2n;
   }
-  var zerosToGetRidOff = originalExponent * 4n;
+  let zerosToGetRidOff = originalExponent * 4n;
 
   // start scaling down until MAX_SAFE_INTEGER
   while (result > Number.MAX_SAFE_INTEGER) {
