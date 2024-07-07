@@ -6,12 +6,21 @@ import {
 import { CurveType, Pool, PoolType, findPoolPda } from '../generated';
 import { DEFAULT_ADDRESS } from './nullableAddress';
 
+export function getCurrentAskPrice(
+    pool: Pool
+): number | null {
+    if(pool.nftsHeld < 1) return null;
+    var askPrice = calculateCurrentPrice(pool, TakerSide.Buy);
+    if(!askPrice) return null;
+    return Math.ceil(askPrice);
+}
+
 export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
   pool: Pool
 ): Promise<number | null> {
-  var bidPrice = calculateBidPrice(pool);
-  if (!bidPrice) return bidPrice;
+  var bidPrice = calculateCurrentPrice(pool, TakerSide.Sell);
+  if (!bidPrice || Math.floor(bidPrice) == 0) return null;
   bidPrice = Math.floor(bidPrice);
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
@@ -31,9 +40,13 @@ export async function getCurrentBidPrice(
     .send();
   return BigInt(escrowLamports) - rentExemption >= bidPrice ? bidPrice : null;
 }
+enum TakerSide {
+    Buy,
+    Sell
+}
 // converting startingPrice to number, if any pool's starting price is higher
 // than 9m sol (2^53-1 lamports) then feel free to blame me - leant
-function calculateBidPrice(pool: Pool): number | null {
+function calculateCurrentPrice(pool: Pool, side: TakerSide): number | null {
   if (
     pool.config.poolType === PoolType.NFT ||
     (pool.priceOffset === pool.maxTakerSellCount &&
@@ -42,10 +55,10 @@ function calculateBidPrice(pool: Pool): number | null {
       pool.sharedEscrow !== DEFAULT_ADDRESS)
   )
     return null;
-  const tradePoolOffset = pool.config.poolType === PoolType.Trade ? 1 : 0;
+  const tradePoolOffset = (pool.config.poolType === PoolType.Trade && side === TakerSide.Sell) ? 1 : 0;
   const bps = 100_00;
   const tradePoolMult =
-    pool.config.poolType === PoolType.Trade
+    (pool.config.poolType === PoolType.Trade && side === TakerSide.Sell)
       ? 1 - (pool.config.mmFeeBps ?? 0) / 100_00
       : 1;
   const offset = pool.priceOffset + tradePoolOffset;
