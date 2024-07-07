@@ -7,7 +7,7 @@ import {
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync
 } from "@tensor-foundation/amm";
-import { IInstruction, KeyPairSigner, address, createKeyPairSignerFromBytes, isSome, Address, unwrapOption, parseBase64RpcAccount, EncodedAccount, assertAccountDecoded, assertAccountExists } from "@solana/web3.js";
+import { IInstruction, KeyPairSigner, address, createKeyPairSignerFromBytes, isSome, Address, unwrapOption, parseBase64RpcAccount, assertAccountExists } from "@solana/web3.js";
 import { TensorWhitelistAccount, decodeWhitelistV2, identifyTensorWhitelistAccount } from "@tensor-foundation/whitelist";
 import { decodeWhitelist } from "@tensor-foundation/whitelist";
 import { Mode } from "@tensor-foundation/whitelist";
