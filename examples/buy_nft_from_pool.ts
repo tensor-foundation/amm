@@ -5,12 +5,10 @@ import {
   BuyNftAsyncInput,
   getBuyNftInstructionAsync
 } from "@tensor-foundation/amm";
-import { KeyPairSigner, address, createKeyPairSignerFromBytes, isSome, Address, unwrapOption, parseBase64RpcAccount, assertAccountExists } from "@solana/web3.js";
-import { TensorWhitelistAccount, decodeWhitelistV2, identifyTensorWhitelistAccount } from "@tensor-foundation/whitelist";
-import { decodeWhitelist } from "@tensor-foundation/whitelist";
-import { Mode } from "@tensor-foundation/whitelist";
+import { KeyPairSigner, address, createKeyPairSignerFromBytes } from "@solana/web3.js";
 import { rpc, keypairBytes } from "./common";
-import { simulateTxWithIxs } from "@tensor-foundation/common-helpers";
+import { simulateTxWithIxs, fetchMetadata } from "@tensor-foundation/common-helpers";
+import { findMetadataPda } from "@tensor-foundation/resolvers";
 
 // buys NFT, given its mint address, from pool, specified by its address
 export async function buyNftFromPool(mint: string, poolAddress: string) {
@@ -27,31 +25,16 @@ export async function buyNftFromPool(mint: string, poolAddress: string) {
 
   // poolType NFT would be a listing only pool, can't sell into that pool
   if (poolType === PoolType.Token) throw new Error(`Pool ${poolAddress} is a bid-side only pool and is not selling any NFTs.`);
-  const { owner, whitelist } = pool.data;
+  const { owner, makerBroker, cosigner } = pool.data;
 
-  // check if whitelist is v1 or v2 (need whitelist to get FVC Address/es)
-  // and retrieve corresponding creators if given from FVC field/s
-  const whitelistAccount = await rpc
-    .getAccountInfo(whitelist, { encoding: "base64" })
-    .send()
-    .then(resp => parseBase64RpcAccount(whitelist, resp.value));
-  assertAccountExists(whitelistAccount);
-  const whitelistAccountType = identifyTensorWhitelistAccount(whitelistAccount);
-  var isVerifiedViaFVC: boolean = false;
-  var creators: Address[] = [];
-  if (whitelistAccountType === TensorWhitelistAccount.Whitelist) {
-    const decodedWhitelist = decodeWhitelist(whitelistAccount);
-    isVerifiedViaFVC = isSome(decodedWhitelist.data.fvc);
-    if (isVerifiedViaFVC) creators.push(unwrapOption(decodedWhitelist.data.fvc)!);
-  }
-  else if (whitelistAccountType == TensorWhitelistAccount.WhitelistV2) {
-    const decodedWhitelistV2 = decodeWhitelistV2(whitelistAccount);
-    isVerifiedViaFVC = !!decodedWhitelistV2.data.conditions.find((condition) => condition.mode === Mode.FVC);
-    if (isVerifiedViaFVC) decodedWhitelistV2.data.conditions
-      .filter((condition) => condition.mode === Mode.FVC)
-      .forEach(condition => creators.push(condition.value));
-  }
-  else throw new Error(`${whitelist} is an unknown whitelist`)
+  if(cosigner) throw new Error(`Pool ${poolAddress} has a cosigner and requires a cosignature. Remove this line if you are in possession of the cosigners private key! :)`);
+
+  // fetch metadata for additional relevant fields
+  const [ metadataPda ] = await findMetadataPda({mint: address(mint)});
+  const { tokenStandard, data: { creators:creatorsRaw }, programmableConfig } = await fetchMetadata(rpc, metadataPda);
+
+  const creators = creatorsRaw.map(creator => creator.address);
+  const ruleSet = programmableConfig?.ruleSet ?? undefined;
 
   // get current price for buying out an NFT from the pool
   const maxAmount = getCurrentAskPrice(pool.data);
@@ -62,6 +45,9 @@ export async function buyNftFromPool(mint: string, poolAddress: string) {
     pool: address(poolAddress),
     mint: address(mint),
     maxAmount: maxAmount,
+    makerBroker: makerBroker ?? undefined,
+    authorizationRules: ruleSet,
+    tokenStandard: tokenStandard,
     creators: creators,
   };
 
