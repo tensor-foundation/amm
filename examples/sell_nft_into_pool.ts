@@ -31,7 +31,7 @@ export async function sellNftIntoPool(mint: string, poolAddress: string) {
 
   // get overlapping arguments for trade / token pools
   var sellIx: IInstruction;
-  const { owner, whitelist, makerBroker, cosigner } = pool.data;
+  const { owner, whitelist, makerBroker, cosigner, sharedEscrow } = pool.data;
 
   if(cosigner) throw new Error(`Pool ${poolAddress} has a cosigner and requires a cosignature. Remove this line if you are in possession of the cosigners private key! :)`);
 
@@ -53,6 +53,7 @@ export async function sellNftIntoPool(mint: string, poolAddress: string) {
     mint: address(mint),
     minPrice: minPrice,
     makerBroker: makerBroker ?? undefined,
+    sharedEscrow: sharedEscrow ?? undefined,
     authorizationRules: ruleSet,
     tokenStandard: tokenStandard,
     creators: creators,

@@ -25,7 +25,7 @@ export async function buyNftFromPool(mint: string, poolAddress: string) {
 
   // poolType NFT would be a listing only pool, can't sell into that pool
   if (poolType === PoolType.Token) throw new Error(`Pool ${poolAddress} is a bid-side only pool and is not selling any NFTs.`);
-  const { owner, makerBroker, cosigner } = pool.data;
+  const { owner, makerBroker, cosigner, sharedEscrow } = pool.data;
 
   if(cosigner) throw new Error(`Pool ${poolAddress} has a cosigner and requires a cosignature. Remove this line if you are in possession of the cosigners private key! :)`);
 
@@ -46,6 +46,7 @@ export async function buyNftFromPool(mint: string, poolAddress: string) {
     mint: address(mint),
     maxAmount: maxAmount,
     makerBroker: makerBroker ?? undefined,
+    sharedEscrow: sharedEscrow ?? undefined,
     authorizationRules: ruleSet,
     tokenStandard: tokenStandard,
     creators: creators,
