@@ -44,8 +44,11 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
+import { resolvePoolIdOnCreate } from '../../hooked';
+import { findPoolPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
+  expectAddress,
   expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
@@ -112,8 +115,8 @@ export type CreatePoolInstructionDataArgs = {
   sharedEscrow?: OptionOrNullable<Address>;
   cosigner?: OptionOrNullable<Address>;
   makerBroker?: OptionOrNullable<Address>;
-  orderType: number;
-  maxTakerSellCount: OptionOrNullable<number>;
+  orderType?: number;
+  maxTakerSellCount?: OptionOrNullable<number>;
   expireInSec?: OptionOrNullable<number | bigint>;
 };
 
@@ -138,6 +141,8 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       sharedEscrow: value.sharedEscrow ?? none(),
       cosigner: value.cosigner ?? none(),
       makerBroker: value.makerBroker ?? none(),
+      orderType: value.orderType ?? 0,
+      maxTakerSellCount: value.maxTakerSellCount ?? none(),
       expireInSec: value.expireInSec ?? none(),
     })
   );
@@ -168,6 +173,126 @@ export function getCreatePoolInstructionDataCodec(): Codec<
   );
 }
 
+export type CreatePoolAsyncInput<
+  TAccountRentPayer extends string = string,
+  TAccountOwner extends string = string,
+  TAccountPool extends string = string,
+  TAccountWhitelist extends string = string,
+  TAccountSystemProgram extends string = string,
+> = {
+  /**
+   * The account pay for the rent to open the pool. This will be stored on the pool
+   * so it can be refunded when the pool is closed.
+   */
+  rentPayer?: TransactionSigner<TAccountRentPayer>;
+  /** The owner of the pool will be stored and used to control permissioned pool instructions. */
+  owner: TransactionSigner<TAccountOwner>;
+  /** The pool state account. */
+  pool?: Address<TAccountPool>;
+  /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
+  whitelist: Address<TAccountWhitelist>;
+  /** The Solana system program. */
+  systemProgram?: Address<TAccountSystemProgram>;
+  poolId?: CreatePoolInstructionDataArgs['poolId'];
+  config: CreatePoolInstructionDataArgs['config'];
+  currency?: CreatePoolInstructionDataArgs['currency'];
+  sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
+  cosigner?: CreatePoolInstructionDataArgs['cosigner'];
+  makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
+  orderType?: CreatePoolInstructionDataArgs['orderType'];
+  maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
+  expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
+};
+
+export async function getCreatePoolInstructionAsync<
+  TAccountRentPayer extends string,
+  TAccountOwner extends string,
+  TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountSystemProgram extends string,
+>(
+  input: CreatePoolAsyncInput<
+    TAccountRentPayer,
+    TAccountOwner,
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSystemProgram
+  >
+): Promise<
+  CreatePoolInstruction<
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountRentPayer,
+    TAccountOwner,
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSystemProgram
+  >
+> {
+  // Program address.
+  const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
+
+  // Original accounts.
+  const originalAccounts = {
+    rentPayer: { value: input.rentPayer ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
+    pool: { value: input.pool ?? null, isWritable: true },
+    whitelist: { value: input.whitelist ?? null, isWritable: false },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
+  };
+  const accounts = originalAccounts as Record<
+    keyof typeof originalAccounts,
+    ResolvedAccount
+  >;
+
+  // Original args.
+  const args = { ...input };
+
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
+  // Resolve default values.
+  if (!accounts.rentPayer.value) {
+    accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
+  if (!args.poolId) {
+    args.poolId = resolvePoolIdOnCreate(resolverScope);
+  }
+  if (!accounts.pool.value) {
+    accounts.pool.value = await findPoolPda({
+      owner: expectAddress(accounts.owner.value),
+      poolId: expectSome(args.poolId),
+    });
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+
+  const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+  const instruction = {
+    accounts: [
+      getAccountMeta(accounts.rentPayer),
+      getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.systemProgram),
+    ],
+    programAddress,
+    data: getCreatePoolInstructionDataEncoder().encode(
+      args as CreatePoolInstructionDataArgs
+    ),
+  } as CreatePoolInstruction<
+    typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountRentPayer,
+    TAccountOwner,
+    TAccountPool,
+    TAccountWhitelist,
+    TAccountSystemProgram
+  >;
+
+  return instruction;
+}
+
 export type CreatePoolInput<
   TAccountRentPayer extends string = string,
   TAccountOwner extends string = string,
@@ -188,14 +313,14 @@ export type CreatePoolInput<
   whitelist: Address<TAccountWhitelist>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  poolId: CreatePoolInstructionDataArgs['poolId'];
+  poolId?: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
   currency?: CreatePoolInstructionDataArgs['currency'];
   sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
-  orderType: CreatePoolInstructionDataArgs['orderType'];
-  maxTakerSellCount: CreatePoolInstructionDataArgs['maxTakerSellCount'];
+  orderType?: CreatePoolInstructionDataArgs['orderType'];
+  maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
 
@@ -240,9 +365,15 @@ export function getCreatePoolInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
   // Resolve default values.
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
+  }
+  if (!args.poolId) {
+    args.poolId = resolvePoolIdOnCreate(resolverScope);
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =

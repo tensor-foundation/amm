@@ -69,6 +69,34 @@ kinobi.update(
 // Update instructions.
 kinobi.update(
   k.updateInstructionsVisitor({
+    createPool: {
+      accounts: {
+        pool: {
+          defaultValue: k.pdaValueNode("pool", [
+            k.pdaSeedValueNode("owner", k.accountValueNode("owner")),
+            k.pdaSeedValueNode("poolId", k.argumentValueNode("poolId"))
+          ])
+        }
+      },
+      arguments: {
+        poolId: {
+          defaultValue: k.resolverValueNode("resolvePoolIdOnCreate"),
+        },
+        orderType: {
+          defaultValue: k.numberValueNode(0),
+        },
+        maxTakerSellCount: {
+          defaultValue: k.noneValueNode(),
+        }
+      }
+    },
+    editPool: {
+      arguments: {
+        maxTakerSellCount: {
+          defaultValue: k.noneValueNode(),
+        }
+      }
+    },
     depositNft: {
       arguments: {
         tokenStandard: {
