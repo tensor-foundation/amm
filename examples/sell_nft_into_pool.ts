@@ -53,6 +53,8 @@ export async function sellNftIntoPool(mint: string, poolAddress: string) {
     mint: address(mint),
     minPrice: minPrice,
     makerBroker: makerBroker ?? undefined,
+    // get 50 BPS of the price back to your own wallet by being the takerBroker!
+    takerBroker: keypairSigner.address,
     sharedEscrow: sharedEscrow ?? undefined,
     authorizationRules: ruleSet,
     tokenStandard: tokenStandard,

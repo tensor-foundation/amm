@@ -46,6 +46,8 @@ export async function buyNftFromPool(mint: string, poolAddress: string) {
     mint: address(mint),
     maxAmount: maxAmount,
     makerBroker: makerBroker ?? undefined,
+    // get 50 BPS of the price back to your own wallet by being the takerBroker!
+    takerBroker: keypairSigner.address,
     sharedEscrow: sharedEscrow ?? undefined,
     authorizationRules: ruleSet,
     tokenStandard: tokenStandard,
