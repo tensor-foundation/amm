@@ -21,8 +21,8 @@ export async function createPool(config: PoolConfigArgs, whitelist: string) {
     owner: keypairSigner,
     whitelist: address(whitelist),
     config: config,
-    // get 50 BPS of the price back to your own wallet by being the makerBroker
-    // when buy/sell transactions happen to your pool!
+    // get maker broker fees of the price back to your own wallet
+    // whenever your pool executes buys / sales
     makerBroker: keypairSigner.address,
   };
 
