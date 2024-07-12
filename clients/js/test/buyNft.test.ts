@@ -1,5 +1,6 @@
 import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
+  TSWAP_SINGLETON,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -29,6 +30,7 @@ import {
   nftPoolConfig,
   tradePoolConfig,
 } from './_common.js';
+import { findMarginAccountPda, getInitMarginAccountInstructionAsync } from '@tensor-foundation/escrow';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -508,4 +510,85 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   // Pool is now closed as there are no more NFTs left to buy.
   const maybePool = await fetchMaybePool(client.rpc, pool);
   t.assert(maybePool.exists === false);
+});
+
+test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool and NFT owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Buyer of the NFT.
+  const buyer = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+
+  // Initialize Margin Acc
+  const [ margin ] = await findMarginAccountPda({
+    owner: owner.address,
+    tswap: TSWAP_SINGLETON,
+    marginNr: 0,
+  });
+  const initMarginIx = await getInitMarginAccountInstructionAsync({ owner });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(initMarginIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  
+  // Create pool attached to shared escrow
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+    sharedEscrow: margin,
+  });
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, owner, owner, owner);
+
+  // Deposit NFT
+  const depositNftIx = await getDepositNftInstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const startingEscrowBalance = (await client.rpc.getBalance(margin).send()).value
+
+  // Buy NFT from pool
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: owner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount: config.startingPrice,
+    sharedEscrow: margin,
+    creators: [owner.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Shared Escrow balance increases exactly by the pool's startingPrice.
+  const endingEscrowBalance = (await client.rpc.getBalance(margin).send()).value;
+  t.assert(startingEscrowBalance === endingEscrowBalance - config.startingPrice);
 });
