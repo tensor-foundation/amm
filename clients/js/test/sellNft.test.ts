@@ -1,5 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import { Account, Address, appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -11,11 +11,14 @@ import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
+  NftDepositReceipt,
   Pool,
   PoolConfig,
   PoolType,
   fetchMaybePool,
+  fetchNftDepositReceipt,
   fetchPool,
+  findNftDepositReceiptPda,
   getDepositSolInstruction,
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync,
@@ -149,6 +152,16 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 
   // Only one sell, so the currency amount should be the deposit - lamportsTaken for the sale.
   t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
+
+  // Deposit Receipt should be created
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <Account<NftDepositReceipt, Address>>{
+    address: nftReceipt,
+    data: {
+      mint,
+      pool,
+    },
+  });
 });
 
 test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
@@ -199,7 +212,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   // Derives fee vault from mint and airdrops keep-alive rent to it.
   await getAndFundFeeVault(client, pool);
 
-  t.like(await fetchPool(client.rpc, pool), <Pool>{
+  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
     address: pool,
     data: {
       sharedEscrow,

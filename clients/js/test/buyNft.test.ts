@@ -9,8 +9,10 @@ import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
+  fetchMaybeNftDepositReceipt,
   fetchMaybePool,
   fetchPool,
+  findNftDepositReceiptPda,
   getBuyNftInstructionAsync,
   getDepositNftInstructionAsync,
   isSol,
@@ -134,6 +136,11 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     .value;
 
   t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
+
+  // Deposit Receipt should be closed
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(client.rpc, nftReceipt);
+  t.assert(maybeNftReceipt.exists === false);
 });
 
 test('buying NFT from a trade pool increases currency amount', async (t) => {

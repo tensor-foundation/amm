@@ -1,4 +1,4 @@
-import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import { Account, Address, appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -114,9 +114,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(tokenOwner === pool);
 
   // Deposit Receipt created.
-  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <
-    NftDepositReceipt
-  >{
+  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <Account<NftDepositReceipt, Address>>{
     address: nftReceipt,
     data: {
       mint,

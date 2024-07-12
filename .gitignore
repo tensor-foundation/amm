@@ -15,3 +15,5 @@ dist
 .bin
 .cargo
 .vscode
+examples/pnpm-lock.yaml
+examples/_test_examples.ts

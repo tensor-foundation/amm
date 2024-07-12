@@ -15,6 +15,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
+  fetchMaybeNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
   getDepositSolInstruction,
@@ -152,4 +153,9 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   t.assert(postBuyTokenAmount === 1n);
   t.assert(postBuyTokenOwner === owner.address);
+
+  // Deposit Receipt should be closed
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(client.rpc, nftReceipt);
+  t.assert(maybeNftReceipt.exists === false);
 });
