@@ -7,7 +7,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import { Creator, TokenStandard, createDefaultNft, fetchMetadata } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
@@ -674,7 +674,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   t.pass();
 });
 
-test('it can sell an NFT into a pool w/ set cosigner', async (t) => {
+test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool owner.
@@ -755,7 +755,7 @@ test('it can sell an NFT into a pool w/ set cosigner', async (t) => {
   t.assert(postSellTokenOwner === pool);
 });
 
-test('it cannot sell an NFT into a pool w/ incorrect cosigner', async (t) => {
+test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool owner.
@@ -844,7 +844,7 @@ test('it cannot sell an NFT into a pool w/ incorrect cosigner', async (t) => {
   await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
 });
 
-test('it cannot sell an NFT into a pool w/ incorrect whitelist', async (t) => {
+test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool owner.
@@ -935,4 +935,106 @@ test('it cannot sell an NFT into a pool w/ incorrect whitelist', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
   await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
+});
+
+test('it can sell a pNFT into a trade pool and pay the correct amount of royalties', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Seller of the NFT.
+  const seller = await generateKeyPairSignerWithSol(client);
+  // Creator of the NFT.
+  const creator = {
+    address: (await generateKeyPairSignerWithSol(client)).address,
+    verified: true,
+    share: 100,
+  } as Creator
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }]
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    payer: seller,
+    whitelist,
+    owner,
+    config,
+  });
+
+  const minPrice = 850_000n;
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+
+  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
+
+  // Mint NFT
+  // @ts-ignore: Mint a ProgrammableNonFungible.
+  const { mint, metadata } = await createDefaultNft({
+    client,
+    payer: seller,
+    authority: owner,
+    owner: seller,
+    standard: TokenStandard.ProgrammableNonFungible,
+    creator: [creator],
+  });
+
+  const { sellerFeeBasisPoints } = (await fetchMetadata(client.rpc, metadata)).data;
+
+  const feeVault = await getAndFundFeeVault(client, pool);
+
+  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  const startingCreatorBalance = (await client.rpc.getBalance(creator.address).send())
+    .value;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller,
+    pool,
+    mint,
+    minPrice,
+    whitelist,
+    // Remaining accounts
+    creators: [creator.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+
+  // NFT is now owned by the pool.
+  const poolAtaAccount = await client.rpc
+    .getAccountInfo(poolAta, { encoding: 'base64' })
+    .send();
+
+  const data = poolAtaAccount!.value!.data;
+
+  const postSellTokenAmount = getTokenAmount(data);
+  const postSellTokenOwner = getTokenOwner(data);
+
+  t.assert(postSellTokenAmount === 1n);
+  t.assert(postSellTokenOwner === pool);
+
+  // Fee vault balance increases.
+  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
+
+  // Creator receives exactly the sellerFeeBasisPoints specified in pNFTs metadata of the buy price
+  const endingCreatorBalance = (await client.rpc.getBalance(creator.address).send())
+    .value;
+  t.assert(endingCreatorBalance === startingCreatorBalance + BigInt(sellerFeeBasisPoints) * config.startingPrice / 100n);
 });
