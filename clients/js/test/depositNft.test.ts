@@ -7,7 +7,6 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   createDefaultNft,
-  findTokenRecordPda,
 } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
@@ -18,7 +17,6 @@ import {
   fetchNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
-  getDepositNftInstruction,
   getDepositNftInstructionAsync,
 } from '../src/index.js';
 import {
@@ -64,24 +62,14 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint, metadata, masterEdition, token } = await createDefaultNft(
+  const { mint } = await createDefaultNft(
     client,
     owner,
     owner,
     owner
   );
 
-  const ownerAta = token;
   const [poolAta] = await findAtaPda({ mint, owner: pool });
-
-  const [ownerTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: ownerAta,
-  });
-  const [poolTokenRecord] = await findTokenRecordPda({
-    mint,
-    token: poolAta,
-  });
 
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
 

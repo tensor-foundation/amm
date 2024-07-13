@@ -1,6 +1,5 @@
-import { SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, appendTransactionMessageInstruction, isSolanaError, pipe } from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
-  TSWAP_SINGLETON,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -27,13 +26,11 @@ import {
   expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
-  getAndFundOwner,
   getTokenAmount,
   getTokenOwner,
   nftPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { findMarginAccountPda, getInitMarginAccountInstructionAsync } from '@tensor-foundation/escrow';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

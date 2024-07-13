@@ -9,9 +9,7 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   createDefaultNft,
-  findTokenRecordPda,
 } from '@tensor-foundation/mpl-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
@@ -19,9 +17,7 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getDepositSolInstruction,
-  getSellNftTradePoolInstruction,
   getSellNftTradePoolInstructionAsync,
-  getWithdrawNftInstruction,
   getWithdrawNftInstructionAsync,
 } from '../src/index.js';
 import {
@@ -62,7 +58,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint } = await createDefaultNft(
     client,
     nftOwner,
     nftOwner,

@@ -14,7 +14,6 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   createDefaultNft,
-  findTokenRecordPda,
 } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
@@ -24,7 +23,6 @@ import {
   PoolType,
   fetchMaybePool,
   fetchPool,
-  findNftDepositReceiptPda,
   getClosePoolInstruction,
   getDepositNftInstructionAsync,
   getDepositSolInstruction,
@@ -35,7 +33,6 @@ import {
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
-  findAtaPda,
   getAndFundFeeVault,
   getPoolStateBond,
   tradePoolConfig,
@@ -115,15 +112,12 @@ test('close pool fails if nfts still deposited', async (t) => {
   });
 
   // Mint NFTs
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint } = await createDefaultNft(
     client,
     owner,
     owner,
     owner
   );
-
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
 
   // Deposit NFT into pool
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -200,7 +194,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint, } = await createDefaultNft(
     client,
     nftOwner,
     nftOwner,

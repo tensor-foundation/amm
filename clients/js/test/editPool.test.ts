@@ -5,7 +5,6 @@ import {
   generateKeyPairSigner,
 } from '@solana/web3.js';
 import {
-  Mode,
   WhitelistV2,
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
@@ -59,7 +58,7 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
     expireInSec: ONE_WEEK,
   });
 
-  const editPoolIx = await getEditPoolInstruction({
+  const editPoolIx = getEditPoolInstruction({
     owner: updateAuthority,
     pool,
     expireInSec: 2 * ONE_WEEK,
