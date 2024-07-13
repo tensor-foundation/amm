@@ -844,7 +844,7 @@ test('it cannot sell an NFT into a pool w/ incorrect cosigner', async (t) => {
   await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
 });
 
-test('it cannot sell an NFT into a pool w/ different whitelist', async (t) => {
+test('it cannot sell an NFT into a pool w/ incorrect whitelist', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool owner.
@@ -908,14 +908,15 @@ test('it cannot sell an NFT into a pool w/ different whitelist', async (t) => {
     minPrice: minPrice,
     creators: [owner.address],
   });
-  const BAD_WHITELIST_ERROR_CODE = 12002
+  const BAD_WHITELIST_ERROR_CODE = 12002;
+  const FAILED_FVC_VERIFICATION_ERROR_CODE = 6007; // thrown by whitelist program
 
   const promisePoolWL = pipe(
     await createDefaultTransaction(client, seller),
     (tx) => appendTransactionMessageInstruction(sellNftIxPoolWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promisePoolWL, BAD_WHITELIST_ERROR_CODE);
+  await expectCustomError(t, promisePoolWL, FAILED_FVC_VERIFICATION_ERROR_CODE);
 
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTradePoolInstructionAsync({
