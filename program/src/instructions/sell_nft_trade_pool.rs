@@ -231,6 +231,13 @@ impl<'info> SellNftTradePool<'info> {
 
 impl<'info> Validate<'info> for SellNftTradePool<'info> {
     fn validate(&self) -> Result<()> {
+        // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+        if let Some(cosigner) = self.pool.cosigner.value() {
+            if self.cosigner.is_none() || self.cosigner.as_ref().unwrap().key != cosigner {
+                throw_err!(ErrorCode::BadCosigner);
+            }
+        }
+
         match self.pool.config.pool_type {
             PoolType::Trade => (),
             _ => {
