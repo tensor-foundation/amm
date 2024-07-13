@@ -843,3 +843,95 @@ test('it cannot sell an NFT into a pool w/ incorrect cosigner', async (t) => {
   );
   await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
 });
+
+test('it cannot sell an NFT into a pool w/ different whitelist', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Owner and Seller of the NFT.
+  const seller = await generateKeyPairSignerWithSol(client);
+  // Mint Whitelist Authority
+  const mintWhitelistAuthority = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist: poolWhitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+
+  // Create whitelist with FVC where the mintWhitelistAuthority is the FVC
+  const { whitelist: mintWhitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: mintWhitelistAuthority,
+    conditions: [{ mode: 2, value: mintWhitelistAuthority.address }],
+  });
+  
+  // Create pool w/ poolWhitelist as whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist: poolWhitelist,
+    owner,
+    config,
+  });
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner,
+    lamports: 500_000_000n,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, mintWhitelistAuthority, seller, seller);
+
+  await getAndFundFeeVault(client, pool);
+
+  const minPrice = 850_000n
+
+  // Sell NFT into pool w/ specifying pool's whitelist & non-matching mint
+  const sellNftIxPoolWL = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller,
+    pool,
+    mint,
+    whitelist: poolWhitelist,
+    minPrice: minPrice,
+    creators: [owner.address],
+  });
+  const BAD_WHITELIST_ERROR_CODE = 12002
+
+  const promisePoolWL = pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIxPoolWL, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promisePoolWL, BAD_WHITELIST_ERROR_CODE);
+
+  // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
+  const sellNftIxMintWL = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller,
+    pool,
+    mint,
+    whitelist: mintWhitelist,
+    minPrice,
+    creators: [mintWhitelistAuthority.address],
+  });
+
+  const promiseMintWL = pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIxMintWL, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
+});
