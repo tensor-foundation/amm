@@ -31,6 +31,7 @@ import {
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
+  expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
   getTokenAmount,
@@ -529,7 +530,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   });
 
   // Create pool and whitelist
-
   const { pool, cosigner } = await createPool({
     client,
     payer: buyer,
@@ -672,4 +672,174 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 
   // Need one assertion directly in test.
   t.pass();
+});
+
+test('it can sell an NFT into a pool w/ set cosigner', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Owner and Seller of the NFT.
+  const seller = await generateKeyPairSignerWithSol(client);
+  // Cosigner
+  const cosigner = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+  
+  // Create pool w/ cosigner
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+    cosigner: cosigner
+  });
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner,
+    lamports: 500_000_000n,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, owner, seller, seller);
+
+  await getAndFundFeeVault(client, pool);
+
+  const minPrice = 850_000n
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller: seller,
+    pool,
+    mint,
+    whitelist: whitelist,
+    minPrice: minPrice,
+    creators: [owner.address],
+    cosigner: cosigner
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool.
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+  const poolAtaAccount = await client.rpc
+    .getAccountInfo(poolAta, { encoding: 'base64' })
+    .send();
+
+  const data = poolAtaAccount!.value!.data;
+
+  const postSellTokenAmount = getTokenAmount(data);
+  const postSellTokenOwner = getTokenOwner(data);
+
+  t.assert(postSellTokenAmount === 1n);
+  t.assert(postSellTokenOwner === pool);
+});
+
+test('it cannot sell an NFT into a pool w/ incorrect cosigner', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Owner and Seller of the NFT.
+  const seller = await generateKeyPairSignerWithSol(client);
+  // Cosigner
+  const cosigner = await generateKeyPairSignerWithSol(client);
+  // Incorrect Cosigner
+  const arbitraryCosigner = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+  
+  // Create pool w/ cosigner
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+    cosigner: cosigner
+  });
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner,
+    lamports: 500_000_000n,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, owner, seller, seller);
+
+  await getAndFundFeeVault(client, pool);
+
+  const minPrice = 850_000n
+
+  // Sell NFT into pool without specififying cosigner
+  const sellNftIxNoCosigner = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller,
+    pool,
+    mint,
+    whitelist,
+    minPrice: minPrice,
+    creators: [owner.address],
+  });
+  const BAD_COSIGNER_ERROR_CODE = 12025
+
+  const promiseNoCosigner = pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promiseNoCosigner, BAD_COSIGNER_ERROR_CODE);
+
+  // Sell NFT into pool with arbitraryCosigner
+  const sellNftIxIncorrectCosigner = await getSellNftTradePoolInstructionAsync({
+    owner: owner.address,
+    seller,
+    pool,
+    mint,
+    whitelist,
+    minPrice,
+    creators: [owner.address],
+    cosigner: arbitraryCosigner
+  });
+
+  const promiseIncorrectCosigner = pipe(
+    await createDefaultTransaction(client, seller),
+    (tx) => appendTransactionMessageInstruction(sellNftIxIncorrectCosigner, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
 });

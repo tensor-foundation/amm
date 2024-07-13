@@ -1,4 +1,4 @@
-import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import { SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM, appendTransactionMessageInstruction, isSolanaError, pipe } from '@solana/web3.js';
 import {
   TSWAP_SINGLETON,
   createDefaultSolanaClient,
@@ -21,10 +21,13 @@ import {
 import {
   BASIS_POINTS,
   assertTammNoop,
+  createAndFundEscrow,
   createPool,
   createWhitelistV2,
+  expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
+  getAndFundOwner,
   getTokenAmount,
   getTokenOwner,
   nftPoolConfig,
@@ -530,18 +533,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   });
 
   // Initialize Margin Acc
-  const [ margin ] = await findMarginAccountPda({
-    owner: owner.address,
-    tswap: TSWAP_SINGLETON,
-    marginNr: 0,
-  });
-  const initMarginIx = await getInitMarginAccountInstructionAsync({ owner });
-
-  await pipe(
-    await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(initMarginIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
+  const margin = await createAndFundEscrow(client, owner, 0);
   
   // Create pool attached to shared escrow
   const { pool } = await createPool({
@@ -569,6 +561,8 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
+  await getAndFundFeeVault(client, pool);
+
   const startingEscrowBalance = (await client.rpc.getBalance(margin).send()).value
 
   // Buy NFT from pool
@@ -591,4 +585,181 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   // Shared Escrow balance increases exactly by the pool's startingPrice.
   const endingEscrowBalance = (await client.rpc.getBalance(margin).send()).value;
   t.assert(startingEscrowBalance === endingEscrowBalance - config.startingPrice);
+});
+
+test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool and NFT owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Buyer of the NFT.
+  const buyer = await generateKeyPairSignerWithSol(client);
+  // Cosigner
+  const cosigner = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+  
+  // Create pool w/ cosigner
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+    cosigner: cosigner
+  });
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, owner, owner, owner);
+
+  // Deposit NFT
+  const depositNftIx = await getDepositNftInstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await getAndFundFeeVault(client, pool);
+
+  // Buy NFT from pool
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: owner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount: config.startingPrice,
+    creators: [owner.address],
+    cosigner: cosigner
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the buyer.
+  const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
+  const buyerAtaAccount = await client.rpc
+    .getAccountInfo(buyerAta, { encoding: 'base64' })
+    .send();
+
+  const data = buyerAtaAccount!.value!.data;
+
+  const postBuyTokenAmount = getTokenAmount(data);
+  const postBuyTokenOwner = getTokenOwner(data);
+
+  t.assert(postBuyTokenAmount === 1n);
+  t.assert(postBuyTokenOwner === buyer.address);
+});
+
+test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool and NFT owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  // Buyer of the NFT.
+  const buyer = await generateKeyPairSignerWithSol(client);
+  // Cosigner
+  const cosigner = await generateKeyPairSignerWithSol(client);
+  // Incorrect Cosigner
+  const arbitraryCosigner = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+  
+  // Create pool w/ cosigner
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+    cosigner: cosigner
+  });
+
+  // Mint NFT
+  const { mint } = await createDefaultNft(client, owner, owner, owner);
+
+  // Deposit NFT
+  const depositNftIx = await getDepositNftInstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool.
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+  const poolAtaAccount = await client.rpc
+    .getAccountInfo(poolAta, { encoding: 'base64' })
+    .send();
+
+  const poolAtaData = poolAtaAccount!.value!.data;
+
+  const tokenAmount = getTokenAmount(poolAtaData);
+  const tokenOwner = getTokenOwner(poolAtaData);
+
+  t.assert(tokenAmount === 1n);
+  t.assert(tokenOwner === pool);
+
+  // Buy NFT from pool without specififying cosigner
+  const buyNftIxNoCosigner = await getBuyNftInstructionAsync({
+    owner: owner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount: config.startingPrice,
+    creators: [owner.address],
+  });
+  const BAD_COSIGNER_ERROR_CODE = 12025
+
+  const promiseNoCosigner = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promiseNoCosigner, BAD_COSIGNER_ERROR_CODE);
+
+  // Buy NFT from pool with arbitraryCosigner
+  const buyNftIxIncorrectCosigner = await getBuyNftInstructionAsync({
+    owner: owner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount: config.startingPrice,
+    creators: [owner.address],
+    cosigner: arbitraryCosigner
+  });
+
+  const promiseIncorrectCosigner = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIxIncorrectCosigner, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
 });
