@@ -67,7 +67,7 @@ jobs:
         run: |
           echo "@tensor-foundation:registry=https://npm.pkg.github.com" > ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-          
+
       - uses: tensor-foundation/actions/install-node-dependencies@v2
         with:
           folder: ./clients/js
@@ -107,7 +107,10 @@ jobs:
       - name: Setup SSH agent
         uses: tensor-foundation/actions/ssh-agent@v1
         with:
-          key: ${{ secrets.TOOLBOX_KEY }}
+          key: |
+            ${{ secrets.TOOLBOX_KEY }}
+            ${{ secrets.WHITELIST_KEY }}
+            ${{ secrets.ESCROW_KEY }}
 
       - name: Load environment variables
         run: cat .github/.env >> $GITHUB_ENV
@@ -182,7 +185,7 @@ jobs:
         if: env.CACHE == 'true'
         uses: tensor-foundation/actions/cache-crate@v2
         with:
-          folder: '.'
+          folder: "."
           key: programs
 
       - name: Install Node.js
