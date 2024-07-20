@@ -1,4 +1,4 @@
-import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import { Account, Address, appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -8,9 +8,12 @@ import {
 import { Creator, TokenStandard, createDefaultNft, fetchMetadata } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
+  NftDepositReceipt,
+  Pool,
   PoolType,
   fetchMaybeNftDepositReceipt,
   fetchMaybePool,
+  fetchNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
   getBuyNftInstructionAsync,
@@ -31,6 +34,8 @@ import {
   nftPoolConfig,
   tradePoolConfig,
 } from './_common.js';
+import { Mode } from '@tensor-foundation/whitelist';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -65,7 +70,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   // Deposit NFT
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -95,6 +100,16 @@ test('it can buy an NFT from a Trade pool', async (t) => {
 
   t.assert(tokenAmount === 1n);
   t.assert(tokenOwner === pool);
+
+  // Deposit Receipt should be created
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <Account<NftDepositReceipt, Address>>{
+    address: nftReceipt,
+    data: {
+      mint,
+      pool,
+    },
+  });
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
@@ -133,14 +148,25 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(postBuyTokenAmount === 1n);
   t.assert(postBuyTokenOwner === buyer.address);
 
+  // Pool stats are updated
+  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
+    address: pool,
+    data: {
+      stats: {
+        takerBuyCount: 1,
+        takerSellCount: 0,
+        //accumulatedMmProfit: ?
+      }
+    },
+  });
+
   // Fee vault balance increases.
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
   t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
 
-  // Deposit Receipt should be closed
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  // Deposit Receipt is closed
   const maybeNftReceipt = await fetchMaybeNftDepositReceipt(client.rpc, nftReceipt);
   t.assert(maybeNftReceipt.exists === false);
 });
@@ -190,7 +216,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   t.assert(poolAccount.data.amount === 0n);
 
   // Mint NFT -- Pool owner owns it so they can deposit it.
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
@@ -311,7 +337,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   t.assert(poolAccount.data.amount === 0n);
 
   // Mint NFT -- Pool owner owns it so they can deposit it.
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
   const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
@@ -412,9 +438,9 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.NFT);
 
   // Mint NFTs
-  const { mint: mint1 } = await createDefaultNft(client, owner, owner, owner);
+  const { mint: mint1 } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
-  const { mint: mint2 } = await createDefaultNft(client, owner, owner, owner);
+  const { mint: mint2 } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   const [poolAta1] = await findAtaPda({ mint: mint1, owner: pool });
 
@@ -542,7 +568,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   });
 
   // Mint NFT
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   // Deposit NFT
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -613,7 +639,7 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
   });
 
   // Mint NFT
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   // Deposit NFT
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -694,7 +720,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
   });
 
   // Mint NFT
-  const { mint } = await createDefaultNft(client, owner, owner, owner);
+  const { mint } = await createDefaultNft({client, payer:owner, authority:owner, owner});
 
   // Deposit NFT
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -769,19 +795,20 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   // Buyer of the NFT.
   const buyer = await generateKeyPairSignerWithSol(client);
   // Creator of the NFT.
+  const creatorKeypair = await generateKeyPairSignerWithSol(client)
   const creator = {
-    address: (await generateKeyPairSignerWithSol(client)).address,
+    address: creatorKeypair.address,
     verified: true,
     share: 100,
   } as Creator
 
   const config = tradePoolConfig;
 
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
+  // Create whitelist with FVC.
+    const { whitelist } = await createWhitelistV2({
     client,
-    updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }]
+    updateAuthority: creatorKeypair,
+    conditions: [{ mode: Mode.FVC, value: creator.address}]
   });
 
   // Create pool and whitelist
@@ -804,13 +831,18 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   const { mint, metadata } = await createDefaultNft({
     client,
     payer: owner,
-    authority: owner,
-    owner,
+    authority: creatorKeypair,
+    owner: owner,
     standard: TokenStandard.ProgrammableNonFungible,
-    creator: [creator],
+    creators: [creator],
   });
 
   const { sellerFeeBasisPoints } = (await fetchMetadata(client.rpc, metadata)).data;
+
+  // Use higher CU limit, pNFTs expensive
+  const cuLimitIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  })
 
   // Deposit NFT
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -818,10 +850,12 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
     pool,
     whitelist,
     mint,
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
   });
 
   await pipe(
     await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
     (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -855,12 +889,14 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
     pool,
     mint,
     maxAmount,
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
     // Remaining accounts
     creators: [creator.address],
   });
 
   await pipe(
     await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
     (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -886,7 +922,9 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
 
   // Creator receives exactly the sellerFeeBasisPoints specified in pNFTs metadata of the buy price
+  // postBalance === preBalance + currentPrice * sellerFeeBasisPoints / 100_00 
   const endingCreatorBalance = (await client.rpc.getBalance(creator.address).send())
     .value;
-  t.assert(endingCreatorBalance === startingCreatorBalance + BigInt(sellerFeeBasisPoints) * config.startingPrice / 100n);
+
+  t.assert(endingCreatorBalance === startingCreatorBalance + BigInt(sellerFeeBasisPoints) * config.startingPrice / 100_00n);
 });

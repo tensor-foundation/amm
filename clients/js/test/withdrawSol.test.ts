@@ -63,12 +63,12 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+    payer:nftOwner,
+    authority:nftOwner,
+    owner:nftOwner
+  });
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({

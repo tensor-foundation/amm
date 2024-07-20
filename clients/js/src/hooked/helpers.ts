@@ -56,23 +56,18 @@ function calculateCurrentPrice(pool: Pool, side: TakerSide): number | null {
   const tradePoolOffset =
     pool.config.poolType === PoolType.Trade && side === TakerSide.Sell ? 1 : 0;
   const bps = 100_00;
-  const tradePoolMult =
-    pool.config.poolType === PoolType.Trade && side === TakerSide.Sell
-      ? 1 - (pool.config.mmFeeBps ?? 0) / 100_00
-      : 1;
   const offset = pool.priceOffset + tradePoolOffset;
-  if (offset === 0) return Number(pool.config.startingPrice) * tradePoolMult;
+  if (offset === 0) return Number(pool.config.startingPrice);
   if (pool.config.curveType === CurveType.Exponential) {
     const base = BigInt(bps) + pool.config.delta;
     const exponent = BigInt(Math.abs(offset));
     const scaling = powerBigInt(base, exponent);
     return offset > 0
-      ? (Number(pool.config.startingPrice) / scaling) * tradePoolMult
-      : Number(pool.config.startingPrice) * scaling * tradePoolMult;
+      ? (Number(pool.config.startingPrice) / scaling)
+      : Number(pool.config.startingPrice) * scaling;
   } else if (pool.config.curveType === CurveType.Linear) {
     return (
-      Number(pool.config.startingPrice - pool.config.delta * BigInt(offset)) *
-      tradePoolMult
+      Number(pool.config.startingPrice - pool.config.delta * BigInt(offset))
     );
   }
   return null;

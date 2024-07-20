@@ -45,10 +45,12 @@ import {
   TokenStandard,
   resolveAuthorizationRulesProgramFromTokenStandard,
   resolveBuyerAta,
+  resolveBuyerTokenRecordFromTokenStandard,
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolvePoolAta,
   resolvePoolNftReceipt,
+  resolvePoolTokenRecordFromTokenStandard,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
@@ -536,6 +538,18 @@ export async function getBuyNftInstructionAsync<
     accounts.edition = {
       ...accounts.edition,
       ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTokenRecord.value) {
+    accounts.poolTokenRecord = {
+      ...accounts.poolTokenRecord,
+      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.buyerTokenRecord.value) {
+    accounts.buyerTokenRecord = {
+      ...accounts.buyerTokenRecord,
+      ...(await resolveBuyerTokenRecordFromTokenStandard(resolverScope)),
     };
   }
   if (!args.tokenStandard) {

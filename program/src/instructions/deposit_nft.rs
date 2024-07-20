@@ -93,6 +93,7 @@ pub struct DepositNft<'info> {
 
     /// The Token Metadata metadata account of the NFT.
     /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
+    #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
     // Optional account which must be passed in if the NFT must be verified against a
@@ -116,7 +117,8 @@ pub struct DepositNft<'info> {
     pub edition: UncheckedAccount<'info>,
 
     /// The Token Metadata owner/buyer token record account of the NFT.
-    /// CHECK: seeds checked on Token Metadata CPI    #[account(mut)]
+    /// CHECK: seeds checked on Token Metadata CPI    
+    #[account(mut)]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata pool token record account of the NFT.

@@ -60,12 +60,12 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+    payer:nftOwner,
+    authority:nftOwner,
+    owner:nftOwner
+  });
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -183,12 +183,12 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    owner,
-    owner,
+    payer:owner,
+    authority:owner,
     owner
-  );
+  });
 
 
   // Deposit NFT into pool

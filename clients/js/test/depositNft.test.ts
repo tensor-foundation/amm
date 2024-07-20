@@ -62,12 +62,12 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    owner,
-    owner,
+    payer:owner,
+    authority:owner,
     owner
-  );
+  });
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
