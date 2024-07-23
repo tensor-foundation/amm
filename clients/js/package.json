@@ -14,11 +14,15 @@
       "require": "./dist/src/index.js"
     }
   },
-  "files": ["./dist/src", "./dist/types"],
+  "files": [
+    "./dist/src",
+    "./dist/types"
+  ],
   "scripts": {
     "build": "rimraf dist && tsup && tsc -p ./tsconfig.declarations.json",
     "build:docs": "typedoc",
     "clean": "rm -rf node_modules && rm -rf dist",
+    "check": "npm run lint && npm run format",
     "test": "ava",
     "lint": "eslint --ext js,ts,tsx src",
     "lint:fix": "eslint --fix --ext js,ts,tsx src",
@@ -39,7 +43,7 @@
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
     "@solana/eslint-config-solana": "^3.0.0",
-    "@solana-program/compute-budget":"^0.3.2",
+    "@solana-program/compute-budget": "^0.3.2",
     "@tensor-foundation/escrow": "0.1.1",
     "@tensor-foundation/test-helpers": "0.0.5",
     "@tensor-foundation/mpl-token-metadata": "0.0.2",
