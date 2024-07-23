@@ -7,9 +7,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-} from '@tensor-foundation/mpl-token-metadata';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
@@ -62,9 +60,9 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   // Mint NFT
   const { mint } = await createDefaultNft({
     client,
-    payer:nftOwner,
-    authority:nftOwner,
-    owner:nftOwner
+    payer: nftOwner,
+    authority: nftOwner,
+    owner: nftOwner,
   });
 
   // Deposit SOL
@@ -154,7 +152,10 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   // Deposit Receipt should be closed
   const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(client.rpc, nftReceipt);
+  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
+    client.rpc,
+    nftReceipt
+  );
   t.assert(maybeNftReceipt.exists === false);
 });
 
@@ -185,15 +186,14 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
   // Mint NFT
   const { mint } = await createDefaultNft({
     client,
-    payer:owner,
-    authority:owner,
-    owner
+    payer: owner,
+    authority: owner,
+    owner,
   });
-
 
   // Deposit NFT into pool
   const depositNftIx = await getDepositNftInstructionAsync({
-    owner: owner, 
+    owner: owner,
     pool,
     whitelist,
     mint,

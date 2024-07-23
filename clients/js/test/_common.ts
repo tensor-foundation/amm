@@ -621,4 +621,4 @@ export const expectCustomError = async (
   } else {
     t.fail("expected a custom error, but didn't get one");
   }
-}
+};

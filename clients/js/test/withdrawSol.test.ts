@@ -12,9 +12,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-} from '@tensor-foundation/mpl-token-metadata';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
@@ -65,9 +63,9 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   // Mint NFT
   const { mint } = await createDefaultNft({
     client,
-    payer:nftOwner,
-    authority:nftOwner,
-    owner:nftOwner
+    payer: nftOwner,
+    authority: nftOwner,
+    owner: nftOwner,
   });
 
   // Deposit SOL
@@ -304,14 +302,13 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   t.assert(poolAccount.data.amount === depositLamports - withdrawLamports);
 });
 
-
 test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   const client = createDefaultSolanaClient();
 
   const owner = await generateKeyPairSignerWithSol(client);
   const notOwner = await generateKeyPairSignerWithSol(client);
   const depositLamports = 10_000_000n;
-  const withdrawLamports = 1n; 
+  const withdrawLamports = 1n;
 
   const config = tradePoolConfig;
 

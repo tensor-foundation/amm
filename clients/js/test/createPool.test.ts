@@ -354,7 +354,7 @@ test('it can create a pool w/ shared escrow', async (t) => {
 
   // Create pool attached to shared escrow
   await getAndFundOwner(client);
-  const [ margin ] = await findMarginAccountPda({
+  const [margin] = await findMarginAccountPda({
     owner: updateAuthority.address,
     tswap: TSWAP_SINGLETON,
     marginNr: 0,

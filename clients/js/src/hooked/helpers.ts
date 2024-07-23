@@ -63,11 +63,11 @@ function calculateCurrentPrice(pool: Pool, side: TakerSide): number | null {
     const exponent = BigInt(Math.abs(offset));
     const scaling = powerBigInt(base, exponent);
     return offset > 0
-      ? (Number(pool.config.startingPrice) / scaling)
+      ? Number(pool.config.startingPrice) / scaling
       : Number(pool.config.startingPrice) * scaling;
   } else if (pool.config.curveType === CurveType.Linear) {
-    return (
-      Number(pool.config.startingPrice - pool.config.delta * BigInt(offset))
+    return Number(
+      pool.config.startingPrice - pool.config.delta * BigInt(offset)
     );
   }
   return null;

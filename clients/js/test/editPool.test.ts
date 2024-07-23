@@ -4,10 +4,7 @@ import {
   pipe,
   generateKeyPairSigner,
 } from '@solana/web3.js';
-import {
-  WhitelistV2,
-  fetchWhitelistV2,
-} from '@tensor-foundation/whitelist';
+import { WhitelistV2, fetchWhitelistV2 } from '@tensor-foundation/whitelist';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,

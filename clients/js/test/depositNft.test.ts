@@ -1,13 +1,16 @@
-import { Account, Address, appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import {
+  Account,
+  Address,
+  appendTransactionMessageInstruction,
+  pipe,
+} from '@solana/web3.js';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-} from '@tensor-foundation/mpl-token-metadata';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
@@ -64,9 +67,9 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   // Mint NFT
   const { mint } = await createDefaultNft({
     client,
-    payer:owner,
-    authority:owner,
-    owner
+    payer: owner,
+    authority: owner,
+    owner,
   });
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
@@ -102,7 +105,9 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   t.assert(tokenOwner === pool);
 
   // Deposit Receipt created.
-  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <Account<NftDepositReceipt, Address>>{
+  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <
+    Account<NftDepositReceipt, Address>
+  >{
     address: nftReceipt,
     data: {
       mint,
