@@ -103,7 +103,7 @@ impl DepositNft {
             self.system_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.metadata,
             false,
         ));
@@ -122,7 +122,7 @@ impl DepositNft {
             false,
         ));
         if let Some(owner_token_record) = self.owner_token_record {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 owner_token_record,
                 false,
             ));
@@ -239,10 +239,10 @@ pub struct DepositNftInstructionArgs {
 ///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   8. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   9. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   10. `[]` metadata
+///   10. `[writable]` metadata
 ///   11. `[optional]` mint_proof
 ///   12. `[]` edition
-///   13. `[optional]` owner_token_record
+///   13. `[writable, optional]` owner_token_record
 ///   14. `[writable, optional]` pool_token_record
 ///   15. `[optional]` token_metadata_program
 ///   16. `[optional]` sysvar_instructions
@@ -678,7 +678,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             *self.system_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.metadata.key,
             false,
         ));
@@ -698,7 +698,7 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
             false,
         ));
         if let Some(owner_token_record) = self.owner_token_record {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            accounts.push(solana_program::instruction::AccountMeta::new(
                 *owner_token_record.key,
                 false,
             ));
@@ -840,10 +840,10 @@ impl<'a, 'b> DepositNftCpi<'a, 'b> {
 ///   7. `[]` token_program
 ///   8. `[]` associated_token_program
 ///   9. `[]` system_program
-///   10. `[]` metadata
+///   10. `[writable]` metadata
 ///   11. `[optional]` mint_proof
 ///   12. `[]` edition
-///   13. `[optional]` owner_token_record
+///   13. `[writable, optional]` owner_token_record
 ///   14. `[writable, optional]` pool_token_record
 ///   15. `[optional]` token_metadata_program
 ///   16. `[optional]` sysvar_instructions

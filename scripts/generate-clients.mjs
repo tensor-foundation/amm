@@ -397,7 +397,7 @@ kinobi.update(
     },
     {
       account: "ownerTokenRecord",
-      ignoreIfOptional: true,
+      ignoreIfOptional: false,
       defaultValue: k.resolverValueNode(
         "resolveOwnerTokenRecordFromTokenStandard",
         {
@@ -411,7 +411,7 @@ kinobi.update(
     },
     {
       account: "buyerTokenRecord",
-      ignoreIfOptional: true,
+      ignoreIfOptional: false,
       defaultValue: k.resolverValueNode(
         "resolveBuyerTokenRecordFromTokenStandard",
         {
@@ -425,7 +425,7 @@ kinobi.update(
     },
     {
       account: "sellerTokenRecord",
-      ignoreIfOptional: true,
+      ignoreIfOptional: false,
       defaultValue: k.resolverValueNode(
         "resolveSellerTokenRecordFromTokenStandard",
         {
@@ -439,7 +439,7 @@ kinobi.update(
     },
     {
       account: "poolTokenRecord",
-      ignoreIfOptional: true,
+      ignoreIfOptional: false,
       defaultValue: k.resolverValueNode(
         "resolvePoolTokenRecordFromTokenStandard",
         {

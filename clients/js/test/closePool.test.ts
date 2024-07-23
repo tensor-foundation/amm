@@ -12,10 +12,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-  findTokenRecordPda,
-} from '@tensor-foundation/mpl-token-metadata';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   CurveType,
@@ -24,7 +21,6 @@ import {
   PoolType,
   fetchMaybePool,
   fetchPool,
-  findNftDepositReceiptPda,
   getClosePoolInstruction,
   getDepositNftInstructionAsync,
   getDepositSolInstruction,
@@ -35,7 +31,6 @@ import {
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
-  findAtaPda,
   getAndFundFeeVault,
   getPoolStateBond,
   tradePoolConfig,
@@ -115,15 +110,12 @@ test('close pool fails if nfts still deposited', async (t) => {
   });
 
   // Mint NFTs
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
+    payer: owner,
+    authority: owner,
     owner,
-    owner,
-    owner
-  );
-
-  const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
+  });
 
   // Deposit NFT into pool
   const depositNftIx = await getDepositNftInstructionAsync({
@@ -200,12 +192,12 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   });
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+    payer: nftOwner,
+    authority: nftOwner,
+    owner: nftOwner,
+  });
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -298,7 +290,12 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint } = await createDefaultNft(client, nftOwner, nftOwner, nftOwner);
+  const { mint } = await createDefaultNft({
+    client,
+    payer: nftOwner,
+    authority: nftOwner,
+    owner: nftOwner,
+  });
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({

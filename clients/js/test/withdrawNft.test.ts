@@ -7,25 +7,22 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  createDefaultNft,
-  findTokenRecordPda,
-} from '@tensor-foundation/mpl-token-metadata';
-import { Mode } from '@tensor-foundation/whitelist';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import test from 'ava';
 import {
   PoolType,
+  fetchMaybeNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
+  getDepositNftInstructionAsync,
   getDepositSolInstruction,
-  getSellNftTradePoolInstruction,
   getSellNftTradePoolInstructionAsync,
-  getWithdrawNftInstruction,
   getWithdrawNftInstructionAsync,
 } from '../src/index.js';
 import {
   createPool,
   createWhitelistV2,
+  expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
   getTokenAmount,
@@ -61,12 +58,12 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  const { mint, metadata, masterEdition } = await createDefaultNft(
+  const { mint } = await createDefaultNft({
     client,
-    nftOwner,
-    nftOwner,
-    nftOwner
-  );
+    payer: nftOwner,
+    authority: nftOwner,
+    owner: nftOwner,
+  });
 
   // Deposit SOL
   const depositSolIx = getDepositSolInstruction({
@@ -152,4 +149,103 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   t.assert(postBuyTokenAmount === 1n);
   t.assert(postBuyTokenOwner === owner.address);
+
+  // Deposit Receipt should be closed
+  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
+    client.rpc,
+    nftReceipt
+  );
+  t.assert(maybeNftReceipt.exists === false);
+});
+
+test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) => {
+  const client = createDefaultSolanaClient();
+  const owner = await generateKeyPairSignerWithSol(client);
+  const notOwner = await generateKeyPairSignerWithSol(client);
+  const config = tradePoolConfig;
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: 2, value: owner.address }],
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+  });
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
+
+  // Mint NFT
+  const { mint } = await createDefaultNft({
+    client,
+    payer: owner,
+    authority: owner,
+    owner,
+  });
+
+  // Deposit NFT into pool
+  const depositNftIx = await getDepositNftInstructionAsync({
+    owner: owner,
+    pool,
+    whitelist,
+    mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+  );
+
+  // NFT is now owned by the pool.
+  const [poolAta] = await findAtaPda({ mint, owner: pool });
+  const poolAtaAccount = await client.rpc
+    .getAccountInfo(poolAta, { encoding: 'base64' })
+    .send();
+
+  const poolAtaData = poolAtaAccount!.value!.data;
+
+  const tokenAmount = getTokenAmount(poolAtaData);
+  const tokenOwner = getTokenOwner(poolAtaData);
+
+  t.assert(tokenAmount === 1n);
+  t.assert(tokenOwner === pool);
+
+  // Withdraw NFT from pool with bad owner
+  const withdrawNftIxBadOwner = await getWithdrawNftInstructionAsync({
+    owner: notOwner,
+    pool,
+    mint,
+  });
+
+  const POOL_SEEDS_VIOLATION_ERROR_CODE = 2006;
+
+  const promiseBadOwner = pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIxBadOwner, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  // Throws POOL_SEEDS_VIOLATION error
+  await expectCustomError(t, promiseBadOwner, POOL_SEEDS_VIOLATION_ERROR_CODE);
+
+  // And NFT is still owned by the pool.
+  const poolAtaAccountAfter = await client.rpc
+    .getAccountInfo(poolAta, { encoding: 'base64' })
+    .send();
+
+  const poolAtaDataAfter = poolAtaAccountAfter!.value!.data;
+
+  const tokenAmountAfter = getTokenAmount(poolAtaDataAfter);
+  const tokenOwnerAfter = getTokenOwner(poolAtaDataAfter);
+
+  t.assert(tokenAmountAfter === 1n);
+  t.assert(tokenOwnerAfter === pool);
 });

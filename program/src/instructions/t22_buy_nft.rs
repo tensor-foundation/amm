@@ -176,6 +176,13 @@ impl<'info> BuyNftT22<'info> {
 
 impl<'info> Validate<'info> for BuyNftT22<'info> {
     fn validate(&self) -> Result<()> {
+        // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+        if let Some(cosigner) = self.pool.cosigner.value() {
+            if self.cosigner.is_none() || self.cosigner.as_ref().unwrap().key != cosigner {
+                throw_err!(ErrorCode::BadCosigner);
+            }
+        }
+
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }
@@ -193,15 +200,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
-
-    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
-    if let Some(cosigner) = pool.cosigner.value() {
-        if ctx.accounts.cosigner.is_none()
-            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
-        {
-            throw_err!(ErrorCode::BadCosigner);
-        }
-    }
 
     // Calculate fees.
     let current_price = pool.current_price(TakerSide::Buy)?;

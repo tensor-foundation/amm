@@ -48,7 +48,9 @@ import {
   resolveMetadata,
   resolvePoolAta,
   resolvePoolNftReceipt,
+  resolvePoolTokenRecordFromTokenStandard,
   resolveSellerAta,
+  resolveSellerTokenRecordFromTokenStandard,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
@@ -550,6 +552,18 @@ export async function getSellNftTradePoolInstructionAsync<
     accounts.edition = {
       ...accounts.edition,
       ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.sellerTokenRecord.value) {
+    accounts.sellerTokenRecord = {
+      ...accounts.sellerTokenRecord,
+      ...(await resolveSellerTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTokenRecord.value) {
+    accounts.poolTokenRecord = {
+      ...accounts.poolTokenRecord,
+      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
     };
   }
   if (!args.tokenStandard) {

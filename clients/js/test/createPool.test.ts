@@ -1,5 +1,6 @@
-import { Address, generateKeyPairSigner } from '@solana/web3.js';
+import { Account, Address, generateKeyPairSigner } from '@solana/web3.js';
 import {
+  TSWAP_SINGLETON,
   createDefaultSolanaClient,
   generateKeyPairSignerWithSol,
 } from '@tensor-foundation/test-helpers';
@@ -14,9 +15,11 @@ import {
   createPool,
   createPoolThrows,
   createWhitelistV2,
+  getAndFundOwner,
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
+import { findMarginAccountPda } from '@tensor-foundation/escrow';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
   const client = createDefaultSolanaClient();
@@ -325,5 +328,58 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
     },
     t,
     code: 12007, // 0x2ef1 - 12007 FeesTooHigh
+  });
+});
+
+test('it can create a pool w/ shared escrow', async (t) => {
+  const client = createDefaultSolanaClient();
+  const updateAuthority = await generateKeyPairSignerWithSol(client);
+  const freezeAuthority = (await generateKeyPairSigner()).address;
+  const namespace = await generateKeyPairSigner();
+  const voc = (await generateKeyPairSigner()).address;
+
+  // Setup a basic whitelist to use with the pool.
+  const conditions = [
+    { mode: 2, value: updateAuthority.address },
+    { mode: 1, value: voc },
+  ];
+
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    freezeAuthority,
+    conditions,
+    namespace,
+  });
+
+  // Create pool attached to shared escrow
+  await getAndFundOwner(client);
+  const [margin] = await findMarginAccountPda({
+    owner: updateAuthority.address,
+    tswap: TSWAP_SINGLETON,
+    marginNr: 0,
+  });
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: updateAuthority,
+    sharedEscrow: margin,
+  });
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  // Then an account was created with the correct data.
+  t.like(poolAccount, <Account<Pool, Address>>{
+    address: pool,
+    data: {
+      config: {
+        poolType: 0,
+        curveType: 0,
+        startingPrice: 1n,
+        delta: 1n,
+        mmCompoundFees: false,
+        mmFeeBps: null,
+      },
+      sharedEscrow: margin,
+    },
   });
 });

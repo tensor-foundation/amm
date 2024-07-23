@@ -603,3 +603,22 @@ export const createAndFundEscrow = async (
 
   return marginAccount;
 };
+
+export const expectCustomError = async (
+  t: ExecutionContext,
+  promise: Promise<unknown>,
+  code: number
+) => {
+  const error = await t.throwsAsync<Error & { data: { logs: string[] } }>(
+    promise
+  );
+
+  if (isSolanaError(error.cause, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
+    t.assert(
+      error.cause.context.code === code,
+      `expected error code ${code}, received ${error.cause.context.code}`
+    );
+  } else {
+    t.fail("expected a custom error, but didn't get one");
+  }
+};

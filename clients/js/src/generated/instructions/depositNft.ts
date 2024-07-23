@@ -41,8 +41,10 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
+  resolveOwnerTokenRecordFromTokenStandard,
   resolvePoolAta,
   resolvePoolNftReceipt,
+  resolvePoolTokenRecordFromTokenStandard,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
@@ -122,7 +124,7 @@ export type DepositNftInstruction<
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
       TAccountMetadata extends string
-        ? ReadonlyAccount<TAccountMetadata>
+        ? WritableAccount<TAccountMetadata>
         : TAccountMetadata,
       TAccountMintProof extends string
         ? ReadonlyAccount<TAccountMintProof>
@@ -131,7 +133,7 @@ export type DepositNftInstruction<
         ? ReadonlyAccount<TAccountEdition>
         : TAccountEdition,
       TAccountOwnerTokenRecord extends string
-        ? ReadonlyAccount<TAccountOwnerTokenRecord>
+        ? WritableAccount<TAccountOwnerTokenRecord>
         : TAccountOwnerTokenRecord,
       TAccountPoolTokenRecord extends string
         ? WritableAccount<TAccountPoolTokenRecord>
@@ -349,12 +351,12 @@ export async function getDepositNftInstructionAsync<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    metadata: { value: input.metadata ?? null, isWritable: false },
+    metadata: { value: input.metadata ?? null, isWritable: true },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
     ownerTokenRecord: {
       value: input.ownerTokenRecord ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
@@ -426,6 +428,18 @@ export async function getDepositNftInstructionAsync<
     accounts.edition = {
       ...accounts.edition,
       ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.ownerTokenRecord.value) {
+    accounts.ownerTokenRecord = {
+      ...accounts.ownerTokenRecord,
+      ...(await resolveOwnerTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTokenRecord.value) {
+    accounts.poolTokenRecord = {
+      ...accounts.poolTokenRecord,
+      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
     };
   }
   if (!args.tokenStandard) {
@@ -651,12 +665,12 @@ export function getDepositNftInstruction<
       isWritable: false,
     },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
-    metadata: { value: input.metadata ?? null, isWritable: false },
+    metadata: { value: input.metadata ?? null, isWritable: true },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     edition: { value: input.edition ?? null, isWritable: false },
     ownerTokenRecord: {
       value: input.ownerTokenRecord ?? null,
-      isWritable: false,
+      isWritable: true,
     },
     poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {

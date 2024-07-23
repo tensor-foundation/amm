@@ -41,8 +41,10 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
+  resolveOwnerTokenRecordFromTokenStandard,
   resolvePoolAta,
   resolvePoolNftReceipt,
+  resolvePoolTokenRecordFromTokenStandard,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
@@ -401,6 +403,18 @@ export async function getWithdrawNftInstructionAsync<
     accounts.edition = {
       ...accounts.edition,
       ...(await resolveEditionFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.ownerTokenRecord.value) {
+    accounts.ownerTokenRecord = {
+      ...accounts.ownerTokenRecord,
+      ...(await resolveOwnerTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTokenRecord.value) {
+    accounts.poolTokenRecord = {
+      ...accounts.poolTokenRecord,
+      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
     };
   }
   if (!args.tokenStandard) {

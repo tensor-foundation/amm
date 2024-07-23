@@ -151,6 +151,13 @@ pub struct SellNftTokenPoolT22<'info> {
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
     fn validate(&self) -> Result<()> {
+        // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
+        if let Some(cosigner) = self.pool.cosigner.value() {
+            if self.cosigner.is_none() || self.cosigner.as_ref().unwrap().key != cosigner {
+                throw_err!(ErrorCode::BadCosigner);
+            }
+        }
+
         match self.pool.config.pool_type {
             PoolType::Token => (),
             _ => {
@@ -210,15 +217,6 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
-
-    // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
-    if let Some(cosigner) = pool.cosigner.value() {
-        if ctx.accounts.cosigner.is_none()
-            || ctx.accounts.cosigner.as_ref().unwrap().key != cosigner
-        {
-            throw_err!(ErrorCode::BadCosigner);
-        }
-    }
 
     // Calculate fees.
     let current_price = pool.current_price(TakerSide::Sell)?;
