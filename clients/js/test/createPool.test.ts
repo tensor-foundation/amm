@@ -6,6 +6,7 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   Condition,
+  Mode,
   WhitelistV2,
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
@@ -30,8 +31,8 @@ test('it can create a pool w/ correct timestamps', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
@@ -107,8 +108,8 @@ test('it can create a pool w/ a specific expiry time', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
@@ -182,8 +183,8 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions: Condition[] = [
-    { mode: 2, value: updateAuthority.address as Address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address as Address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
@@ -231,8 +232,8 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
@@ -284,8 +285,8 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
@@ -340,8 +341,8 @@ test('it can create a pool w/ shared escrow', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist } = await createWhitelistV2({

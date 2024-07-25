@@ -4,7 +4,11 @@ import {
   pipe,
   generateKeyPairSigner,
 } from '@solana/web3.js';
-import { WhitelistV2, fetchWhitelistV2 } from '@tensor-foundation/whitelist';
+import {
+  Mode,
+  WhitelistV2,
+  fetchWhitelistV2,
+} from '@tensor-foundation/whitelist';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -23,8 +27,8 @@ test('it can edit a pool w/ a new expiry date', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
-    { mode: 1, value: voc },
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
   ];
 
   const { whitelist, uuid } = await createWhitelistV2({
