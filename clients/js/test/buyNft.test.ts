@@ -1012,7 +1012,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     conditions: [{ mode: 2, value: owner.address }],
   });
 
-  // Create pool 
+  // Create pool
   const { pool } = await createPool({
     client,
     whitelist,
@@ -1068,7 +1068,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
   const [incorrectNftReceipt] = await findNftDepositReceiptPda({
     pool,
     mint: mintNotInPool,
-  })
+  });
   const buyNftIxNotDepositedNft = await getBuyNftInstructionAsync({
     owner: owner.address,
     buyer,
@@ -1085,7 +1085,11 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     (tx) => appendTransactionMessageInstruction(buyNftIxNotDepositedNft, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNotDeposited, ACCOUNT_NOT_INITIALIZED_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promiseNotDeposited,
+    ACCOUNT_NOT_INITIALIZED_ERROR_CODE
+  );
 
   // Initialize a different pool
   const { pool: otherPool } = await createPool({
@@ -1125,9 +1129,9 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
 
   const promiseWrongPool = pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionMessageInstruction(buyNftIxWrongPoolNftReceipt, tx),
+    (tx) =>
+      appendTransactionMessageInstruction(buyNftIxWrongPoolNftReceipt, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
   await expectCustomError(t, promiseWrongPool, CONSTRAINT_SEEDS_ERROR_CODE);
-
 });
