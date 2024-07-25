@@ -32,6 +32,7 @@ import {
   getTokenOwner,
   tradePoolConfig,
 } from './_common.js';
+import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can withdraw Sol from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -45,7 +46,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -167,7 +168,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -240,7 +241,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -316,7 +317,7 @@ test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist

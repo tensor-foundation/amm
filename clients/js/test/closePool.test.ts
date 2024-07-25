@@ -35,6 +35,7 @@ import {
   getPoolStateBond,
   tradePoolConfig,
 } from './_common.js';
+import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -98,7 +99,7 @@ test('close pool fails if nfts still deposited', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -180,7 +181,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -274,7 +275,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist

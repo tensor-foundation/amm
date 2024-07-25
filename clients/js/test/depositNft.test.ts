@@ -29,6 +29,7 @@ import {
   getTokenAmount,
   getTokenOwner,
 } from './_common.js';
+import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -49,7 +50,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist

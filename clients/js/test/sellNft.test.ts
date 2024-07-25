@@ -50,7 +50,7 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { start } from 'repl';
+import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -74,7 +74,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     makerBroker: makerBroker.address,
     config,
     depositAmount,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
     funded: true,
   });
 
@@ -230,7 +230,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     config,
     sharedEscrow,
     depositAmount,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
     funded: false, // cannot deposit to shared escrow pool
   });
 
@@ -331,7 +331,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -465,7 +465,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -560,7 +560,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -650,7 +650,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -734,7 +734,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool w/ cosigner
@@ -822,7 +822,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool w/ cosigner
@@ -914,14 +914,14 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   const { whitelist: poolWhitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create whitelist with FVC where the mintWhitelistAuthority is the FVC
   const { whitelist: mintWhitelist } = await createWhitelistV2({
     client,
     updateAuthority: mintWhitelistAuthority,
-    conditions: [{ mode: 2, value: mintWhitelistAuthority.address }],
+    conditions: [{ mode: Mode.FVC, value: mintWhitelistAuthority.address }],
   });
 
   // Create pool w/ poolWhitelist as whitelist
@@ -1017,7 +1017,7 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: creatorKeypair,
-    conditions: [{ mode: 2, value: creator.address }],
+    conditions: [{ mode: Mode.FVC, value: creator.address }],
   });
 
   // Create pool and whitelist
