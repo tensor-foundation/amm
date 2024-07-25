@@ -52,7 +52,7 @@ pub struct DepositNftT22<'info> {
     /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
-            b"mint_proof".as_ref(),
+            b"mint_proof_v2",
             mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],
@@ -64,7 +64,6 @@ pub struct DepositNftT22<'info> {
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -72,17 +71,25 @@ pub struct DepositNftT22<'info> {
     /// The TA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = owner,
+        token::mint = mint,
+        token::authority = owner,
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The TA of the pool, where the NFT will be escrowed.
+    /// Initialized in the handler.
     #[account(
         init_if_needed,
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        // seeds = [
+        //     pool.key().as_ref(),
+        //     token_program.key().as_ref(),
+        //     mint.key().as_ref(),
+        // ],
+        // bump,
+        // seeds::program = associated_token_program.key(),
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -153,23 +160,24 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
 
     validate_mint(&ctx.accounts.mint.to_account_info())?;
 
-    // initialize token account
+    msg!("pool_ta: {}", ctx.accounts.pool_ta.key());
 
-    safe_initialize_token_account(
-        InitializeTokenAccount {
-            token_info: &ctx.accounts.pool_ta.to_account_info(),
-            mint: &ctx.accounts.mint.to_account_info(),
-            authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.owner,
-            system_program: &ctx.accounts.system_program,
-            token_program: &ctx.accounts.token_program,
-            signer_seeds: &[],
-        },
-        false, //<-- this HAS to be false for safety (else single listings and pool listings can get mixed)
-    )?;
+    // initialize token account
+    // TODO, can we remove this?
+    // safe_initialize_token_account(
+    //     InitializeTokenAccount {
+    //         token_info: &ctx.accounts.pool_ta.to_account_info(),
+    //         mint: &ctx.accounts.mint.to_account_info(),
+    //         authority: &ctx.accounts.pool.to_account_info(),
+    //         payer: &ctx.accounts.owner,
+    //         system_program: &ctx.accounts.system_program,
+    //         token_program: &ctx.accounts.token_program,
+    //         signer_seeds: &[],
+    //     },
+    //     false, //<-- this HAS to be false for safety (else single listings and pool listings can get mixed)
+    // )?;
 
     // transfer the NFT
-
     let transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {

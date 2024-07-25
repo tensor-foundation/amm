@@ -5,6 +5,7 @@ import {
   isSolanaError,
   pipe,
 } from '@solana/web3.js';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -12,7 +13,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -98,7 +99,7 @@ test('close pool fails if nfts still deposited', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -180,7 +181,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -274,7 +275,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist

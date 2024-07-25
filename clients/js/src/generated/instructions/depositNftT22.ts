@@ -159,7 +159,10 @@ export type DepositNftT22AsyncInput<
   mint: Address<TAccountMint>;
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT will be escrowed. */
+  /**
+   * The TA of the pool, where the NFT will be escrowed.
+   * Initialized in the handler.
+   */
   poolTa?: Address<TAccountPoolTa>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt?: Address<TAccountNftReceipt>;
@@ -335,7 +338,10 @@ export type DepositNftT22Input<
   mint: Address<TAccountMint>;
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT will be escrowed. */
+  /**
+   * The TA of the pool, where the NFT will be escrowed.
+   * Initialized in the handler.
+   */
   poolTa: Address<TAccountPoolTa>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt: Address<TAccountNftReceipt>;
@@ -482,7 +488,11 @@ export type ParsedDepositNftT22Instruction<
     mint: TAccountMetas[4];
     /** The TA of the owner, where the NFT will be transferred from. */
     ownerTa: TAccountMetas[5];
-    /** The TA of the pool, where the NFT will be escrowed. */
+    /**
+     * The TA of the pool, where the NFT will be escrowed.
+     * Initialized in the handler.
+     */
+
     poolTa: TAccountMetas[6];
     /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
     nftReceipt: TAccountMetas[7];

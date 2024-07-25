@@ -1521,7 +1521,7 @@
         },
         {
           "name": "poolTa",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The TA of the pool, where the NFT will be escrowed."
@@ -1677,7 +1677,8 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The TA of the pool, where the NFT will be escrowed."
+            "The TA of the pool, where the NFT will be escrowed.",
+            "Initialized in the handler."
           ]
         },
         {

@@ -5,6 +5,7 @@ import {
   isSolanaError,
   pipe,
 } from '@solana/web3.js';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -12,7 +13,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
@@ -45,7 +46,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -167,7 +168,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -240,7 +241,7 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: nftOwner.address }],
+    conditions: [{ mode: Mode.FVC, value: nftOwner.address }],
   });
 
   // Create pool and whitelist
@@ -316,7 +317,7 @@ test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist

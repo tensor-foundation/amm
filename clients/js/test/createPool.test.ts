@@ -1,4 +1,5 @@
 import { Account, Address, generateKeyPairSigner } from '@solana/web3.js';
+import { findMarginAccountPda } from '@tensor-foundation/escrow';
 import {
   TSWAP_SINGLETON,
   createDefaultSolanaClient,
@@ -6,6 +7,7 @@ import {
 } from '@tensor-foundation/test-helpers';
 import {
   Condition,
+  Mode,
   WhitelistV2,
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
@@ -19,7 +21,6 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { findMarginAccountPda } from '@tensor-foundation/escrow';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
   const client = createDefaultSolanaClient();
@@ -30,7 +31,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: 1, value: voc },
   ];
 
@@ -107,7 +108,7 @@ test('it can create a pool w/ a specific expiry time', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: 1, value: voc },
   ];
 
@@ -182,7 +183,7 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions: Condition[] = [
-    { mode: 2, value: updateAuthority.address as Address },
+    { mode: Mode.FVC, value: updateAuthority.address as Address },
     { mode: 1, value: voc },
   ];
 
@@ -231,7 +232,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: 1, value: voc },
   ];
 
@@ -284,7 +285,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: 1, value: voc },
   ];
 
@@ -340,7 +341,7 @@ test('it can create a pool w/ shared escrow', async (t) => {
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: 1, value: voc },
   ];
 

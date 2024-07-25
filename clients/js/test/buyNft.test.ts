@@ -1,3 +1,4 @@
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   Account,
   Address,
@@ -5,17 +6,18 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  createDefaultSolanaClient,
-  createDefaultTransaction,
-  generateKeyPairSignerWithSol,
-  signAndSendTransaction,
-} from '@tensor-foundation/test-helpers';
-import {
   Creator,
   TokenStandard,
   createDefaultNft,
   fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
+import {
+  createDefaultSolanaClient,
+  createDefaultTransaction,
+  generateKeyPairSignerWithSol,
+  signAndSendTransaction,
+} from '@tensor-foundation/test-helpers';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   NftDepositReceipt,
@@ -44,8 +46,6 @@ import {
   nftPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -61,7 +61,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -211,7 +211,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -341,7 +341,7 @@ test('buyNft emits a self-cpi logging event', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool and whitelist
@@ -449,7 +449,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool
@@ -592,7 +592,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Initialize Margin Acc
@@ -675,7 +675,7 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool w/ cosigner
@@ -761,7 +761,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: owner,
-    conditions: [{ mode: 2, value: owner.address }],
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
   });
 
   // Create pool w/ cosigner
@@ -886,7 +886,6 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  // @ts-ignore: Mint a ProgrammableNonFungible.
   const { mint, metadata } = await createDefaultNft({
     client,
     payer: owner,
