@@ -177,6 +177,24 @@ kinobi.update(
         }),
       ],
     },
+    depositNftT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: false,
+          isSigner: false,
+          isWritable: true,
+        }),
+      ],
+    },
+    buyNftT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: false,
+          isSigner: false,
+          isWritable: true,
+        }),
+      ],
+    },
   }),
 );
 

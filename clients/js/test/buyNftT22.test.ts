@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { fetchToken, Token } from '@solana-program/token';
 import {
   Account,
@@ -44,8 +43,6 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
 
   // NFT Update Authority
   const updateAuthority = await generateKeyPairSignerWithSol(client);
-  const royaltyDestinationString = '_ro_' + updateAuthority.address;
-  const sellerFeeBasisPoints = '100';
 
   // Pool and NFT owner.
   const owner = await generateKeyPairSignerWithSol(client);
@@ -64,10 +61,6 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
       name: 'Test Token',
       symbol: 'TT',
       uri: 'https://example.com',
-    },
-    royalties: {
-      key: royaltyDestinationString,
-      value: sellerFeeBasisPoints,
     },
   });
 
@@ -124,6 +117,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     mint,
     mintProof,
     tokenProgram: TOKEN22_PROGRAM_ID,
+    creators: [owner.address],
   });
 
   await pipe(
@@ -143,7 +137,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     await client.rpc.getAccountInfo(poolAta, { encoding: 'base64' }).send()
   ).value;
 
-  const poolAtaData = poolAtaAccount.data;
+  const poolAtaData = poolAtaAccount!.data;
 
   const tokenAmount = getTokenAmount(poolAtaData);
   const tokenOwner = getTokenOwner(poolAtaData);
@@ -168,6 +162,10 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
+  const startingUpdateAuthorityBalance = (
+    await client.rpc.getBalance(updateAuthority.address).send()
+  ).value;
+
   // Buy NFT from pool
   const buyNftIx = await getBuyNftT22InstructionAsync({
     owner: owner.address,
@@ -177,6 +175,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     maxAmount,
     poolTa: poolAta,
     tokenProgram: TOKEN22_PROGRAM_ID,
+    creators: [owner.address],
   });
 
   await pipe(
@@ -228,4 +227,12 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     nftReceipt
   );
   t.assert(maybeNftReceipt.exists === false);
+
+  // Royalties paid to update authority--TODO re-enable once transfer hooks are supported in test-helpers
+  // const endingUpdateAuthorityBalance = (
+  //   await client.rpc.getBalance(updateAuthority.address).send()
+  // ).value;
+  // console.log(startingUpdateAuthorityBalance);
+  // console.log(endingUpdateAuthorityBalance);
+  // t.assert(updateAuthorityBalance > startingUpdateAuthorityBalance);
 });

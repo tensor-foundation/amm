@@ -24,7 +24,6 @@ pub struct DepositNftT22 {
     /// The TA of the owner, where the NFT will be transferred from.
     pub owner_ta: solana_program::pubkey::Pubkey,
     /// The TA of the pool, where the NFT will be escrowed.
-    /// Initialized in the handler.
     pub pool_ta: solana_program::pubkey::Pubkey,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: solana_program::pubkey::Pubkey,
@@ -189,7 +188,6 @@ impl DepositNftT22Builder {
         self
     }
     /// The TA of the pool, where the NFT will be escrowed.
-    /// Initialized in the handler.
     #[inline(always)]
     pub fn pool_ta(&mut self, pool_ta: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool_ta = Some(pool_ta);
@@ -285,7 +283,6 @@ pub struct DepositNftT22CpiAccounts<'a, 'b> {
     /// The TA of the owner, where the NFT will be transferred from.
     pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the pool, where the NFT will be escrowed.
-    /// Initialized in the handler.
     pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
@@ -315,7 +312,6 @@ pub struct DepositNftT22Cpi<'a, 'b> {
     /// The TA of the owner, where the NFT will be transferred from.
     pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the pool, where the NFT will be escrowed.
-    /// Initialized in the handler.
     pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
@@ -549,7 +545,6 @@ impl<'a, 'b> DepositNftT22CpiBuilder<'a, 'b> {
         self
     }
     /// The TA of the pool, where the NFT will be escrowed.
-    /// Initialized in the handler.
     #[inline(always)]
     pub fn pool_ta(
         &mut self,
