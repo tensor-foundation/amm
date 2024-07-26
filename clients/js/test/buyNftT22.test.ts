@@ -162,9 +162,9 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
-  const startingUpdateAuthorityBalance = (
-    await client.rpc.getBalance(updateAuthority.address).send()
-  ).value;
+  // const startingUpdateAuthorityBalance = (
+  //   await client.rpc.getBalance(updateAuthority.address).send()
+  // ).value;
 
   // Buy NFT from pool
   const buyNftIx = await getBuyNftT22InstructionAsync({

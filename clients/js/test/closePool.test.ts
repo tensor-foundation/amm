@@ -13,7 +13,6 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -36,6 +35,7 @@ import {
   getPoolStateBond,
   tradePoolConfig,
 } from './_common.js';
+import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
