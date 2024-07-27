@@ -1,3 +1,4 @@
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   Account,
   Address,
@@ -5,17 +6,18 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  createDefaultSolanaClient,
-  createDefaultTransaction,
-  generateKeyPairSignerWithSol,
-  signAndSendTransaction,
-} from '@tensor-foundation/test-helpers';
-import {
   Creator,
   TokenStandard,
   createDefaultNft,
   fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
+import {
+  createDefaultSolanaClient,
+  createDefaultTransaction,
+  generateKeyPairSignerWithSol,
+  signAndSendTransaction,
+} from '@tensor-foundation/test-helpers';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   NftDepositReceipt,
@@ -44,8 +46,6 @@ import {
   nftPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -886,7 +886,6 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
 
   // Mint NFT
-  // @ts-ignore: Mint a ProgrammableNonFungible.
   const { mint, metadata } = await createDefaultNft({
     client,
     payer: owner,

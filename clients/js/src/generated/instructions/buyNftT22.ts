@@ -7,6 +7,7 @@
  */
 
 import {
+  AccountRole,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -98,7 +99,7 @@ export type BuyNftT22Instruction<
         ? WritableAccount<TAccountBuyerTa>
         : TAccountBuyerTa,
       TAccountPoolTa extends string
-        ? ReadonlyAccount<TAccountPoolTa>
+        ? WritableAccount<TAccountPoolTa>
         : TAccountPoolTa,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
@@ -240,6 +241,7 @@ export type BuyNftT22AsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
+  creators: Array<Address>;
 };
 
 export async function getBuyNftT22InstructionAsync<
@@ -313,7 +315,7 @@ export async function getBuyNftT22InstructionAsync<
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     buyerTa: { value: input.buyerTa ?? null, isWritable: true },
-    poolTa: { value: input.poolTa ?? null, isWritable: false },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -384,6 +386,12 @@ export async function getBuyNftT22InstructionAsync<
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
+    address,
+    role: AccountRole.WRITABLE,
+  }));
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -404,6 +412,7 @@ export async function getBuyNftT22InstructionAsync<
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getBuyNftT22InstructionDataEncoder().encode(
@@ -501,6 +510,7 @@ export type BuyNftT22Input<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
+  creators: Array<Address>;
 };
 
 export function getBuyNftT22Instruction<
@@ -572,7 +582,7 @@ export function getBuyNftT22Instruction<
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     buyerTa: { value: input.buyerTa ?? null, isWritable: true },
-    poolTa: { value: input.poolTa ?? null, isWritable: false },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -616,6 +626,12 @@ export function getBuyNftT22Instruction<
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
+    address,
+    role: AccountRole.WRITABLE,
+  }));
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -636,6 +652,7 @@ export function getBuyNftT22Instruction<
       getAccountMeta(accounts.takerBroker),
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getBuyNftT22InstructionDataEncoder().encode(

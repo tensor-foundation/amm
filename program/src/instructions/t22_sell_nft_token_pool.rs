@@ -147,6 +147,8 @@ pub struct SellNftTokenPoolT22<'info> {
     /// CHECK: address constraint is checked here
     #[account(address = escrow::ID)]
     pub escrow_program: Option<UncheckedAccount<'info>>,
+    //
+    // ---- [0..n] remaining accounts for royalties transfer hook
 }
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {

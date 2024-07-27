@@ -6,18 +6,19 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  Creator,
+  TokenStandard,
+  createDefaultNft,
+  fetchMetadata,
+} from '@tensor-foundation/mpl-token-metadata';
+import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import {
-  Creator,
-  TokenStandard,
-  createDefaultNft,
-  fetchMetadata,
-} from '@tensor-foundation/mpl-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -50,7 +51,6 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
