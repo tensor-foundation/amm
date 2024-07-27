@@ -39,17 +39,17 @@
   "dependencies": {
     "@solana-program/token": "^0.2.0",
     "@solana/web3.js": "2.0.0-preview.3",
-    "@tensor-foundation/resolvers": "0.1.1"
+    "@tensor-foundation/resolvers": "^0.1.1"
   },
   "devDependencies": {
     "@ava/typescript": "^4.1.0",
     "@noble/hashes": "^1.4.0",
-    "@solana-program/compute-budget": "^0.3.2",
     "@solana/eslint-config-solana": "^3.0.0",
-    "@tensor-foundation/escrow": "0.1.0",
-    "@tensor-foundation/mpl-token-metadata": "0.1.0",
-    "@tensor-foundation/test-helpers": "0.1.0",
-    "@tensor-foundation/whitelist": "0.1.0",
+    "@solana-program/compute-budget":"^0.3.2",
+    "@tensor-foundation/escrow": "^0.1.0",
+    "@tensor-foundation/test-helpers": "^0.1.0",
+    "@tensor-foundation/mpl-token-metadata": "^0.1.0",
+    "@tensor-foundation/whitelist": "^0.1.0",
     "@types/node": "20.12.7",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.3.1",

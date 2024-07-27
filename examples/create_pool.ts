@@ -38,8 +38,8 @@ createPool({
   // PoolType.Trade == double-sided pool - relist bought NFTs, rebids on NFT sales according to mmFeeBps
   poolType: PoolType.Token,
   // Defines what price curve the pool should follow (exponential/linear)
-  // depending on that, "delta" will define either constant price changes (linear)
-  // or percentual price changes in BPS (exponential)
+  // depending on that, "delta" will define either a constant price change (linear)
+  // or a percentual price change in BPS (exponential)
   curveType: CurveType.Linear,
   // Pools starting price in lamports (1 SOL == 1_000_000_000 Lamports)
   startingPrice: 1_000_000_000n,
