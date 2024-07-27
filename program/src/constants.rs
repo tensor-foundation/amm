@@ -36,5 +36,5 @@ pub const BROKER_FEE_PCT: u8 = 50;
 #[constant]
 pub const MAKER_BROKER_PCT: u8 = 80;
 
-/// The pubkey of the FEE program.
+/// The pubkey of the Tensor Foundation Fees program.
 pub(crate) const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");
