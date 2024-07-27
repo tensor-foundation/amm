@@ -82,8 +82,10 @@ pub struct BuyNftT22<'info> {
 
     /// The TA of the pool, where the NFT will be escrowed.
     #[account(
+        mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -136,6 +138,8 @@ pub struct BuyNftT22<'info> {
 
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
+    //
+    // ---- [0..n] remaining accounts for royalties transfer hook
 }
 
 impl<'info> BuyNftT22<'info> {

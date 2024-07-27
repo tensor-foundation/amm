@@ -1,5 +1,6 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -7,7 +8,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
@@ -29,7 +30,6 @@ import {
   getTokenOwner,
   tradePoolConfig,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

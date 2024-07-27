@@ -7,10 +7,7 @@ use anchor_spl::{
     },
 };
 use solana_program::keccak;
-use tensor_toolbox::token_2022::{
-    token::{safe_initialize_token_account, InitializeTokenAccount},
-    validate_mint,
-};
+use tensor_toolbox::token_2022::validate_mint;
 use vipers::{throw_err, unwrap_int, Validate};
 use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
@@ -52,7 +49,7 @@ pub struct DepositNftT22<'info> {
     /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
-            b"mint_proof".as_ref(),
+            b"mint_proof_v2",
             mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],
@@ -64,7 +61,6 @@ pub struct DepositNftT22<'info> {
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
@@ -72,8 +68,8 @@ pub struct DepositNftT22<'info> {
     /// The TA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
-        associated_token::mint = mint,
-        associated_token::authority = owner,
+        token::mint = mint,
+        token::authority = owner,
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -106,6 +102,8 @@ pub struct DepositNftT22<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
     /// The Solana system program.
     pub system_program: Program<'info, System>,
+    //
+    // ---- [0..n] remaining accounts for royalties transfer hook
 }
 
 impl<'info> DepositNftT22<'info> {
@@ -148,29 +146,16 @@ impl<'info> Validate<'info> for DepositNftT22<'info> {
 
 /// Deposit a Token22 NFT into a NFT or Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
-pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
+pub fn process_t22_deposit_nft<'info>(
+    ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
+) -> Result<()> {
+    let remaining_accounts = ctx.remaining_accounts.to_vec();
+
     // validate mint account
-
-    validate_mint(&ctx.accounts.mint.to_account_info())?;
-
-    // initialize token account
-
-    safe_initialize_token_account(
-        InitializeTokenAccount {
-            token_info: &ctx.accounts.pool_ta.to_account_info(),
-            mint: &ctx.accounts.mint.to_account_info(),
-            authority: &ctx.accounts.pool.to_account_info(),
-            payer: &ctx.accounts.owner,
-            system_program: &ctx.accounts.system_program,
-            token_program: &ctx.accounts.token_program,
-            signer_seeds: &[],
-        },
-        false, //<-- this HAS to be false for safety (else single listings and pool listings can get mixed)
-    )?;
+    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
 
     // transfer the NFT
-
-    let transfer_cpi = CpiContext::new(
+    let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
             from: ctx.accounts.owner_ta.to_account_info(),
@@ -179,6 +164,13 @@ pub fn process_t22_deposit_nft(ctx: Context<DepositNftT22>) -> Result<()> {
             mint: ctx.accounts.mint.to_account_info(),
         },
     );
+
+    // this will only add the remaining accounts required by a transfer hook if we
+    // recognize the hook as a royalty one
+    if royalties.is_some() {
+        msg!("adding remaining accounts");
+        transfer_cpi = transfer_cpi.with_remaining_accounts(remaining_accounts);
+    }
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 

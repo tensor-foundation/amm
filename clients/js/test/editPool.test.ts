@@ -1,8 +1,7 @@
-import test from 'ava';
 import {
   appendTransactionMessageInstruction,
-  pipe,
   generateKeyPairSigner,
+  pipe,
 } from '@solana/web3.js';
 import {
   Mode,
@@ -15,6 +14,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import test from 'ava';
 import { fetchPool, getEditPoolInstruction } from '../src/index.js';
 import { ONE_WEEK, createPool, createWhitelistV2 } from './_common.js';
 

@@ -163,7 +163,7 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__WRONG_RENT_PAYER;
 
 let tensorAmmErrorMessages: Record<TensorAmmError, string> | undefined;
-if (__DEV__) {
+if (process.env.NODE_ENV !== 'production') {
   tensorAmmErrorMessages = {
     [TENSOR_AMM_ERROR__ARITHMETIC_ERROR]: `arithmetic error`,
     [TENSOR_AMM_ERROR__BAD_COSIGNER]: `bad cosigner passed - either wrong key or no signature`,
@@ -220,9 +220,9 @@ if (__DEV__) {
 }
 
 export function getTensorAmmErrorMessage(code: TensorAmmError): string {
-  if (__DEV__) {
+  if (process.env.NODE_ENV !== 'production') {
     return (tensorAmmErrorMessages as Record<TensorAmmError, string>)[code];
   }
 
-  return 'Error message not available in production bundles. Compile with `__DEV__` set to true to see more information.';
+  return 'Error message not available in production bundles.';
 }

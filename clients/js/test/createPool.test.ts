@@ -1,4 +1,5 @@
 import { Account, Address, generateKeyPairSigner } from '@solana/web3.js';
+import { findMarginAccountPda } from '@tensor-foundation/escrow';
 import {
   TSWAP_SINGLETON,
   createDefaultSolanaClient,
@@ -20,7 +21,6 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
-import { findMarginAccountPda } from '@tensor-foundation/escrow';
 
 test('it can create a pool w/ correct timestamps', async (t) => {
   const client = createDefaultSolanaClient();

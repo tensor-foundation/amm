@@ -4,13 +4,14 @@ import {
   appendTransactionMessageInstruction,
   pipe,
 } from '@solana/web3.js';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -29,7 +30,6 @@ import {
   getTokenAmount,
   getTokenOwner,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

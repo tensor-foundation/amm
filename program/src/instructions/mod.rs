@@ -86,7 +86,7 @@ pub fn assert_decode_mint_proof_v2(
 ) -> Result<Box<MintProofV2>> {
     let (key, _) = Pubkey::find_program_address(
         &[
-            b"mint_proof".as_ref(),
+            b"mint_proof_v2",
             nft_mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],

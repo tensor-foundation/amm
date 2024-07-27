@@ -7,6 +7,7 @@
  */
 
 import {
+  AccountRole,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -169,6 +170,7 @@ export type DepositNftT22AsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  creators: Array<Address>;
 };
 
 export async function getDepositNftT22InstructionAsync<
@@ -238,8 +240,11 @@ export async function getDepositNftT22InstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolver scope.
-  const resolverScope = { programAddress, accounts };
+  const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
@@ -273,6 +278,12 @@ export async function getDepositNftT22InstructionAsync<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
+    address,
+    role: AccountRole.WRITABLE,
+  }));
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -287,6 +298,7 @@ export async function getDepositNftT22InstructionAsync<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getDepositNftT22InstructionDataEncoder().encode({}),
@@ -345,6 +357,7 @@ export type DepositNftT22Input<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  creators: Array<Address>;
 };
 
 export function getDepositNftT22Instruction<
@@ -412,6 +425,9 @@ export function getDepositNftT22Instruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
@@ -425,6 +441,12 @@ export function getDepositNftT22Instruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
+    address,
+    role: AccountRole.WRITABLE,
+  }));
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -440,6 +462,7 @@ export function getDepositNftT22Instruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getDepositNftT22InstructionDataEncoder().encode({}),

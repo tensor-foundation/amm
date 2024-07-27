@@ -1,14 +1,14 @@
 import {
   Address,
   Base64EncodedDataResponse,
+  KeyPairSigner,
   ProgramDerivedAddress,
   SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
   Signature,
-  KeyPairSigner,
-  generateKeyPairSigner,
   address,
   airdropFactory,
   appendTransactionMessageInstruction,
+  generateKeyPairSigner,
   getAddressEncoder,
   getProgramDerivedAddress,
   isSolanaError,
@@ -23,6 +23,7 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
+import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
@@ -32,12 +33,13 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   Condition,
   Mode,
+  findMintProofV2Pda,
   findWhitelistV2Pda,
   getCreateWhitelistV2Instruction,
+  getInitUpdateMintProofV2InstructionAsync,
 } from '@tensor-foundation/whitelist';
 import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
@@ -170,7 +172,7 @@ export async function createWhitelistV2({
   payer = updateAuthority,
   namespace,
   freezeAuthority = DEFAULT_PUBKEY,
-  conditions = [{ mode: 2, value: updateAuthority.address }],
+  conditions = [{ mode: Mode.FVC, value: updateAuthority.address }],
 }: CreateWhitelistParams): Promise<CreateWhitelistReturns> {
   const uuid = generateUuid();
   namespace = namespace || (await generateKeyPairSigner());
@@ -416,7 +418,7 @@ export async function createPoolAndWhitelist({
     poolId = Uint8Array.from({ length: 32 }, () => 1);
   }
   if (conditions === undefined) {
-    conditions = [{ mode: 2, value: updateAuthority.address }];
+    conditions = [{ mode: Mode.FVC, value: updateAuthority.address }];
   }
 
   // Setup a basic whitelist to use with the pool.
@@ -472,7 +474,7 @@ export async function createPoolAndWhitelistThrows({
 
   // Setup a basic whitelist to use with the pool.
   const conditions = [
-    { mode: 2, value: updateAuthority.address },
+    { mode: Mode.FVC, value: updateAuthority.address },
     { mode: Mode.VOC, value: voc },
   ];
 
@@ -622,3 +624,41 @@ export const expectCustomError = async (
     t.fail("expected a custom error, but didn't get one");
   }
 };
+
+export interface InitUpdateMintProofV2Params {
+  client: Client;
+  payer: KeyPairSigner;
+  mint: Address;
+  whitelist: Address;
+  proof: Uint8Array[];
+}
+
+export interface InitUpdateMintProofV2Returns {
+  mintProof: Address;
+}
+
+export async function upsertMintProof({
+  client,
+  payer,
+  mint,
+  whitelist,
+  proof,
+}: InitUpdateMintProofV2Params): Promise<InitUpdateMintProofV2Returns> {
+  const [mintProof] = await findMintProofV2Pda({ mint, whitelist });
+
+  const createMintProofIx = await getInitUpdateMintProofV2InstructionAsync({
+    payer,
+    mint,
+    mintProof,
+    whitelist,
+    proof,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, payer),
+    (tx) => appendTransactionMessageInstruction(createMintProofIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  return { mintProof };
+}
