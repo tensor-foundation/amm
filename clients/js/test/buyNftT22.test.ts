@@ -5,7 +5,6 @@ import {
   appendTransactionMessageInstruction,
   pipe,
 } from '@solana/web3.js';
-import { findAtaPda } from '@tensor-foundation/mpl-token-metadata';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -26,17 +25,18 @@ import {
   NftDepositReceipt,
   Pool,
   PoolType,
-} from '../src/index.js';
+} from '../src';
 import {
   createPool,
   createWhitelistV2,
+  findAtaPda,
   getAndFundFeeVault,
   getTokenAmount,
   getTokenOwner,
   tradePoolConfig,
   upsertMintProof,
-} from './_common.js';
-import { generateTreeOfSize } from './_merkle.js';
+} from './_common';
+import { generateTreeOfSize } from './_merkle';
 
 test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
