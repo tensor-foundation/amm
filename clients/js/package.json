@@ -29,7 +29,8 @@
     "format:fix": "prettier --write src test"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "homepage": "https://github.com/tensor-foundation",
   "repository": "https://github.com/tensor-foundation/amm.git",
