@@ -1,6 +1,9 @@
 [package]
 name = "tensor-amm"
-version = "0.0.0"
+version = "0.1.0"
+description = "Client crate for the Tensor Foundation amm program."
+repository = "https://github.com/tensor-foundation/amm"
+homepage = "https://github.com/tensor-foundation/amm"
 edition = "2021"
 readme = "README.md"
 license-file = "../../LICENSE"
@@ -16,7 +19,6 @@ num-traits = "^0.2"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.0", optional = true }
 solana-program = "< 1.18"
-tensor_whitelist = { package = "tensor-whitelist", git = "ssh://git@github.com/tensor-foundation/whitelist.git" }
 thiserror = "^1.0"
 
 [dev-dependencies]
@@ -25,3 +27,4 @@ lazy_static = "1.4.0"
 solana-program-test = ">1.14, < 1.18"
 solana-sdk = "< 1.18"
 spl-associated-token-account = "2"
+tensor_whitelist = { version = "0.1.0" }
