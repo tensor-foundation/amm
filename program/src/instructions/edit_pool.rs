@@ -1,6 +1,6 @@
 //! Edit an existing pool.
 use tensor_toolbox::NullableOption;
-use vipers::{throw_err, try_or_err, Validate};
+use tensor_vipers::{throw_err, try_or_err, Validate};
 
 use self::constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS};
 use crate::{error::ErrorCode, *};

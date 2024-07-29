@@ -9,7 +9,7 @@ use tensor_toolbox::{
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal,
 };
-use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use crate::{error::ErrorCode, *};
 

@@ -44,7 +44,7 @@ use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
 use tensor_toolbox::shard_num;
-use vipers::{throw_err, unwrap_checked, unwrap_int};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 use whitelist_program::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
 
 use self::constants::{BROKER_FEE_PCT, TFEE_PROGRAM_ID};

@@ -11,7 +11,7 @@ use tensor_toolbox::{
     token_2022::{validate_mint, RoyaltyInfo},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
 };
-use vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use self::{
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
