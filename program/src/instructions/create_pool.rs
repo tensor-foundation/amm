@@ -1,7 +1,7 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
 use tensor_toolbox::NullableOption;
-use vipers::{throw_err, try_or_err, Validate};
+use tensor_vipers::{throw_err, try_or_err, Validate};
 use whitelist_program::{self, WhitelistV2};
 
 use crate::{

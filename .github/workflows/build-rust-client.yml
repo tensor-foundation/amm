@@ -70,5 +70,5 @@ jobs:
         with:
           name: rust-client-builds
           # First wildcard ensures exported paths are consistently under the clients folder.
-          path: ./targe*/release/*amm*
+          path: ./clients/rust/targe*/release/*amm*
           if-no-files-found: error

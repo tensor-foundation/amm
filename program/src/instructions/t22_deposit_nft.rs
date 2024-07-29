@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use solana_program::keccak;
 use tensor_toolbox::token_2022::validate_mint;
-use vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{throw_err, unwrap_int, Validate};
 use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
 use self::constants::CURRENT_POOL_VERSION;

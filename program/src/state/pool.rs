@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
 use tensor_toolbox::{calc_creators_fee, transfer_lamports_from_pda, NullableOption};
-use vipers::{throw_err, unwrap_checked, unwrap_int};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
 

@@ -1,5 +1,5 @@
 //! Close a pool if it has no NFTs and is not attached to a shared escrow.
-use vipers::{throw_err, Validate};
+use tensor_vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 

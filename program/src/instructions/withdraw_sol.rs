@@ -1,6 +1,6 @@
 //! Withdraw SOL from a Trade or Token pool.
 use tensor_toolbox::transfer_lamports_from_pda;
-use vipers::{throw_err, unwrap_checked};
+use tensor_vipers::{throw_err, unwrap_checked};
 
 use crate::{error::ErrorCode, *};
 
