@@ -12,13 +12,13 @@ importers:
         specifier: ^2.2.5
         version: 2.2.5
       '@kinobi-so/nodes-from-anchor':
-        specifier: ^0.20.5
+        specifier: ^0.20.7
         version: 0.20.9
       '@kinobi-so/renderers-js':
-        specifier: ^0.20.5
+        specifier: ^0.20.7
         version: 0.20.11(fastestsmallesttextencoderdecoder@1.0.22)
       '@kinobi-so/renderers-rust':
-        specifier: ^0.20.6
+        specifier: ^0.20.7
         version: 0.20.12(fastestsmallesttextencoderdecoder@1.0.22)
       '@metaplex-foundation/shank-js':
         specifier: ^0.1.7
@@ -30,7 +30,7 @@ importers:
         specifier: ^3.10.1
         version: 3.10.1
       kinobi:
-        specifier: ^0.20.3
+        specifier: ^0.20.4
         version: 0.20.6
       typescript:
         specifier: ^5.4.2

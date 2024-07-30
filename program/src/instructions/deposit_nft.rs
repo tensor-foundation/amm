@@ -7,7 +7,7 @@ use anchor_spl::{
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
 use tensor_toolbox::token_metadata::{assert_decode_metadata, transfer, TransferArgs};
-use vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{throw_err, unwrap_int, Validate};
 use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
 use self::constants::CURRENT_POOL_VERSION;
@@ -117,7 +117,7 @@ pub struct DepositNft<'info> {
     pub edition: UncheckedAccount<'info>,
 
     /// The Token Metadata owner/buyer token record account of the NFT.
-    /// CHECK: seeds checked on Token Metadata CPI    
+    /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 

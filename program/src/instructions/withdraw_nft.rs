@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::token_metadata::{transfer, TransferArgs};
-use vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{throw_err, unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
 

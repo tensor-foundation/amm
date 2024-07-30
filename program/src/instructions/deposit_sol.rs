@@ -1,6 +1,6 @@
 //! Deposit SOL into a Token or Trade pool.
 use anchor_lang::solana_program::{program::invoke, system_instruction};
-use vipers::{throw_err, unwrap_checked, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, Validate};
 
 use crate::{error::ErrorCode, *};
 

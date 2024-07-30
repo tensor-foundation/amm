@@ -20,7 +20,7 @@ use tensor_toolbox::{
     token_2022::{validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
-use vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use self::{

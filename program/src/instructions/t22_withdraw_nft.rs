@@ -7,7 +7,7 @@ use anchor_spl::{
     },
 };
 use tensor_toolbox::token_2022::validate_mint;
-use vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
