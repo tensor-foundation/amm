@@ -7,7 +7,7 @@ license-file = "../LICENSE"
 publish = false
 
 [package.metadata.solana]
-program-id = "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
+program-id = "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
 program-dependencies = [
     "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
     "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN",
