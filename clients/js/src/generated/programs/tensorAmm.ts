@@ -33,7 +33,7 @@ import {
 } from '../instructions';
 
 export const TENSOR_AMM_PROGRAM_ADDRESS =
-  'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+  'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
 
 export enum TensorAmmAccount {
   NftDepositReceipt,
@@ -289,7 +289,7 @@ export function identifyTensorAmmInstruction(
 }
 
 export type ParsedTensorAmmInstruction<
-  TProgram extends string = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+  TProgram extends string = 'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg',
 > =
   | ({
       instructionType: TensorAmmInstruction.TammNoop;

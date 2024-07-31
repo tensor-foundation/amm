@@ -316,7 +316,7 @@ pub struct BuyNftInstructionArgs {
 ///   21. `[writable, optional]` maker_broker
 ///   22. `[writable, optional]` taker_broker
 ///   23. `[signer, optional]` cosigner
-///   24. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
+///   24. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
 #[derive(Clone, Debug, Default)]
 pub struct BuyNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -547,7 +547,7 @@ impl BuyNftBuilder {
         self.cosigner = cosigner;
         self
     }
-    /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
+    /// `[optional account, default to 'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg']`
     /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -623,7 +623,7 @@ impl BuyNftBuilder {
             taker_broker: self.taker_broker,
             cosigner: self.cosigner,
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
-                "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
+                "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
             )),
         };
         let args = BuyNftInstructionArgs {

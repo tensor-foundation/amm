@@ -8,4 +8,4 @@
 use solana_program::{pubkey, pubkey::Pubkey};
 
 /// `tensor_amm` program ID.
-pub const TENSOR_AMM_ID: Pubkey = pubkey!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");
+pub const TENSOR_AMM_ID: Pubkey = pubkey!("TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg");

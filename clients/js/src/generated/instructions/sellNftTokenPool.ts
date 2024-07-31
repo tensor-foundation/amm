@@ -109,7 +109,7 @@ export type SellNftTokenPoolInstruction<
   TAccountCosigner extends string | IAccountMeta<string> = string,
   TAccountAmmProgram extends
     | string
-    | IAccountMeta<string> = 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA',
+    | IAccountMeta<string> = 'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg',
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
@@ -631,7 +631,7 @@ export async function getSellNftTokenPoolInstructionAsync<
   }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
-      'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+      'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
   }
 
   // Remaining accounts.
@@ -1023,7 +1023,7 @@ export function getSellNftTokenPoolInstruction<
   }
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
-      'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
+      'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
   }
 
   // Remaining accounts.

@@ -342,7 +342,7 @@ pub struct SellNftTradePoolInstructionArgs {
 ///   22. `[writable, optional]` maker_broker
 ///   23. `[writable, optional]` taker_broker
 ///   24. `[signer, optional]` cosigner
-///   25. `[optional]` amm_program (default to `TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA`)
+///   25. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
 ///   26. `[optional]` escrow_program
 #[derive(Clone, Debug, Default)]
 pub struct SellNftTradePoolBuilder {
@@ -582,7 +582,7 @@ impl SellNftTradePoolBuilder {
         self.cosigner = cosigner;
         self
     }
-    /// `[optional account, default to 'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA']`
+    /// `[optional account, default to 'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg']`
     /// The AMM program account, used for self-cpi logging.
     #[inline(always)]
     pub fn amm_program(&mut self, amm_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -669,7 +669,7 @@ impl SellNftTradePoolBuilder {
             taker_broker: self.taker_broker,
             cosigner: self.cosigner,
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
-                "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
+                "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
             )),
             escrow_program: self.escrow_program,
         };
