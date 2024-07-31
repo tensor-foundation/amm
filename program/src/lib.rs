@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 use instructions::*;
 use state::*;
 
-declare_id!("TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA");
+declare_id!("TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg");
 
 /// Program entrypoint
 #[program]

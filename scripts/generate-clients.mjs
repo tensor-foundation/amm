@@ -294,7 +294,7 @@ kinobi.update(
       account: "ammProgram",
       ignoreIfOptional: true,
       defaultValue: k.publicKeyValueNode(
-        "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA",
+        "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg",
         "ammProgram",
       ),
     },
