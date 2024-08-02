@@ -8,7 +8,7 @@ import {
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
-  createT22Nft,
+  createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
   TOKEN22_PROGRAM_ID,
@@ -27,12 +27,14 @@ import {
   PoolType,
 } from '../src';
 import {
+  BASIS_POINTS,
   createPool,
   createWhitelistV2,
   findAtaPda,
   getAndFundFeeVault,
   getTokenAmount,
   getTokenOwner,
+  TAKER_FEE_BPS,
   tradePoolConfig,
   upsertMintProof,
 } from './_common';
@@ -49,20 +51,29 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   // Buyer of the NFT.
   const buyer = await generateKeyPairSignerWithSol(client);
 
+  const royaltyDestinationString = '_ro_' + updateAuthority.address;
+  const sellerFeeBasisPoints = 500n;
+
   // Mint NFT
-  const [mint, ownerAta] = await createT22Nft({
-    client,
-    payer: updateAuthority,
-    owner: owner.address,
-    mintAuthority: updateAuthority,
-    freezeAuthority: null,
-    decimals: 0,
-    data: {
-      name: 'Test Token',
-      symbol: 'TT',
-      uri: 'https://example.com',
-    },
-  });
+  const { mint, ownerAta, extraAccountMetas } = await createT22NftWithRoyalties(
+    {
+      client,
+      payer: updateAuthority,
+      owner: owner.address,
+      mintAuthority: updateAuthority,
+      freezeAuthority: null,
+      decimals: 0,
+      data: {
+        name: 'Test Token',
+        symbol: 'TT',
+        uri: 'https://example.com',
+      },
+      royalties: {
+        key: royaltyDestinationString,
+        value: sellerFeeBasisPoints.toString(),
+      },
+    }
+  );
 
   // Check the token account has correct mint, amount and owner.
   t.like(await fetchToken(client.rpc, ownerAta), <Account<Token>>{
@@ -117,7 +128,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     mint,
     mintProof,
     tokenProgram: TOKEN22_PROGRAM_ID,
-    creators: [owner.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
   });
 
   await pipe(
@@ -162,9 +173,9 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
-  // const startingUpdateAuthorityBalance = (
-  //   await client.rpc.getBalance(updateAuthority.address).send()
-  // ).value;
+  const startingUpdateAuthorityBalance = (
+    await client.rpc.getBalance(updateAuthority.address).send()
+  ).value;
 
   // Buy NFT from pool
   const buyNftIx = await getBuyNftT22InstructionAsync({
@@ -175,7 +186,8 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     maxAmount,
     poolTa: poolAta,
     tokenProgram: TOKEN22_PROGRAM_ID,
-    creators: [owner.address],
+    creators: [updateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
   });
 
   await pipe(
@@ -210,16 +222,18 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
       stats: {
         takerBuyCount: 1,
         takerSellCount: 0,
-        //accumulatedMmProfit: ?
       },
     },
   });
 
-  // Fee vault balance increases.
+  // Fee vault balance increases by entire fee, since no taker or maker brokers passed in.
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
-
-  t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
+  t.assert(
+    endingFeeVaultBalance ===
+      startingFeeVaultBalance +
+        (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
+  );
 
   // Deposit Receipt is closed
   const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
@@ -228,11 +242,13 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   );
   t.assert(maybeNftReceipt.exists === false);
 
-  // Royalties paid to update authority--TODO re-enable once transfer hooks are supported in test-helpers
-  // const endingUpdateAuthorityBalance = (
-  //   await client.rpc.getBalance(updateAuthority.address).send()
-  // ).value;
-  // console.log(startingUpdateAuthorityBalance);
-  // console.log(endingUpdateAuthorityBalance);
-  // t.assert(updateAuthorityBalance > startingUpdateAuthorityBalance);
+  // Check that the royalties were paid correctly
+  const endingUpdateAuthorityBalance = (
+    await client.rpc.getBalance(updateAuthority.address).send()
+  ).value;
+  t.assert(
+    endingUpdateAuthorityBalance ===
+      startingUpdateAuthorityBalance +
+        (tradePoolConfig.startingPrice * sellerFeeBasisPoints) / BASIS_POINTS
+  );
 });

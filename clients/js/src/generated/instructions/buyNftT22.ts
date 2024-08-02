@@ -241,7 +241,8 @@ export type BuyNftT22AsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
-  creators: Array<Address>;
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export async function getBuyNftT22InstructionAsync<
@@ -387,10 +388,16 @@ export async function getBuyNftT22InstructionAsync<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -510,7 +517,8 @@ export type BuyNftT22Input<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
-  creators: Array<Address>;
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export function getBuyNftT22Instruction<
@@ -627,10 +635,16 @@ export function getBuyNftT22Instruction<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {

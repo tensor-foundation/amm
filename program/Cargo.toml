@@ -9,6 +9,7 @@ publish = false
 [package.metadata.solana]
 program-id = "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
 program-dependencies = [
+    "CZ1rQoAHSqWBoAEfqGsiLhgbM59dDrCWk3rnG5FXaoRV",
     "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
     "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN",
     "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
@@ -17,8 +18,9 @@ program-dependencies = [
     "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV",
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
     "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg",
-
 ]
+account-dependencies = ["99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G"]
+
 
 [lib]
 crate-type = ["cdylib", "lib"]

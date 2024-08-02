@@ -2,12 +2,10 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
-    },
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use solana_program::keccak;
-use tensor_toolbox::token_2022::validate_mint;
+use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
 use tensor_vipers::{throw_err, unwrap_int, Validate};
 use whitelist_program::{self, FullMerkleProof, WhitelistV2};
 
@@ -168,7 +166,6 @@ pub fn process_t22_deposit_nft<'info>(
     // this will only add the remaining accounts required by a transfer hook if we
     // recognize the hook as a royalty one
     if royalties.is_some() {
-        msg!("adding remaining accounts");
         transfer_cpi = transfer_cpi.with_remaining_accounts(remaining_accounts);
     }
 

@@ -2,13 +2,11 @@
 use anchor_lang::solana_program::{program::invoke, system_instruction};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
-    },
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use tensor_toolbox::{
     calc_creators_fee,
-    token_2022::{validate_mint, RoyaltyInfo},
+    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};

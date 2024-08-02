@@ -179,20 +179,31 @@ kinobi.update(
     },
     depositNftT22: {
       remainingAccounts: [
-        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
-          isOptional: false,
-          isSigner: false,
-          isWritable: true,
-        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
       ],
     },
     buyNftT22: {
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
-          isOptional: false,
+          isOptional: true,
           isSigner: false,
           isWritable: true,
         }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
       ],
     },
   }),
