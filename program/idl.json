@@ -1900,7 +1900,7 @@
       "accounts": [
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The owner of the pool and the buyer of the NFT, though the NFT will be escrowed by the pool."

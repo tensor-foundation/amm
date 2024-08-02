@@ -28,6 +28,7 @@ import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
   TOKEN_PROGRAM_ID,
+  createDefaultSolanaClient,
   createDefaultTransaction,
   createKeyPairSigner,
   generateKeyPairSignerWithSol,
@@ -95,6 +96,53 @@ export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
 
+export interface TestSigners {
+  client: Client;
+  nftOwner: KeyPairSigner;
+  nftUpdateAuthority: KeyPairSigner;
+  payer: KeyPairSigner;
+  buyer: KeyPairSigner;
+  poolOwner: KeyPairSigner;
+  makerBroker: KeyPairSigner;
+  takerBroker: KeyPairSigner;
+}
+
+export async function getTestSigners() {
+  const client = createDefaultSolanaClient();
+
+  // Generic payer.
+  const payer = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+
+  // NFT Update Authority
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(
+    client,
+    5n * ONE_SOL
+  );
+
+  // Pool owner.
+  const poolOwner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+
+  // NFT owner and seller.
+  const nftOwner = await generateKeyPairSignerWithSol(client);
+
+  // Buyer of the NFT.
+  const buyer = await generateKeyPairSignerWithSol(client);
+
+  const makerBroker = await generateKeyPairSignerWithSol(client);
+  const takerBroker = await generateKeyPairSignerWithSol(client);
+
+  return {
+    client,
+    nftOwner,
+    nftUpdateAuthority,
+    payer,
+    buyer,
+    poolOwner,
+    makerBroker,
+    takerBroker,
+  };
+}
+
 export async function getPoolStateBond(client: Client) {
   return await client.rpc.getMinimumBalanceForRentExemption(POOL_SIZE).send();
 }
@@ -128,7 +176,7 @@ export const findAtaPda = async (
 export const tradePoolConfig: PoolConfig = {
   poolType: PoolType.Trade,
   curveType: CurveType.Linear,
-  startingPrice: 1_000_000n,
+  startingPrice: 100_000_000n,
   delta: DEFAULT_DELTA,
   mmCompoundFees: false,
   mmFeeBps: 50,

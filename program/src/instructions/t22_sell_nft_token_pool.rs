@@ -5,9 +5,7 @@
 // (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
-    },
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use solana_program::keccak;
 use tensor_escrow::instructions::{
@@ -15,7 +13,7 @@ use tensor_escrow::instructions::{
 };
 use tensor_toolbox::{
     calc_creators_fee, escrow,
-    token_2022::{validate_mint, RoyaltyInfo},
+    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};

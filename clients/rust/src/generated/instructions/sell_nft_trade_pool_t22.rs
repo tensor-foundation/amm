@@ -66,7 +66,7 @@ impl SellNftTradePoolT22 {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -223,7 +223,7 @@ pub struct SellNftTradePoolT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` owner
+///   0. `[writable]` owner
 ///   1. `[writable, signer]` seller
 ///   2. `[writable]` fee_vault
 ///   3. `[writable]` pool
@@ -629,7 +629,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
         ));
@@ -814,7 +814,7 @@ impl<'a, 'b> SellNftTradePoolT22Cpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` owner
+///   0. `[writable]` owner
 ///   1. `[writable, signer]` seller
 ///   2. `[writable]` fee_vault
 ///   3. `[writable]` pool

@@ -92,7 +92,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   } = await generateTreeOfSize(10, [mint]);
 
   const config = tradePoolConfig;
-  const maxAmount = 1_100_000n;
+  const maxAmount = 110_000_000n;
 
   // Create whitelist with FVC where the NFT owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -109,7 +109,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     proof: p.proof,
   });
 
-  // Create pool and whitelist
+  // Create pool
   const { pool } = await createPool({
     client,
     payer: buyer,

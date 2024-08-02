@@ -206,6 +206,40 @@ kinobi.update(
         ),
       ],
     },
+    sellNftTradePoolT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true,
+        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
+      ],
+    },
+    sellNftTokenPoolT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true,
+        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
+      ],
+    },
   }),
 );
 

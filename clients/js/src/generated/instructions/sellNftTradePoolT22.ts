@@ -7,6 +7,7 @@
  */
 
 import {
+  AccountRole,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -77,7 +78,7 @@ export type SellNftTradePoolT22Instruction<
   IInstructionWithAccounts<
     [
       TAccountOwner extends string
-        ? ReadonlyAccount<TAccountOwner>
+        ? WritableAccount<TAccountOwner>
         : TAccountOwner,
       TAccountSeller extends string
         ? WritableSignerAccount<TAccountSeller> &
@@ -243,6 +244,8 @@ export type SellNftTradePoolT22AsyncInput<
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export async function getSellNftTradePoolT22InstructionAsync<
@@ -316,7 +319,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     seller: { value: input.seller ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
@@ -392,6 +395,18 @@ export async function getSellNftTradePoolT22InstructionAsync<
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -414,6 +429,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getSellNftTradePoolT22InstructionDataEncoder().encode(
@@ -510,6 +526,8 @@ export type SellNftTradePoolT22Input<
   ammProgram?: Address<TAccountAmmProgram>;
   escrowProgram?: Address<TAccountEscrowProgram>;
   minPrice: SellNftTradePoolT22InstructionDataArgs['minPrice'];
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export function getSellNftTradePoolT22Instruction<
@@ -581,7 +599,7 @@ export function getSellNftTradePoolT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     seller: { value: input.seller ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
@@ -630,6 +648,18 @@ export function getSellNftTradePoolT22Instruction<
       'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA' as Address<'TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -652,6 +682,7 @@ export function getSellNftTradePoolT22Instruction<
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getSellNftTradePoolT22InstructionDataEncoder().encode(

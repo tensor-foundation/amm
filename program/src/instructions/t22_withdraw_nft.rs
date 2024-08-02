@@ -2,11 +2,9 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
-    },
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
-use tensor_toolbox::token_2022::validate_mint;
+use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
 use tensor_vipers::{throw_err, unwrap_int, Validate};
 
 use self::constants::CURRENT_POOL_VERSION;
