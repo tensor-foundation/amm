@@ -15,8 +15,8 @@ importers:
         specifier: 2.0.0-preview.3
         version: 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0)
       '@tensor-foundation/resolvers':
-        specifier: 0.1.1
-        version: 0.1.1(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0))
+        specifier: ^0.2.0
+        version: 0.2.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0))
     devDependencies:
       '@ava/typescript':
         specifier: ^4.1.0
@@ -1663,8 +1663,8 @@ packages:
   '@tensor-foundation/mpl-token-metadata@0.1.0':
     resolution: {integrity: sha512-4XIwodNqCGP3KItpeop9iDL3fqql90pyPYBl5iLFGm4AUjiIxy8KD1fFIU7XbeYyNyrj6CpNyyREeKLMJSo0Ag==}
 
-  '@tensor-foundation/resolvers@0.1.1':
-    resolution: {integrity: sha512-gU2f3KZmIgOkKPvuA5uHy+AiHvhVg3asiZZkiAJwyItM8037OGOVDG3VFMgHcrFudnFHDFQVB36z7Oby44geqA==}
+  '@tensor-foundation/resolvers@0.2.0':
+    resolution: {integrity: sha512-LNZ3ADNImFJTEOvug/z46Y7Ri5on6HGC82S7mFfQOAQrBX7VI5AHukWoK4q78VSHQYpqeJeyDgHrLAiN1Sc8QA==}
     peerDependencies:
       '@solana/web3.js': 2.0.0-preview.3
 
@@ -7074,7 +7074,7 @@ snapshots:
       - fastestsmallesttextencoderdecoder
       - ws
 
-  '@tensor-foundation/resolvers@0.1.1(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0))':
+  '@tensor-foundation/resolvers@0.2.0(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0))':
     dependencies:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0)
 

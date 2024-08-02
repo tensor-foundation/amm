@@ -1,13 +1,13 @@
 [package]
 name = "amm-program"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 readme = "./README.md"
 license-file = "../LICENSE"
 publish = false
 
 [package.metadata.solana]
-program-id = "TAMMqgJYcquwwj2tCdNUerh4C2bJjmghijVziSEf5tA"
+program-id = "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
 program-dependencies = [
     "CZ1rQoAHSqWBoAEfqGsiLhgbM59dDrCWk3rnG5FXaoRV",
     "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
