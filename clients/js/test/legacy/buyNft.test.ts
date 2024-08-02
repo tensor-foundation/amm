@@ -31,9 +31,10 @@ import {
   getBuyNftInstructionAsync,
   getDepositNftInstructionAsync,
   isSol,
-} from '../src/index.js';
+} from '../../src/index.js';
 import {
   BASIS_POINTS,
+  ONE_SOL,
   assertTammNoop,
   createAndFundEscrow,
   createPool,
@@ -45,7 +46,7 @@ import {
   getTokenOwner,
   nftPoolConfig,
   tradePoolConfig,
-} from './_common.js';
+} from '../_common.js';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -73,7 +74,8 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     config,
   });
 
-  const maxAmount = 1_100_000n;
+  // 1.1x the starting price.
+  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
 
   const poolAccount = await fetchPool(client.rpc, pool);
 
@@ -205,7 +207,8 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     mmCompoundFees: true,
   };
 
-  const maxAmount = 1_100_000n;
+  // 1.1x the starting price.
+  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
 
   // Create whitelist with FVC where the owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -335,7 +338,8 @@ test('buyNft emits a self-cpi logging event', async (t) => {
 
   const config = tradePoolConfig;
 
-  const maxAmount = 1_100_000n;
+  // 1.1x the starting price.
+  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
 
   // Create whitelist with FVC where the owner is the FVC.
   const { whitelist } = await createWhitelistV2({
@@ -461,7 +465,8 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
     config,
   });
 
-  const maxAmount = 1_100_000n;
+  // 1.1x the starting price.
+  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
 
   let poolAccount = await fetchPool(client.rpc, pool);
 
@@ -582,7 +587,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool and NFT owner.
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   // Buyer of the NFT.
   const buyer = await generateKeyPairSignerWithSol(client);
 
@@ -879,7 +884,8 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
     config,
   });
 
-  const maxAmount = 1_100_000n;
+  // 1.1x the starting price.
+  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
 
   const poolAccount = await fetchPool(client.rpc, pool);
 

@@ -25,7 +25,7 @@ import {
   NftDepositReceipt,
   Pool,
   PoolType,
-} from '../src';
+} from '../../src';
 import {
   BASIS_POINTS,
   createPool,
@@ -37,8 +37,8 @@ import {
   TAKER_FEE_BPS,
   tradePoolConfig,
   upsertMintProof,
-} from './_common';
-import { generateTreeOfSize } from './_merkle';
+} from '../_common';
+import { generateTreeOfSize } from '../_merkle';
 
 test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

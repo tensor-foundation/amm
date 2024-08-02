@@ -86,7 +86,7 @@ export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
-export const DEFAULT_DELTA = 100_000n;
+export const DEFAULT_DELTA = 10_000_000n;
 export const ONE_WEEK = 60 * 60 * 24 * 7;
 export const ONE_YEAR = 60 * 60 * 24 * 365;
 
@@ -188,7 +188,7 @@ export const findAtaPda = async (
 export const tradePoolConfig: PoolConfig = {
   poolType: PoolType.Trade,
   curveType: CurveType.Linear,
-  startingPrice: 100_000_000n,
+  startingPrice: 10n * DEFAULT_DELTA,
   delta: DEFAULT_DELTA,
   mmCompoundFees: false,
   mmFeeBps: 50,
@@ -802,10 +802,10 @@ export async function setupT22Test(
 
   switch (action) {
     case T22Action.Buy:
-      price = 110_000_000n; // maxPrice
+      price = (config.startingPrice * 11n) / 10n; // maxPrice
       break;
     case T22Action.Sell:
-      price = 90_000_000n; // minPrice
+      price = (config.startingPrice * 85n) / 100n; // minPrice
       break;
     default:
       throw new Error('Invalid action');

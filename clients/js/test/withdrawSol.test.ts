@@ -24,6 +24,7 @@ import {
   isSol,
 } from '../src/index.js';
 import {
+  ONE_SOL,
   createPool,
   createWhitelistV2,
   expectCustomError,
@@ -37,7 +38,7 @@ import {
 test('it can withdraw Sol from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -73,7 +74,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const depositSolIx = getDepositSolInstruction({
     pool,
     owner,
-    lamports: 10_000_000n,
+    lamports: ONE_SOL,
   });
 
   await pipe(
@@ -86,7 +87,8 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -111,7 +113,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(computeIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // NFT is now owned by the pool.
@@ -155,10 +157,10 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 test('it cannot withdraw all SOL from a pool', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
-  const depositLamports = 10_000_000n;
+  const depositLamports = ONE_SOL;
   // Min rent for POOL_SIZE account
   const keepAliveLamports = 3090240n;
 
@@ -229,7 +231,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
 test('withdrawing Sol from a Trade pool decreases currency amount', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -306,9 +308,9 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
 test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const notOwner = await generateKeyPairSignerWithSol(client);
-  const depositLamports = 10_000_000n;
+  const depositLamports = ONE_SOL;
   const withdrawLamports = 1n;
 
   const config = tradePoolConfig;

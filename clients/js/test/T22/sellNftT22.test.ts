@@ -30,7 +30,7 @@ import {
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__BAD_MINT_PROOF,
   TENSOR_AMM_ERROR__BAD_WHITELIST,
-} from '../src';
+} from '../../src';
 import {
   assertTammNoop,
   BASIS_POINTS,
@@ -45,8 +45,8 @@ import {
   TAKER_FEE_BPS,
   tokenPoolConfig,
   upsertMintProof,
-} from './_common';
-import { generateTreeOfSize } from './_merkle';
+} from '../_common';
+import { generateTreeOfSize } from '../_merkle';
 
 test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const { signers, nft, testConfig, whitelist, pool, feeVault, mintProof } =
@@ -414,7 +414,7 @@ test('it can sell a T22 NFT into a Token pool', async (t) => {
   );
 });
 
-test.only('token pool autocloses when currency amount drops below current price', async (t) => {
+test('token pool autocloses when currency amount drops below current price', async (t) => {
   // We need a deposit amount that will be less than the current price after one sell.
   const depositAmount = (tokenPoolConfig.startingPrice * 3n) / 2n; // 1.5x the starting price
 

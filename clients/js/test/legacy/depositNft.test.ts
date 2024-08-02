@@ -22,14 +22,14 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getDepositNftInstructionAsync,
-} from '../src/index.js';
+} from '../../src/index.js';
 import {
   createPool,
   createWhitelistV2,
   findAtaPda,
   getTokenAmount,
   getTokenOwner,
-} from './_common.js';
+} from '../_common.js';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -89,7 +89,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   await pipe(
     await createDefaultTransaction(client, owner),
     (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // NFT is now owned by the pool.

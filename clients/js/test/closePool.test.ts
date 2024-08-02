@@ -13,6 +13,7 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -28,6 +29,8 @@ import {
   getSellNftTradePoolInstructionAsync,
 } from '../src/index.js';
 import {
+  DEFAULT_DELTA,
+  ONE_SOL,
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
@@ -35,7 +38,6 @@ import {
   getPoolStateBond,
   tradePoolConfig,
 } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
 
 test('it can close a pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -47,6 +49,7 @@ test('it can close a pool', async (t) => {
   });
 
   const poolAccount = await fetchPool(client.rpc, pool);
+
   // Then an account was created with the correct data.
   t.like(poolAccount, <Pool>(<unknown>{
     address: pool,
@@ -165,13 +168,13 @@ test('close pool fails if nfts still deposited', async (t) => {
 test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
+    startingPrice: 10n * DEFAULT_DELTA,
     delta: 0n,
     mmCompoundFees: false,
     mmFeeBps: null,
@@ -204,7 +207,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
   const depositSolIx = getDepositSolInstruction({
     pool,
     owner,
-    lamports: 10_000_000n,
+    lamports: ONE_SOL,
   });
 
   await pipe(
@@ -215,7 +218,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
-  const minPrice = 1_000_000n;
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
@@ -266,7 +269,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 test('close trade pool fail if someone sold nfts into it', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -302,7 +305,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
   const depositSolIx = getDepositSolInstruction({
     pool,
     owner,
-    lamports: 10_000_000n,
+    lamports: ONE_SOL,
   });
 
   await pipe(
@@ -313,7 +316,8 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -338,7 +342,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(computeIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // Close pool

@@ -34,8 +34,9 @@ import {
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync,
   isSol,
-} from '../src/index.js';
+} from '../../src/index.js';
 import {
+  DEFAULT_DELTA,
   assertTammNoop,
   createAndFundEscrow,
   createPool,
@@ -49,7 +50,7 @@ import {
   getTokenOwner,
   tokenPoolConfig,
   tradePoolConfig,
-} from './_common.js';
+} from '../_common.js';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const {
@@ -102,7 +103,8 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -196,10 +198,10 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Trade,
     curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 100_000n,
+    startingPrice: 10n * DEFAULT_DELTA,
+    delta: DEFAULT_DELTA,
     mmCompoundFees: false,
-    mmFeeBps: 100,
+    mmFeeBps: 50,
   };
 
   const depositAmount = config.startingPrice * 10n;
@@ -246,7 +248,8 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -382,7 +385,8 @@ test('it can sell an NFT into a Token pool', async (t) => {
 
   const [poolOwnerAta] = await findAtaPda({ mint, owner: poolOwner.address });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
@@ -508,7 +512,8 @@ test('token pool autocloses when currency amount drops below current price', asy
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   const startingPoolOwnerBalance = (
     await client.rpc.getBalance(poolOwner.address).send()
@@ -608,12 +613,13 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   await pipe(
     await createDefaultTransaction(client, poolOwner),
     (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
 
@@ -638,7 +644,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(computeIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   assertTammNoop(t, client, sig);
@@ -685,12 +691,13 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   await pipe(
     await createDefaultTransaction(client, poolOwner),
     (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -768,7 +775,8 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -851,7 +859,8 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool without specififying cosigner
   const sellNftIxNoCosigner = await getSellNftTradePoolInstructionAsync({
@@ -946,7 +955,8 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
 
   await getAndFundFeeVault(client, pool);
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool w/ specifying pool's whitelist & non-matching mint
   const sellNftIxPoolWL = await getSellNftTradePoolInstructionAsync({
@@ -1038,7 +1048,8 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
     creators: [creator],
   });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   const poolAccount = await fetchPool(client.rpc, pool);
 
