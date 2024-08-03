@@ -101,6 +101,7 @@ pub struct BuyNftT22<'info> {
         bump = nft_receipt.bump,
         // Check the receipt is for the correct pool and mint.
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,

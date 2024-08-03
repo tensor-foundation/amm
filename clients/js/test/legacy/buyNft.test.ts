@@ -12,6 +12,7 @@ import {
   fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
+  TOKEN22_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -33,9 +34,12 @@ import {
   isSol,
 } from '../../src/index.js';
 import {
+  ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   BASIS_POINTS,
   ONE_SOL,
   assertTammNoop,
+  assertTokenNftOwnedBy,
   createAndFundEscrow,
   createPool,
   createWhitelistV2,
@@ -734,18 +738,13 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
   );
 
   // NFT is now owned by the buyer.
-  const [buyerAta] = await findAtaPda({ mint, owner: buyer.address });
-  const buyerAtaAccount = await client.rpc
-    .getAccountInfo(buyerAta, { encoding: 'base64' })
-    .send();
-
-  const data = buyerAtaAccount!.value!.data;
-
-  const postBuyTokenAmount = getTokenAmount(data);
-  const postBuyTokenOwner = getTokenOwner(data);
-
-  t.assert(postBuyTokenAmount === 1n);
-  t.assert(postBuyTokenOwner === buyer.address);
+  assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: buyer.address,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
+  });
 });
 
 test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
@@ -1083,7 +1082,6 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     nftReceipt: incorrectNftReceipt,
     creators: [owner.address],
   });
-  const ACCOUNT_NOT_INITIALIZED_ERROR_CODE = 3012;
 
   const promiseNotDeposited = pipe(
     await createDefaultTransaction(client, buyer),
@@ -1093,7 +1091,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
   await expectCustomError(
     t,
     promiseNotDeposited,
-    ACCOUNT_NOT_INITIALIZED_ERROR_CODE
+    ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED
   );
 
   // Initialize a different pool
@@ -1130,7 +1128,6 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     nftReceipt: incorrectNftReceiptOtherPool,
     creators: [owner.address],
   });
-  const CONSTRAINT_SEEDS_ERROR_CODE = 2006;
 
   const promiseWrongPool = pipe(
     await createDefaultTransaction(client, buyer),
@@ -1138,5 +1135,5 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
       appendTransactionMessageInstruction(buyNftIxWrongPoolNftReceipt, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseWrongPool, CONSTRAINT_SEEDS_ERROR_CODE);
+  await expectCustomError(t, promiseWrongPool, ANCHOR_ERROR__CONSTRAINT_SEEDS);
 });

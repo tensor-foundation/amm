@@ -87,6 +87,9 @@ export const getAndFundOwner = async (client: Client) => {
   return owner;
 };
 
+export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
+export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
+
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
@@ -477,7 +480,7 @@ export async function createPoolAndWhitelist({
     owner = await generateKeyPairSignerWithSol(client);
   }
   if (poolId === undefined) {
-    poolId = Uint8Array.from({ length: 32 }, () => 1);
+    poolId = generateUuid();
   }
   if (conditions === undefined) {
     conditions = [{ mode: Mode.FVC, value: updateAuthority.address }];
@@ -761,6 +764,8 @@ export interface SetupTestParams {
   depositAmount?: bigint;
   useSharedEscrow?: boolean;
   useCosigner?: boolean;
+  compoundFees?: boolean;
+  fundPool?: boolean;
 }
 
 export enum TestAction {
@@ -776,6 +781,8 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
     depositAmount: dA,
     useSharedEscrow = false,
     useCosigner = false,
+    compoundFees = false,
+    fundPool = true,
   } = params;
 
   const testSigners = await getTestSigners();
@@ -826,7 +833,7 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
 
   switch (poolType) {
     case PoolType.Trade:
-      config = tradePoolConfig;
+      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
       break;
     case PoolType.Token:
       config = tokenPoolConfig;
@@ -863,9 +870,6 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
     proofs: [p],
   } = await generateTreeOfSize(10, [mint]);
 
-  // If using shared escrow or it's a NFT pool, we can't deposit SOL to the pool directly.
-  const funded = !useSharedEscrow && poolType !== PoolType.NFT;
-
   // Create a whitelist and a funded pool.
   const { whitelist, pool } = await createPoolAndWhitelist({
     client,
@@ -877,7 +881,7 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
     config,
     depositAmount,
     conditions: [{ mode: Mode.MerkleTree, value: intoAddress(root) }],
-    funded,
+    funded: sharedEscrow ? false : fundPool, // Shared Escrow pools can't be funded directly.
   });
 
   const poolAccount = await fetchPool(client.rpc, pool);
@@ -922,12 +926,12 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
         (tx) => signAndSendTransaction(client, tx)
       );
 
-      await assertNftOwnedByPool({
+      await assertTokenNftOwnedBy({
         t,
         client,
-        asset: mint,
-        pool,
-        tokenProgramId: TOKEN22_PROGRAM_ID,
+        mint,
+        owner: pool,
+        tokenProgramAddress: TOKEN22_PROGRAM_ID,
       });
 
       // Deposit Receipt should be created
@@ -975,33 +979,39 @@ export interface NftOwnedByPoolParams {
   tokenProgramId?: Address;
 }
 
-export interface NftOwnedByPoolParams {
+export interface TokenNftOwnedByParams {
   t: ExecutionContext;
   client: Client;
-  asset: Address;
-  pool: Address;
-  tokenProgramId?: Address;
+  mint: Address;
+  owner: Address;
+  tokenProgramAddress?: Address;
 }
 
-export async function assertNftOwnedByPool(params: NftOwnedByPoolParams) {
-  const { t, client, asset, pool, tokenProgramId = TOKEN_PROGRAM_ID } = params;
+// Asserts that a token-based NFT is owned by a specific address by deriving
+// the ATA for the owner and checking the amount and owner of the token.
+export async function assertTokenNftOwnedBy(params: TokenNftOwnedByParams) {
+  const {
+    t,
+    client,
+    mint,
+    owner,
+    tokenProgramAddress = TOKEN_PROGRAM_ID,
+  } = params;
 
-  const [poolAta] = await findAtaPda({
-    mint: asset,
-    owner: pool,
-    tokenProgramId,
+  const [ownerAta] = await findAtaPda({
+    mint,
+    owner,
+    tokenProgramId: tokenProgramAddress,
   });
+  const ownerAtaAccount = await client.rpc
+    .getAccountInfo(ownerAta, { encoding: 'base64' })
+    .send();
 
-  // NFT is now owned by the pool.
-  const poolAtaAccount = (
-    await client.rpc.getAccountInfo(poolAta, { encoding: 'base64' }).send()
-  ).value;
+  const data = ownerAtaAccount!.value!.data;
 
-  const poolAtaData = poolAtaAccount!.data;
+  const postBuyTokenAmount = getTokenAmount(data);
+  const postBuyTokenOwner = getTokenOwner(data);
 
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  t.assert(postBuyTokenAmount === 1n);
+  t.assert(postBuyTokenOwner === owner);
 }
