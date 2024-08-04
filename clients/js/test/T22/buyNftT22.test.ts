@@ -14,7 +14,6 @@ import {
 import { intoAddress, Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  fetchMaybeNftDepositReceipt,
   fetchMaybePool,
   fetchPool,
   findNftDepositReceiptPda,
@@ -28,14 +27,12 @@ import {
 import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  assertNftReceiptClosed,
   assertTammNoop,
   assertTokenNftOwnedBy,
   BASIS_POINTS,
   createPoolAndWhitelist,
   expectCustomError,
-  findAtaPda,
-  getTokenAmount,
-  getTokenOwner,
   setupT22Test,
   TAKER_FEE_BPS,
   TestAction,
@@ -45,13 +42,14 @@ import {
 import { generateTreeOfSize } from '../_merkle';
 
 test('it can buy a T22 NFT from a Trade pool', async (t) => {
-  const { signers, nft, testConfig, pool, feeVault } = await setupT22Test({
-    t,
-    poolType: PoolType.Trade,
-    action: TestAction.Buy,
-  });
+  const { client, signers, nft, testConfig, pool, feeVault } =
+    await setupT22Test({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+    });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { price: maxAmount } = testConfig;
 
@@ -82,26 +80,14 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const [buyerAta] = await findAtaPda({
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
     mint,
     owner: buyer.address,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  // NFT is now owned by the buyer.
-  const buyerAtaAccount = await client.rpc
-    .getAccountInfo(buyerAta, { encoding: 'base64' })
-    .send();
-
-  const data = buyerAtaAccount!.value!.data;
-
-  const postBuyTokenAmount = getTokenAmount(data);
-  const postBuyTokenOwner = getTokenOwner(data);
-
-  t.assert(postBuyTokenAmount === 1n);
-  t.assert(postBuyTokenOwner === buyer.address);
 
   // Pool stats are updated
   t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
@@ -123,12 +109,8 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
 
-  // Deposit Receipt is closed
-  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
-    client.rpc,
-    nftReceipt
-  );
-  t.assert(maybeNftReceipt.exists === false);
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint, pool });
 
   // Check that the royalties were paid correctly
   const endingUpdateAuthorityBalance = (
@@ -142,15 +124,16 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
 });
 
 test('buying NFT from a trade pool increases currency amount', async (t) => {
-  const { signers, nft, testConfig, pool, feeVault } = await setupT22Test({
-    t,
-    poolType: PoolType.Trade,
-    action: TestAction.Buy,
-    compoundFees: true,
-    fundPool: false,
-  });
+  const { client, signers, nft, testConfig, pool, feeVault } =
+    await setupT22Test({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      compoundFees: true,
+      fundPool: false,
+    });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { poolConfig, price: maxAmount } = testConfig;
 
@@ -183,26 +166,14 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const [buyerAta] = await findAtaPda({
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
     mint,
     owner: buyer.address,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  // NFT is now owned by the buyer.
-  const buyerAtaAccount = await client.rpc
-    .getAccountInfo(buyerAta, { encoding: 'base64' })
-    .send();
-
-  const data = buyerAtaAccount!.value!.data;
-
-  const postBuyTokenAmount = getTokenAmount(data);
-  const postBuyTokenOwner = getTokenOwner(data);
-
-  t.assert(postBuyTokenAmount === 1n);
-  t.assert(postBuyTokenOwner === buyer.address);
 
   // Pool stats are updated
   t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
@@ -226,12 +197,8 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
 
-  // Deposit Receipt is closed
-  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
-    client.rpc,
-    nftReceipt
-  );
-  t.assert(maybeNftReceipt.exists === false);
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint, pool });
 
   // Check that the royalties were paid correctly
   const endingUpdateAuthorityBalance = (
@@ -263,7 +230,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 });
 
 test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
-  const { signers, nft, testConfig, pool, feeVault, sharedEscrow } =
+  const { client, signers, nft, testConfig, pool, feeVault, sharedEscrow } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
@@ -272,7 +239,7 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
       fundPool: false,
     });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { poolConfig, price: maxAmount } = testConfig;
 
@@ -309,26 +276,14 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const [buyerAta] = await findAtaPda({
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
     mint,
     owner: buyer.address,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  // NFT is now owned by the buyer.
-  const buyerAtaAccount = await client.rpc
-    .getAccountInfo(buyerAta, { encoding: 'base64' })
-    .send();
-
-  const data = buyerAtaAccount!.value!.data;
-
-  const postBuyTokenAmount = getTokenAmount(data);
-  const postBuyTokenOwner = getTokenOwner(data);
-
-  t.assert(postBuyTokenAmount === 1n);
-  t.assert(postBuyTokenOwner === buyer.address);
 
   // Pool stats are updated
   t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
@@ -358,12 +313,8 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
 
-  // Deposit Receipt is closed
-  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
-    client.rpc,
-    nftReceipt
-  );
-  t.assert(maybeNftReceipt.exists === false);
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint, pool });
 
   // Check that the royalties were paid correctly
   const endingUpdateAuthorityBalance = (
@@ -377,14 +328,15 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
 });
 
 test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) => {
-  const { signers, nft, testConfig, pool, feeVault } = await setupT22Test({
-    t,
-    poolType: PoolType.NFT,
-    action: TestAction.Buy,
-    fundPool: false,
-  });
+  const { client, signers, nft, testConfig, pool, feeVault } =
+    await setupT22Test({
+      t,
+      poolType: PoolType.NFT,
+      action: TestAction.Buy,
+      fundPool: false,
+    });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { price: maxAmount } = testConfig;
 
@@ -415,26 +367,14 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const [buyerAta] = await findAtaPda({
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
     mint,
     owner: buyer.address,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
-
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-
-  // NFT is now owned by the buyer.
-  const buyerAtaAccount = await client.rpc
-    .getAccountInfo(buyerAta, { encoding: 'base64' })
-    .send();
-
-  const data = buyerAtaAccount!.value!.data;
-
-  const postBuyTokenAmount = getTokenAmount(data);
-  const postBuyTokenOwner = getTokenOwner(data);
-
-  t.assert(postBuyTokenAmount === 1n);
-  t.assert(postBuyTokenOwner === buyer.address);
 
   // Pool is closed because no more NFTs are available.
   const maybePool = await fetchMaybePool(client.rpc, pool);
@@ -449,12 +389,8 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
 
-  // Deposit Receipt is closed
-  const maybeNftReceipt = await fetchMaybeNftDepositReceipt(
-    client.rpc,
-    nftReceipt
-  );
-  t.assert(maybeNftReceipt.exists === false);
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint, pool });
 
   // Check that the royalties were paid correctly
   const endingUpdateAuthorityBalance = (
@@ -468,13 +404,13 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
 });
 
 test('buyNft on a trade pool emits a self-cpi logging event', async (t) => {
-  const { signers, nft, testConfig, pool } = await setupT22Test({
+  const { client, signers, nft, testConfig, pool } = await setupT22Test({
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
   });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { price: maxAmount } = testConfig;
 
@@ -502,14 +438,14 @@ test('buyNft on a trade pool emits a self-cpi logging event', async (t) => {
 });
 
 test('buyNft on a NFT pool emits a self-cpi logging event', async (t) => {
-  const { signers, nft, testConfig, pool } = await setupT22Test({
+  const { client, signers, nft, testConfig, pool } = await setupT22Test({
     t,
     poolType: PoolType.NFT,
     action: TestAction.Buy,
     fundPool: false,
   });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { price: maxAmount } = testConfig;
 
@@ -537,14 +473,14 @@ test('buyNft on a NFT pool emits a self-cpi logging event', async (t) => {
 });
 
 test('it can buy an NFT from a pool w/ a set cosigner', async (t) => {
-  const { signers, nft, testConfig, pool } = await setupT22Test({
+  const { client, signers, nft, testConfig, pool } = await setupT22Test({
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     useCosigner: true,
   });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority, cosigner } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, cosigner } = signers;
 
   const { price: maxAmount } = testConfig;
 
@@ -580,14 +516,14 @@ test('it can buy an NFT from a pool w/ a set cosigner', async (t) => {
 });
 
 test('it cannot buy an NFT from a pool w/ incorrect or no cosigner', async (t) => {
-  const { signers, nft, testConfig, pool } = await setupT22Test({
+  const { client, signers, nft, testConfig, pool } = await setupT22Test({
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     useCosigner: true,
   });
 
-  const { client, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const fakeCosigner = await generateKeyPairSigner();
 
@@ -637,17 +573,17 @@ test('it cannot buy an NFT from a pool w/ incorrect or no cosigner', async (t) =
 });
 
 test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', async (t) => {
-  const { signers, nft, testConfig, pool } = await setupT22Test({
+  const { client, signers, nft, testConfig, pool } = await setupT22Test({
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
   });
 
-  const { client, payer, buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { payer, buyer, poolOwner, nftUpdateAuthority } = signers;
 
   const { poolConfig, price: maxAmount } = testConfig;
 
-  // NFT deposited into pool.
+  // This mint is the NFT deposited into the pool.
   const { mint, extraAccountMetas } = nft;
 
   // Mint another NFT--same owner and authority, but not deposited into pool.

@@ -14,6 +14,9 @@ jobs:
       matrix:
         node: ["18.x", "20.x"]
     steps:
+      - name: Check deploy folder
+        run: |
+          ls -lh /home/runner/work/amm/amm/target/deploy/
       - name: Git checkout
         uses: actions/checkout@v4
 

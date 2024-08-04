@@ -13,6 +13,7 @@ import {
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
+  createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
@@ -53,14 +54,9 @@ import {
 } from '../_common.js';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    await getTestSigners(client);
 
   const config = tradePoolConfig;
 
@@ -186,14 +182,9 @@ test('it can sell an NFT into a Trade pool', async (t) => {
 });
 
 test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    await getTestSigners(client);
 
   const config: PoolConfig = {
     poolType: PoolType.Trade,
@@ -316,14 +307,9 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 });
 
 test('it can sell an NFT into a Token pool', async (t) => {
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    await getTestSigners(client);
 
   const config = tokenPoolConfig;
 
@@ -451,15 +437,15 @@ test('it can sell an NFT into a Token pool', async (t) => {
 });
 
 test('token pool autocloses when currency amount drops below current price', async (t) => {
+  const client = createDefaultSolanaClient();
   const {
-    client,
     payer,
     poolOwner,
     nftOwner,
     nftUpdateAuthority,
     makerBroker,
     takerBroker,
-  } = await getTestSigners();
+  } = await getTestSigners(client);
 
   const config = tokenPoolConfig;
   const depositAmount = config.startingPrice + 50_000_000n; // 1.5x the starting price
@@ -563,8 +549,9 @@ test('token pool autocloses when currency amount drops below current price', asy
 });
 
 test('sellNftTokenPool emits self-cpi logging event', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
+    await getTestSigners(client);
 
   const config = tokenPoolConfig;
   const depositAmount = config.startingPrice * 10n;
@@ -651,8 +638,9 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 });
 
 test('sellNftTradePool emits self-cpi logging event', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
+    await getTestSigners(client);
 
   const config = tradePoolConfig;
   const depositAmount = config.startingPrice * 10n;
@@ -731,8 +719,9 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
+    await getTestSigners(client);
 
   const config = tradePoolConfig;
 
@@ -812,8 +801,9 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
+    await getTestSigners(client);
 
   // Incorrect Cosigner
   const arbitraryCosigner = await generateKeyPairSignerWithSol(client);
@@ -902,8 +892,9 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
+    await getTestSigners(client);
 
   // Mint Whitelist Authority
   const mintWhitelistAuthority = await generateKeyPairSignerWithSol(client);
@@ -998,8 +989,9 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
 });
 
 test('it can sell a pNFT into a trade pool and pay the correct amount of royalties', async (t) => {
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners();
+  const client = createDefaultSolanaClient();
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
+    await getTestSigners(client);
 
   const creator = {
     address: nftUpdateAuthority.address,

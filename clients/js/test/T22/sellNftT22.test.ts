@@ -18,13 +18,10 @@ import { intoAddress, Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   fetchMaybePool,
-  fetchNftDepositReceipt,
   fetchPool,
-  findNftDepositReceiptPda,
   getSellNftTokenPoolT22InstructionAsync,
   getSellNftTradePoolT22InstructionAsync,
   isSol,
-  NftDepositReceipt,
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
@@ -32,7 +29,9 @@ import {
   TENSOR_AMM_ERROR__BAD_WHITELIST,
 } from '../../src';
 import {
+  assertNftReceiptCreated,
   assertTammNoop,
+  assertTokenNftOwnedBy,
   BASIS_POINTS,
   createWhitelistV2,
   errorLogsContain,
@@ -49,21 +48,23 @@ import {
 import { generateTreeOfSize } from '../_merkle';
 
 test('it can sell a T22 NFT into a Trade pool', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, feeVault, mintProof } =
-    await setupT22Test({
-      t,
-      poolType: PoolType.Trade,
-      action: TestAction.Sell,
-    });
-
   const {
     client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+    signers,
+    nft,
+    testConfig,
+    whitelist,
+    pool,
+    feeVault,
+    mintProof,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { poolConfig, depositAmount, price: minPrice } = testConfig;
 
@@ -78,12 +79,6 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const startingUpdateAuthorityBalance = BigInt(
     (await client.rpc.getBalance(nftUpdateAuthority.address).send()).value
   );
-
-  const [poolAta] = await findAtaPda({
-    mint,
-    owner: pool,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
-  });
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
@@ -117,29 +112,16 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // NFT is now owned by the pool.
-  const poolAtaAccount = (
-    await client.rpc.getAccountInfo(poolAta, { encoding: 'base64' }).send()
-  ).value;
-
-  const poolAtaData = poolAtaAccount!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: pool,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
+  });
 
   // Deposit Receipt should be created
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-  t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <
-    Account<NftDepositReceipt, Address>
-  >{
-    address: nftReceipt,
-    data: {
-      mint,
-      pool,
-    },
-  });
+  await assertNftReceiptCreated({ t, client, mint, pool });
 
   // Pool stats are updated
   t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
@@ -193,22 +175,24 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
 });
 
 test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof, sharedEscrow } =
-    await setupT22Test({
-      t,
-      poolType: PoolType.Trade,
-      action: TestAction.Sell,
-      useSharedEscrow: true,
-    });
-
   const {
     client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+    signers,
+    nft,
+    testConfig,
+    whitelist,
+    pool,
+    mintProof,
+    sharedEscrow,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useSharedEscrow: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { poolConfig, price: minPrice } = testConfig;
 
@@ -218,12 +202,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const preSharedEscrowBalance = (
     await client.rpc.getBalance(sharedEscrow!).send()
   ).value;
-
-  const [poolAta] = await findAtaPda({
-    mint,
-    owner: pool,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
-  });
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
@@ -260,17 +238,13 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   ).value;
 
   // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const poolAtaData = poolAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: pool,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
+  });
 
   // This is a linear Trade pool with a shared escrow, so funds come from the escrow.
   //
@@ -292,21 +266,23 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 });
 
 test('it can sell a T22 NFT into a Token pool', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, feeVault, mintProof } =
-    await setupT22Test({
-      t,
-      poolType: PoolType.Token,
-      action: TestAction.Sell,
-    });
-
   const {
     client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+    signers,
+    nft,
+    testConfig,
+    whitelist,
+    pool,
+    feeVault,
+    mintProof,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { poolConfig, depositAmount, price: minPrice } = testConfig;
 
@@ -426,7 +402,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   // We need a deposit amount that will be less than the current price after one sell.
   const depositAmount = (tokenPoolConfig.startingPrice * 3n) / 2n; // 1.5x the starting price
 
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Token,
@@ -434,14 +410,8 @@ test('token pool autocloses when currency amount drops below current price', asy
       depositAmount,
     });
 
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { poolConfig, price: minPrice } = testConfig;
 
@@ -498,21 +468,15 @@ test('token pool autocloses when currency amount drops below current price', asy
 });
 
 test('sellNftTokenPool emits self-cpi logging event', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Token,
       action: TestAction.Sell,
     });
 
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { price: minPrice } = testConfig;
 
@@ -552,21 +516,15 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 });
 
 test('sellNftTradePool emits self-cpi logging event', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
     });
 
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { price: minPrice } = testConfig;
 
@@ -606,7 +564,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
@@ -615,7 +573,6 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
     });
 
   const {
-    client,
     poolOwner,
     nftOwner,
     nftUpdateAuthority,
@@ -660,28 +617,19 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   );
 
   // NFT is now owned by the pool.
-  const [poolAta] = await findAtaPda({
+  await assertTokenNftOwnedBy({
+    t,
+    client,
     mint,
     owner: pool,
-    tokenProgramId: TOKEN22_PROGRAM_ID,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const data = poolAtaAccount!.value!.data;
-
-  const postSellTokenAmount = getTokenAmount(data);
-  const postSellTokenOwner = getTokenOwner(data);
-
-  t.assert(postSellTokenAmount === 1n);
-  t.assert(postSellTokenOwner === pool);
 });
 
 test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) => {
   const fakeCosigner = await generateKeyPairSigner();
 
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Token,
@@ -689,14 +637,8 @@ test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) 
       useCosigner: true,
     });
 
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { price: minPrice } = testConfig;
 
@@ -765,7 +707,7 @@ test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) 
 test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) => {
   const fakeCosigner = await generateKeyPairSigner();
 
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
@@ -773,14 +715,8 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
       useCosigner: true,
     });
 
-  const {
-    client,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
 
   const { price: minPrice } = testConfig;
 
@@ -846,14 +782,14 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
     });
 
-  const { client, payer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
 
   const { price: minPrice } = testConfig;
 
@@ -999,14 +935,14 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
 });
 
 test('selling into a Trade pool fails when the wrong creator is passed in as a remaining account', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
     });
 
-  const { client, poolOwner, nftOwner, makerBroker, takerBroker } = signers;
+  const { poolOwner, nftOwner, makerBroker, takerBroker } = signers;
 
   const { price: minPrice } = testConfig;
 
@@ -1048,14 +984,14 @@ test('selling into a Trade pool fails when the wrong creator is passed in as a r
 });
 
 test('selling into a Token pool fails when the wrong creator is passed in as a remaining account', async (t) => {
-  const { signers, nft, testConfig, whitelist, pool, mintProof } =
+  const { client, signers, nft, testConfig, whitelist, pool, mintProof } =
     await setupT22Test({
       t,
       poolType: PoolType.Token,
       action: TestAction.Sell,
     });
 
-  const { client, poolOwner, nftOwner, makerBroker, takerBroker } = signers;
+  const { poolOwner, nftOwner, makerBroker, takerBroker } = signers;
 
   const { price: minPrice } = testConfig;
 
