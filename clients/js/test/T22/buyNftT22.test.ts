@@ -570,7 +570,7 @@ test('it can buy an NFT from a pool w/ a set cosigner', async (t) => {
   );
 
   // NFT is now owned by the buyer.
-  assertTokenNftOwnedBy({
+  await assertTokenNftOwnedBy({
     t,
     client,
     mint,

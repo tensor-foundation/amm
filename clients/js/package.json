@@ -48,7 +48,7 @@
     "@solana/eslint-config-solana": "^3.0.0",
     "@tensor-foundation/escrow": "^0.1.0",
     "@tensor-foundation/mpl-token-metadata": "^0.1.0",
-    "@tensor-foundation/test-helpers": "^0.1.0",
+    "@tensor-foundation/test-helpers": "^0.2.0",
     "@tensor-foundation/whitelist": "^0.1.0",
     "@types/node": "20.12.7",
     "@types/uuid": "^9.0.8",

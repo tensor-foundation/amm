@@ -12,7 +12,6 @@ import {
   fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
-  TOKEN22_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -738,12 +737,11 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
   );
 
   // NFT is now owned by the buyer.
-  assertTokenNftOwnedBy({
+  await assertTokenNftOwnedBy({
     t,
     client,
     mint,
     owner: buyer.address,
-    tokenProgramAddress: TOKEN22_PROGRAM_ID,
   });
 });
 
