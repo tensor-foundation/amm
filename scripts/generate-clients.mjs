@@ -179,20 +179,65 @@ kinobi.update(
     },
     depositNftT22: {
       remainingAccounts: [
-        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
-          isOptional: false,
-          isSigner: false,
-          isWritable: true,
-        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
       ],
     },
     buyNftT22: {
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
-          isOptional: false,
+          isOptional: true,
           isSigner: false,
           isWritable: true,
         }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
+      ],
+    },
+    sellNftTradePoolT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true,
+        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
+      ],
+    },
+    sellNftTokenPoolT22: {
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
+          isOptional: true,
+          isSigner: false,
+          isWritable: true,
+        }),
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
       ],
     },
   }),
@@ -343,18 +388,6 @@ kinobi.update(
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
         dependsOn: [k.accountValueNode("pool")],
-      }),
-    },
-    {
-      account: "ownerTa",
-      ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode("resolveOwnerAta", {
-        importFrom: "resolvers",
-        dependsOn: [
-          k.accountValueNode("owner"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram"),
-        ],
       }),
     },
     {

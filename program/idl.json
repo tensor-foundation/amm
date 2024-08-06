@@ -289,7 +289,8 @@
           "isMut": false,
           "isSigner": false,
           "docs": [
-            "The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state."
+            "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
+            "Must match the whitelist stored in the pool state."
           ]
         },
         {
@@ -297,7 +298,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The TA of the owner, where the NFT will be transferred from."
+            "The token account of the owner, where the NFT will be transferred from."
           ]
         },
         {
@@ -305,7 +306,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The TA of the pool, where the NFT will be escrowed."
+            "The token account of the pool, where the NFT will be escrowed."
           ]
         },
         {
@@ -363,6 +364,7 @@
           "isSigner": false,
           "isOptional": true,
           "docs": [
+            "Optional account which must be passed in if the NFT must be verified against a",
             "merkle proof condition in the whitelist."
           ]
         },
@@ -1468,7 +1470,7 @@
       "accounts": [
         {
           "name": "owner",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
             "Owner is the pool owner who created the pool and the nominal owner of the",
@@ -1900,7 +1902,7 @@
       "accounts": [
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The owner of the pool and the buyer of the NFT, though the NFT will be escrowed by the pool."
@@ -2344,6 +2346,9 @@
   "types": [
     {
       "name": "CreatePoolArgs",
+      "docs": [
+        "Create pool arguments."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -2408,7 +2413,7 @@
     {
       "name": "EditPoolArgs",
       "docs": [
-        "Instruction accounts."
+        "Edit pool arguments."
       ],
       "type": {
         "kind": "struct",

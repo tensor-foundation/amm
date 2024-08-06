@@ -170,7 +170,7 @@ export type DepositNftT22AsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  creators: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export async function getDepositNftT22InstructionAsync<
@@ -279,10 +279,9 @@ export async function getDepositNftT22InstructionAsync<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = args.transferHookAccounts.map(
+    (address) => ({ address, role: AccountRole.READONLY })
+  );
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -357,7 +356,7 @@ export type DepositNftT22Input<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
-  creators: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export function getDepositNftT22Instruction<
@@ -443,10 +442,9 @@ export function getDepositNftT22Instruction<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = args.transferHookAccounts.map(
+    (address) => ({ address, role: AccountRole.READONLY })
+  );
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {

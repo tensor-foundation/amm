@@ -37,7 +37,8 @@ pub struct DepositNft<'info> {
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     #[account(
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
@@ -45,7 +46,7 @@ pub struct DepositNft<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     #[account(
         mut,
         token::mint = mint,
@@ -53,7 +54,7 @@ pub struct DepositNft<'info> {
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     #[account(
         init_if_needed,
         payer = owner,
@@ -96,12 +97,12 @@ pub struct DepositNft<'info> {
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
-    // Optional account which must be passed in if the NFT must be verified against a
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     /// CHECK: seeds below + assert_decode_mint_proof
     #[account(
         seeds = [
-            b"mint_proof".as_ref(),
+            b"mint_proof_v2".as_ref(),
             mint.key().as_ref(),
             whitelist.key().as_ref(),
         ],

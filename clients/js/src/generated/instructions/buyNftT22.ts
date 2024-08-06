@@ -80,7 +80,7 @@ export type BuyNftT22Instruction<
   IInstructionWithAccounts<
     [
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountBuyer extends string
         ? WritableSignerAccount<TAccountBuyer> &
@@ -241,7 +241,8 @@ export type BuyNftT22AsyncInput<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
-  creators: Array<Address>;
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export async function getBuyNftT22InstructionAsync<
@@ -309,7 +310,7 @@ export async function getBuyNftT22InstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     buyer: { value: input.buyer ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -387,10 +388,16 @@ export async function getBuyNftT22InstructionAsync<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -510,7 +517,8 @@ export type BuyNftT22Input<
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
   maxAmount: BuyNftT22InstructionDataArgs['maxAmount'];
-  creators: Array<Address>;
+  creators?: Array<Address>;
+  transferHookAccounts: Array<Address>;
 };
 
 export function getBuyNftT22Instruction<
@@ -576,7 +584,7 @@ export function getBuyNftT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     buyer: { value: input.buyer ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -627,10 +635,16 @@ export function getBuyNftT22Instruction<
   }
 
   // Remaining accounts.
-  const remainingAccounts: IAccountMeta[] = args.creators.map((address) => ({
-    address,
-    role: AccountRole.WRITABLE,
-  }));
+  const remainingAccounts: IAccountMeta[] = [
+    ...(args.creators ?? []).map((address) => ({
+      address,
+      role: AccountRole.WRITABLE,
+    })),
+    ...args.transferHookAccounts.map((address) => ({
+      address,
+      role: AccountRole.READONLY,
+    })),
+  ];
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {

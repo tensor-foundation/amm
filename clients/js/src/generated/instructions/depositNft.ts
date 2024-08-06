@@ -226,11 +226,14 @@ export type DepositNftAsyncInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool to deposit the NFT into. */
   pool: Address<TAccountPool>;
-  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
+  /**
+   * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+   * Must match the whitelist stored in the pool state.
+   */
   whitelist: Address<TAccountWhitelist>;
-  /** The TA of the owner, where the NFT will be transferred from. */
+  /** The token account of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT will be escrowed. */
+  /** The token account of the pool, where the NFT will be escrowed. */
   poolTa?: Address<TAccountPoolTa>;
   /**
    * The mint account of the NFT. It should be the mint account common
@@ -247,7 +250,10 @@ export type DepositNftAsyncInput<
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
-  /** merkle proof condition in the whitelist. */
+  /**
+   * Optional account which must be passed in if the NFT must be verified against a
+   * merkle proof condition in the whitelist.
+   */
   mintProof?: Address<TAccountMintProof>;
   /** The Token Metadata edition account of the NFT. */
   edition?: Address<TAccountEdition>;
@@ -542,11 +548,14 @@ export type DepositNftInput<
   owner: TransactionSigner<TAccountOwner>;
   /** The pool to deposit the NFT into. */
   pool: Address<TAccountPool>;
-  /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
+  /**
+   * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+   * Must match the whitelist stored in the pool state.
+   */
   whitelist: Address<TAccountWhitelist>;
-  /** The TA of the owner, where the NFT will be transferred from. */
+  /** The token account of the owner, where the NFT will be transferred from. */
   ownerTa: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT will be escrowed. */
+  /** The token account of the pool, where the NFT will be escrowed. */
   poolTa: Address<TAccountPoolTa>;
   /**
    * The mint account of the NFT. It should be the mint account common
@@ -563,7 +572,10 @@ export type DepositNftInput<
   systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
-  /** merkle proof condition in the whitelist. */
+  /**
+   * Optional account which must be passed in if the NFT must be verified against a
+   * merkle proof condition in the whitelist.
+   */
   mintProof?: Address<TAccountMintProof>;
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
@@ -799,11 +811,15 @@ export type ParsedDepositNftInstruction<
     owner: TAccountMetas[0];
     /** The pool to deposit the NFT into. */
     pool: TAccountMetas[1];
-    /** The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state. */
+    /**
+     * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+     * Must match the whitelist stored in the pool state.
+     */
+
     whitelist: TAccountMetas[2];
-    /** The TA of the owner, where the NFT will be transferred from. */
+    /** The token account of the owner, where the NFT will be transferred from. */
     ownerTa: TAccountMetas[3];
-    /** The TA of the pool, where the NFT will be escrowed. */
+    /** The token account of the pool, where the NFT will be escrowed. */
     poolTa: TAccountMetas[4];
     /**
      * The mint account of the NFT. It should be the mint account common
@@ -821,7 +837,11 @@ export type ParsedDepositNftInstruction<
     systemProgram: TAccountMetas[9];
     /** The Token Metadata metadata account of the NFT. */
     metadata: TAccountMetas[10];
-    /** merkle proof condition in the whitelist. */
+    /**
+     * Optional account which must be passed in if the NFT must be verified against a
+     * merkle proof condition in the whitelist.
+     */
+
     mintProof?: TAccountMetas[11] | undefined;
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[12];

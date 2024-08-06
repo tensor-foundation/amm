@@ -19,8 +19,9 @@ import {
   getDepositSolInstruction,
   getSellNftTradePoolInstructionAsync,
   getWithdrawNftInstructionAsync,
-} from '../src/index.js';
+} from '../../src/index.js';
 import {
+  ONE_SOL,
   createPool,
   createWhitelistV2,
   expectCustomError,
@@ -29,12 +30,12 @@ import {
   getTokenAmount,
   getTokenOwner,
   tradePoolConfig,
-} from './_common.js';
+} from '../_common.js';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -70,7 +71,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   const depositSolIx = getDepositSolInstruction({
     pool,
     owner,
-    lamports: 10_000_000n,
+    lamports: ONE_SOL,
   });
 
   await pipe(
@@ -84,7 +85,8 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   const [ownerAta] = await findAtaPda({ mint, owner: owner.address });
   const [poolAta] = await findAtaPda({ mint, owner: pool });
 
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -109,7 +111,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(computeIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // NFT is now owned by the pool.
@@ -203,7 +205,7 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
   await pipe(
     await createDefaultTransaction(client, owner),
     (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // NFT is now owned by the pool.

@@ -11,6 +11,7 @@ use crate::{
     Currency, CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
 
+/// Create pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct CreatePoolArgs {
     pub pool_id: [u8; 32],

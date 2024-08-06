@@ -27,7 +27,6 @@ pub use deposit_sol::*;
 pub use edit_pool::*;
 pub use sell_nft_token_pool::*;
 pub use sell_nft_trade_pool::*;
-use spl_token_metadata_interface::borsh::BorshDeserialize;
 pub use t22_buy_nft::*;
 pub use t22_deposit_nft::*;
 pub use t22_sell_nft_token_pool::*;
@@ -39,7 +38,7 @@ pub use withdraw_sol::*;
 use crate::constants::{HUNDRED_PCT_BPS, TAKER_FEE_BPS};
 use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount};
+use anchor_spl::token_interface::Mint;
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
@@ -103,167 +102,6 @@ pub fn assert_decode_mint_proof_v2(
     let mut data: &[u8] = &mint_proof.try_borrow_data()?;
     let mint_proof: Box<MintProofV2> = Box::new(AccountDeserialize::try_deserialize(&mut data)?);
     Ok(mint_proof)
-}
-
-/// Shared accounts between the two sell ixs.
-/// Currently unused until Kinobi support.
-#[derive(Accounts)]
-#[instruction(config: PoolConfig)]
-pub struct SellNftShared<'info> {
-    /// CHECK: Seeds checked here, account has no state.
-    #[account(
-        mut,
-        seeds = [
-            b"fee_vault",
-            // Use the last byte of the pool as the fee shard number
-            shard_num!(pool),
-        ],
-        seeds::program = TFEE_PROGRAM_ID,
-        bump
-    )]
-    pub fee_vault: UncheckedAccount<'info>,
-
-    #[account(mut,
-        seeds = [
-            b"pool",
-            owner.key().as_ref(),
-            pool.pool_id.as_ref(),
-        ],
-        bump = pool.bump[0],
-        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
-        // Why close the pool??
-        close = owner,
-    )]
-    pub pool: Box<Account<'info, Pool>>,
-
-    /// Needed for pool seeds derivation, also checked via has_one on pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = whitelist_program::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
-
-    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
-    /// CHECK: seeds below + assert_decode_mint_proof
-    #[account(
-        seeds = [
-            b"mint_proof".as_ref(),
-            mint.key().as_ref(),
-            whitelist.key().as_ref(),
-        ],
-        bump,
-        seeds::program = whitelist_program::ID
-    )]
-    pub mint_proof: UncheckedAccount<'info>,
-
-    #[account(mut, token::mint = mint, token::authority = seller)]
-    pub nft_seller_acc: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
-    //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: assert_decode_metadata + seeds below
-    #[account(mut,
-        seeds=[
-            mpl_token_metadata::accounts::Metadata::PREFIX,
-            mpl_token_metadata::ID.as_ref(),
-            mint.key().as_ref(),
-        ],
-        seeds::program = mpl_token_metadata::ID,
-        bump
-    )]
-    pub metadata: UncheckedAccount<'info>,
-
-    /// CHECK: has_one = owner in pool (owner is the buyer)
-    #[account(mut)]
-    pub owner: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub seller: Signer<'info>,
-}
-
-/// Shared accounts between the two sell T22 ixs.
-/// Currently unused until Kinobi support.
-#[derive(Accounts)]
-#[instruction(config: PoolConfig)]
-pub struct SellNftSharedT22<'info> {
-    /// CHECK: Seeds checked here, account has no state.
-    #[account(
-        mut,
-        seeds = [
-            b"fee_vault",
-            // Use the last byte of the mint as the fee shard number
-            shard_num!(nft_mint),
-        ],
-        seeds::program = TFEE_PROGRAM_ID,
-        bump
-    )]
-    pub fee_vault: UncheckedAccount<'info>,
-
-    #[account(mut,
-        seeds = [
-            b"pool",
-            owner.key().as_ref(),
-            pool.pool_id.as_ref(),
-        ],
-        bump = pool.bump[0],
-        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
-        close = owner,
-    )]
-    pub pool: Box<Account<'info, Pool>>,
-    /// Needed for pool seeds derivation, also checked via has_one on pool
-    #[account(
-        seeds = [&whitelist.uuid],
-        bump,
-        seeds::program = whitelist_program::ID
-    )]
-    pub whitelist: Box<Account<'info, Whitelist>>,
-
-    /// intentionally not deserializing, it would be dummy in the case of VOC/FVC based verification
-    /// CHECK: seeds below + assert_decode_mint_proof
-    #[account(
-        seeds = [
-            b"mint_proof".as_ref(),
-            nft_mint.key().as_ref(),
-            whitelist.key().as_ref(),
-        ],
-        bump,
-        seeds::program = whitelist_program::ID
-    )]
-    pub mint_proof: UncheckedAccount<'info>,
-
-    #[account(mut, token::mint = nft_mint, token::authority = seller)]
-    pub nft_seller_acc: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// CHECK: whitelist, token::mint in nft_seller_acc, associated_token::mint in owner_ata_acc
-    pub nft_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// CHECK: has_one = owner in pool (owner is the buyer)
-    #[account(mut)]
-    pub owner: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub seller: Signer<'info>,
-}
-
-/// Currently unused until Kinobi support.
-#[derive(Accounts)]
-pub struct ProgNftShared<'info> {
-    //can't deserialize directly coz Anchor traits not implemented
-    /// CHECK: address below
-    #[account(address = mpl_token_metadata::ID)]
-    pub token_metadata_program: UncheckedAccount<'info>,
-
-    //sysvar ixs don't deserialize in anchor
-    /// CHECK: address below
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-
-    /// CHECK: address below
-    #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
-    pub authorization_rules_program: UncheckedAccount<'info>,
 }
 
 pub struct Fees {

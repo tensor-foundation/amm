@@ -1,10 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import {
-  SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  appendTransactionMessageInstruction,
-  isSolanaError,
-  pipe,
-} from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
@@ -17,6 +12,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
+  TENSOR_AMM_ERROR__POOL_KEEP_ALIVE,
   fetchPool,
   getDepositSolInstruction,
   getSellNftTradePoolInstructionAsync,
@@ -24,20 +20,21 @@ import {
   isSol,
 } from '../src/index.js';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  ONE_SOL,
+  assertTokenNftOwnedBy,
   createPool,
+  createPoolAndWhitelist,
   createWhitelistV2,
   expectCustomError,
-  findAtaPda,
   getAndFundFeeVault,
-  getTokenAmount,
-  getTokenOwner,
   tradePoolConfig,
 } from './_common.js';
 
 test('it can withdraw Sol from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -73,7 +70,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   const depositSolIx = getDepositSolInstruction({
     pool,
     owner,
-    lamports: 10_000_000n,
+    lamports: ONE_SOL,
   });
 
   await pipe(
@@ -84,9 +81,8 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-
-  const minPrice = 850_000n;
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
@@ -111,21 +107,11 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(computeIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx, { skipPreflight: true })
+    (tx) => signAndSendTransaction(client, tx)
   );
 
   // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const poolAtaData = poolAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  await assertTokenNftOwnedBy({ t, client, owner: pool, mint });
 
   const preOwnerBalance = (await client.rpc.getBalance(owner.address).send())
     .value;
@@ -155,10 +141,10 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
 test('it cannot withdraw all SOL from a pool', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
-  const depositLamports = 10_000_000n;
+  const depositLamports = ONE_SOL;
   // Min rent for POOL_SIZE account
   const keepAliveLamports = 3090240n;
 
@@ -209,27 +195,13 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // PoolKeepAlive
-  const code = 12039;
-
-  const error = await t.throwsAsync<Error & { data: { logs: string[] } }>(
-    promise
-  );
-
-  if (isSolanaError(error.cause, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
-    t.assert(
-      error.cause.context.code === code,
-      `expected error code ${code}, received ${error.cause.context.code}`
-    );
-  } else {
-    t.fail("expected a custom error, but didn't get one");
-  }
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__POOL_KEEP_ALIVE);
 });
 
 test('withdrawing Sol from a Trade pool decreases currency amount', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const nftOwner = await generateKeyPairSignerWithSol(client);
 
   const config = tradePoolConfig;
@@ -299,51 +271,30 @@ test('withdrawing Sol from a Trade pool decreases currency amount', async (t) =>
   // Ensure it's a SOL currency.
   t.assert(isSol(poolAccount.data.currency));
 
-  // Currency amount should be what was deposited minues what was withdrawn.
+  // Currency amount should be what was deposited minus what was withdrawn.
   t.assert(poolAccount.data.amount === depositLamports - withdrawLamports);
 });
 
 test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   const client = createDefaultSolanaClient();
 
-  const owner = await generateKeyPairSignerWithSol(client);
+  // Pool owner.
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
   const notOwner = await generateKeyPairSignerWithSol(client);
-  const depositLamports = 10_000_000n;
+  const depositAmount = ONE_SOL;
   const withdrawLamports = 1n;
 
   const config = tradePoolConfig;
 
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
+  // Create a whitelist and a funded pool.
+  const { pool } = await createPoolAndWhitelist({
     client,
-    updateAuthority: owner,
-    conditions: [{ mode: Mode.FVC, value: owner.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool } = await createPool({
-    client,
-    whitelist,
     owner,
     config,
+    depositAmount,
+    conditions: [{ mode: Mode.FVC, value: owner.address }],
+    funded: true,
   });
-
-  let poolAccount = await fetchPool(client.rpc, pool);
-
-  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner,
-    lamports: depositLamports,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
 
   // Try withdrawing SOL from pool with incorrect owner
   const withdrawSolIxBadOwner = getWithdrawSolInstruction({
@@ -352,17 +303,15 @@ test('it cannot withdraw from a pool with incorrect owner', async (t) => {
     lamports: withdrawLamports,
   });
 
-  const POOL_SEEDS_VIOLATION_ERROR_CODE = 2006;
-
   const promiseBadOwner = pipe(
     await createDefaultTransaction(client, owner),
     (tx) => appendTransactionMessageInstruction(withdrawSolIxBadOwner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
   // Throws POOL_SEEDS_VIOLATION error
-  await expectCustomError(t, promiseBadOwner, POOL_SEEDS_VIOLATION_ERROR_CODE);
+  await expectCustomError(t, promiseBadOwner, ANCHOR_ERROR__CONSTRAINT_SEEDS);
 
   // And the pool still has the deposit amount remaining
-  poolAccount = await fetchPool(client.rpc, pool);
-  t.assert(poolAccount.data.amount === depositLamports);
+  const poolAccount = await fetchPool(client.rpc, pool);
+  t.assert(poolAccount.data.amount === depositAmount);
 });

@@ -7,9 +7,7 @@
 // (!) Keep common logic in sync with sell_nft_token_pool.rs.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{
-        self, transfer_checked, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked,
-    },
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use solana_program::keccak;
 use tensor_escrow::instructions::{
@@ -17,7 +15,7 @@ use tensor_escrow::instructions::{
 };
 use tensor_toolbox::{
     calc_creators_fee, escrow,
-    token_2022::{validate_mint, RoyaltyInfo},
+    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
@@ -35,6 +33,7 @@ use crate::{error::ErrorCode, *};
 pub struct SellNftTradePoolT22<'info> {
     /// The owner of the pool and the buyer of the NFT, though the NFT will be escrowed by the pool.
     /// CHECK: has_one = owner in pool (owner is the buyer)
+    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The seller is the owner of the NFT who is selling the NFT into the pool.
@@ -63,7 +62,8 @@ pub struct SellNftTradePoolT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::WrongAuthority,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
         constraint = pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
