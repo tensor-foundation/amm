@@ -181,6 +181,7 @@ pub struct BuyNft<'info> {
 }
 
 impl<'info> BuyNft<'info> {
+    /// Closes the pool's token account.
     fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -192,6 +193,7 @@ impl<'info> BuyNft<'info> {
         )
     }
 
+    /// Transfer lamports from the buyer to the specified address.
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
         invoke(
             &system_instruction::transfer(self.buyer.key, to.key, lamports),
@@ -204,7 +206,7 @@ impl<'info> BuyNft<'info> {
         .map_err(Into::into)
     }
 
-    /// transfers lamports, skipping the transfer if not rent exempt
+    /// Transfers lamports, skipping the transfer if not rent exempt
     fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
         let rent = Rent::get()?.minimum_balance(to.data_len());
         if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
@@ -217,6 +219,7 @@ impl<'info> BuyNft<'info> {
 }
 
 impl<'info> Validate<'info> for BuyNft<'info> {
+    /// Validates the BuyNft instruction.
     fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
         if let Some(cosigner) = self.pool.cosigner.value() {
@@ -455,6 +458,7 @@ pub fn process_buy_nft<'info, 'b>(
         );
     }
 
+    // If the pool is an NFT pool, and no remaining NFTs held, we can close it.
     try_autoclose_pool(
         pool,
         ctx.accounts.rent_payer.to_account_info(),

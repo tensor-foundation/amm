@@ -14,7 +14,6 @@ macro_rules! unwrap_opt_or_return_ok {
     };
 }
 
-/// Instruction accounts.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct EditPoolArgs {
     pub new_config: Option<PoolConfig>,
@@ -24,6 +23,7 @@ pub struct EditPoolArgs {
     pub reset_price_offset: bool,
 }
 
+/// Instruction accounts.
 #[derive(Accounts)]
 pub struct EditPool<'info> {
     /// The owner of the pool--must sign to edit the pool.

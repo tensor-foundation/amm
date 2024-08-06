@@ -1,3 +1,4 @@
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { Token, fetchToken } from '@solana-program/token';
 import {
   Account,
@@ -25,7 +26,11 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import {
+  Nft,
+  TokenStandard,
+  createDefaultNftInCollection,
+} from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -109,6 +114,8 @@ export const POOL_SIZE = 452n;
 export const TAKER_FEE_BPS = 200n;
 export const BROKER_FEE_PCT = 80n;
 export const BASIS_POINTS = 10_000n;
+
+export const TRANSACTION_SIGNATURE_FEE = 5_000n;
 
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
@@ -326,7 +333,7 @@ export async function createPool({
   // Pool values
 
   if (poolId === undefined) {
-    poolId = Uint8Array.from({ length: 32 }, () => 1);
+    poolId = generateUuid();
   }
 
   if (config === undefined) {
@@ -506,7 +513,7 @@ export async function createPoolAndWhitelist({
     config,
   });
 
-  if (funded) {
+  if (funded && config?.poolType !== PoolType.NFT) {
     // Deposit SOL
     const depositSolIx = getDepositSolInstruction({
       pool,
@@ -755,7 +762,7 @@ export interface T22Test {
 export interface LegacyTest {
   client: Client;
   signers: TestSigners;
-  nft: { mint: Address; ownerAta: Address };
+  nft: Nft;
   testConfig: TestConfig;
   whitelist: Address;
   pool: Address;
@@ -773,6 +780,7 @@ export interface SetupTestParams {
   t: ExecutionContext;
   poolType: PoolType;
   action: TestAction;
+  whitelistMode?: Mode;
   depositAmount?: bigint;
   useSharedEscrow?: boolean;
   useCosigner?: boolean;
@@ -786,13 +794,15 @@ export enum TestAction {
 }
 
 export async function setupLegacyTest(
-  params: SetupTestParams
+  params: SetupTestParams & { pNft?: boolean }
 ): Promise<LegacyTest> {
   const {
     t,
     poolType,
     action,
+    whitelistMode = Mode.FVC,
     depositAmount: dA,
+    pNft = false,
     useSharedEscrow = false,
     useCosigner = false,
     compoundFees = false,
@@ -814,12 +824,20 @@ export async function setupLegacyTest(
   }
 
   // Mint NFT
-  const { mint, token: ownerAta } = await createDefaultNft({
+  const { collection, item: nft } = await createDefaultNftInCollection({
     client,
     payer,
     authority: nftUpdateAuthority,
     owner: nftOwner,
+    standard: pNft
+      ? TokenStandard.ProgrammableNonFungible
+      : TokenStandard.NonFungible,
   });
+
+  // Reset test timeout for long-running tests.
+  t.pass();
+
+  const { mint, token: ownerAta } = nft;
 
   let config: PoolConfig;
   let price: bigint;
@@ -857,6 +875,31 @@ export async function setupLegacyTest(
     sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
   }
 
+  let conditions: Condition[] = [];
+  let mintProof: Address | undefined;
+  let proof;
+
+  switch (whitelistMode) {
+    case Mode.FVC:
+      conditions = [{ mode: Mode.FVC, value: nftUpdateAuthority.address }];
+      break;
+    case Mode.VOC:
+      conditions = [{ mode: Mode.VOC, value: collection.mint }];
+      break;
+    case Mode.MerkleTree: {
+      // Setup a merkle tree with our mint as a leaf
+      const {
+        root,
+        proofs: [p],
+      } = await generateTreeOfSize(10, [mint]);
+      proof = p;
+      conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+      break;
+    }
+    default:
+      throw new Error('Invalid whitelist mode');
+  }
+
   // Create a whitelist and a funded pool.
   const { whitelist, pool } = await createPoolAndWhitelist({
     client,
@@ -867,7 +910,7 @@ export async function setupLegacyTest(
     sharedEscrow,
     config,
     depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
+    conditions,
     funded: sharedEscrow ? false : fundPool, // Shared Escrow pools can't be funded directly.
   });
 
@@ -887,16 +930,38 @@ export async function setupLegacyTest(
     case TestAction.Buy: {
       price = (config.startingPrice * 11n) / 10n; // maxPrice
 
+      if (whitelistMode === Mode.MerkleTree) {
+        // Create the mint proof for the whitelist.
+        const mp = await upsertMintProof({
+          client,
+          payer,
+          mint,
+          whitelist,
+          proof: proof!.proof,
+        });
+        mintProof = mp.mintProof;
+      }
+      // console.log('mintProof', mintProof);
+
       // Deposit the NFT into the pool so it can be bought.
       const depositNftIx = await getDepositNftInstructionAsync({
         owner: nftOwner, // Same as poolOwner for Buy action
         pool,
         whitelist,
         mint,
+        mintProof,
+        tokenStandard: pNft
+          ? TokenStandard.ProgrammableNonFungible
+          : TokenStandard.NonFungible,
       });
 
       await pipe(
         await createDefaultTransaction(client, poolOwner),
+        (tx) =>
+          appendTransactionMessageInstruction(
+            getSetComputeUnitLimitInstruction({ units: 400_000 }),
+            tx
+          ),
         (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
         (tx) => signAndSendTransaction(client, tx)
       );
@@ -923,7 +988,7 @@ export async function setupLegacyTest(
   return {
     client,
     signers: testSigners,
-    nft: { mint, ownerAta },
+    nft,
     testConfig: {
       poolConfig: config,
       depositAmount,

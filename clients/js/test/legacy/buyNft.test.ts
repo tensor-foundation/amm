@@ -7,7 +7,6 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  Creator,
   TokenStandard,
   createDefaultNft,
   fetchMetadata,
@@ -100,7 +99,6 @@ test('it can buy an NFT from a Trade pool', async (t) => {
       stats: {
         takerBuyCount: 1,
         takerSellCount: 0,
-        //accumulatedMmProfit: ?
       },
     },
   });
@@ -185,14 +183,50 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   t.assert(updatedPoolAccount.data.amount === lamportsAdded);
 });
 
-test('buyNft emits a self-cpi logging event', async (t) => {
+test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
   const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
-    useSharedEscrow: false,
-    compoundFees: true,
-    fundPool: false,
+  });
+
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { price: maxAmount } = testConfig;
+  const { mint } = nft;
+
+  // Buy NFT from pool
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  const sig = await pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: buyer.address,
+  });
+
+  assertTammNoop(t, client, sig);
+});
+
+test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
+  const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
   });
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
@@ -512,95 +546,20 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
 });
 
 test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
-  const client = createDefaultSolanaClient();
+  const { client, signers, nft, pool, feeVault, testConfig } =
+    await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      pNft: true,
+    });
 
-  // Pool and NFT owner.
-  const owner = await generateKeyPairSignerWithSol(client);
-  // Buyer of the NFT.
-  const buyer = await generateKeyPairSignerWithSol(client);
-  // Creator of the NFT.
-  const creatorKeypair = await generateKeyPairSignerWithSol(client);
-  const creator = {
-    address: creatorKeypair.address,
-    verified: true,
-    share: 100,
-  } as Creator;
-
-  const config = tradePoolConfig;
-
-  // Create whitelist with FVC.
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: creatorKeypair,
-    conditions: [{ mode: Mode.FVC, value: creator.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool } = await createPool({
-    client,
-    payer: buyer,
-    whitelist,
-    owner,
-    config,
-  });
-
-  // 1.1x the starting price.
-  const maxAmount = (config.startingPrice * 100n) / 10n + config.startingPrice;
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
-
-  // Mint NFT
-  const { mint, metadata } = await createDefaultNft({
-    client,
-    payer: owner,
-    authority: creatorKeypair,
-    owner: owner,
-    standard: TokenStandard.ProgrammableNonFungible,
-    creators: [creator],
-  });
+  const { buyer, poolOwner, nftUpdateAuthority: creator } = signers;
+  const { poolConfig, price: maxAmount } = testConfig;
+  const { mint, metadata } = nft;
 
   const { sellerFeeBasisPoints } = (await fetchMetadata(client.rpc, metadata))
     .data;
-
-  // Use higher CU limit, pNFTs expensive
-  const cuLimitIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
-  // Deposit NFT
-  const depositNftIx = await getDepositNftInstructionAsync({
-    owner,
-    pool,
-    whitelist,
-    mint,
-    tokenStandard: TokenStandard.ProgrammableNonFungible,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
-    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-
-  // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const poolAtaData = poolAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
-
-  const feeVault = await getAndFundFeeVault(client, pool);
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -610,7 +569,7 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
 
   // Buy NFT from pool
   const buyNftIx = await getBuyNftInstructionAsync({
-    owner: owner.address,
+    owner: poolOwner.address,
     buyer,
     pool,
     mint,
@@ -622,7 +581,11 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
+    (tx) =>
+      appendTransactionMessageInstruction(
+        getSetComputeUnitLimitInstruction({ units: 400_000 }),
+        tx
+      ),
     (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -649,7 +612,7 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
   t.assert(
     endingCreatorBalance ===
       startingCreatorBalance +
-        (BigInt(sellerFeeBasisPoints) * config.startingPrice) / 100_00n
+        (BigInt(sellerFeeBasisPoints) * poolConfig.startingPrice) / 100_00n
   );
 });
 

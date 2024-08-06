@@ -15,13 +15,13 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
-  NftDepositReceipt,
-  PoolConfig,
-  PoolType,
   fetchNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
   getDepositNftInstructionAsync,
+  NftDepositReceipt,
+  PoolConfig,
+  PoolType,
 } from '../../src/index.js';
 import {
   createPool,
@@ -29,7 +29,145 @@ import {
   findAtaPda,
   getTokenAmount,
   getTokenOwner,
+  setupLegacyTest,
+  TestAction,
 } from '../_common.js';
+
+test('it can deposit a legacy Metaplex NFT into a Trade pool w/ FVC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.FVC,
+  });
+});
+
+test('it can deposit a legacy Metaplex NFT into a Trade pool w/ VOC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a legacy Metaplex NFT into a Trade pool w/ Merkle Tree mode', async (t) => {
+  // With FVC mode
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('it can deposit a legacy Metaplex NFT into a NFT pool w/ FVC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.FVC,
+  });
+});
+
+test('it can deposit a legacy Metaplex NFT into a NFT pool w/ VOC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a legacy Metaplex NFT into a NFT pool w/ Merkle Tree mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: false,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a Trade pool w/ FVC mode', async (t) => {
+  // With FVC mode
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.FVC,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a Trade pool w/ VOC mode', async (t) => {
+  // With FVC mode
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a Trade pool w/ Merkle Tree mode', async (t) => {
+  // With FVC mode
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a NFT pool w/ FVC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.FVC,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a NFT pool w/ VOC mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a Metaplex pNFT into a NFT pool w/ Merkle Tree mode', async (t) => {
+  await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    pNft: true,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

@@ -25,7 +25,6 @@ pub struct BuyNftT22<'info> {
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
     /// CHECK: has_one = owner in pool (owner is the seller)
-    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.

@@ -12,7 +12,16 @@ import {
   fetchWhitelistV2,
 } from '@tensor-foundation/whitelist';
 import test from 'ava';
-import { CurveType, Pool, PoolType, fetchPool } from '../src/index.js';
+import {
+  CurveType,
+  Pool,
+  PoolType,
+  TENSOR_AMM_ERROR__DELTA_TOO_LARGE,
+  TENSOR_AMM_ERROR__FEES_NOT_ALLOWED,
+  TENSOR_AMM_ERROR__FEES_TOO_HIGH,
+  fetchPool,
+  solCurrency,
+} from '../src/index.js';
 import {
   createPool,
   createPoolThrows,
@@ -56,7 +65,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
   }));
 
   // Create default pool
-  const { pool } = await createPool({
+  const { pool, poolId } = await createPool({
     client,
     whitelist,
     owner: updateAuthority,
@@ -67,6 +76,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
   t.like(poolAccount, <Pool>(<unknown>{
     address: pool,
     data: {
+      version: 0,
       config: {
         poolType: 0,
         curveType: 0,
@@ -75,6 +85,21 @@ test('it can create a pool w/ correct timestamps', async (t) => {
         mmCompoundFees: false,
         mmFeeBps: null,
       },
+      owner: updateAuthority.address,
+      whitelist,
+      poolId,
+      rentPayer: updateAuthority.address,
+      currency: solCurrency(),
+      amount: 0n,
+      priceOffset: 0,
+      nftsHeld: 0,
+      stats: {
+        takerSellCount: 0,
+        takerBuyCount: 0,
+        accumulatedMmProfit: 0n,
+      },
+      cosigner: null,
+      sharedEscrow: null,
     },
   }));
 
@@ -218,8 +243,7 @@ test('it cannot init exponential pool with 100% delta', async (t) => {
       delta: 10_000n, // 100% delta, basis points
     },
     t,
-    // 0x2ee8 - 12008 DeltaTooLarge
-    code: 12008,
+    code: TENSOR_AMM_ERROR__DELTA_TOO_LARGE,
   });
 });
 
@@ -269,8 +293,7 @@ test('it cannot init non-trade pool with mmFees', async (t) => {
       mmFeeBps: 100, // this fee should not be allowed
     },
     t,
-    // 0x2ef1 - 12017 DeltaTooLarge
-    code: 12017,
+    code: TENSOR_AMM_ERROR__FEES_NOT_ALLOWED,
   });
 });
 
@@ -328,7 +351,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
       mmFeeBps: 10_000, // too high, should fail
     },
     t,
-    code: 12007, // 0x2ef1 - 12007 FeesTooHigh
+    code: TENSOR_AMM_ERROR__FEES_TOO_HIGH,
   });
 });
 

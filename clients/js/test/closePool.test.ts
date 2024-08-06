@@ -1,10 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import {
-  SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM,
-  appendTransactionMessageInstruction,
-  isSolanaError,
-  pipe,
-} from '@solana/web3.js';
+import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
@@ -20,6 +15,7 @@ import {
   Pool,
   PoolConfig,
   PoolType,
+  TENSOR_AMM_ERROR__EXISTING_NFTS,
   fetchMaybePool,
   fetchPool,
   getClosePoolInstruction,
@@ -31,9 +27,11 @@ import {
 import {
   DEFAULT_DELTA,
   ONE_SOL,
+  TRANSACTION_SIGNATURE_FEE,
   createPool,
   createPoolAndWhitelist,
   createWhitelistV2,
+  expectCustomError,
   getAndFundFeeVault,
   getPoolStateBond,
   tradePoolConfig,
@@ -148,21 +146,7 @@ test('close pool fails if nfts still deposited', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const error = await t.throwsAsync<Error & { data: { logs: string[] } }>(
-    promise
-  );
-
-  // ExistingNfts
-  const code = 12013;
-
-  if (isSolanaError(error.cause, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
-    t.assert(
-      error.cause.context.code === code,
-      `expected error code ${code}, received ${error.cause.context.code}`
-    );
-  } else {
-    t.fail("expected a custom error, but didn't get one");
-  }
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__EXISTING_NFTS);
 });
 
 test('close token pool succeeds if someone sold nfts into it', async (t) => {
@@ -247,6 +231,10 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
+  const poolOwnerBalance = (await client.rpc.getBalance(owner.address).send())
+    .value;
+  const poolBalance = (await client.rpc.getBalance(pool).send()).value;
+
   // Close pool
   const closePoolIx = getClosePoolInstruction({
     rentPayer: owner.address,
@@ -264,6 +252,17 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
 
   // Pool is closed.
   t.false(poolAccount.exists);
+
+  // Funds should go back to the pool owner.
+  const poolOwnerBalanceAfter = (
+    await client.rpc.getBalance(owner.address).send()
+  ).value;
+
+  // Pool owner should have the balance of the pool because it is also the rent payer that created the pool originally.
+  t.assert(
+    poolOwnerBalanceAfter ===
+      poolOwnerBalance + poolBalance - TRANSACTION_SIGNATURE_FEE
+  );
 });
 
 test('close trade pool fail if someone sold nfts into it', async (t) => {
@@ -358,21 +357,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const error = await t.throwsAsync<Error & { data: { logs: string[] } }>(
-    promise
-  );
-
-  // ExistingNfts
-  const code = 12013;
-
-  if (isSolanaError(error.cause, SOLANA_ERROR__INSTRUCTION_ERROR__CUSTOM)) {
-    t.assert(
-      error.cause.context.code === code,
-      `expected error code ${code}, received ${error.cause.context.code}`
-    );
-  } else {
-    t.fail("expected a custom error, but didn't get one");
-  }
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__EXISTING_NFTS);
 });
 
 test('closing a pool returns excess funds to the owner', async (t) => {

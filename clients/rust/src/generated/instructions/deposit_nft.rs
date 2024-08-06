@@ -15,11 +15,12 @@ pub struct DepositNft {
     pub owner: solana_program::pubkey::Pubkey,
     /// The pool to deposit the NFT into.
     pub pool: solana_program::pubkey::Pubkey,
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: solana_program::pubkey::Pubkey,
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     pub owner_ta: solana_program::pubkey::Pubkey,
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     pub pool_ta: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -34,6 +35,7 @@ pub struct DepositNft {
     pub system_program: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata edition account of the NFT.
@@ -289,19 +291,20 @@ impl DepositNftBuilder {
         self.pool = Some(pool);
         self
     }
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
         self
     }
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     #[inline(always)]
     pub fn owner_ta(&mut self, owner_ta: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner_ta = Some(owner_ta);
         self
     }
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     #[inline(always)]
     pub fn pool_ta(&mut self, pool_ta: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool_ta = Some(pool_ta);
@@ -351,6 +354,7 @@ impl DepositNftBuilder {
         self
     }
     /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
     pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
@@ -490,11 +494,12 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -509,6 +514,7 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata edition account of the NFT.
@@ -535,11 +541,12 @@ pub struct DepositNftCpi<'a, 'b> {
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -554,6 +561,7 @@ pub struct DepositNftCpi<'a, 'b> {
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata edition account of the NFT.
@@ -894,7 +902,8 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self.instruction.pool = Some(pool);
         self
     }
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool. Must match the whitelist stored in the pool state.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     #[inline(always)]
     pub fn whitelist(
         &mut self,
@@ -903,7 +912,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self.instruction.whitelist = Some(whitelist);
         self
     }
-    /// The TA of the owner, where the NFT will be transferred from.
+    /// The token account of the owner, where the NFT will be transferred from.
     #[inline(always)]
     pub fn owner_ta(
         &mut self,
@@ -912,7 +921,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self.instruction.owner_ta = Some(owner_ta);
         self
     }
-    /// The TA of the pool, where the NFT will be escrowed.
+    /// The token account of the pool, where the NFT will be escrowed.
     #[inline(always)]
     pub fn pool_ta(
         &mut self,
@@ -974,6 +983,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     #[inline(always)]
     pub fn mint_proof(

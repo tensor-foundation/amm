@@ -80,7 +80,7 @@ export type BuyNftT22Instruction<
   IInstructionWithAccounts<
     [
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountBuyer extends string
         ? WritableSignerAccount<TAccountBuyer> &
@@ -310,7 +310,7 @@ export async function getBuyNftT22InstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     buyer: { value: input.buyer ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -584,7 +584,7 @@ export function getBuyNftT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     buyer: { value: input.buyer ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },

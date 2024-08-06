@@ -66,7 +66,7 @@ impl BuyNftT22 {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -199,7 +199,7 @@ pub struct BuyNftT22InstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` owner
+///   0. `[]` owner
 ///   1. `[writable, signer]` buyer
 ///   2. `[writable]` rent_payer
 ///   3. `[writable]` fee_vault
@@ -585,7 +585,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
         ));
@@ -740,7 +740,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` owner
+///   0. `[]` owner
 ///   1. `[writable, signer]` buyer
 ///   2. `[writable]` rent_payer
 ///   3. `[writable]` fee_vault
