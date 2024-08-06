@@ -2412,6 +2412,9 @@
     },
     {
       "name": "EditPoolArgs",
+      "docs": [
+        "Edit pool arguments."
+      ],
       "type": {
         "kind": "struct",
         "fields": [

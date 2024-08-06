@@ -14,6 +14,7 @@ macro_rules! unwrap_opt_or_return_ok {
     };
 }
 
+/// Edit pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct EditPoolArgs {
     pub new_config: Option<PoolConfig>,
