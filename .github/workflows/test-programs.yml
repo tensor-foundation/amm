@@ -9,6 +9,7 @@ on:
 env:
   CACHE: true
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  RPC: ${{ secrets.SOLANA_MAINNET_RPC_URL }}
 
 jobs:
   test_programs:
@@ -42,7 +43,7 @@ jobs:
         with:
           version: ${{ env.SOLANA_VERSION }}
           cache: ${{ env.CACHE }}
-        
+
       - name: Install Node.js
         uses: tensor-foundation/actions/install-node-with-pnpm@v2
         with:
@@ -54,7 +55,7 @@ jobs:
         if: env.CACHE == 'true'
         uses: tensor-foundation/actions/cache-crate@v2
         with:
-          folder: '.'
+          folder: "."
           key: programs
 
       - name: Run tests
