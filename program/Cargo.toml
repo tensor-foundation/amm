@@ -22,6 +22,16 @@ program-dependencies = [
     "TokExjvjJmhKaRBShsBAsbSvEWMA1AgUNK7ps4SAc2p",
 ]
 account-dependencies = ["99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G"]
+external-programs-repositories = [
+    [
+        "tensor-foundation/escrow",
+        "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN",
+    ],
+    [
+        "tensor-foundation/whitelist",
+        "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
+    ],
+]
 
 
 [lib]
