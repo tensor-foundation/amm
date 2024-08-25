@@ -7,6 +7,7 @@ import {
   getExternalAccountAddresses,
   getExternalProgramAddresses,
   getExternalProgramOutputDir,
+  getOffchainProgramAddresses,
   getProgramFolders,
 } from "./utils.mjs";
 
@@ -22,8 +23,11 @@ if (!restart && isValidatorRunning) {
 
 // Initial message.
 const verb = isValidatorRunning ? "Restarting" : "Starting";
-const programs = [...getPrograms(), ...getExternalPrograms()];
-const programPluralized = programs.length === 1 ? "program" : "programs";
+const programs = [
+  ...getPrograms(),
+  ...getExternalPrograms(),
+  ...getOffchainPrograms(),
+];const programPluralized = programs.length === 1 ? "program" : "programs";
 const accounts = [...getExternalAccounts()];
 const accountsPluralized = accounts.length === 1 ? "account" : "accounts";
 
@@ -116,5 +120,13 @@ function getExternalAccounts() {
   return getExternalAccountAddresses().map((address) => ({
     account: address,
     deployPath: path.join(binaryDir, `${address}.json`),
+  }));
+}
+
+function getOffchainPrograms() {
+  const binaryDir = getExternalProgramOutputDir();
+  return getOffchainProgramAddresses().map((address) => ({
+    programId: address,
+    deployPath: path.join(binaryDir, `${address}.so`),
   }));
 }
