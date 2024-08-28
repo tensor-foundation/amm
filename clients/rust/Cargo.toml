@@ -1,6 +1,6 @@
 [package]
 name = "tensor-amm"
-version = "0.2.0"
+version = "0.3.0"
 description = "Client crate for the Tensor Foundation amm program."
 repository = "https://github.com/tensor-foundation/amm"
 homepage = "https://github.com/tensor-foundation/amm"
