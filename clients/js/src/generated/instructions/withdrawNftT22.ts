@@ -7,6 +7,7 @@
  */
 
 import {
+  AccountRole,
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
@@ -48,7 +49,7 @@ export type WithdrawNftT22Instruction<
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
-    | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    | IAccountMeta<string> = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb',
   TAccountAssociatedTokenProgram extends
     | string
     | IAccountMeta<string> = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
@@ -153,6 +154,7 @@ export type WithdrawNftT22AsyncInput<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  transferHookAccounts: Array<Address>;
 };
 
 export async function getWithdrawNftT22InstructionAsync<
@@ -214,13 +216,16 @@ export async function getWithdrawNftT22InstructionAsync<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolver scope.
-  const resolverScope = { programAddress, accounts };
+  const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
   if (!accounts.ownerTa.value) {
     accounts.ownerTa = {
@@ -249,6 +254,11 @@ export async function getWithdrawNftT22InstructionAsync<
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.transferHookAccounts.map(
+    (address) => ({ address, role: AccountRole.READONLY })
+  );
+
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
@@ -261,6 +271,7 @@ export async function getWithdrawNftT22InstructionAsync<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getWithdrawNftT22InstructionDataEncoder().encode({}),
@@ -309,6 +320,7 @@ export type WithdrawNftT22Input<
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
+  transferHookAccounts: Array<Address>;
 };
 
 export function getWithdrawNftT22Instruction<
@@ -368,10 +380,13 @@ export function getWithdrawNftT22Instruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+      'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
@@ -381,6 +396,11 @@ export function getWithdrawNftT22Instruction<
     accounts.systemProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
+
+  // Remaining accounts.
+  const remainingAccounts: IAccountMeta[] = args.transferHookAccounts.map(
+    (address) => ({ address, role: AccountRole.READONLY })
+  );
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -394,6 +414,7 @@ export function getWithdrawNftT22Instruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
       getAccountMeta(accounts.systemProgram),
+      ...remainingAccounts,
     ],
     programAddress,
     data: getWithdrawNftT22InstructionDataEncoder().encode({}),

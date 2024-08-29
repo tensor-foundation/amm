@@ -178,6 +178,34 @@ kinobi.update(
       ],
     },
     depositNftT22: {
+      accounts: {
+        tokenProgram: {
+          defaultValue: k.publicKeyValueNode(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+            "tokenProgram",
+          ),
+        },
+      },
+      remainingAccounts: [
+        k.instructionRemainingAccountsNode(
+          k.argumentValueNode("transferHookAccounts"),
+          {
+            isOptional: false,
+            isSigner: false,
+            isWritable: false,
+          },
+        ),
+      ],
+    },
+    withdrawNftT22: {
+      accounts: {
+        tokenProgram: {
+          defaultValue: k.publicKeyValueNode(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+            "tokenProgram",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(
           k.argumentValueNode("transferHookAccounts"),
@@ -190,6 +218,14 @@ kinobi.update(
       ],
     },
     buyNftT22: {
+      accounts: {
+        tokenProgram: {
+          defaultValue: k.publicKeyValueNode(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+            "tokenProgram",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
@@ -207,6 +243,14 @@ kinobi.update(
       ],
     },
     sellNftTradePoolT22: {
+      accounts: {
+        tokenProgram: {
+          defaultValue: k.publicKeyValueNode(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+            "tokenProgram",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,
@@ -224,6 +268,14 @@ kinobi.update(
       ],
     },
     sellNftTokenPoolT22: {
+      accounts: {
+        tokenProgram: {
+          defaultValue: k.publicKeyValueNode(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+            "tokenProgram",
+          ),
+        },
+      },
       remainingAccounts: [
         k.instructionRemainingAccountsNode(k.argumentValueNode("creators"), {
           isOptional: true,

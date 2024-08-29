@@ -113,7 +113,7 @@ impl Default for WithdrawNftT22InstructionData {
 ///   3. `[writable]` owner_ta
 ///   4. `[writable]` pool_ta
 ///   5. `[writable]` nft_receipt
-///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   6. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
 ///   7. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
@@ -170,7 +170,7 @@ impl WithdrawNftT22Builder {
         self.nft_receipt = Some(nft_receipt);
         self
     }
-    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    /// `[optional account, default to 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb']`
     /// The SPL Token program for the Mint and ATAs.
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -222,7 +222,7 @@ impl WithdrawNftT22Builder {
             pool_ta: self.pool_ta.expect("pool_ta is not set"),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
             )),
             associated_token_program: self.associated_token_program.unwrap_or(
                 solana_program::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
