@@ -74,6 +74,7 @@ pub struct BuyNftT22<'info> {
         payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
+        associated_token::token_program = token_program,
     )]
     pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
