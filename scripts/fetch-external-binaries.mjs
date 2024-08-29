@@ -1,5 +1,9 @@
 #!/usr/bin/env zx
-import { getExternalProgramOutputDir, getCargo } from "./utils.mjs";
+import {
+  getExternalProgramOutputDir,
+  getCargo,
+  getProgramFolders,
+} from "./utils.mjs";
 import { Octokit } from "@octokit/rest";
 import JSZip from "jszip";
 import "zx/globals";
@@ -9,9 +13,12 @@ const branch = "main";
 const status = "success";
 const artifactName = "programs-build";
 const octokit = new Octokit({ auth: pat });
-const externalRepos =
-  getCargo().workspace?.metadata?.solana?.["external-programs-repositories"] ??
-  [];
+const externalRepos = getProgramFolders().flatMap(
+  (folder) =>
+    getCargo(folder).package?.metadata?.solana?.[
+      "external-programs-repositories"
+    ] ?? [],
+);
 
 await Promise.all(
   externalRepos.map(async (repoInfo) => {

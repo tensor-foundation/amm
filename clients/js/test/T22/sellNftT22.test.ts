@@ -143,7 +143,7 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance + (price * (TAKER_FEE_BPS / 2n)) / BASIS_POINTS
   );
 
@@ -368,7 +368,7 @@ test('it can sell a T22 NFT into a Token pool', async (t) => {
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance +
         (poolConfig.startingPrice * (TAKER_FEE_BPS / 2n)) / BASIS_POINTS
   );

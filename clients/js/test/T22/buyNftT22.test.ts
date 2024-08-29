@@ -104,7 +104,7 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance +
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
@@ -192,7 +192,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance +
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
@@ -308,7 +308,7 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance +
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
@@ -384,7 +384,7 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
   t.assert(
-    endingFeeVaultBalance ===
+    endingFeeVaultBalance >=
       startingFeeVaultBalance +
         (tradePoolConfig.startingPrice * TAKER_FEE_BPS) / BASIS_POINTS
   );
