@@ -22,7 +22,7 @@ num-traits = "^0.2"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.0", optional = true }
 solana-program = "< 1.18"
-spl-math = "0.2.0"
+spl-math = { version = "0.2.0", features = ["no-entrypoint"] }
 thiserror = "^1.0"
 
 [dev-dependencies]
