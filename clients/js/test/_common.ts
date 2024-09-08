@@ -132,21 +132,18 @@ export interface TestSigners {
   takerBroker: KeyPairSigner;
 }
 
-export async function getTestSigners(client: Client) {
+export async function getTestSigners(client: Client, funds?: bigint) {
   // Generic payer.
-  const payer = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const payer = await generateKeyPairSignerWithSol(client, funds);
 
   // Cosigner.
   const cosigner = await generateKeyPairSigner();
 
   // NFT Update Authority
-  const nftUpdateAuthority = await generateKeyPairSignerWithSol(
-    client,
-    5n * ONE_SOL
-  );
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client, funds);
 
   // Pool owner.
-  const poolOwner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const poolOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // NFT owner and seller.
   const nftOwner = await generateKeyPairSignerWithSol(client);
@@ -794,7 +791,12 @@ export enum TestAction {
 }
 
 export async function setupLegacyTest(
-  params: SetupTestParams & { pNft?: boolean }
+  params: SetupTestParams & {
+    pNft?: boolean;
+    curveType?: CurveType;
+    signerFunds?: bigint;
+    delta?: bigint;
+  }
 ): Promise<LegacyTest> {
   const {
     t,
@@ -807,10 +809,13 @@ export async function setupLegacyTest(
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
+    curveType = CurveType.Linear,
+    signerFunds = 5n * ONE_SOL,
+    delta = undefined,
   } = params;
 
   const client = createDefaultSolanaClient();
-  const testSigners = await getTestSigners(client);
+  const testSigners = await getTestSigners(client, signerFunds);
 
   const { payer, poolOwner, nftUpdateAuthority, cosigner, makerBroker } =
     testSigners;
@@ -855,6 +860,7 @@ export async function setupLegacyTest(
     default:
       throw new Error('Invalid pool type');
   }
+  config = { ...config, curveType, delta: delta ?? config.delta };
 
   const depositAmount = dA ?? config.startingPrice * 10n;
 

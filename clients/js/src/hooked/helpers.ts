@@ -3,48 +3,65 @@ import {
   GetMinimumBalanceForRentExemptionApi,
   Rpc,
 } from '@solana/web3.js';
-import { CurveType, Pool, PoolType, findPoolPda } from '../generated';
+import {
+  CurveType,
+  Pool,
+  PoolType,
+  TakerSide,
+  findPoolPda,
+} from '../generated';
 import { DEFAULT_ADDRESS } from './nullableAddress';
 
-export function getCurrentAskPrice(pool: Pool): number | null {
+export function getCurrentAskPrice(
+  pool: Pool,
+  extraOffset: number = 0
+): number | null {
   if (pool.nftsHeld < 1) return null;
-  const askPrice = calculateCurrentPrice(pool, TakerSide.Buy);
+  const askPrice = calculatePrice(pool, TakerSide.Buy, extraOffset);
   if (!askPrice) return null;
   return Math.ceil(askPrice);
 }
 
 export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
-  pool: Pool
+  pool: Pool,
+  extraOffset: number = 0
 ): Promise<number | null> {
-  let bidPrice = calculateCurrentPrice(pool, TakerSide.Sell);
+  let bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset);
   if (!bidPrice || Math.floor(bidPrice) == 0) return null;
   bidPrice = Math.floor(bidPrice);
+  // No shared escrow, so we can just check if the pool has enough balance
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
+  // Shared escrow, so we need to check if the escrow has enough balance
   const [poolAddress] = await findPoolPda({
     owner: pool.owner,
     poolId: pool.poolId,
   });
   const [escrowLamports, escrowDataLength] = await rpc
-    .getAccountInfo(poolAddress)
+    .getAccountInfo(poolAddress, { encoding: 'base64' })
     .send()
     .then((resp) => {
-      return [resp.value?.lamports, resp.value?.data.length];
+      const dataLength = resp.value?.data
+        ? Buffer.from(resp.value.data[0], 'base64').length
+        : undefined;
+      return [resp.value?.lamports, dataLength];
     });
   if (!escrowLamports || !escrowDataLength) return null;
+  // Get the rent exemption for the escrow to ensure the available balance is enough
   const rentExemption = await rpc
     .getMinimumBalanceForRentExemption(BigInt(escrowDataLength))
     .send();
   return BigInt(escrowLamports) - rentExemption >= bidPrice ? bidPrice : null;
 }
-enum TakerSide {
-  Buy,
-  Sell,
-}
+
 // converting startingPrice to number, if any pool's starting price is higher
 // than 9m sol (2^53-1 lamports) then feel free to blame me - leant
-function calculateCurrentPrice(pool: Pool, side: TakerSide): number | null {
+function calculatePrice(
+  pool: Pool,
+  side: TakerSide,
+  extraOffset: number = 0
+): number | null {
   if (
     pool.config.poolType === PoolType.NFT ||
     (pool.priceOffset === pool.maxTakerSellCount &&
@@ -55,44 +72,33 @@ function calculateCurrentPrice(pool: Pool, side: TakerSide): number | null {
     return null;
   const tradePoolOffset =
     pool.config.poolType === PoolType.Trade && side === TakerSide.Sell ? 1 : 0;
-  const bps = 100_00;
-  const offset = pool.priceOffset + tradePoolOffset;
+  const offset = pool.priceOffset + tradePoolOffset + extraOffset;
+
   if (offset === 0) return Number(pool.config.startingPrice);
+
+  const startingPrice = BigInt(pool.config.startingPrice);
+  const delta = pool.config.delta;
+
   if (pool.config.curveType === CurveType.Exponential) {
-    const base = BigInt(bps) + pool.config.delta;
+    const base = 10000n + delta;
     const exponent = BigInt(Math.abs(offset));
     const scaling = powerBigInt(base, exponent);
-    return offset > 0
-      ? Number(pool.config.startingPrice) / scaling
-      : Number(pool.config.startingPrice) * scaling;
-  } else if (pool.config.curveType === CurveType.Linear) {
     return Number(
-      pool.config.startingPrice - pool.config.delta * BigInt(offset)
+      offset > 0
+        ? (startingPrice * 10000n) / scaling
+        : (startingPrice * scaling) / 10000n
     );
+  } else if (pool.config.curveType === CurveType.Linear) {
+    return Number(startingPrice - delta * BigInt(offset));
   }
+
   return null;
 }
 
-function powerBigInt(base: bigint, exponent: bigint): number {
-  // Calculate power for BigInt using exponentiation by squaring
-  let result = 1n;
-  let power = base;
-  const originalExponent = exponent;
-  while (exponent > 0n) {
-    if (exponent % 2n === 1n) {
-      result *= power;
-    }
-    power *= power;
-    exponent /= 2n;
+function powerBigInt(base: bigint, exponent: bigint): bigint {
+  let result = 10000n;
+  for (let i = 0n; i < exponent; i++) {
+    result = (result * base) / 10000n;
   }
-  let zerosToGetRidOff = originalExponent * 4n;
-
-  // start scaling down until MAX_SAFE_INTEGER
-  while (result > Number.MAX_SAFE_INTEGER) {
-    result / 10n;
-    zerosToGetRidOff -= 1n;
-  }
-  // scaling down to a number, it _should_ be fine
-  // to lose precision after the previous step
-  return Number(result) / Number(10n ** zerosToGetRidOff);
+  return result;
 }
