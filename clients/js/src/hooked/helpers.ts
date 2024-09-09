@@ -71,34 +71,89 @@ function calculatePrice(
   )
     return null;
   const tradePoolOffset =
-    pool.config.poolType === PoolType.Trade && side === TakerSide.Sell ? 1 : 0;
-  const offset = pool.priceOffset + tradePoolOffset + extraOffset;
-
-  if (offset === 0) return Number(pool.config.startingPrice);
-
+    pool.config.poolType === PoolType.Trade && side === TakerSide.Sell ? -1 : 0;
+  const offset =
+    pool.priceOffset +
+    tradePoolOffset +
+    (side === TakerSide.Sell ? -extraOffset : extraOffset);
+  console.log(
+    `pool offset: ${pool.priceOffset}, tradePoolOffset: ${tradePoolOffset}, extraOffset: ${side === TakerSide.Sell ? -extraOffset : extraOffset}`
+  );
   const startingPrice = BigInt(pool.config.startingPrice);
   const delta = pool.config.delta;
+  let resultPrice: number;
 
   if (pool.config.curveType === CurveType.Exponential) {
-    const base = 10000n + delta;
+    const base = 100_00n + delta;
     const exponent = BigInt(Math.abs(offset));
-    const scaling = powerBigInt(base, exponent);
-    return Number(
-      offset > 0
-        ? (startingPrice * 10000n) / scaling
-        : (startingPrice * scaling) / 10000n
+    const [scaling, zerosToGetRidOff] = powerBigInt(base, exponent);
+    const resultPriceIntermediate =
+      offset <= 0
+        ? (startingPrice * 10n ** zerosToGetRidOff) / scaling
+        : (startingPrice * scaling) / 10n ** zerosToGetRidOff;
+    // get rid of precision now
+    resultPrice = Number(resultPriceIntermediate);
+    console.log(
+      `base: ${base}, exponent: ${exponent}, scaling: ${scaling}, intermediate: ${resultPriceIntermediate}, numGetRid: ${zerosToGetRidOff}, resultPrice: ${resultPrice}`
     );
-  } else if (pool.config.curveType === CurveType.Linear) {
-    return Number(startingPrice - delta * BigInt(offset));
+  } else {
+    resultPrice = Number(startingPrice + delta * BigInt(offset));
+    console.log(
+      `startingPrice: ${startingPrice}, delta: ${delta}, delta*offset: ${delta * BigInt(offset)}`
+    );
   }
-
-  return null;
+  if (pool.config.poolType === PoolType.Trade && side === TakerSide.Sell) {
+    console.log(
+      `minus mmFee: ${(BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n}`
+    );
+    console.log(
+      `mmFeeBps: ${BigInt(pool.config.mmFeeBps ?? 0)}, resultPrice * mmFeeBps: ${BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)}`
+    );
+    resultPrice = Number(
+      BigInt(resultPrice) -
+        (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n
+    );
+  }
+  return resultPrice;
 }
 
-function powerBigInt(base: bigint, exponent: bigint): bigint {
-  let result = 10000n;
-  for (let i = 0n; i < exponent; i++) {
-    result = (result * base) / 10000n;
+//function powerBigIntBps(base: bigint, exponent: bigint): bigint {
+//  if(exponent === 0n) return 100_00n;
+//  if(exponent === 1n) return base;
+//  let result = 100_00n;
+//  for (let i = 0n; i < exponent; i++) {
+//    result = (result * base) / 100_00n;
+//  }
+//  return result;
+//}
+
+function powerBigInt(base: bigint, exponent: bigint): [bigint, bigint] {
+  const U256_MAX = 2n ** 256n - 1n;
+  let result = 1n;
+  let power = base;
+  let zerosToGetRidOff = 0n;
+  let precisionLoss = 0n;
+  const originalExponent = exponent;
+
+  while (exponent > 0n) {
+    if (exponent % 2n === 1n) {
+      let newResult = result * power;
+      if (newResult > U256_MAX) {
+        precisionLoss += BigInt(newResult.toString(2).length - 256);
+        newResult %= U256_MAX + 1n;
+      }
+      result = newResult;
+    }
+    let newPower = power * power;
+    if (newPower > U256_MAX) {
+      precisionLoss += BigInt(newPower.toString(2).length - 256);
+      newPower %= U256_MAX + 1n;
+    }
+    power = newPower;
+    exponent /= 2n;
   }
-  return result;
+
+  zerosToGetRidOff = originalExponent * 4n - precisionLoss;
+
+  return [result, zerosToGetRidOff];
 }

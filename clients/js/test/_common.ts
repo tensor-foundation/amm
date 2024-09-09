@@ -132,7 +132,10 @@ export interface TestSigners {
   takerBroker: KeyPairSigner;
 }
 
-export async function getTestSigners(client: Client, funds?: bigint) {
+export async function getTestSigners(
+  client: Client,
+  funds: bigint = 5n * ONE_SOL
+) {
   // Generic payer.
   const payer = await generateKeyPairSignerWithSol(client, funds);
 
@@ -793,9 +796,8 @@ export enum TestAction {
 export async function setupLegacyTest(
   params: SetupTestParams & {
     pNft?: boolean;
-    curveType?: CurveType;
     signerFunds?: bigint;
-    delta?: bigint;
+    poolConfig?: PoolConfig | null;
   }
 ): Promise<LegacyTest> {
   const {
@@ -809,9 +811,8 @@ export async function setupLegacyTest(
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
-    curveType = CurveType.Linear,
     signerFunds = 5n * ONE_SOL,
-    delta = undefined,
+    poolConfig,
   } = params;
 
   const client = createDefaultSolanaClient();
@@ -846,21 +847,21 @@ export async function setupLegacyTest(
 
   let config: PoolConfig;
   let price: bigint;
-
-  switch (poolType) {
-    case PoolType.Trade:
-      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-      break;
-    case PoolType.Token:
-      config = tokenPoolConfig;
-      break;
-    case PoolType.NFT:
-      config = nftPoolConfig;
-      break;
-    default:
-      throw new Error('Invalid pool type');
-  }
-  config = { ...config, curveType, delta: delta ?? config.delta };
+  if (!poolConfig)
+    switch (poolType) {
+      case PoolType.Trade:
+        config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+        break;
+      case PoolType.Token:
+        config = tokenPoolConfig;
+        break;
+      case PoolType.NFT:
+        config = nftPoolConfig;
+        break;
+      default:
+        throw new Error('Invalid pool type');
+    }
+  else config = poolConfig;
 
   const depositAmount = dA ?? config.startingPrice * 10n;
 
