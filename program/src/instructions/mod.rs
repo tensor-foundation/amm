@@ -7,13 +7,10 @@ pub mod create_pool;
 pub mod deposit_nft;
 pub mod deposit_sol;
 pub mod edit_pool;
+pub mod mpl_core;
 pub mod sell_nft_token_pool;
 pub mod sell_nft_trade_pool;
-pub mod t22_buy_nft;
-pub mod t22_deposit_nft;
-pub mod t22_sell_nft_token_pool;
-pub mod t22_sell_nft_trade_pool;
-pub mod t22_withdraw_nft;
+pub mod t22;
 pub mod withdraw_nft;
 pub mod withdraw_sol;
 
@@ -25,20 +22,16 @@ pub use create_pool::*;
 pub use deposit_nft::*;
 pub use deposit_sol::*;
 pub use edit_pool::*;
+pub use mpl_core::*;
 pub use sell_nft_token_pool::*;
 pub use sell_nft_trade_pool::*;
-pub use t22_buy_nft::*;
-pub use t22_deposit_nft::*;
-pub use t22_sell_nft_token_pool::*;
-pub use t22_sell_nft_trade_pool::*;
-pub use t22_withdraw_nft::*;
+pub use t22::*;
 pub use withdraw_nft::*;
 pub use withdraw_sol::*;
 
 use crate::constants::{HUNDRED_PCT_BPS, TAKER_FEE_BPS};
 use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::Mint;
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::{self};
 use solana_program::pubkey;
@@ -80,13 +73,13 @@ pub fn assert_decode_mint_proof(
 #[inline(never)]
 pub fn assert_decode_mint_proof_v2(
     whitelist: &Account<WhitelistV2>,
-    nft_mint: &InterfaceAccount<Mint>,
+    nft_mint: &Pubkey,
     mint_proof: &UncheckedAccount,
 ) -> Result<Box<MintProofV2>> {
     let (key, _) = Pubkey::find_program_address(
         &[
             b"mint_proof_v2",
-            nft_mint.key().as_ref(),
+            nft_mint.as_ref(),
             whitelist.key().as_ref(),
         ],
         &whitelist_program::ID,

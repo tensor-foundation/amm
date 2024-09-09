@@ -162,7 +162,8 @@ impl<'info> DepositNft<'info> {
         let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
-            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, mint_proof)?;
+            let mint_proof =
+                assert_decode_mint_proof_v2(&self.whitelist, &self.mint.key(), mint_proof)?;
 
             let leaf = keccak::hash(self.mint.key().as_ref());
             let proof = &mut mint_proof.proof.to_vec();
