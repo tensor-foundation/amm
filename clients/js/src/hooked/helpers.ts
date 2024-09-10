@@ -18,9 +18,7 @@ export function getCurrentAskPrice(
   isTaker: boolean = true
 ): number | null {
   if (pool.nftsHeld < 1) return null;
-  const askPrice = calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
-  if (!askPrice) return null;
-  return Math.ceil(askPrice);
+  return calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
 }
 
 export async function getCurrentBidPrice(
@@ -64,23 +62,37 @@ function calculatePrice(
   isTaker: boolean = true
 ): number | null {
   if (
-    pool.config.poolType === PoolType.NFT ||
+    // can't sell into PoolType.NFT
+    (pool.config.poolType === PoolType.NFT && side === TakerSide.Sell) ||
+    // can't buy from a PoolType.Token
+    (pool.config.poolType === PoolType.Token && side === TakerSide.Buy) ||
+    // if maxTakerSellCount is reached when pool is attached to margin acc,
+    // pool can't fulfill more bids
     (pool.priceOffset === pool.maxTakerSellCount &&
       pool.maxTakerSellCount !== 0 &&
       !!pool.sharedEscrow &&
       pool.sharedEscrow !== DEFAULT_ADDRESS)
   )
     return null;
+
+  // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Buy)
+  const extraOffsetNormalized = Math.abs(extraOffset);
+
+  // trade pool has an extra offset on the sell side
   const tradePoolOffset =
     pool.config.poolType === PoolType.Trade && side === TakerSide.Sell ? -1 : 0;
   const offset =
     pool.priceOffset +
     tradePoolOffset +
-    (side === TakerSide.Sell ? -extraOffset : extraOffset);
+    (side === TakerSide.Sell ? -extraOffsetNormalized : extraOffsetNormalized);
   const startingPrice = pool.config.startingPrice;
   const delta = pool.config.delta;
   let resultPrice: number;
 
+  // exponential: currentPrice = startingPrice * (1+delta)^offset
+  // here scaled to U256 accuracy via bigints + adding back
+  // missing rounding that bigint's can't do (e.g. 16n / 10n === 1)
+  // but on-chain the price gets rounded float-esque => int
   if (pool.config.curveType === CurveType.Exponential) {
     const base = 100_00n + delta;
     const exponent = BigInt(Math.abs(offset));
@@ -101,6 +113,7 @@ function calculatePrice(
   } else {
     resultPrice = Number(startingPrice + delta * BigInt(offset));
   }
+  // subtract mm fee for trade pools on the sell side if wanted
   if (
     pool.config.poolType === PoolType.Trade &&
     side === TakerSide.Sell &&
@@ -114,37 +127,55 @@ function calculatePrice(
   return resultPrice;
 }
 
+// calculates base^exponent with U256 (255 bit) floating points precision with bigint's
+// and additionally returns decimalOffset (amount of decimals the result has been pushed to the left)
 function powerBigInt_U256Precision(
   base: bigint,
   exponent: bigint
 ): [bigint, bigint] {
   const U256_MAX = 2n ** 255n - 1n;
+
   let result = 1n;
   let decimalOffset = 0n;
   let additionalPrecisionLoss = 0;
 
+  let optimizedBase = base;
+  let optimizedBpsMult = 4n;
+
+  // speed optimization, e.g. if base == 100 BPS and bpsMult == 4n, we can calculate the pow with optimizedBase = 1 and optimizedBpsMult = 2n,
+  // (because optimizedBase / 10 ** optimizedBpsMult === base / 10 ** bpsMult) without losing any accuracy
+  while (optimizedBase % 10n === 0n) {
+    optimizedBase /= 10n;
+    optimizedBpsMult -= 1n;
+  }
+
   for (let i = 0n; i < exponent; i++) {
-    result = result * base;
+    result = result * optimizedBase;
+    // result exceeds 255 bits
     if (result > U256_MAX) {
+      // check how many bits are too much
       const precisionLossBits = result.toString(2).length - 255;
+      // given the amount of exceeding bits,
+      // calculate the amount of exceeding decimals
       const [divisor, decimalPrecisionLoss] =
         findDecimalPrecisionLossFromBinary(precisionLossBits);
       result /= divisor;
       additionalPrecisionLoss += decimalPrecisionLoss;
     }
-    decimalOffset += 4n;
+    decimalOffset += optimizedBpsMult;
   }
   return [result, decimalOffset - BigInt(additionalPrecisionLoss)];
 }
 
 // checks if bigint division would have gotten rounded up if floating division would've been applied instead
 // i.e.: a / b = c with c == e.m ==> m >= 0.5?
-// equivalent to a % b = r, r < b - r ?
+// equivalent to a % b = r ==> b - r >= r ?
 const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
-  return divisor - (divident % divisor) <= divident % divisor;
+  const remainder = divident % divisor;
+  return divisor - remainder <= remainder;
 };
 
-// returns nearest 10^x and x for a given amount of bits exceeding the precision limit
+// returns next upper 10^x and x for a given amount of bits exceeding the precision limit
 const findDecimalPrecisionLossFromBinary = (
   precisionLossBits: number
 ): [bigint, number] => {
