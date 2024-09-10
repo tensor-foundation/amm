@@ -351,3 +351,50 @@ async function sellNftsIntoPool(
     i += 1;
   }
 }
+
+test('Exponential pool pricing speed test', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Exponential,
+    startingPrice: 67362869n,
+    delta: 2_43n, // 2.34%  delta
+    mmCompoundFees: false,
+    mmFeeBps: 458, // 4.58% mmFeeBps
+  };
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    fundPool: false,
+    signerFunds: 1000n * ONE_SOL,
+    poolConfig: config,
+  });
+
+  const { poolOwner } = signers;
+
+  // Deposit a large amount of SOL into the pool
+  const depositAmount = 800n * ONE_SOL;
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const poolData = (await fetchPool(client.rpc, pool)).data;
+  const start = performance.now();
+  for (let i = 0; i <= 1000; i++) {
+    getCurrentBidPrice(client.rpc, poolData, i);
+  }
+  const end = performance.now();
+  t.log(
+    `calculting the 1000 next exponential pool prices took ${end - start} ms.`
+  );
+
+  t.pass();
+});
