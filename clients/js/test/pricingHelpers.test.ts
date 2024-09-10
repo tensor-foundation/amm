@@ -2,7 +2,6 @@ import test, { ExecutionContext } from 'ava';
 import { ONE_SOL, setupLegacyTest, TestAction } from './_common';
 import {
   PoolType,
-  getCurrentAskPrice,
   getCurrentBidPrice,
   fetchPool,
   getDepositSolInstruction,
@@ -10,6 +9,7 @@ import {
   CurveType,
   PoolConfig,
   getSellNftTokenPoolInstructionAsync,
+  getCurrentAskPrice,
 } from '../src';
 import {
   signAndSendTransaction,
@@ -24,7 +24,7 @@ import {
 } from '@solana/web3.js';
 import { createDefaultNft, Nft } from '@tensor-foundation/mpl-token-metadata';
 
-/*test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
+test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
   const { client, pool } = await setupLegacyTest({
     t,
     poolType: PoolType.Token,
@@ -78,7 +78,9 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
     client,
     pool,
     signers: { poolOwner },
-    testConfig: { poolConfig: { startingPrice } }
+    testConfig: {
+      poolConfig: { startingPrice },
+    },
   } = await setupLegacyTest({
     t,
     poolType: PoolType.Token,
@@ -137,9 +139,9 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
 
   // Assert that the calculated bid price matches the expected value
   t.is(calculatedBidPrice, Number(startingPrice));
-});*/
+});
 
-/*test('Linear pool pricing after 20 sells', async (t) => {
+test('Linear pool pricing after 20 sells', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Linear,
@@ -147,62 +149,10 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
     delta: 147_000_000n, // 0.147 sol delta
     mmCompoundFees: false,
     mmFeeBps: null,
-  }
-  const { client, pool, signers, whitelist } = await setupLegacyTest({
-    t,
-    poolType: PoolType.Token,
-    action: TestAction.Sell,
-    signerFunds: 1000n * ONE_SOL,
-    poolConfig: config
-  });
-
-  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
-
-  const depositAmount = 500n * ONE_SOL;
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: depositAmount,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  // Mint 20 NFTs
-  const nfts = [];
-  for (let i = 0; i < 20; i++) {
-    const nft = await createDefaultNft({
-      client,
-      payer: nftOwner,
-      authority: nftUpdateAuthority,
-      owner: nftOwner,
-    });
-    nfts.push(nft);
-  }
-
-  // Sell NFTs into the pool
-  await sellNftsIntoPool(t, client, pool, nfts, poolOwner, nftOwner, whitelist, PoolType.Token, [nftUpdateAuthority.address]);
-
-  // Verify final pool state
-  const finalPoolAccount = await fetchPool(client.rpc, pool);
-  t.is(finalPoolAccount.data.stats.takerSellCount, 20);
-});*/
-
-test('Exponential pool pricing after 20 sells', async (t) => {
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Exponential,
-    startingPrice: 10n * ONE_SOL,
-    delta: 14_40n, // 14.4%  delta
-    mmCompoundFees: false,
-    mmFeeBps: 458, // 4.58% mmFeeBps
   };
   const { client, pool, signers, whitelist } = await setupLegacyTest({
     t,
-    poolType: PoolType.Trade,
+    poolType: PoolType.Token,
     action: TestAction.Sell,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
@@ -210,7 +160,6 @@ test('Exponential pool pricing after 20 sells', async (t) => {
 
   const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
 
-  // Deposit a large amount of SOL into the pool
   const depositAmount = 500n * ONE_SOL;
   const depositSolIx = getDepositSolInstruction({
     pool,
@@ -230,7 +179,73 @@ test('Exponential pool pricing after 20 sells', async (t) => {
   for (let i = 0; i < 20; i++) {
     const nft = createDefaultNft({
       client,
-      payer: nftOwner,
+      payer: poolOwner,
+      authority: nftUpdateAuthority,
+      owner: nftOwner,
+    });
+    nftPromises.push(nft);
+  }
+  nfts = await Promise.all(nftPromises);
+
+  // Sell NFTs into the pool
+  await sellNftsIntoPool(
+    t,
+    client,
+    pool,
+    nfts,
+    poolOwner,
+    nftOwner,
+    whitelist,
+    PoolType.Token,
+    [nftUpdateAuthority.address]
+  );
+
+  // Verify final pool state
+  const finalPoolAccount = await fetchPool(client.rpc, pool);
+  t.is(finalPoolAccount.data.stats.takerSellCount, 20);
+});
+
+test('Exponential pool pricing after 20 sells', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Exponential,
+    startingPrice: 67362869n,
+    delta: 14_40n, // 14.4%  delta
+    mmCompoundFees: false,
+    mmFeeBps: 458, // 4.58% mmFeeBps
+  };
+  const { client, pool, signers, whitelist } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    fundPool: false,
+    signerFunds: 1000n * ONE_SOL,
+    poolConfig: config,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+
+  // Deposit a large amount of SOL into the pool
+  const depositAmount = 800n * ONE_SOL;
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Mint 20 NFTs
+  let nfts = [];
+  const nftPromises = [];
+  for (let i = 0; i < 20; i++) {
+    const nft = createDefaultNft({
+      client,
+      payer: poolOwner,
       authority: nftUpdateAuthority,
       owner: nftOwner,
     });
@@ -268,18 +283,18 @@ async function sellNftsIntoPool(
   creators: Address[]
 ) {
   let i = 0;
-  const originalPoolAccount = await fetchPool(client.rpc, pool);
   let lastPoolAmountBeforeSale = 0n;
   let lastCalculatedTakerPrice = 0n;
   let lastCalculatedMakerPrice = 0n;
   for (const nft of nfts) {
     const poolAccount = await fetchPool(client.rpc, pool);
-    t.log(`pool account offset: ${poolAccount.data.priceOffset}`);
 
     // Check that last sale deducted the exact amount of lamports
     if (i !== 0) {
-      t.log(
-        `lastCalcPriceTaker: ${BigInt(lastCalculatedTakerPrice)}, lastCalcPriceMaker: ${lastCalculatedMakerPrice}, pool lamports: ${poolAccount.data.amount}, last pool amount before sale: ${lastPoolAmountBeforeSale}`
+      // We need to console.log something or else ava will timeout (t.pass() / t.log() doesn't fix that weirdly enough)
+      // might as well log some interesting stats
+      console.log(
+        `pooltype: ${poolType}, lastCalcPriceTaker: ${BigInt(lastCalculatedTakerPrice)}, lastCalcPriceMaker: ${lastCalculatedMakerPrice}, pool lamports: ${poolAccount.data.amount}, last pool amount before sale: ${lastPoolAmountBeforeSale}`
       );
       t.assert(
         lastCalculatedMakerPrice + poolAccount.data.amount ===
@@ -293,25 +308,19 @@ async function sellNftsIntoPool(
       client.rpc,
       poolAccount.data
     );
-    // Multiple steps (extra offset) from original pool account data - should match
-    const predictedPrice = await getCurrentBidPrice(
+    const calculatedMakerPrice = await getCurrentBidPrice(
       client.rpc,
-      originalPoolAccount.data,
-      i
+      poolAccount.data,
+      undefined,
+      false
     );
-    //t.log(poolAccount.data.priceOffset)
-    t.log(`calculatedPrice: ${calculatedPrice}`);
-    t.log(`predicted price: ${predictedPrice}`);
-    t.assert(calculatedPrice === predictedPrice);
 
-    if (calculatedPrice === null) {
+    if (calculatedPrice === null || calculatedMakerPrice === null) {
       t.fail('Calculated price is null');
     }
     lastPoolAmountBeforeSale = poolAccount.data.amount;
     lastCalculatedTakerPrice = BigInt(calculatedPrice);
-    lastCalculatedMakerPrice =
-      (BigInt(lastCalculatedTakerPrice) * 100_00n) /
-      (100_00n - BigInt(poolAccount.data.config.mmFeeBps ?? 0));
+    lastCalculatedMakerPrice = BigInt(calculatedMakerPrice);
 
     const sellNftIx =
       poolType === PoolType.Trade

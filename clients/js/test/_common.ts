@@ -149,10 +149,10 @@ export async function getTestSigners(
   const poolOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // NFT owner and seller.
-  const nftOwner = await generateKeyPairSignerWithSol(client);
+  const nftOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // Buyer of the NFT.
-  const buyer = await generateKeyPairSignerWithSol(client);
+  const buyer = await generateKeyPairSignerWithSol(client, funds);
 
   const makerBroker = await generateKeyPairSignerWithSol(client);
   const takerBroker = await generateKeyPairSignerWithSol(client);
