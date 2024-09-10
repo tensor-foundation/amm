@@ -295,7 +295,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-
     // Check that the total price doesn't exceed the max amount the user specified.
     let total_price = unwrap_checked!({
         current_price
