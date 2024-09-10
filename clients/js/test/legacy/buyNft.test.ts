@@ -1,53 +1,56 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
-  Account,
-  Address,
-  appendTransactionMessageInstruction,
-  generateKeyPairSigner,
-  pipe,
+    Account,
+    Address,
+    appendTransactionMessageInstruction,
+    appendTransactionMessageInstructions,
+    generateKeyPairSigner,
+    pipe,
 } from '@solana/web3.js';
 import {
-  TokenStandard,
-  createDefaultNft,
-  fetchMetadata,
+    TokenStandard,
+    createDefaultNft,
+    fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
-  createDefaultSolanaClient,
-  createDefaultTransaction,
-  generateKeyPairSignerWithSol,
-  signAndSendTransaction,
+    createDefaultSolanaClient,
+    createDefaultTransaction,
+    generateKeyPairSignerWithSol,
+    signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  Pool,
-  PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
-  fetchMaybePool,
-  fetchPool,
-  findNftDepositReceiptPda,
-  getBuyNftInstructionAsync,
-  getDepositNftInstructionAsync,
-  isSol,
+    Pool,
+    PoolType,
+    TENSOR_AMM_ERROR__BAD_COSIGNER,
+    TENSOR_AMM_ERROR__PRICE_MISMATCH,
+    fetchMaybePool,
+    fetchPool,
+    findNftDepositReceiptPda,
+    getBuyNftInstructionAsync,
+    getDepositNftInstructionAsync,
+    getEditPoolInstruction,
+    isSol,
 } from '../../src/index.js';
 import {
-  ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
-  ANCHOR_ERROR__CONSTRAINT_SEEDS,
-  BASIS_POINTS,
-  TestAction,
-  assertNftReceiptClosed,
-  assertTammNoop,
-  assertTokenNftOwnedBy,
-  createPool,
-  createWhitelistV2,
-  expectCustomError,
-  findAtaPda,
-  getAndFundFeeVault,
-  getTokenAmount,
-  getTokenOwner,
-  nftPoolConfig,
-  setupLegacyTest,
-  tradePoolConfig,
+    ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+    ANCHOR_ERROR__CONSTRAINT_SEEDS,
+    BASIS_POINTS,
+    TestAction,
+    assertNftReceiptClosed,
+    assertTammNoop,
+    assertTokenNftOwnedBy,
+    createPool,
+    createWhitelistV2,
+    expectCustomError,
+    findAtaPda,
+    getAndFundFeeVault,
+    getTokenAmount,
+    getTokenOwner,
+    nftPoolConfig,
+    setupLegacyTest,
+    tradePoolConfig,
 } from '../_common.js';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
@@ -753,4 +756,49 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     (tx) => signAndSendTransaction(client, tx)
   );
   await expectCustomError(t, promiseWrongPool, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+});
+
+test('pool Owner cannot sandwich attack buyer on a Trade pool', async (t) => {
+  const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { price: maxAmount } = testConfig;
+  const { mint } = nft;
+
+  // Buy NFT from pool
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  const newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+
+  // Pool owner edits the pool to update the mmFee to the maximum value.
+  const editPoolIx = getEditPoolInstruction({
+    owner: poolOwner,
+    pool,
+    newConfig,
+    resetPriceOffset: false,
+  });
+
+  // Pool owner edits the pool right before the buyNftIx is executed.
+  const promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstructions([editPoolIx, buyNftIx], tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 });

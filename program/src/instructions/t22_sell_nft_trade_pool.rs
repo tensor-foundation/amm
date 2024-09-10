@@ -313,9 +313,13 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
-
-    if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
+    // Check that the total price the seller receives isn't lower than the min price the user specified.
+    let total_seller_price = unwrap_checked!({
+        current_price
+            .checked_sub(taker_fee)?
+            .checked_sub(creators_fee)
+    });
+    if total_seller_price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
 

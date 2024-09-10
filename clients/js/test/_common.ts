@@ -1173,7 +1173,7 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
       break;
     }
     case TestAction.Sell:
-      price = (config.startingPrice * 85n) / 100n; // minPrice
+      price = (config.startingPrice * 70n) / 100n; // minPrice
       break;
     default:
       throw new Error('Invalid action');

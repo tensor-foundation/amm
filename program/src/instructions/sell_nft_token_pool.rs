@@ -387,7 +387,13 @@ pub fn process_sell_nft_token_pool<'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, pool)?;
 
-    if current_price < min_price {
+    // Check that the total price the seller receives isn't lower than the min price the user specified.
+    let total_seller_price = unwrap_checked!({
+        current_price
+            .checked_sub(taker_fee)?
+            .checked_sub(creators_fee)
+    });
+    if total_seller_price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
 
