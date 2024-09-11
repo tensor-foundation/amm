@@ -204,8 +204,9 @@ pub fn process_t22_buy_nft<'info, 'b>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
@@ -213,6 +214,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
+    // This resolves to 0 for NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.
@@ -291,11 +293,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
-    let price = if matches!(pool.config.pool_type, PoolType::Trade) {
-        unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) })
-    } else {
-        unwrap_checked!({ current_price.checked_add(creators_fee) })
-    };
+    let price = unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) });
 
     if price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);

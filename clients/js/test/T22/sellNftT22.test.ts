@@ -1036,7 +1036,7 @@ test('selling into a Token pool fails when the wrong creator is passed in as a r
   );
 });
 
-test('pool owner cannot sandwich attack a seller on a Trade pool', async (t) => {
+test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', async (t) => {
   const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
     await setupT22Test({
       t,
@@ -1074,7 +1074,7 @@ test('pool owner cannot sandwich attack a seller on a Trade pool', async (t) => 
     resetPriceOffset: false,
   });
 
-  // Pool owner edits the pool right before the buyNftIx is executed.
+  // Pool owner edits the pool right before the sell instruction is executed.
   // Actual sandwich attack would be separate transactions, but this demonstrates the point as it's
   // a more generous assumption in favor of the attacker.
   let promise = pipe(
@@ -1086,7 +1086,7 @@ test('pool owner cannot sandwich attack a seller on a Trade pool', async (t) => 
   // Should fail with a price mismatch error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 
-  // Pool owner should not be able to change the mmFee value at all when an exact price is being passed in by the buyer,
+  // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.
   const newMmFeeBps = tradePoolConfig.mmFeeBps! + 1;
   newConfig = { ...tradePoolConfig, mmFeeBps: newMmFeeBps };

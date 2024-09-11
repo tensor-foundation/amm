@@ -227,14 +227,16 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.

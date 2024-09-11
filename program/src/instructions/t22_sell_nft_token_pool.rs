@@ -220,14 +220,17 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
+    // No mm_fee for token pools.
 
     // Validate mint account and determine if royalites need to be paid.
     let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
@@ -298,6 +301,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     // Check that the  price the seller receives + royalties isn't lower than the min price the user specified.
     let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
+
     if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }

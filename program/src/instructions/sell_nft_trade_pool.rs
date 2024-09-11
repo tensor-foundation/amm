@@ -267,9 +267,9 @@ pub fn process_sell_nft_trade_pool<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
-
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
@@ -277,9 +277,10 @@ pub fn process_sell_nft_trade_pool<'info>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
-    // Creators fee and MM fee are calculated based on the current price.
-    let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
     let mm_fee = pool.calc_mm_fee(current_price)?;
+
+    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
+    let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
@@ -299,6 +300,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         .ok_or(ErrorCode::PriceMismatch)?
         .checked_sub(creators_fee)
         .ok_or(ErrorCode::PriceMismatch)?;
+
     if price < min_price {
         return Err(ErrorCode::PriceMismatch.into());
     }

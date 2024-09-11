@@ -245,13 +245,12 @@ pub fn process_buy_nft<'info, 'b>(
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
-
     let owner_pubkey = ctx.accounts.owner.key();
 
-    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
-
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
 
+    // Protocol and broker fees.
     let Fees {
         taker_fee,
         tamm_fee,
@@ -259,12 +258,14 @@ pub fn process_buy_nft<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
+    // This resolves to 0 for NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
+    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
     let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
     // for keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    // we do this before PriceMismatch check for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         taker_fee,
@@ -276,11 +277,7 @@ pub fn process_buy_nft<'info, 'b>(
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
-    let price = if matches!(pool.config.pool_type, PoolType::Trade) {
-        unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) })
-    } else {
-        unwrap_checked!({ current_price.checked_add(creators_fee) })
-    };
+    let price = unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) });
 
     if price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
