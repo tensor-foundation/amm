@@ -226,6 +226,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         &[pool.bump[0]],
     ]];
 
+    // Setup the transfer CPI
     let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
@@ -277,12 +278,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
         (vec![], vec![], 0)
     };
 
-    transfer_checked(
-        transfer_cpi.with_signer(signer_seeds),
-        1, // supply = 1
-        0, // decimals = 0
-    )?;
-
     // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
@@ -295,17 +290,23 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Check that the total price doesn't exceed the max amount the user specified.
-    let total_price = unwrap_checked!({
-        current_price
-            .checked_add(taker_fee)?
-            .checked_add(mm_fee)?
-            .checked_add(creators_fee)
-    });
+    // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
+    let price = if matches!(pool.config.pool_type, PoolType::Trade) {
+        unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) })
+    } else {
+        unwrap_checked!({ current_price.checked_add(creators_fee) })
+    };
 
-    if total_price > max_amount {
+    if price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
     }
+
+    // Perform the transfer
+    transfer_checked(
+        transfer_cpi.with_signer(signer_seeds),
+        1, // supply = 1
+        0, // decimals = 0
+    )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
     // don't have the context of manual lamport balance changes so need to come before.

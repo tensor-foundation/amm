@@ -284,14 +284,6 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         (vec![], vec![], 0)
     };
 
-    transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
-
-    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
-    // don't have the context of manual lamport balance changes so need to come before.
-
-    // Close seller ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
-
     // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
@@ -304,15 +296,19 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Check that the total price the seller receives isn't lower than the min price the user specified.
-    let total_seller_price = unwrap_checked!({
-        current_price
-            .checked_sub(taker_fee)?
-            .checked_sub(creators_fee)
-    });
-    if total_seller_price < min_price {
+    // Check that the  price the seller receives + royalties isn't lower than the min price the user specified.
+    let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
+    if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
+
+    transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // Signer seeds for the pool account.
     let signer_seeds: &[&[&[u8]]] = &[&[

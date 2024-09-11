@@ -64,8 +64,14 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     });
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
-  const { price: maxAmount } = testConfig;
+  const { poolConfig } = testConfig;
   const { mint } = nft;
+
+  // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
+  const mmFee = poolConfig.startingPrice * BigInt(poolConfig.mmFeeBps ?? 0);
+  const royalties = (poolConfig.startingPrice * 500n) / 10000n;
+  // It should work with exact amount, but users might also pad this to allow for slippage.
+  const maxAmount = poolConfig.startingPrice + mmFee + royalties;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;

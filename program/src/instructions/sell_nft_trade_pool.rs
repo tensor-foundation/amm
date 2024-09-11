@@ -267,6 +267,38 @@ pub fn process_sell_nft_trade_pool<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
+    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
+
+    let current_price = pool.current_price(TakerSide::Sell)?;
+    let Fees {
+        taker_fee,
+        tamm_fee,
+        maker_broker_fee,
+        taker_broker_fee,
+    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
+    // Creators fee and MM fee are calculated based on the current price.
+    let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
+    let mm_fee = pool.calc_mm_fee(current_price)?;
+
+    // for keeping track of current price + fees charged (computed dynamically)
+    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
+        current_price,
+        taker_fee,
+        mm_fee,
+        creators_fee,
+    });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
+
+    // Check that the total price the seller receives isn't lower than the min price the user specified.
+    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
+    if price < min_price {
+        throw_err!(ErrorCode::PriceMismatch);
+    }
+
     // transfer nft to escrow
     // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
     let seller = &ctx.accounts.seller.to_account_info();
@@ -300,48 +332,6 @@ pub fn process_sell_nft_trade_pool<'info>(
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
     // don't have the context of manual lamport balance changes so need to come before.
     token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
-
-    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
-
-    let current_price = pool.current_price(TakerSide::Sell)?;
-    let Fees {
-        taker_fee,
-        tamm_fee,
-        maker_broker_fee,
-        taker_broker_fee,
-    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
-
-    // Creators fee and MM fee are calculated based on the current price.
-    let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
-    let mm_fee = pool.calc_mm_fee(current_price)?;
-
-    // for keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    let event = TAmmEvent::BuySellEvent(BuySellEvent {
-        current_price,
-        taker_fee,
-        mm_fee,
-        creators_fee,
-    });
-
-    // Self-CPI log the event.
-    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
-
-    // Check that the total price the seller receives isn't lower than the min price the user specified.
-    let total_seller_price = unwrap_checked!({
-        current_price
-            .checked_sub(taker_fee)?
-            .checked_sub(mm_fee)?
-            .checked_sub(creators_fee)
-    });
-    if total_seller_price < min_price {
-        throw_err!(ErrorCode::PriceMismatch);
-    }
-
-    // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
-    if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
-        throw_err!(ErrorCode::PriceMismatch);
-    }
 
     // --------------------------------------- SOL transfers
 
