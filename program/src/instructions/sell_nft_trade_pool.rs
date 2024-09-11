@@ -294,9 +294,13 @@ pub fn process_sell_nft_trade_pool<'info>(
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Check that the total price the seller receives isn't lower than the min price the user specified.
-    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
+    let price = current_price
+        .checked_sub(mm_fee)
+        .ok_or(ErrorCode::PriceMismatch)?
+        .checked_sub(creators_fee)
+        .ok_or(ErrorCode::PriceMismatch)?;
     if price < min_price {
-        throw_err!(ErrorCode::PriceMismatch);
+        return Err(ErrorCode::PriceMismatch.into());
     }
 
     // transfer nft to escrow

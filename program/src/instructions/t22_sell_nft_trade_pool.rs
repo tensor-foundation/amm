@@ -306,7 +306,12 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Check that the price + fees the seller receives isn't lower than the min price the user specified.
-    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
+    let price = current_price
+        .checked_sub(mm_fee)
+        .ok_or(ErrorCode::PriceMismatch)?
+        .checked_sub(creators_fee)
+        .ok_or(ErrorCode::PriceMismatch)?;
+
     if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
