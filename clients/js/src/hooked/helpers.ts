@@ -18,8 +18,7 @@ export function getCurrentAskPrice(
   isTaker: boolean = true
 ): number | null {
   if (pool.nftsHeld < 1) return null;
-  const askPrice = calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
-  return askPrice
+  return calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
 }
 
 export async function getCurrentBidPrice(
@@ -28,7 +27,7 @@ export async function getCurrentBidPrice(
   extraOffset: number = 0,
   isTaker: boolean = true
 ): Promise<number | null> {
-  let bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset, isTaker);
+  const bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset, isTaker);
   if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
   // No shared escrow, so we can just check if the pool has enough balance
@@ -86,12 +85,13 @@ function calculatePrice(
     pool.priceOffset +
     tradePoolOffset +
     (side === TakerSide.Sell ? -extraOffsetNormalized : extraOffsetNormalized);
+
   const startingPrice = pool.config.startingPrice;
   const delta = pool.config.delta;
   let resultPrice: number;
 
   // exponential: currentPrice = startingPrice * (1+delta)^offset
-  // here scaled to U256 accuracy via bigints + adding back
+  // here scaled to 12 Mantissa decimal accuracy via bigints + adding back
   // missing rounding that bigint's can't do (e.g. 16n / 10n === 1)
   // but on-chain the price gets rounded float-esque => int
   if (pool.config.curveType === CurveType.Exponential) {
@@ -139,9 +139,9 @@ function powerBigIntBySquaring_U256Precision(
   let result;
   let decimalOffset = 4;
   let resultDecimalOffset = 4;
-  if(exponent === 0n) return [100_00n, 4n];
-  if(exponent % 2n === 1n) {
-    result = base
+  if (exponent === 0n) return [100_00n, 4n];
+  if (exponent % 2n === 1n) {
+    result = base;
   } else {
     result = 100_00n;
   }
@@ -150,16 +150,21 @@ function powerBigIntBySquaring_U256Precision(
   while (exponent > 0n) {
     pow *= pow;
     decimalOffset *= 2;
-    [pow, decimalOffset] = cutTo12MantissaDecimals(pow, decimalOffset)
-
+    [pow, decimalOffset] = cutTo12MantissaDecimals(pow, decimalOffset);
     if (exponent % 2n === 1n) {
       result *= pow;
       resultDecimalOffset += decimalOffset;
-      [result, resultDecimalOffset] = cutTo12MantissaDecimals(result, resultDecimalOffset)
+      [result, resultDecimalOffset] = cutTo12MantissaDecimals(
+        result,
+        resultDecimalOffset
+      );
     }
     exponent /= 2n;
   }
-  [result, resultDecimalOffset] = cutTo12MantissaDecimals(result, resultDecimalOffset)
+  [result, resultDecimalOffset] = cutTo12MantissaDecimals(
+    result,
+    resultDecimalOffset
+  );
 
   return [result, BigInt(resultDecimalOffset)];
 }
@@ -172,15 +177,23 @@ const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
   return divisor - remainder <= remainder;
 };
 
-const cutTo12MantissaDecimals = (num: bigint, decimalOffset: number, withRounding: boolean = true): [bigint, number] => {
+const cutTo12MantissaDecimals = (
+  num: bigint,
+  decimalOffset: number,
+  withRounding: boolean = true
+): [bigint, number] => {
   const decimalPrecision = 12;
   const exponentLength = num.toString(10).length - decimalOffset;
   let adjustedOffset = decimalOffset;
   let adjustedNum = num;
-  if(decimalOffset > decimalPrecision) {
-    adjustedNum = BigInt(num.toString(10).slice(0, (exponentLength + decimalPrecision))) 
+  if (decimalOffset > decimalPrecision) {
+    adjustedNum = BigInt(
+      num.toString(10).slice(0, exponentLength + decimalPrecision)
+    );
     adjustedOffset = adjustedNum.toString(10).length - exponentLength;
   }
-  adjustedNum += withRounding ? BigInt(+(parseInt(num.toString()[decimalPrecision + 1]) > 4)) : 0n;
+  adjustedNum += withRounding
+    ? BigInt(+(parseInt(num.toString()[decimalPrecision + 1]) > 4))
+    : 0n;
   return [adjustedNum, adjustedOffset];
-}
+};

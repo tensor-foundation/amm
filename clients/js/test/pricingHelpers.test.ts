@@ -367,7 +367,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
     startingPrice: 218_090_823n,
-    delta: 9_71n,
+    delta: 19_71n,
     mmCompoundFees: false,
     mmFeeBps: 5,
   };
@@ -376,7 +376,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     fundPool: false,
-    signerFunds: 50_000n * ONE_SOL,
+    signerFunds: 5_000n * ONE_SOL,
     poolConfig: config,
   });
 
@@ -436,7 +436,7 @@ async function mintAndDepositNfts(
       mint: nft.mint,
     });
 
-    return pipe(
+    return await pipe(
       await createDefaultTransaction(client, poolOwner),
       (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
@@ -462,14 +462,14 @@ async function buyNftsFromPool(
   let lastCalculatedPrice = 0;
   for (const nft of nfts) {
     const poolAccount = await fetchPool(client.rpc, pool);
-    t.log(`DIFFERENCE FOR ${poolAccount.data.priceOffset - 1}: ${poolAccount.data.amount - lastPoolAmountBeforeSale - BigInt(lastCalculatedPrice)}, price paid: ${lastCalculatedPrice}, actual Price: ${poolAccount.data.amount - lastPoolAmountBeforeSale}`)
-
-    let currentPrice = getCurrentAskPrice(poolAccount.data);
-    //console.log(`amount: ${poolAccount.data.amount}, last + calcPrice: ${lastPoolAmountBeforeSale + BigInt(lastCalculatedPrice)}, sum: ${poolAccount.data.amount - lastPoolAmountBeforeSale - BigInt(lastCalculatedPrice)}`)
+    const currentPrice = getCurrentAskPrice(poolAccount.data);
     if (i !== 0) {
-      // assert last calculated price was within 1 lamport of the actual price
+      // assert last calculated price exactly matched actual price
       t.assert(
-        poolAccount.data.amount - lastPoolAmountBeforeSale - BigInt(lastCalculatedPrice) < 10
+        poolAccount.data.amount -
+          lastPoolAmountBeforeSale -
+          BigInt(lastCalculatedPrice) ===
+          0n
       );
     }
     if (currentPrice === null) {
@@ -477,7 +477,6 @@ async function buyNftsFromPool(
     }
     lastPoolAmountBeforeSale = poolAccount.data.amount;
     lastCalculatedPrice = currentPrice;
-    console.log(`trying offset: ${poolAccount.data.priceOffset}, result ${currentPrice}`)
 
     const buyNftIx = await getBuyNftInstructionAsync({
       owner: poolOwner.address,
