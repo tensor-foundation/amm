@@ -366,8 +366,8 @@ test('Exponential pool pricing after 30 buys', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
-    startingPrice: 10_243_218_090_823n,
-    delta: 1_82n,
+    startingPrice: 1_154_218_090_823n,
+    delta: 4_71n,
     mmCompoundFees: false,
     mmFeeBps: 5,
   };
@@ -389,7 +389,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
     poolOwner,
     nftUpdateAuthority,
     whitelist,
-    20
+    30
   );
 
   await buyNftsFromPool(t, client, pool, nfts, poolOwner, buyer, [
@@ -398,7 +398,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
 
   // Verify final pool state
   const finalPoolAccount = await fetchPool(client.rpc, pool);
-  t.is(finalPoolAccount.data.stats.takerBuyCount, 200);
+  t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
 });
 
 ///////////////////////////////////////////////////////////////////////////////////

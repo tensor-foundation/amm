@@ -139,27 +139,32 @@ function powerBigIntBySquaring_U256Precision(
   base: bigint,
   exponent: bigint
 ): [bigint, bigint] {
+  let result;
+  let decimalOffset = 4;
+  let resultDecimalOffset = 4;
   if(exponent === 0n) return [100_00n, 4n];
-  let decimalOffset2 = 4;
-  let power = base;
-  let runningExponent = 1n;
-  while (runningExponent < exponent) {
-    if ((exponent / runningExponent) % 2n === 1n) {
-      power *= base; 
-      decimalOffset2 += 4;
-      [power, decimalOffset2] = cutTo12MantissaDecimals(power, decimalOffset2);
-      runningExponent += 1n;
-      if (runningExponent === exponent) break;
-    }
-    else {
-      power *= power;
-      decimalOffset2 *= 2;
-      [power, decimalOffset2] = cutTo12MantissaDecimals(power, decimalOffset2);
-
-      runningExponent *= 2n;
-    }
+  if(exponent % 2n === 1n) {
+    result = base
+  } else {
+    result = 100_00n;
   }
-  return [power, BigInt(decimalOffset2)];
+  let pow = base;
+  exponent /= 2n;
+  while (exponent > 0n) {
+    pow *= pow;
+    decimalOffset *= 2;
+    [pow, decimalOffset] = cutTo12MantissaDecimals(pow, decimalOffset)
+
+    if (exponent % 2n === 1n) {
+      result *= pow;
+      resultDecimalOffset += decimalOffset;
+      [result, resultDecimalOffset] = cutTo12MantissaDecimals(result, resultDecimalOffset)
+    }
+    exponent /= 2n;
+  }
+  [result, resultDecimalOffset] = cutTo12MantissaDecimals(result, resultDecimalOffset)
+
+  return [result, BigInt(resultDecimalOffset)];
 }
 
 // checks if bigint division would have gotten rounded up if floating division would've been applied instead
@@ -190,8 +195,13 @@ const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
 const cutTo12MantissaDecimals = (num: bigint, decimalOffset: number, withRounding: boolean = true): [bigint, number] => {
   const decimalPrecision = 12;
   const exponentLength = num.toString(10).length - decimalOffset;
-  let adjustedNum = decimalOffset > decimalPrecision ? BigInt(num.toString(10).slice(0, (exponentLength + decimalPrecision))) : num;
-  const adjustedOffset = adjustedNum.toString(10).length - exponentLength;
+  let adjustedOffset = decimalOffset;
+  let adjustedNum = num;
+  if(decimalOffset > decimalPrecision) {
+    adjustedNum = BigInt(num.toString(10).slice(0, (exponentLength + decimalPrecision))) 
+    adjustedOffset = adjustedNum.toString(10).length - exponentLength;
+  }
   adjustedNum += withRounding ? BigInt(+(parseInt(num.toString()[decimalPrecision + 1]) > 4)) : 0n;
   return [adjustedNum, adjustedOffset];
 }
+console.log(cutTo12MantissaDecimals(123_123_123_123_123n, 13))
