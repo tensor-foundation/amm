@@ -101,7 +101,6 @@ function calculatePrice(
       base,
       exponent
     );
-    console.log(`scaling, decimalOffset: ${scaling}, ${decimalOffset}`)
     let resultPriceIntermediate;
     if (offset < 0) {
       const divident = startingPrice * 10n ** decimalOffset;
@@ -113,8 +112,6 @@ function calculatePrice(
       const divisor = 10n ** decimalOffset;
       resultPriceIntermediate =
         divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
-        console.log(`divident: ${divident}, divisor: ${divisor}, result: ${resultPriceIntermediate}`)
-
     }
     resultPrice = Number(resultPriceIntermediate);
   } else {
@@ -134,7 +131,7 @@ function calculatePrice(
   return resultPrice;
 }
 // Calculate power for BigInt using exponentiation by squaring
-// with 256 bit precision
+// with 12 mantissa decimal precision
 function powerBigIntBySquaring_U256Precision(
   base: bigint,
   exponent: bigint
@@ -175,23 +172,6 @@ const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
   return divisor - remainder <= remainder;
 };
 
-// returns next upper 10^x and x for a given amount of bits exceeding the precision limit
-//const findDecimalPrecisionLossFromBinary = (
-//  precisionLossBits: number
-//): [bigint, number] => {
-//  const maxLossDecimal = 2n ** BigInt(precisionLossBits);
-//  if (maxLossDecimal <= 0) return [1n, 0];
-//  const exponent = maxLossDecimal.toString(10).length - 1;
-//  return [10n ** BigInt(exponent), exponent];
-//};
-
-//function cutTo256Bits(result: bigint): [bigint, number] {
-//  const precisionLossBits = Math.max(result.toString(2).length - 256, 0);
-//  return precisionLossBits > 0
-//    ? findDecimalPrecisionLossFromBinary(precisionLossBits)
-//    : [1n, 0];
-//}
-
 const cutTo12MantissaDecimals = (num: bigint, decimalOffset: number, withRounding: boolean = true): [bigint, number] => {
   const decimalPrecision = 12;
   const exponentLength = num.toString(10).length - decimalOffset;
@@ -204,4 +184,3 @@ const cutTo12MantissaDecimals = (num: bigint, decimalOffset: number, withRoundin
   adjustedNum += withRounding ? BigInt(+(parseInt(num.toString()[decimalPrecision + 1]) > 4)) : 0n;
   return [adjustedNum, adjustedOffset];
 }
-console.log(cutTo12MantissaDecimals(123_123_123_123_123n, 13))

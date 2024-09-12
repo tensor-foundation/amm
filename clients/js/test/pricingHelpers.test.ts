@@ -26,7 +26,7 @@ import {
 } from '@solana/web3.js';
 import { createDefaultNft, Nft } from '@tensor-foundation/mpl-token-metadata';
 
-/*test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
+test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
   const { client, pool } = await setupLegacyTest({
     t,
     poolType: PoolType.Token,
@@ -359,15 +359,15 @@ test('Linear pool pricing after 30 buys', async (t) => {
   // Verify final pool state
   const finalPoolAccount = await fetchPool(client.rpc, pool);
   t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
-});*/
+});
 
 test('Exponential pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
-    startingPrice: 1_154_218_090_823n,
-    delta: 4_71n,
+    startingPrice: 218_090_823n,
+    delta: 9_71n,
     mmCompoundFees: false,
     mmFeeBps: 5,
   };
