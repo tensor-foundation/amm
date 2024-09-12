@@ -18,7 +18,13 @@ export function getCurrentAskPrice(
   isTaker: boolean = true
 ): number | null {
   if (pool.nftsHeld < 1) return null;
-  return calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
+  const askPrice = calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
+  // calculate price function has more accurate rounding than on-chain
+  // for prices > 10^12 lamports, add an additional lamport to avoid
+  // rounding issues
+  return askPrice && askPrice.toString(10).length >= 12
+    ? askPrice + 1
+    : askPrice;
 }
 
 export async function getCurrentBidPrice(
@@ -30,6 +36,11 @@ export async function getCurrentBidPrice(
   let bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset, isTaker);
   if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
+  // calculate price function has more accurate rounding than on-chain
+  // for prices > 10^12 lamports, remove an additional lamport to avoid
+  // rounding issues
+  bidPrice =
+    bidPrice && bidPrice.toString(10).length >= 12 ? bidPrice - 1 : bidPrice;
   // No shared escrow, so we can just check if the pool has enough balance
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
@@ -96,7 +107,10 @@ function calculatePrice(
   if (pool.config.curveType === CurveType.Exponential) {
     const base = 100_00n + delta;
     const exponent = BigInt(Math.abs(offset));
-    const [scaling, decimalOffset] = powerBigInt_U256Precision(base, exponent);
+    const [scaling, decimalOffset] = powerBigIntBySquaring_U256Precision(
+      base,
+      exponent
+    );
     let resultPriceIntermediate;
     if (offset <= 0) {
       const divident = startingPrice * 10n ** decimalOffset;
@@ -126,45 +140,31 @@ function calculatePrice(
   }
   return resultPrice;
 }
-
-// calculates base^exponent with U256 (255 bit) floating points precision with bigint's
-// and additionally returns decimalOffset (amount of decimals the result has been pushed to the left)
-function powerBigInt_U256Precision(
+// Calculate power for BigInt using exponentiation by squaring
+// with 256 bit precision
+function powerBigIntBySquaring_U256Precision(
   base: bigint,
   exponent: bigint
 ): [bigint, bigint] {
-  const U256_MAX = 2n ** 255n - 1n;
-
-  let result = 1n;
-  let decimalOffset = 0n;
   let additionalPrecisionLoss = 0;
 
-  let optimizedBase = base;
-  let optimizedBpsMult = 4n;
-
-  // speed optimization, e.g. if base == 100 BPS and bpsMult == 4n, we can calculate the pow with optimizedBase = 1 and optimizedBpsMult = 2n,
-  // (because optimizedBase / 10 ** optimizedBpsMult === base / 10 ** bpsMult) without losing any accuracy
-  while (optimizedBase % 10n === 0n) {
-    optimizedBase /= 10n;
-    optimizedBpsMult -= 1n;
-  }
-
-  for (let i = 0n; i < exponent; i++) {
-    result = result * optimizedBase;
-    // result exceeds 255 bits
-    if (result > U256_MAX) {
-      // check how many bits are too much
-      const precisionLossBits = result.toString(2).length - 255;
-      // given the amount of exceeding bits,
-      // calculate the amount of exceeding decimals
-      const [divisor, decimalPrecisionLoss] =
-        findDecimalPrecisionLossFromBinary(precisionLossBits);
-      result /= divisor;
-      additionalPrecisionLoss += decimalPrecisionLoss;
+  let result = 1n;
+  let power = base;
+  const originalExponent = exponent;
+  while (exponent > 0n) {
+    if (exponent % 2n === 1n) {
+      result *= power;
+      // cut result to 256 bits
+      const [resultDivisor, extraOffset] = cutTo256Bits(result);
+      result /= resultDivisor;
+      additionalPrecisionLoss += extraOffset;
     }
-    decimalOffset += optimizedBpsMult;
+    power *= power;
+    exponent /= 2n;
   }
-  return [result, decimalOffset - BigInt(additionalPrecisionLoss)];
+  let zerosToGetRidOff = originalExponent * 4n;
+
+  return [result, zerosToGetRidOff - BigInt(additionalPrecisionLoss)];
 }
 
 // checks if bigint division would have gotten rounded up if floating division would've been applied instead
@@ -184,3 +184,10 @@ const findDecimalPrecisionLossFromBinary = (
   const exponent = Math.ceil(Math.log10(maxLossDecimal));
   return [10n ** BigInt(exponent), exponent];
 };
+
+function cutTo256Bits(result: bigint): [bigint, number] {
+  const precisionLossBits = Math.max(result.toString(2).length - 256, 0);
+  return precisionLossBits > 0
+    ? findDecimalPrecisionLossFromBinary(precisionLossBits)
+    : [1n, 0];
+}
