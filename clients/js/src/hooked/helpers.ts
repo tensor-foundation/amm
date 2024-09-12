@@ -19,12 +19,7 @@ export function getCurrentAskPrice(
 ): number | null {
   if (pool.nftsHeld < 1) return null;
   const askPrice = calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
-  // calculate price function has more accurate rounding than on-chain
-  // for prices > 10^12 lamports, add an additional lamport to avoid
-  // rounding issues
-  return askPrice && askPrice.toString(10).length >= 12
-    ? askPrice + 1
-    : askPrice;
+  return askPrice
 }
 
 export async function getCurrentBidPrice(
@@ -36,11 +31,6 @@ export async function getCurrentBidPrice(
   let bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset, isTaker);
   if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
-  // calculate price function has more accurate rounding than on-chain
-  // for prices > 10^12 lamports, remove an additional lamport to avoid
-  // rounding issues
-  bidPrice =
-    bidPrice && bidPrice.toString(10).length >= 12 ? bidPrice - 1 : bidPrice;
   // No shared escrow, so we can just check if the pool has enough balance
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
@@ -111,8 +101,9 @@ function calculatePrice(
       base,
       exponent
     );
+    console.log(`scaling, decimalOffset: ${scaling}, ${decimalOffset}`)
     let resultPriceIntermediate;
-    if (offset <= 0) {
+    if (offset < 0) {
       const divident = startingPrice * 10n ** decimalOffset;
       const divisor = scaling;
       resultPriceIntermediate =
@@ -122,6 +113,8 @@ function calculatePrice(
       const divisor = 10n ** decimalOffset;
       resultPriceIntermediate =
         divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
+        console.log(`divident: ${divident}, divisor: ${divisor}, result: ${resultPriceIntermediate}`)
+
     }
     resultPrice = Number(resultPriceIntermediate);
   } else {
@@ -146,24 +139,27 @@ function powerBigIntBySquaring_U256Precision(
   base: bigint,
   exponent: bigint
 ): [bigint, bigint] {
-  let additionalPrecisionLoss = 0;
-
-  let result = 1n;
+  if(exponent === 0n) return [100_00n, 4n];
+  let decimalOffset2 = 4;
   let power = base;
-  const originalExponent = exponent;
-  while (exponent > 0n) {
-    // cut result to 256 bits
-    const [resultDivisor, extraOffset] = cutTo256Bits(result);
-    result /= resultDivisor;
-    additionalPrecisionLoss += extraOffset;
-    if (exponent % 2n === 1n) {
-      result *= power;
+  let runningExponent = 1n;
+  while (runningExponent < exponent) {
+    if ((exponent / runningExponent) % 2n === 1n) {
+      power *= base; 
+      decimalOffset2 += 4;
+      [power, decimalOffset2] = cutTo12MantissaDecimals(power, decimalOffset2);
+      runningExponent += 1n;
+      if (runningExponent === exponent) break;
     }
-    power *= power;
-    exponent /= 2n;
+    else {
+      power *= power;
+      decimalOffset2 *= 2;
+      [power, decimalOffset2] = cutTo12MantissaDecimals(power, decimalOffset2);
+
+      runningExponent *= 2n;
+    }
   }
-  const decimalOffset = originalExponent * 4n;
-  return [result, decimalOffset - BigInt(additionalPrecisionLoss)];
+  return [power, BigInt(decimalOffset2)];
 }
 
 // checks if bigint division would have gotten rounded up if floating division would've been applied instead
@@ -175,18 +171,27 @@ const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
 };
 
 // returns next upper 10^x and x for a given amount of bits exceeding the precision limit
-const findDecimalPrecisionLossFromBinary = (
-  precisionLossBits: number
-): [bigint, number] => {
-  const maxLossDecimal = 2n ** BigInt(precisionLossBits);
-  if (maxLossDecimal <= 0) return [1n, 0];
-  const exponent = maxLossDecimal.toString(10).length - 1;
-  return [10n ** BigInt(exponent), exponent];
-};
+//const findDecimalPrecisionLossFromBinary = (
+//  precisionLossBits: number
+//): [bigint, number] => {
+//  const maxLossDecimal = 2n ** BigInt(precisionLossBits);
+//  if (maxLossDecimal <= 0) return [1n, 0];
+//  const exponent = maxLossDecimal.toString(10).length - 1;
+//  return [10n ** BigInt(exponent), exponent];
+//};
 
-function cutTo256Bits(result: bigint): [bigint, number] {
-  const precisionLossBits = Math.max(result.toString(2).length - 256, 0);
-  return precisionLossBits > 0
-    ? findDecimalPrecisionLossFromBinary(precisionLossBits)
-    : [1n, 0];
+//function cutTo256Bits(result: bigint): [bigint, number] {
+//  const precisionLossBits = Math.max(result.toString(2).length - 256, 0);
+//  return precisionLossBits > 0
+//    ? findDecimalPrecisionLossFromBinary(precisionLossBits)
+//    : [1n, 0];
+//}
+
+const cutTo12MantissaDecimals = (num: bigint, decimalOffset: number, withRounding: boolean = true): [bigint, number] => {
+  const decimalPrecision = 12;
+  const exponentLength = num.toString(10).length - decimalOffset;
+  let adjustedNum = decimalOffset > decimalPrecision ? BigInt(num.toString(10).slice(0, (exponentLength + decimalPrecision))) : num;
+  const adjustedOffset = adjustedNum.toString(10).length - exponentLength;
+  adjustedNum += withRounding ? BigInt(+(parseInt(num.toString()[decimalPrecision + 1]) > 4)) : 0n;
+  return [adjustedNum, adjustedOffset];
 }
