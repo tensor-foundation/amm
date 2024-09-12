@@ -55,6 +55,6 @@ static_assertions = "1.1.0"
 tensor-escrow = { version = "0.1.1" }
 tensor-toolbox = { version = "0.1.0", features = ["token-2022"] }
 tensor-vipers = { version = "1.0.0" }
-whitelist-program = { version = "0.1.0", package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", features = [
+whitelist-program = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", rev = "346eac4", features = [
     "cpi",
 ] }

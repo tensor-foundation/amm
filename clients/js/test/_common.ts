@@ -30,6 +30,7 @@ import {
   Nft,
   TokenStandard,
   createDefaultNftInCollection,
+  fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
@@ -841,20 +842,38 @@ export async function setupLegacyTest(
 
   let config: PoolConfig;
   let price: bigint;
+  let mmFees = 0n;
+
+  let startingPrice;
 
   switch (poolType) {
     case PoolType.Trade:
       config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+      // Sells on trade pools need to to have the price shifted down by 1 step.
+      if (action === TestAction.Sell) {
+        startingPrice = config.startingPrice - config.delta;
+      } else {
+        startingPrice = config.startingPrice;
+      }
+      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
       break;
     case PoolType.Token:
       config = tokenPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     case PoolType.NFT:
       config = nftPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     default:
       throw new Error('Invalid pool type');
   }
+
+  const md = (await fetchMetadata(client.rpc, nft.metadata)).data;
+  const { sellerFeeBasisPoints } = md;
+
+  const royalties =
+    (startingPrice * BigInt(sellerFeeBasisPoints)) / BASIS_POINTS;
 
   const depositAmount = dA ?? config.startingPrice * 10n;
 
@@ -928,7 +947,8 @@ export async function setupLegacyTest(
 
   switch (action) {
     case TestAction.Buy: {
-      price = (config.startingPrice * 11n) / 10n; // maxPrice
+      // Max price needs to account for royalties and mm fees.
+      price = startingPrice + royalties + mmFees;
 
       if (whitelistMode === Mode.MerkleTree) {
         // Create the mint proof for the whitelist.
@@ -941,7 +961,6 @@ export async function setupLegacyTest(
         });
         mintProof = mp.mintProof;
       }
-      // console.log('mintProof', mintProof);
 
       // Deposit the NFT into the pool so it can be bought.
       const depositNftIx = await getDepositNftInstructionAsync({
@@ -979,7 +998,8 @@ export async function setupLegacyTest(
       break;
     }
     case TestAction.Sell:
-      price = (config.startingPrice * 85n) / 100n; // minPrice
+      // Min price needs to account for royalties and mm fees.
+      price = startingPrice - royalties - mmFees;
       break;
     default:
       throw new Error('Invalid action');
@@ -1054,22 +1074,34 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
 
   let config: PoolConfig;
   let price: bigint;
+  let mmFees = 0n;
+  let startingPrice;
 
   switch (poolType) {
     case PoolType.Trade:
       config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+      // Sells on trade pools need to to have the price shifted down by 1 step.
+      if (action === TestAction.Sell) {
+        startingPrice = config.startingPrice - config.delta;
+      } else {
+        startingPrice = config.startingPrice;
+      }
+      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
       break;
     case PoolType.Token:
       config = tokenPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     case PoolType.NFT:
       config = nftPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     default:
       throw new Error('Invalid pool type');
   }
 
-  const depositAmount = dA ?? config.startingPrice * 10n;
+  const royalties = (startingPrice * sellerFeeBasisPoints) / BASIS_POINTS;
+  const depositAmount = dA ?? startingPrice * 10n;
 
   // Check the token account has correct mint, amount and owner.
   t.like(await fetchToken(client.rpc, ownerAta), <Account<Token>>{
@@ -1131,7 +1163,8 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
 
   switch (action) {
     case TestAction.Buy: {
-      price = (config.startingPrice * 11n) / 10n; // maxPrice
+      // Max price needs to account for royalties and mm fees.
+      price = startingPrice + royalties + mmFees;
 
       // Deposit the NFT into the pool so it can be bought.
       const depositNftIx = await getDepositNftT22InstructionAsync({
@@ -1173,7 +1206,8 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
       break;
     }
     case TestAction.Sell:
-      price = (config.startingPrice * 85n) / 100n; // minPrice
+      // Min price needs to account for royalties and mm fees.
+      price = startingPrice - royalties - mmFees;
       break;
     default:
       throw new Error('Invalid action');
