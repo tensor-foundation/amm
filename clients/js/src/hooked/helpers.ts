@@ -152,19 +152,18 @@ function powerBigIntBySquaring_U256Precision(
   let power = base;
   const originalExponent = exponent;
   while (exponent > 0n) {
+    // cut result to 256 bits
+    const [resultDivisor, extraOffset] = cutTo256Bits(result);
+    result /= resultDivisor;
+    additionalPrecisionLoss += extraOffset;
     if (exponent % 2n === 1n) {
       result *= power;
-      // cut result to 256 bits
-      const [resultDivisor, extraOffset] = cutTo256Bits(result);
-      result /= resultDivisor;
-      additionalPrecisionLoss += extraOffset;
     }
     power *= power;
     exponent /= 2n;
   }
-  let zerosToGetRidOff = originalExponent * 4n;
-
-  return [result, zerosToGetRidOff - BigInt(additionalPrecisionLoss)];
+  const decimalOffset = originalExponent * 4n;
+  return [result, decimalOffset - BigInt(additionalPrecisionLoss)];
 }
 
 // checks if bigint division would have gotten rounded up if floating division would've been applied instead
@@ -179,9 +178,9 @@ const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
 const findDecimalPrecisionLossFromBinary = (
   precisionLossBits: number
 ): [bigint, number] => {
-  const maxLossDecimal = 2 ** precisionLossBits;
+  const maxLossDecimal = 2n ** BigInt(precisionLossBits);
   if (maxLossDecimal <= 0) return [1n, 0];
-  const exponent = Math.ceil(Math.log10(maxLossDecimal));
+  const exponent = maxLossDecimal.toString(10).length - 1;
   return [10n ** BigInt(exponent), exponent];
 };
 

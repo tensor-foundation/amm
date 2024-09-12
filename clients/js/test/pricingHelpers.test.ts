@@ -316,7 +316,7 @@ test('Exponential pool pricing speed test', async (t) => {
   }
   const end = performance.now();
   t.log(
-    `calculting the 1000 next exponential pool prices took ${end - start} ms.`
+    `calculating the 1000 next exponential pool prices took ${end - start} ms.`
   );
 
   t.pass();
@@ -366,7 +366,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
-    startingPrice: 154_218_090_823n,
+    startingPrice: 1_154_218_090_823n,
     delta: 4_71n,
     mmCompoundFees: false,
     mmFeeBps: 5,
@@ -376,7 +376,7 @@ test('Exponential pool pricing after 30 buys', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     fundPool: false,
-    signerFunds: 20_000n * ONE_SOL,
+    signerFunds: 30_000n * ONE_SOL,
     poolConfig: config,
   });
 
