@@ -15,19 +15,41 @@ import { DEFAULT_ADDRESS } from './nullableAddress';
 export function getCurrentAskPrice(
   pool: Pool,
   extraOffset: number = 0,
-  isTaker: boolean = true
+  excludeMMFee: boolean = true
 ): number | null {
   if (pool.nftsHeld < 1) return null;
-  return calculatePrice(pool, TakerSide.Buy, extraOffset, isTaker);
+  return calculatePrice(pool, TakerSide.Buy, extraOffset, excludeMMFee);
+}
+
+export function getCurrentBidPriceSync(
+  pool: Pool,
+  availableLamports: number,
+  extraOffset: number = 0,
+  excludeMMFee: boolean = false
+): number | null {
+  const bidPrice = calculatePrice(
+    pool,
+    TakerSide.Sell,
+    extraOffset,
+    excludeMMFee
+  );
+  if (bidPrice === null) return null;
+  if (bidPrice < 1) return 0;
+  return availableLamports >= bidPrice ? bidPrice : null;
 }
 
 export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
   pool: Pool,
   extraOffset: number = 0,
-  isTaker: boolean = true
+  excludeMMFee: boolean = false
 ): Promise<number | null> {
-  const bidPrice = calculatePrice(pool, TakerSide.Sell, extraOffset, isTaker);
+  const bidPrice = calculatePrice(
+    pool,
+    TakerSide.Sell,
+    extraOffset,
+    excludeMMFee
+  );
   if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
   // No shared escrow, so we can just check if the pool has enough balance
@@ -55,11 +77,11 @@ export async function getCurrentBidPrice(
   return BigInt(escrowLamports) - rentExemption >= bidPrice ? bidPrice : null;
 }
 
-function calculatePrice(
+export function calculatePrice(
   pool: Pool,
   side: TakerSide,
   extraOffset: number = 0,
-  isTaker: boolean = true
+  excludeMMFee: boolean = false
 ): number | null {
   if (
     // can't sell into PoolType.NFT
@@ -68,14 +90,15 @@ function calculatePrice(
     (pool.config.poolType === PoolType.Token && side === TakerSide.Buy) ||
     // if maxTakerSellCount is reached when pool is attached to margin acc,
     // pool can't fulfill more bids
-    (pool.priceOffset === pool.maxTakerSellCount &&
+    (pool.priceOffset * -1 === pool.maxTakerSellCount &&
       pool.maxTakerSellCount !== 0 &&
       !!pool.sharedEscrow &&
-      pool.sharedEscrow !== DEFAULT_ADDRESS)
+      pool.sharedEscrow !== DEFAULT_ADDRESS &&
+      side === TakerSide.Sell)
   )
     return null;
 
-  // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Buy)
+  // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Sell)
   const extraOffsetNormalized = Math.abs(extraOffset);
 
   // trade pool has an extra offset on the sell side
@@ -97,10 +120,8 @@ function calculatePrice(
   if (pool.config.curveType === CurveType.Exponential) {
     const base = 100_00n + delta;
     const exponent = BigInt(Math.abs(offset));
-    const [scaling, decimalOffset] = powerBigIntBySquaring_U256Precision(
-      base,
-      exponent
-    );
+    const [scaling, decimalOffset] =
+      powerBpsAsBigInt_12DecimalMantissaPrecision(base, exponent);
     let resultPriceIntermediate;
     if (offset < 0) {
       const divident = startingPrice * 10n ** decimalOffset;
@@ -121,7 +142,7 @@ function calculatePrice(
   if (
     pool.config.poolType === PoolType.Trade &&
     side === TakerSide.Sell &&
-    isTaker
+    !excludeMMFee
   ) {
     resultPrice = Number(
       BigInt(resultPrice) -
@@ -132,7 +153,7 @@ function calculatePrice(
 }
 // Calculate power for BigInt using exponentiation by squaring
 // with 12 mantissa decimal precision
-function powerBigIntBySquaring_U256Precision(
+function powerBpsAsBigInt_12DecimalMantissaPrecision(
   base: bigint,
   exponent: bigint
 ): [bigint, bigint] {
