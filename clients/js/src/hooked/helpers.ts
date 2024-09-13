@@ -12,6 +12,45 @@ import {
 } from '../generated';
 import { DEFAULT_ADDRESS } from './nullableAddress';
 
+// returns a maximum of 1000
+export function getAmountOfBids(
+  pool: Pool,
+  availableLamports: number | bigint
+): number {
+  if (pool.config.poolType === PoolType.NFT) return 0;
+
+  let amountOfBidsWithoutMaxCount: number;
+  // Trade pool that compounds fees ==> disregard mmFee since they go right back into availableLamports
+  let excludeMMFee =
+    pool.config.poolType === PoolType.Trade && !!pool.config.mmCompoundFees;
+
+  if (pool.config.curveType === CurveType.Linear) {
+    const currentPrice = calculatePrice(pool, TakerSide.Sell, 0, excludeMMFee);
+    if (!currentPrice) return 0;
+    amountOfBidsWithoutMaxCount =
+      1 + Number(BigInt(currentPrice) / pool.config.delta);
+  }
+  // exponential
+  else {
+    // calculatePrice is fast enough that we can just iterate over next prices
+    // instead of using geometric sum w/ potentially incorrect roundings
+    let bidCount = 0;
+    let accumulatedPrice = 0n;
+    while (accumulatedPrice <= BigInt(availableLamports) && bidCount < 1000) {
+      let price = calculatePrice(pool, TakerSide.Sell, bidCount, excludeMMFee);
+      if (!price) {
+        break;
+      }
+      accumulatedPrice += BigInt(price);
+      bidCount += 1;
+    }
+    amountOfBidsWithoutMaxCount = bidCount;
+  }
+  return isMaxTakerSellCountApplicable(pool)
+    ? Math.max(amountOfBidsWithoutMaxCount, pool.maxTakerSellCount)
+    : amountOfBidsWithoutMaxCount;
+}
+
 export function getCurrentAskPrice(
   pool: Pool,
   extraOffset: number = 0,
@@ -23,7 +62,7 @@ export function getCurrentAskPrice(
 
 export function getCurrentBidPriceSync(
   pool: Pool,
-  availableLamports: number,
+  availableLamports: number | bigint,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): number | null {
@@ -90,11 +129,7 @@ export function calculatePrice(
     (pool.config.poolType === PoolType.Token && side === TakerSide.Buy) ||
     // if maxTakerSellCount is reached when pool is attached to margin acc,
     // pool can't fulfill more bids
-    (pool.priceOffset * -1 === pool.maxTakerSellCount &&
-      pool.maxTakerSellCount !== 0 &&
-      !!pool.sharedEscrow &&
-      pool.sharedEscrow !== DEFAULT_ADDRESS &&
-      side === TakerSide.Sell)
+    (isMaxTakerSellCountApplicable(pool) && side === TakerSide.Sell)
   )
     return null;
 
@@ -218,3 +253,12 @@ const cutTo12MantissaDecimals = (
     : 0n;
   return [adjustedNum, adjustedOffset];
 };
+
+function isMaxTakerSellCountApplicable(pool: Pool): boolean {
+  return (
+    pool.priceOffset * -1 === pool.maxTakerSellCount &&
+    pool.maxTakerSellCount !== 0 &&
+    !!pool.sharedEscrow &&
+    pool.sharedEscrow !== DEFAULT_ADDRESS
+  );
+}
