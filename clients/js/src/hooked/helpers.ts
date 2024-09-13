@@ -36,7 +36,7 @@ export function getAmountOfBids(
     // instead of using geometric sum w/ potentially incorrect roundings
     let bidCount = 0;
     let accumulatedPrice = 0n;
-    while (accumulatedPrice <= BigInt(availableLamports) && bidCount < 1000) {
+    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1000) {
       let price = calculatePrice(pool, TakerSide.Sell, bidCount, excludeMMFee);
       if (!price) {
         break;
@@ -47,7 +47,7 @@ export function getAmountOfBids(
     amountOfBidsWithoutMaxCount = bidCount;
   }
   return isMaxTakerSellCountApplicable(pool)
-    ? Math.max(amountOfBidsWithoutMaxCount, pool.maxTakerSellCount)
+    ? Math.min(amountOfBidsWithoutMaxCount, pool.maxTakerSellCount)
     : amountOfBidsWithoutMaxCount;
 }
 
