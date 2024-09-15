@@ -3,6 +3,7 @@ import {
   Account,
   Address,
   appendTransactionMessageInstruction,
+  appendTransactionMessageInstructions,
   generateKeyPairSigner,
   pipe,
 } from '@solana/web3.js';
@@ -23,11 +24,13 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
+  TENSOR_AMM_ERROR__PRICE_MISMATCH,
   fetchMaybePool,
   fetchPool,
   findNftDepositReceiptPda,
   getBuyNftInstructionAsync,
   getDepositNftInstructionAsync,
+  getEditPoolInstruction,
   isSol,
 } from '../../src/index.js';
 import {
@@ -61,8 +64,14 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     });
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
-  const { price: maxAmount } = testConfig;
+  const { poolConfig } = testConfig;
   const { mint } = nft;
+
+  // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
+  const mmFee = poolConfig.startingPrice * BigInt(poolConfig.mmFeeBps ?? 0);
+  const royalties = (poolConfig.startingPrice * 500n) / 10000n;
+  // It should work with exact amount, but users might also pad this to allow for slippage.
+  const maxAmount = poolConfig.startingPrice + mmFee + royalties;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -753,4 +762,73 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     (tx) => signAndSendTransaction(client, tx)
   );
   await expectCustomError(t, promiseWrongPool, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+});
+
+test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool', async (t) => {
+  const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useSharedEscrow: false,
+    fundPool: false,
+    pNft: true,
+  });
+
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { price: maxAmount } = testConfig;
+  const { mint } = nft;
+
+  // Buy NFT from pool
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount, // Exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  // Pool owner edits the pool to update the mmFee to the maximum value.
+  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+
+  let editPoolIx = getEditPoolInstruction({
+    owner: poolOwner,
+    pool,
+    newConfig,
+    resetPriceOffset: false,
+  });
+
+  // Pool owner edits the pool right before the buy instruction is executed.
+  // Actual sandwich attack would be separate transactions, but this demonstrates the point as it's
+  // a more generous assumption in favor of the attacker.
+  let promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstructions([editPoolIx, buyNftIx], tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+
+  // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
+  // which is the case in this test.
+  const newMmFeeBps = tradePoolConfig.mmFeeBps! + 1;
+  newConfig = { ...tradePoolConfig, mmFeeBps: newMmFeeBps };
+
+  editPoolIx = getEditPoolInstruction({
+    owner: poolOwner,
+    pool,
+    newConfig,
+    resetPriceOffset: false,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstructions([editPoolIx, buyNftIx], tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should still fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 });

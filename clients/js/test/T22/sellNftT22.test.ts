@@ -3,6 +3,7 @@ import {
   Account,
   Address,
   appendTransactionMessageInstruction,
+  appendTransactionMessageInstructions,
   generateKeyPairSigner,
   pipe,
 } from '@solana/web3.js';
@@ -19,6 +20,7 @@ import test from 'ava';
 import {
   fetchMaybePool,
   fetchPool,
+  getEditPoolInstruction,
   getSellNftTokenPoolT22InstructionAsync,
   getSellNftTradePoolT22InstructionAsync,
   isSol,
@@ -27,6 +29,7 @@ import {
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__BAD_MINT_PROOF,
   TENSOR_AMM_ERROR__BAD_WHITELIST,
+  TENSOR_AMM_ERROR__PRICE_MISMATCH,
 } from '../../src';
 import {
   assertNftReceiptCreated,
@@ -43,6 +46,7 @@ import {
   TAKER_FEE_BPS,
   TestAction,
   tokenPoolConfig,
+  tradePoolConfig,
   upsertMintProof,
 } from '../_common';
 import { generateTreeOfSize } from '../_merkle';
@@ -1030,4 +1034,76 @@ test('selling into a Token pool fails when the wrong creator is passed in as a r
     promise,
     'insufficient account keys for instruction'
   );
+});
+
+test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', async (t) => {
+  const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
+    await setupT22Test({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      fundPool: true,
+    });
+
+  const { buyer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint, extraAccountMetas } = nft;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    whitelist,
+    mint,
+    mintProof,
+    minPrice, // exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  // Pool owner edits the pool to update the mmFee to the maximum value.
+  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+
+  let editPoolIx = getEditPoolInstruction({
+    owner: poolOwner,
+    pool,
+    newConfig,
+    resetPriceOffset: false,
+  });
+
+  // Pool owner edits the pool right before the sell instruction is executed.
+  // Actual sandwich attack would be separate transactions, but this demonstrates the point as it's
+  // a more generous assumption in favor of the attacker.
+  let promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstructions([editPoolIx, sellNftIx], tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+
+  // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
+  // which is the case in this test.
+  const newMmFeeBps = tradePoolConfig.mmFeeBps! + 1;
+  newConfig = { ...tradePoolConfig, mmFeeBps: newMmFeeBps };
+
+  editPoolIx = getEditPoolInstruction({
+    owner: poolOwner,
+    pool,
+    newConfig,
+    resetPriceOffset: false,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstructions([editPoolIx, sellNftIx], tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should still fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 });
