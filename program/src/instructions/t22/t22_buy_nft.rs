@@ -1,14 +1,28 @@
 //! Buy a Token22 NFT from a NFT or Trade pool.
-use constants::TFEE_PROGRAM_ID;
-use escrow_program::instructions::assert_decode_margin_account;
-
-use super::*;
-
-use self::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+use crate::{
+    calc_taker_fees,
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    error::ErrorCode,
     program::AmmProgram,
+    record_event, try_autoclose_pool, BuySellEvent, Fees, NftDepositReceipt, Pool, PoolType,
+    TAmmEvent, TakerSide, POOL_SIZE,
 };
-use crate::{error::ErrorCode, *};
+
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction},
+};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
+};
+use escrow_program::instructions::assert_decode_margin_account;
+use tensor_toolbox::{
+    calc_creators_fee, shard_num,
+    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
+    transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
+};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -196,8 +210,9 @@ pub fn process_t22_buy_nft<'info, 'b>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
@@ -205,6 +220,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
+    // This resolves to 0 for NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.
@@ -218,6 +234,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
         &[pool.bump[0]],
     ]];
 
+    // Setup the transfer CPI
     let mut transfer_cpi = CpiContext::new(
         ctx.accounts.token_program.to_account_info(),
         TransferChecked {
@@ -269,12 +286,6 @@ pub fn process_t22_buy_nft<'info, 'b>(
         (vec![], vec![], 0)
     };
 
-    transfer_checked(
-        transfer_cpi.with_signer(signer_seeds),
-        1, // supply = 1
-        0, // decimals = 0
-    )?;
-
     // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
@@ -287,9 +298,19 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    if current_price > max_amount {
+    // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
+    let price = unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) });
+
+    if price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
     }
+
+    // Perform the transfer
+    transfer_checked(
+        transfer_cpi.with_signer(signer_seeds),
+        1, // supply = 1
+        0, // decimals = 0
+    )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
     // don't have the context of manual lamport balance changes so need to come before.

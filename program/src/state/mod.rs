@@ -1,8 +1,10 @@
 //! Program state.
+pub mod asset_deposit_receipt;
 pub mod event;
 pub mod nft_deposit_receipt;
 pub mod pool;
 
+pub use asset_deposit_receipt::*;
 pub use event::*;
 pub use nft_deposit_receipt::*;
 pub use pool::*;

@@ -5,8 +5,10 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
+pub(crate) mod r#asset_deposit_receipt;
 pub(crate) mod r#nft_deposit_receipt;
 pub(crate) mod r#pool;
 
+pub use self::r#asset_deposit_receipt::*;
 pub use self::r#nft_deposit_receipt::*;
 pub use self::r#pool::*;

@@ -1,4 +1,11 @@
 //! Deposit a MPL Core NFT into a NFT or Trade pool.
+use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
+    types::{PluginType, UpdateAuthority, VerifiedCreators}
+};
+use mpl_token_metadata::types::{Collection, Creator};
+
 use super::*;
 
 /// Instruction accounts.
@@ -43,7 +50,7 @@ pub struct DepositNftCore<'info> {
         bump,
         seeds::program = whitelist_program::ID
     )]
-    pub mint_proof: UncheckedAccount<'info>,
+    pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The MPL core asset account.
     /// CHECK: validated on instruction handler
@@ -78,19 +85,66 @@ pub struct DepositNftCore<'info> {
 
 impl<'info> DepositNftCore<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        let mint_proof =
-            assert_decode_mint_proof_v2(&self.whitelist, &self.asset.key(), &self.mint_proof)?;
+        let royalties = validate_asset(
+            &self.asset.to_account_info(),
+            self.collection
+                .as_ref()
+                .map(|a| a.to_account_info())
+                .as_ref(),
+        )?;
+        msg!("royalties: {:?}", royalties);
 
-        let leaf = keccak::hash(self.asset.key().as_ref());
-        let proof = &mut mint_proof.proof.to_vec();
-        proof.truncate(mint_proof.proof_len as usize);
-        let full_merkle_proof = Some(FullMerkleProof {
-            leaf: leaf.0,
-            proof: proof.clone(),
-        });
+        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
 
-        // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
-        self.whitelist.verify(&None, &None, &full_merkle_proof)
+        // Fetch the verified creators from the MPL Core asset and map into the expected type.
+        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
+            &self.asset.to_account_info(),
+            PluginType::VerifiedCreators,
+        )
+        .map(|(_, verified_creators, _)| {
+            verified_creators
+                .signatures
+                .into_iter()
+                .map(|c| Creator {
+                    address: c.address,
+                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
+                    verified: c.verified,
+                })
+                .collect()
+        })
+        .ok();
+
+        let collection = match asset.update_authority {
+            UpdateAuthority::Collection(address) => Some(Collection {
+                key: address,
+                verified: true, // Only the collection update authority can set a collection, so this is always verified.
+            }),
+            _ => None,
+        };
+
+        msg!("creators: {:?}", creators);
+        msg!("collection: {:?}", collection);
+
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            msg!("mint_proof: {:?}", mint_proof.key());
+            let mint_proof =
+                assert_decode_mint_proof_v2(&self.whitelist, &self.asset.key(), mint_proof)?;
+
+            let leaf = keccak::hash(self.asset.key().as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            None
+        };
+
+        msg!("full_merkle_proof: {:?}", full_merkle_proof);
+
+        self.whitelist
+            .verify(&collection, &creators, &full_merkle_proof)
     }
 }
 

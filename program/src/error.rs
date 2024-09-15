@@ -187,27 +187,27 @@ pub enum ErrorCode {
     #[msg("Pool not expired")]
     PoolNotExpired,
 
-    // 6042 | 0x179a
+    // 6045 | 0x179d
     #[msg("Unsupported currency")]
     UnsupportedCurrency,
 
-    // 6043 | 0x179b
+    // 6046 | 0x179e
     #[msg("Invalid pool amount")]
     InvalidPoolAmount,
 
-    // 6044 | 0x179c
+    // 6047 | 0x179f
     #[msg("Wrong broker account")]
     WrongBrokerAccount,
 
-    // 6045 | 0x179d
+    // 6048 | 0x17a0
     #[msg("Wrong rent payer")]
     WrongOwner,
 
-    // 6046 | 0x179e
+    // 6049 | 0x17a1
     #[msg("Escrow program not set")]
     EscrowProgramNotSet,
 
-    // 6047 | 0x179f
+    // 6050 | 0x17a2
     #[msg("Mint proof not set")]
     MintProofNotSet,
 }

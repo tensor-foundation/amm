@@ -1,10 +1,34 @@
-use crate::constants::MAKER_BROKER_PCT;
+//! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction},
+};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
+};
 
-use super::*;
+use escrow_program::instructions::assert_decode_margin_account;
+use mpl_token_metadata::types::AuthorizationData;
+use tensor_toolbox::{
+    shard_num,
+    token_metadata::{assert_decode_metadata, transfer, TransferArgs},
+    transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal,
+};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+
+use crate::{
+    calc_taker_fees,
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    error::ErrorCode,
+    program::AmmProgram,
+    record_event, try_autoclose_pool, AuthorizationDataLocal, BuySellEvent, Fees,
+    NftDepositReceipt, Pool, PoolType, TAmmEvent, TakerSide, MPL_TOKEN_AUTH_RULES_ID, POOL_SIZE,
+};
 
 /// Instruction accounts.
 #[derive(Accounts)]
-pub struct BuyNftCore<'info> {
+pub struct BuyNft<'info> {
     /// Owner is the pool owner who created the pool and the nominal owner of the
     /// escrowed NFT. In this transaction they are the seller, though the transfer
     /// of the NFT is handled by the pool.
@@ -47,34 +71,92 @@ pub struct BuyNftCore<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner,
+        // can only buy from NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
-        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
-    /// The MPL core asset account.
-    /// CHECK: validated on instruction handler
-    #[account(mut)]
-    pub asset: UncheckedAccount<'info>,
+    /// The TA of the buyer, where the NFT will be transferred.
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = mint,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// CHECK: validated on instruction handler
-    pub collection: Option<UncheckedAccount<'info>>,
+    /// The TA of the pool, where the NFT is held.
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = pool,
+    )]
+    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    /// The mint account of the NFT.
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// The Token Metadata metadata account of the NFT.
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
+    #[account(mut)]
+    pub metadata: UncheckedAccount<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
-        seeds=[
+        seeds = [
             b"nft_receipt".as_ref(),
-            asset.key().as_ref(),
+            mint.key().as_ref(),
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // Check the receipt is for the correct pool and mint.
-        constraint = nft_receipt.mint == asset.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        // Check that the mint and pool match the nft receipt.
+        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
-        close = buyer,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
+
+    /// The SPL Token program for the Mint and ATAs.
+    pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL associated token program.
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    /// The Solana system program.
+    pub system_program: Program<'info, System>,
+
+    // --------------------------------------- pNft
+    /// The Token Metadata edition account for the NFT.
+    /// CHECK: seeds checked on Token Metadata CPI
+    pub edition: UncheckedAccount<'info>,
+
+    /// The Token Metadata token record for the pool.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
+    pub pool_token_record: Option<UncheckedAccount<'info>>,
+
+    /// The Token Metadata token record for the buyer.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
+    pub buyer_token_record: Option<UncheckedAccount<'info>>,
+
+    /// The Token Metadata program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = mpl_token_metadata::ID)]
+    pub token_metadata_program: Option<UncheckedAccount<'info>>,
+
+    /// The sysvar instructions account.
+    /// CHECK: address constraint is checked here
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub sysvar_instructions: Option<UncheckedAccount<'info>>,
+
+    /// The Metaplex Token Authority Rules program account.
+    /// CHECK: address constraint is checked here
+    #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
+    pub authorization_rules_program: Option<UncheckedAccount<'info>>,
+
+    /// The Metaplex Token Authority Rules account that stores royalty enforcement rules.
+    /// CHECK: validated by mplex's pnft code
+    pub authorization_rules: Option<UncheckedAccount<'info>>,
 
     /// The shared escrow account for pools that pool liquidity in a shared account.
     /// CHECK: optional, manually handled in handler: 1)seeds, 2)program owner, 3)normal owner, 4) shared escrow acc stored on pool
@@ -100,19 +182,50 @@ pub struct BuyNftCore<'info> {
 
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: Program<'info, AmmProgram>,
-
-    /// The MPL Core program.
-    /// CHECK: address constraint is checked here
-    #[account(address = mpl_core::ID)]
-    pub mpl_core_program: UncheckedAccount<'info>,
-
-    /// The Solana system program.
-    pub system_program: Program<'info, System>,
-    //
-    // ---- [0..n] remaining accounts for royalties transfer hook
+    // remaining accounts:
+    // optional 0 to N creator accounts.
 }
 
-impl<'info> Validate<'info> for BuyNftCore<'info> {
+impl<'info> BuyNft<'info> {
+    /// Closes the pool's token account.
+    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.pool_ta.to_account_info(),
+                destination: self.buyer.to_account_info(),
+                authority: self.pool.to_account_info(),
+            },
+        )
+    }
+
+    /// Transfer lamports from the buyer to the specified address.
+    fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
+        invoke(
+            &system_instruction::transfer(self.buyer.key, to.key, lamports),
+            &[
+                self.buyer.to_account_info(),
+                to.clone(),
+                self.system_program.to_account_info(),
+            ],
+        )
+        .map_err(Into::into)
+    }
+
+    /// Transfers lamports, skipping the transfer if not rent exempt
+    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
+        let rent = Rent::get()?.minimum_balance(to.data_len());
+        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
+            //skip current creator, we can't pay them
+            return Ok(());
+        }
+        self.transfer_lamports(to, lamports)?;
+        Ok(())
+    }
+}
+
+impl<'info> Validate<'info> for BuyNft<'info> {
+    /// Validates the BuyNft instruction.
     fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
         if let Some(cosigner) = self.pool.cosigner.value() {
@@ -128,44 +241,22 @@ impl<'info> Validate<'info> for BuyNftCore<'info> {
     }
 }
 
-impl<'info> BuyNftCore<'info> {
-    fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        invoke(
-            &system_instruction::transfer(self.buyer.key, to.key, lamports),
-            &[
-                self.buyer.to_account_info(),
-                to.clone(),
-                self.system_program.to_account_info(),
-            ],
-        )
-        .map_err(Into::into)
-    }
-
-    /// transfers lamports, skipping the transfer if not rent exempt
-    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        let rent = Rent::get()?.minimum_balance(to.data_len());
-        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
-            //skip current creator, we can't pay them
-            return Ok(());
-        }
-        self.transfer_lamports(to, lamports)?;
-        Ok(())
-    }
-}
-
-/// Buy a Token22 NFT from a NFT or Trade pool.
+/// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
 #[access_control(ctx.accounts.validate())]
-pub fn process_buy_nft_core<'info, 'b>(
-    ctx: Context<'_, 'b, '_, 'info, BuyNftCore<'info>>,
-    // Max vs exact so we can add slippage later.
+pub fn process_buy_nft<'info, 'b>(
+    ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,
     max_amount: u64,
+    authorization_data: Option<AuthorizationDataLocal>,
+    optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     let pool = &ctx.accounts.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
+
+    // Protocol and broker fees.
     let Fees {
         taker_fee,
         tamm_fee,
@@ -173,46 +264,14 @@ pub fn process_buy_nft_core<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
+    // This resolves to 0 for NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
-    // Validate asset account and determine if royalites need to be paid.
-    let royalties = validate_asset(
-        &ctx.accounts.asset.to_account_info(),
-        ctx.accounts
-            .collection
-            .as_ref()
-            .map(|a| a.to_account_info())
-            .as_ref(),
-    )?;
+    let metadata = &assert_decode_metadata(&ctx.accounts.mint.key(), &ctx.accounts.metadata)?;
+    let creators_fee = pool.calc_creators_fee(metadata, current_price, optional_royalty_pct)?;
 
-    let royalty_fee = if let Some(Royalties { basis_points, .. }) = royalties {
-        basis_points
-    } else {
-        0
-    };
-
-    // No optional royalties.
-    let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
-
-    // Transfer the NFT from the pool to the buyer.
-
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"pool",
-        owner_pubkey.as_ref(),
-        pool.pool_id.as_ref(),
-        &[pool.bump[0]],
-    ]];
-
-    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
-        .asset(&ctx.accounts.asset)
-        .authority(Some(&ctx.accounts.pool.to_account_info()))
-        .new_owner(&ctx.accounts.buyer)
-        .payer(&ctx.accounts.buyer)
-        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
-        .invoke_signed(signer_seeds)?;
-
-    // For keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    // for keeping track of current price + fees charged (computed dynamically)
+    // we do this before PriceMismatch check for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
         current_price,
         taker_fee,
@@ -223,12 +282,52 @@ pub fn process_buy_nft_core<'info, 'b>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    let total_price = current_price + taker_fee + mm_fee + creators_fee;
+    // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
+    let price = unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) });
 
-    // Check slippage including fees.
-    if total_price > max_amount {
+    if price > max_amount {
         throw_err!(ErrorCode::PriceMismatch);
     }
+
+    let signer_seeds: &[&[&[u8]]] = &[&[
+        b"pool",
+        owner_pubkey.as_ref(),
+        pool.pool_id.as_ref(),
+        &[pool.bump[0]],
+    ]];
+
+    // Transfer nft to buyer
+    // Has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
+    transfer(
+        TransferArgs {
+            payer: &ctx.accounts.buyer.to_account_info(),
+            source: &ctx.accounts.pool.to_account_info(),
+            source_ata: &ctx.accounts.pool_ta,
+            destination: &ctx.accounts.buyer,
+            destination_ata: &ctx.accounts.buyer_ta,
+            mint: &ctx.accounts.mint,
+            metadata: &ctx.accounts.metadata,
+            edition: &ctx.accounts.edition,
+            system_program: &ctx.accounts.system_program,
+            spl_token_program: &ctx.accounts.token_program,
+            spl_ata_program: &ctx.accounts.associated_token_program,
+            token_metadata_program: ctx.accounts.token_metadata_program.as_ref(),
+            sysvar_instructions: ctx.accounts.sysvar_instructions.as_ref(),
+            source_token_record: ctx.accounts.pool_token_record.as_ref(),
+            destination_token_record: ctx.accounts.buyer_token_record.as_ref(),
+            authorization_rules: ctx.accounts.authorization_rules.as_ref(),
+            authorization_rules_program: ctx.accounts.authorization_rules_program.as_ref(),
+            authorization_data: authorization_data.map(AuthorizationData::from),
+            delegate: None,
+        },
+        Some(signer_seeds),
+    )?;
+
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // close nft escrow account
+    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
 
     /*  **Transfer Fees**
     The buy price is the total price the buyer pays for buying the NFT from the pool.
@@ -237,10 +336,9 @@ pub fn process_buy_nft_core<'info, 'b>(
 
     taker_fee = tamm_fee + broker_fee + maker_rebate
 
-    The mm_fee is the fee paid to the MM for providing liquidity to the pool and only applies to Trade pools.
-
     Fees are paid by individual transfers as they go to various accounts depending on the pool type
     and configuration.
+
     */
 
     // Determine the SOL destination: owner, pool or shared escrow account.
@@ -297,20 +395,26 @@ pub fn process_buy_nft_core<'info, 'b>(
         taker_broker_fee,
     )?;
 
-    // Pay creator royalties.
-    if let Some(Royalties { creators, .. }) = royalties {
-        transfer_creators_fee(
-            &creators.into_iter().map(Into::into).collect(),
-            &mut ctx.remaining_accounts.iter(),
-            creators_fee,
-            &CreatorFeeMode::Sol {
-                from: &FromAcc::External(&FromExternal {
-                    from: &ctx.accounts.buyer.to_account_info(),
-                    sys_prog: &ctx.accounts.system_program,
-                }),
-            },
-        )?;
-    }
+    // transfer royalties (on top of current price)
+    // Buyer pays the royalty fee.
+    let remaining_accounts = &mut ctx.remaining_accounts.iter();
+    transfer_creators_fee(
+        &metadata
+            .creators
+            .clone()
+            .unwrap_or(Vec::new())
+            .into_iter()
+            .map(Into::into)
+            .collect(),
+        remaining_accounts,
+        creators_fee,
+        &CreatorFeeMode::Sol {
+            from: &FromAcc::External(&FromExternal {
+                from: &ctx.accounts.buyer.to_account_info(),
+                sys_prog: &ctx.accounts.system_program,
+            }),
+        },
+    )?;
 
     // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
     ctx.accounts
@@ -342,7 +446,6 @@ pub fn process_buy_nft_core<'info, 'b>(
     pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
     pool.updated_at = Clock::get()?.unix_timestamp;
 
-    //record the entirety of MM fee during the buy tx
     if pool.config.pool_type == PoolType::Trade {
         pool.stats.accumulated_mm_profit =
             unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
@@ -364,6 +467,7 @@ pub fn process_buy_nft_core<'info, 'b>(
         );
     }
 
+    // If the pool is an NFT pool, and no remaining NFTs held, we can close it.
     try_autoclose_pool(
         pool,
         ctx.accounts.rent_payer.to_account_info(),

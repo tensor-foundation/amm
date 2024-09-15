@@ -3,14 +3,34 @@
 //!
 //! The seller is the owner of the NFT and receives the pool's current price in return.
 //! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
+// (!) Keep common logic in sync with sell_nft_token_pool.rs.
 
-use super::*;
-
-use self::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    program::AmmProgram,
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
-use crate::{error::ErrorCode, *};
+use escrow_program::instructions::assert_decode_margin_account;
+use solana_program::keccak;
+use tensor_escrow::instructions::{
+    WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
+};
+use tensor_toolbox::{
+    calc_creators_fee, escrow, shard_num,
+    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
+    transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
+};
+use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof, WhitelistV2};
+
+use crate::{
+    calc_taker_fees,
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    error::ErrorCode,
+    program::AmmProgram,
+    record_event, BuySellEvent, Fees, NftDepositReceipt, Pool, PoolType, TAmmEvent, TakerSide,
+    DEPOSIT_RECEIPT_SIZE, POOL_SIZE,
+};
 
 /// Sell a Token22 NFT into a Trade pool.
 #[derive(Accounts)]
@@ -172,7 +192,7 @@ impl<'info> SellNftTradePoolT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof =
-                assert_decode_mint_proof_v2(&self.whitelist, &self.mint.key(), mint_proof)?;
+                assert_decode_mint_proof_v2(&self.whitelist.key(), &self.mint.key(), mint_proof)?;
 
             let leaf = keccak::hash(self.mint.key().as_ref());
             let proof = &mut mint_proof.proof.to_vec();
@@ -212,14 +232,16 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate mint account and determine if royalites need to be paid.
@@ -277,14 +299,6 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
         (vec![], vec![], 0)
     };
 
-    transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
-
-    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
-    // don't have the context of manual lamport balance changes so need to come before.
-
-    // Close seller ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
-
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     //
@@ -298,11 +312,24 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
+    // Check that the price + fees the seller receives isn't lower than the min price the user specified.
+    let price = current_price
+        .checked_sub(mm_fee)
+        .ok_or(ErrorCode::PriceMismatch)?
+        .checked_sub(creators_fee)
+        .ok_or(ErrorCode::PriceMismatch)?;
 
-    if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
+    if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
+
+    transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+
+    // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
+    // don't have the context of manual lamport balance changes so need to come before.
+
+    // Close seller ATA to return rent to the rent payer.
+    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
 
     // Signer seeds for the pool account.
     let signer_seeds: &[&[&[u8]]] = &[&[

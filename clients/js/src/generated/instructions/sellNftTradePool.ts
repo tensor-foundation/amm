@@ -47,7 +47,6 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolvePoolAta,
-  resolvePoolNftReceipt,
   resolvePoolTokenRecordFromTokenStandard,
   resolveSellerAta,
   resolveSellerTokenRecordFromTokenStandard,
@@ -56,8 +55,13 @@ import {
   type TokenStandardArgs,
 } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
+import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from '../shared';
 import {
   getAuthorizationDataLocalDecoder,
   getAuthorizationDataLocalEncoder,
@@ -535,10 +539,10 @@ export async function getSellNftTradePoolInstructionAsync<
     };
   }
   if (!accounts.nftReceipt.value) {
-    accounts.nftReceipt = {
-      ...accounts.nftReceipt,
-      ...(await resolvePoolNftReceipt(resolverScope)),
-    };
+    accounts.nftReceipt.value = await findNftDepositReceiptPda({
+      mint: expectAddress(accounts.mint.value),
+      pool: expectAddress(accounts.pool.value),
+    });
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =

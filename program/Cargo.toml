@@ -20,6 +20,7 @@ program-dependencies = [
     "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg",
     "SysExL2WDyJi9aRZrXorrjHJut3JwHQ7R9bTyctbNNG",
     "TokExjvjJmhKaRBShsBAsbSvEWMA1AgUNK7ps4SAc2p",
+    "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
 ]
 account-dependencies = ["99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G"]
 external-programs-repositories = [
@@ -32,7 +33,6 @@ external-programs-repositories = [
         "TL1ST2iRBzuGTqLn1KXnGdSnEow62BzPnGiqyRXhWtW",
     ],
 ]
-
 
 [lib]
 crate-type = ["cdylib", "lib"]
