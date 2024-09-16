@@ -214,9 +214,9 @@ test('Exponential pool pricing after 20 sells', async (t) => {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
     startingPrice: 1_000_000_000n,
-    delta: 0n, // 14.4%  delta
+    delta: 14_40n, // 14.4%  delta
     mmCompoundFees: false,
-    mmFeeBps: 500, // 4.58% mmFeeBps
+    mmFeeBps: 4_58, // 4.58% mmFeeBps
   };
   const { client, pool, signers, whitelist } = await setupLegacyTest({
     t,
@@ -325,16 +325,16 @@ test('Exponential pool pricing speed test', async (t) => {
 test('Linear pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
-    poolType: PoolType.Trade,
+    poolType: PoolType.NFT,
     curveType: CurveType.Linear,
     startingPrice: 4n * ONE_SOL,
     delta: 147_000_000n, // 0.147 sol delta
     mmCompoundFees: false,
-    mmFeeBps: 5,
+    mmFeeBps: null,
   };
   const { client, pool, signers, whitelist } = await setupLegacyTest({
     t,
-    poolType: PoolType.Trade,
+    poolType: PoolType.NFT,
     action: TestAction.Buy,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
@@ -352,9 +352,16 @@ test('Linear pool pricing after 30 buys', async (t) => {
     30
   );
 
-  await buyNftsFromPool(t, client, pool, nfts, poolOwner, nftOwner, [
-    nftUpdateAuthority.address,
-  ]);
+  await buyNftsFromPool(
+    t,
+    client,
+    pool,
+    nfts,
+    poolOwner,
+    nftOwner,
+    PoolType.NFT,
+    [nftUpdateAuthority.address]
+  );
 
   // Verify final pool state
   const finalPoolAccount = await fetchPool(client.rpc, pool);
@@ -392,9 +399,16 @@ test('Exponential pool pricing after 30 buys', async (t) => {
     30
   );
 
-  await buyNftsFromPool(t, client, pool, nfts, poolOwner, buyer, [
-    nftUpdateAuthority.address,
-  ]);
+  await buyNftsFromPool(
+    t,
+    client,
+    pool,
+    nfts,
+    poolOwner,
+    buyer,
+    PoolType.Trade,
+    [nftUpdateAuthority.address]
+  );
 
   // Verify final pool state
   const finalPoolAccount = await fetchPool(client.rpc, pool);
@@ -455,35 +469,31 @@ async function buyNftsFromPool(
   nfts: Nft[],
   poolOwner: KeyPairSigner,
   buyer: KeyPairSigner,
+  poolType: PoolType,
   creators: Address[]
 ) {
-  let i = 0;
-  let lastPoolAmountBeforeSale = 0n;
-  let lastCalculatedPrice = 0;
   for (const nft of nfts) {
-    const poolAccount = await fetchPool(client.rpc, pool);
-    const currentPrice = getCurrentAskPrice(poolAccount.data);
-    if (i !== 0) {
-      // assert last calculated price exactly matched actual price
-      t.assert(
-        poolAccount.data.amount -
-          lastPoolAmountBeforeSale -
-          BigInt(lastCalculatedPrice) ===
-          0n
-      );
-    }
-    if (currentPrice === null) {
+    const poolOwnerBefore = await client.rpc
+      .getBalance(poolOwner.address)
+      .send();
+    const buyerBefore = await client.rpc.getBalance(buyer.address).send();
+    const poolAccountBefore = await fetchPool(client.rpc, pool);
+    const currentTakerPrice = getCurrentAskPrice(poolAccountBefore.data);
+    const currentMakerPrice = getCurrentAskPrice(
+      poolAccountBefore.data,
+      undefined,
+      true
+    );
+    if (currentTakerPrice === null || currentMakerPrice === null) {
       t.fail('Current price is null');
     }
-    lastPoolAmountBeforeSale = poolAccount.data.amount;
-    lastCalculatedPrice = currentPrice;
 
     const buyNftIx = await getBuyNftInstructionAsync({
       owner: poolOwner.address,
       buyer: buyer,
       pool,
       mint: nft.mint,
-      maxAmount: BigInt(currentPrice),
+      maxAmount: BigInt(currentTakerPrice),
       creators,
     });
 
@@ -492,14 +502,22 @@ async function buyNftsFromPool(
       (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
-//
-    //const poolAccountAfter = await fetchPool(client.rpc, pool);
-    //t.log(`startingPrice: ${poolAccount.data.config.startingPrice}`);
-    //t.log(`poolType: ${poolAccount.data.config.poolType} (0=token, 1=nft, 2=trade)`)
-    //t.log(`current calculated price (without MM Fee): ${lastCalculatedPrice} (offset: ${poolAccount.data.priceOffset})`);
-    //t.log(`pool amount b4 sale: ${lastPoolAmountBeforeSale}, pool amount after sale: ${poolAccountAfter.data.amount}, price received by pool: ${poolAccountAfter.data.amount-lastPoolAmountBeforeSale}`)
-    //t.log(`price paid by pool === currentPrice used in ix? : ${poolAccountAfter.data.amount-lastPoolAmountBeforeSale === BigInt(lastCalculatedPrice)}`);
-    i += 1;
+    const poolOwnerAfter = await client.rpc
+      .getBalance(poolOwner.address)
+      .send();
+    const buyerAfter = await client.rpc.getBalance(buyer.address).send();
+    const poolAccountAfter = await fetchPool(client.rpc, pool);
+    const poolOwnerDiff = poolOwnerAfter.value - poolOwnerBefore.value;
+    const poolDiff =
+      poolAccountAfter.data.amount - poolAccountBefore.data.amount;
+    let buyerDiff = (buyerAfter.value - buyerBefore.value) * -1n;
+    buyerDiff -= 5000n; // base transaction fees (5k lamports)
+    buyerDiff -= BigInt(Math.floor((2 * currentMakerPrice) / 100)); // taker fees
+    t.assert(buyerDiff === BigInt(currentTakerPrice));
+    if (poolType === PoolType.Trade)
+      t.assert(poolDiff === BigInt(currentMakerPrice));
+    if (poolType === PoolType.NFT)
+      t.assert(poolOwnerDiff === BigInt(currentMakerPrice) + 1398960n); // 1398960n === account rent back
   }
 }
 
@@ -520,7 +538,7 @@ async function sellNftsIntoPool(
     const calculatedTakerPrice = await getCurrentBidPrice(
       client.rpc,
       poolAccountBefore.data
-    )
+    );
     const calculatedMakerPrice = await getCurrentBidPrice(
       client.rpc,
       poolAccountBefore.data,
@@ -552,20 +570,22 @@ async function sellNftsIntoPool(
             creators,
           });
 
-    const tx = await pipe(
+    await pipe(
       await createDefaultTransaction(client, nftOwner),
       (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
     const sellerAfter = await client.rpc.getBalance(nftOwner.address).send();
     const poolAccountAfter = await fetchPool(client.rpc, pool);
-    const poolDiff = (poolAccountAfter.data.amount - poolAccountBefore.data.amount) * -1n;
+    const poolDiff =
+      (poolAccountAfter.data.amount - poolAccountBefore.data.amount) * -1n;
     let sellerDiff = sellerAfter.value - sellerBefore.value;
-    sellerDiff += 5000n // account for base transaction fees (5k lamports) 
-    sellerDiff += BigInt(2 * calculatedMakerPrice / 1_00); // account for taker fees 
-    t.log(`tx succeeded ${!!tx} with minPrice: ${BigInt(calculatedTakerPrice)}, seller received ${sellerDiff} after taker fees and base tx fees`);
-    t.log(`calculated maker price: ${calculatedMakerPrice}, calculated taker price: ${calculatedTakerPrice}, pool difference: ${poolDiff}, seller diff: ${sellerDiff}, pool diff - seller diff: ${poolDiff - sellerDiff}`);
+    sellerDiff += 5000n; // base transaction fees (5k lamports)
+    sellerDiff += BigInt(Math.floor((2 * calculatedMakerPrice) / 100)); // taker fees
+    if (poolType === PoolType.Trade) sellerDiff += 1398960n; // account rent needed for trade pools
+    // Taker price is what seller received (without accounting for base tx fees, taker fees and account rent)
     t.assert(BigInt(calculatedTakerPrice) === sellerDiff);
+    // Maker price is exactly what pool paid for
     t.assert(BigInt(calculatedMakerPrice) === poolDiff);
   }
 }

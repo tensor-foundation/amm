@@ -281,16 +281,21 @@ export function calculatePrice(
   } else {
     resultPrice = Number(startingPrice + delta * BigInt(offset));
   }
-  // subtract mm fee for trade pools on the sell side if wanted
-  if (
-    pool.config.poolType === PoolType.Trade &&
-    side === TakerSide.Sell &&
-    !excludeMMFee
-  ) {
-    resultPrice = Number(
-      BigInt(resultPrice) -
-        (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n
-    );
+
+  // account for mm fee for trade pools if not explicitly specified otherwise
+  if (pool.config.poolType === PoolType.Trade && !excludeMMFee) {
+    resultPrice =
+      side === TakerSide.Sell
+        ? Number(
+            BigInt(resultPrice) -
+              (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) /
+                100_00n
+          )
+        : Number(
+            BigInt(resultPrice) +
+              (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) /
+                100_00n
+          );
   }
   return resultPrice;
 }
