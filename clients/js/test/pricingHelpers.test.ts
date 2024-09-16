@@ -552,7 +552,7 @@ async function sellNftsIntoPool(
             creators,
           });
 
-    await pipe(
+    const tx = await pipe(
       await createDefaultTransaction(client, nftOwner),
       (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
@@ -563,6 +563,7 @@ async function sellNftsIntoPool(
     let sellerDiff = sellerAfter.value - sellerBefore.value;
     sellerDiff += 5000n // account for base transaction fees (5k lamports) 
     sellerDiff += BigInt(2 * calculatedMakerPrice / 1_00); // account for taker fees 
+    t.log(`tx succeeded ${!!tx} with minPrice: ${BigInt(calculatedTakerPrice)}, seller received ${sellerDiff} after taker fees and base tx fees`);
     t.log(`calculated maker price: ${calculatedMakerPrice}, calculated taker price: ${calculatedTakerPrice}, pool difference: ${poolDiff}, seller diff: ${sellerDiff}, pool diff - seller diff: ${poolDiff - sellerDiff}`);
     t.assert(BigInt(calculatedTakerPrice) === sellerDiff);
     t.assert(BigInt(calculatedMakerPrice) === poolDiff);
