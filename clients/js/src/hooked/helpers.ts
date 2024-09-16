@@ -1,20 +1,83 @@
 import {
+  Address,
   GetAccountInfoApi,
   GetMinimumBalanceForRentExemptionApi,
+  ReadonlyUint8Array,
   Rpc,
 } from '@solana/web3.js';
 import {
   CurveType,
   Pool,
+  PoolConfig,
   PoolType,
   TakerSide,
   findPoolPda,
 } from '../generated';
-import { DEFAULT_ADDRESS } from './nullableAddress';
+import { DEFAULT_ADDRESS, NullableAddress } from './nullableAddress';
 
-// returns a maximum of 1000
+/**
+ * Returns the amount of lamports needed for a given quantity of bids
+ * @param pool Pool or PoolConfig with priceOffset
+ * @param bidQuantity Amount of bids
+ * @returns Amount of lamports needed
+ */
+export function getNeededBalanceForBidQuantity(
+  pool: Pool | { config: PoolConfig; priceOffset: number },
+  bidQuantity: number
+): number {
+  if (bidQuantity < 1) return 0;
+  if (pool.config.poolType === PoolType.NFT) return 0;
+
+  // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
+  // Token pool / Trade pool that does not compound fees => exclude MM Fee
+  let excludeMMFee =
+    pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
+
+  if (pool.config.curveType === CurveType.Linear) {
+    const currentPrice = calculatePrice(pool, TakerSide.Sell, 0, excludeMMFee);
+    if (bidQuantity === 1) return currentPrice;
+    const maxPossibleBidsBeforeZero =
+      1 + Number(BigInt(currentPrice) / pool.config.delta);
+    // override bidQuantity with max possible bid quantity or else needed amount of lamports will _decrease_
+    // because of bids with negative lamports which aren't possible
+    bidQuantity = Math.min(bidQuantity, maxPossibleBidsBeforeZero);
+
+    const bases = currentPrice * bidQuantity;
+    const deltas =
+      (Number(pool.config.delta) * (bidQuantity * (bidQuantity - 1))) / 2;
+    return bases - deltas;
+  }
+  // exp
+  else {
+    // calculatePrice is fast enough that we can just iterate over next prices
+    // instead of using geometric sum w/ potentially incorrect roundings
+    let totalPrice = 0;
+    let i = 0;
+    while (bidQuantity > 0) {
+      totalPrice += calculatePrice(pool, TakerSide.Sell, i, excludeMMFee);
+      bidQuantity -= 1;
+      if (totalPrice === 0) break;
+    }
+    return totalPrice;
+  }
+}
+
+/**
+ * Returns the amount of bids a pool or a pool config
+ * can bid for given its available balance (MAX 1000)
+ * @param pool Pool or PoolConfig with additional fields needed for maxTakerSellCount
+ * @param availableLamports Amount of Lamports available to the pool
+ * @returns Number of Bids (MAX 1000)
+ */
 export function getAmountOfBids(
-  pool: Pool,
+  pool:
+    | Pool
+    | {
+        config: PoolConfig;
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      },
   availableLamports: number | bigint
 ): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
@@ -37,32 +100,61 @@ export function getAmountOfBids(
     // instead of using geometric sum w/ potentially incorrect roundings
     let bidCount = 0;
     let accumulatedPrice = 0n;
-    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1000) {
+    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
       let price = calculatePrice(pool, TakerSide.Sell, bidCount, excludeMMFee);
-      if (!price) {
-        break;
-      }
       accumulatedPrice += BigInt(price);
       bidCount += 1;
     }
-    amountOfBidsWithoutMaxCount = bidCount;
+    amountOfBidsWithoutMaxCount = bidCount - 1;
   }
-  return isMaxTakerSellCountApplicable(pool)
-    ? Math.min(amountOfBidsWithoutMaxCount, pool.maxTakerSellCount)
+  return isMaxTakerSellCountReached(pool)
+    ? Math.min(
+        amountOfBidsWithoutMaxCount,
+        pool.maxTakerSellCount + pool.priceOffset
+      )
     : amountOfBidsWithoutMaxCount;
 }
-
+/**
+ * Either returns the current ask price (price the pool currently sells its held NFTs for) or null (if the pool doesn't sell anymore)
+ * @param pool Pool or PoolConfig with additional parameters
+ * @param extraOffset Additional offset to calculate further prices (> 0)
+ * @param excludeMMFee Whether to exclude the MM fee in the returned price
+ * @returns Current Ask Price OR null
+ */
 export function getCurrentAskPrice(
-  pool: Pool,
+  pool:
+    | Pool
+    | {
+        config: PoolConfig;
+        nftsHeld: number;
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      },
   extraOffset: number = 0,
-  excludeMMFee: boolean = true
+  excludeMMFee: boolean = false
 ): number | null {
   if (pool.nftsHeld < 1) return null;
+  if (!isFulfillable(pool, TakerSide.Buy)) return null;
   return calculatePrice(pool, TakerSide.Buy, extraOffset, excludeMMFee);
 }
-
+/**
+ * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left)
+ * @param pool Pool or PoolConfig with additional parameters
+ * @param availableLamports Available Balance to the Pool
+ * @param extraOffset Additional offset to calculate further prices (> 0)
+ * @param excludeMMFee Whether to exclude the MM fee in the returned price
+ * @returns Current Bid Price OR null
+ */
 export function getCurrentBidPriceSync(
-  pool: Pool,
+  pool:
+    | Pool
+    | {
+        config: PoolConfig;
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      },
   availableLamports: number | bigint,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
@@ -73,17 +165,36 @@ export function getCurrentBidPriceSync(
     extraOffset,
     excludeMMFee
   );
-  if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
+  if (!isFulfillable(pool, TakerSide.Buy)) return null;
   return availableLamports >= bidPrice ? bidPrice : null;
 }
-
+/**
+ * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left)
+ * Fetches the current escrow balance - account rent if needed via given RPC
+ * @param rpc Rpc proxy instance
+ * @param pool Pool or PoolConfig with additional parameters
+ * @param extraOffset Additional offset to calculate further prices (> 0)
+ * @param excludeMMFee Whether to exclude the MM fee in the returned price
+ * @returns Current Bid Price OR null
+ */
 export async function getCurrentBidPrice(
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
-  pool: Pool,
+  pool:
+    | Pool
+    | {
+        config: PoolConfig;
+        owner: Address;
+        amount: number;
+        poolId: ReadonlyUint8Array;
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      },
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): Promise<number | null> {
+  if (!isFulfillable(pool, TakerSide.Sell)) return null;
   const bidPrice = calculatePrice(
     pool,
     TakerSide.Sell,
@@ -116,24 +227,20 @@ export async function getCurrentBidPrice(
     .send();
   return BigInt(escrowLamports) - rentExemption >= bidPrice ? bidPrice : null;
 }
-
+/**
+ * Calculates the raw bid/ask price of a pool / pool config
+ * @param pool Pool or PoolConfig with additional parameters
+ * @param side TakerSide.Buy for getting Ask prices / TakerSide.Sell for getting Bid prices
+ * @param extraOffset Additional offset to calculate further prices (> 0)
+ * @param excludeMMFee Whether to exclude the MM fee in the returned price
+ * @returns Resulting bid/ask price
+ */
 export function calculatePrice(
-  pool: Pool,
+  pool: Pool | { config: PoolConfig; priceOffset: number },
   side: TakerSide,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
-): number | null {
-  if (
-    // can't sell into PoolType.NFT
-    (pool.config.poolType === PoolType.NFT && side === TakerSide.Sell) ||
-    // can't buy from a PoolType.Token
-    (pool.config.poolType === PoolType.Token && side === TakerSide.Buy) ||
-    // if maxTakerSellCount is reached when pool is attached to margin acc,
-    // pool can't fulfill more bids
-    (isMaxTakerSellCountApplicable(pool) && side === TakerSide.Sell)
-  )
-    return null;
-
+): number {
   // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Sell)
   const extraOffsetNormalized = Math.abs(extraOffset);
 
@@ -255,7 +362,15 @@ const cutTo12MantissaDecimals = (
   return [adjustedNum, adjustedOffset];
 };
 
-function isMaxTakerSellCountApplicable(pool: Pool): boolean {
+function isMaxTakerSellCountReached(
+  pool:
+    | Pool
+    | {
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      }
+): boolean {
   return (
     pool.priceOffset * -1 === pool.maxTakerSellCount &&
     pool.maxTakerSellCount !== 0 &&
@@ -263,3 +378,25 @@ function isMaxTakerSellCountApplicable(pool: Pool): boolean {
     pool.sharedEscrow !== DEFAULT_ADDRESS
   );
 }
+
+const isFulfillable = (
+  pool:
+    | Pool
+    | {
+        config: PoolConfig;
+        priceOffset: number;
+        maxTakerSellCount: number;
+        sharedEscrow: NullableAddress;
+      },
+  side: TakerSide
+) => {
+  return (
+    // can't sell into PoolType.NFT
+    (pool.config.poolType === PoolType.NFT && side === TakerSide.Sell) ||
+    // can't buy from a PoolType.Token
+    (pool.config.poolType === PoolType.Token && side === TakerSide.Buy) ||
+    // if maxTakerSellCount is reached when pool is attached to margin acc,
+    // pool can't fulfill more bids
+    (isMaxTakerSellCountReached(pool) && side === TakerSide.Sell)
+  );
+};
