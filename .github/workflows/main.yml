@@ -205,21 +205,21 @@ jobs:
           test -z "$(git status --porcelain)"
 
   test_js:
-    if: needs.changes.outputs.js_client == 'true'
+    if: ${{ needs.changes.outputs.js_client == 'true' }}
     name: JavaScript Client
     needs: [changes, generate_clients]
     uses: ./.github/workflows/test-js-client.yml
     secrets: inherit
 
   build_rust_client:
-    if: needs.changes.outputs.rust_client == 'true'
+    if: ${{ needs.changes.outputs.rust_client == 'true' }}
     name: Rust Client
     needs: [changes, generate_clients]
     uses: ./.github/workflows/build-rust-client.yml
     secrets: inherit
 
   test_rust_client:
-    if: needs.changes.outputs.rust_client == 'true'
+    if: ${{ needs.changes.outputs.rust_client == 'true' }}
     name: Rust Client
     needs: [changes, generate_clients]
     uses: ./.github/workflows/test-rust-client.yml

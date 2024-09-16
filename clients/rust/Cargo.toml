@@ -1,6 +1,6 @@
 [package]
 name = "tensor-amm"
-version = "0.3.1"
+version = "0.3.2"
 description = "Client crate for the Tensor Foundation amm program."
 repository = "https://github.com/tensor-foundation/amm"
 homepage = "https://github.com/tensor-foundation/amm"
@@ -22,6 +22,7 @@ num-traits = "^0.2"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.0", optional = true }
 solana-program = "< 1.18"
+spl-math = { version = "0.2.0", features = ["no-entrypoint"] }
 thiserror = "^1.0"
 
 [dev-dependencies]
