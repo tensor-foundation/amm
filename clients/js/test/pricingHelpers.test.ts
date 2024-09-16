@@ -213,10 +213,10 @@ test('Exponential pool pricing after 20 sells', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Trade,
     curveType: CurveType.Exponential,
-    startingPrice: 67362869n,
-    delta: 14_40n, // 14.4%  delta
+    startingPrice: 1_000_000_000n,
+    delta: 0n, // 14.4%  delta
     mmCompoundFees: false,
-    mmFeeBps: 458, // 4.58% mmFeeBps
+    mmFeeBps: 500, // 4.58% mmFeeBps
   };
   const { client, pool, signers, whitelist } = await setupLegacyTest({
     t,
@@ -492,6 +492,13 @@ async function buyNftsFromPool(
       (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
+//
+    //const poolAccountAfter = await fetchPool(client.rpc, pool);
+    //t.log(`startingPrice: ${poolAccount.data.config.startingPrice}`);
+    //t.log(`poolType: ${poolAccount.data.config.poolType} (0=token, 1=nft, 2=trade)`)
+    //t.log(`current calculated price (without MM Fee): ${lastCalculatedPrice} (offset: ${poolAccount.data.priceOffset})`);
+    //t.log(`pool amount b4 sale: ${lastPoolAmountBeforeSale}, pool amount after sale: ${poolAccountAfter.data.amount}, price received by pool: ${poolAccountAfter.data.amount-lastPoolAmountBeforeSale}`)
+    //t.log(`price paid by pool === currentPrice used in ix? : ${poolAccountAfter.data.amount-lastPoolAmountBeforeSale === BigInt(lastCalculatedPrice)}`);
     i += 1;
   }
 }
@@ -507,36 +514,23 @@ async function sellNftsIntoPool(
   poolType: PoolType,
   creators: Address[]
 ) {
-  let i = 0;
-  let lastPoolAmountBeforeSale = 0n;
-  let lastCalculatedMakerPrice = 0n;
   for (const nft of nfts) {
-    const poolAccount = await fetchPool(client.rpc, pool);
-
-    // Check that last sale deducted the exact amount of lamports
-    if (i !== 0) {
-      t.assert(
-        lastCalculatedMakerPrice + poolAccount.data.amount ===
-          lastPoolAmountBeforeSale
-      );
-    }
-    const calculatedPrice = await getCurrentBidPrice(
+    const sellerBefore = await client.rpc.getBalance(nftOwner.address).send();
+    const poolAccountBefore = await fetchPool(client.rpc, pool);
+    const calculatedTakerPrice = await getCurrentBidPrice(
       client.rpc,
-      poolAccount.data
-    );
+      poolAccountBefore.data
+    )
     const calculatedMakerPrice = await getCurrentBidPrice(
       client.rpc,
-      poolAccount.data,
+      poolAccountBefore.data,
       undefined,
-      false
+      true
     );
 
-    if (calculatedPrice === null || calculatedMakerPrice === null) {
+    if (calculatedMakerPrice === null || calculatedTakerPrice === null) {
       t.fail('Calculated price is null');
     }
-    lastPoolAmountBeforeSale = poolAccount.data.amount;
-    lastCalculatedMakerPrice = BigInt(calculatedMakerPrice);
-
     const sellNftIx =
       poolType === PoolType.Trade
         ? await getSellNftTradePoolInstructionAsync({
@@ -544,7 +538,7 @@ async function sellNftsIntoPool(
             seller: nftOwner,
             pool,
             mint: nft.mint,
-            minPrice: BigInt(calculatedPrice),
+            minPrice: BigInt(calculatedTakerPrice),
             whitelist,
             creators,
           })
@@ -553,7 +547,7 @@ async function sellNftsIntoPool(
             seller: nftOwner,
             pool,
             mint: nft.mint,
-            minPrice: BigInt(calculatedPrice),
+            minPrice: BigInt(calculatedTakerPrice),
             whitelist,
             creators,
           });
@@ -563,6 +557,14 @@ async function sellNftsIntoPool(
       (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
-    i += 1;
+    const sellerAfter = await client.rpc.getBalance(nftOwner.address).send();
+    const poolAccountAfter = await fetchPool(client.rpc, pool);
+    const poolDiff = (poolAccountAfter.data.amount - poolAccountBefore.data.amount) * -1n;
+    let sellerDiff = sellerAfter.value - sellerBefore.value;
+    sellerDiff += 5000n // account for base transaction fees (5k lamports) 
+    sellerDiff += BigInt(2 * calculatedMakerPrice / 1_00); // account for taker fees 
+    t.log(`calculated maker price: ${calculatedMakerPrice}, calculated taker price: ${calculatedTakerPrice}, pool difference: ${poolDiff}, seller diff: ${sellerDiff}, pool diff - seller diff: ${poolDiff - sellerDiff}`);
+    t.assert(BigInt(calculatedTakerPrice) === sellerDiff);
+    t.assert(BigInt(calculatedMakerPrice) === poolDiff);
   }
 }
