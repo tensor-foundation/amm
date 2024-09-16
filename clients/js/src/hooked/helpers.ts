@@ -135,7 +135,7 @@ export function getCurrentAskPrice(
   excludeMMFee: boolean = false
 ): number | null {
   if (pool.nftsHeld < 1) return null;
-  if (!isFulfillable(pool, TakerSide.Buy)) return null;
+  if (isNotFulfillable(pool, TakerSide.Buy)) return null;
   return calculatePrice(pool, TakerSide.Buy, extraOffset, excludeMMFee);
 }
 /**
@@ -166,7 +166,7 @@ export function getCurrentBidPriceSync(
     excludeMMFee
   );
   if (bidPrice < 1) return 0;
-  if (!isFulfillable(pool, TakerSide.Buy)) return null;
+  if (isNotFulfillable(pool, TakerSide.Buy)) return null;
   return availableLamports >= bidPrice ? bidPrice : null;
 }
 /**
@@ -194,7 +194,7 @@ export async function getCurrentBidPrice(
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): Promise<number | null> {
-  if (!isFulfillable(pool, TakerSide.Sell)) return null;
+  if (isNotFulfillable(pool, TakerSide.Sell)) return null;
   const bidPrice = calculatePrice(
     pool,
     TakerSide.Sell,
@@ -379,7 +379,7 @@ function isMaxTakerSellCountReached(
   );
 }
 
-const isFulfillable = (
+const isNotFulfillable = (
   pool:
     | Pool
     | {
