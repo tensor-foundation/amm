@@ -20,9 +20,10 @@ export function getAmountOfBids(
   if (pool.config.poolType === PoolType.NFT) return 0;
 
   let amountOfBidsWithoutMaxCount: number;
-  // Trade pool that compounds fees ==> disregard mmFee since they go right back into availableLamports
+  // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
+  // Token pool / Trade pool that does not compound fees => exclude MM Fee
   let excludeMMFee =
-    pool.config.poolType === PoolType.Trade && !!pool.config.mmCompoundFees;
+    pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
     const currentPrice = calculatePrice(pool, TakerSide.Sell, 0, excludeMMFee);
