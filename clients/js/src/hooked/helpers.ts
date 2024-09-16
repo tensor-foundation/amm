@@ -284,18 +284,12 @@ export function calculatePrice(
 
   // account for mm fee for trade pools if not explicitly specified otherwise
   if (pool.config.poolType === PoolType.Trade && !excludeMMFee) {
+    const mmFees =
+      (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n;
     resultPrice =
       side === TakerSide.Sell
-        ? Number(
-            BigInt(resultPrice) -
-              (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) /
-                100_00n
-          )
-        : Number(
-            BigInt(resultPrice) +
-              (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) /
-                100_00n
-          );
+        ? Number(BigInt(resultPrice) - mmFees)
+        : Number(BigInt(resultPrice) + mmFees);
   }
   return resultPrice;
 }
