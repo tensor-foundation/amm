@@ -34,7 +34,13 @@ export function getNeededBalanceForBidQuantity(
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
-    const currentPrice = calculatePrice(pool, TakerSide.Sell, 0, excludeMMFee);
+    const currentPrice = calculatePrice(
+      pool,
+      TakerSide.Sell,
+      0,
+      0,
+      excludeMMFee
+    );
     if (bidQuantity === 1) return currentPrice;
     const maxPossibleBidsBeforeZero =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
@@ -54,7 +60,7 @@ export function getNeededBalanceForBidQuantity(
     let totalPrice = 0;
     let i = 0;
     while (bidQuantity > 0) {
-      totalPrice += calculatePrice(pool, TakerSide.Sell, i, excludeMMFee);
+      totalPrice += calculatePrice(pool, TakerSide.Sell, 0, i, excludeMMFee);
       bidQuantity -= 1;
       if (totalPrice === 0) break;
     }
@@ -89,7 +95,13 @@ export function getAmountOfBids(
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
-    const currentPrice = calculatePrice(pool, TakerSide.Sell, 0, excludeMMFee);
+    const currentPrice = calculatePrice(
+      pool,
+      TakerSide.Sell,
+      0,
+      0,
+      excludeMMFee
+    );
     if (!currentPrice) return 0;
     amountOfBidsWithoutMaxCount =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
@@ -101,7 +113,13 @@ export function getAmountOfBids(
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
-      let price = calculatePrice(pool, TakerSide.Sell, bidCount, excludeMMFee);
+      let price = calculatePrice(
+        pool,
+        TakerSide.Sell,
+        0,
+        bidCount,
+        excludeMMFee
+      );
       accumulatedPrice += BigInt(price);
       bidCount += 1;
     }
@@ -117,6 +135,7 @@ export function getAmountOfBids(
 /**
  * Either returns the current ask price (price the pool currently sells its held NFTs for) or null (if the pool doesn't sell anymore)
  * @param pool Pool or PoolConfig with additional parameters
+ * @param royaltyFeeBps Creator royalties in BPS
  * @param extraOffset Additional offset to calculate further prices (> 0)
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Ask Price OR null
@@ -131,17 +150,25 @@ export function getCurrentAskPrice(
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
       },
+  royaltyFeeBps: number,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): number | null {
   if (pool.nftsHeld < 1) return null;
   if (isNotFulfillable(pool, TakerSide.Buy)) return null;
-  return calculatePrice(pool, TakerSide.Buy, extraOffset, excludeMMFee);
+  return calculatePrice(
+    pool,
+    TakerSide.Buy,
+    royaltyFeeBps,
+    extraOffset,
+    excludeMMFee
+  );
 }
 /**
  * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left)
  * @param pool Pool or PoolConfig with additional parameters
  * @param availableLamports Available Balance to the Pool
+ * @param royaltyFeeBps Creator royalties in BPS
  * @param extraOffset Additional offset to calculate further prices (> 0)
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Bid Price OR null
@@ -156,12 +183,14 @@ export function getCurrentBidPriceSync(
         sharedEscrow: NullableAddress;
       },
   availableLamports: number | bigint,
+  royaltyFeeBps: number,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): number | null {
   const bidPrice = calculatePrice(
     pool,
     TakerSide.Sell,
+    royaltyFeeBps,
     extraOffset,
     excludeMMFee
   );
@@ -174,6 +203,7 @@ export function getCurrentBidPriceSync(
  * Fetches the current escrow balance - account rent if needed via given RPC
  * @param rpc Rpc proxy instance
  * @param pool Pool or PoolConfig with additional parameters
+ * @param royaltyFeeBps Creator royalties in BPS
  * @param extraOffset Additional offset to calculate further prices (> 0)
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Bid Price OR null
@@ -191,6 +221,7 @@ export async function getCurrentBidPrice(
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
       },
+  royaltyFeeBps: number,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): Promise<number | null> {
@@ -198,6 +229,7 @@ export async function getCurrentBidPrice(
   const bidPrice = calculatePrice(
     pool,
     TakerSide.Sell,
+    royaltyFeeBps,
     extraOffset,
     excludeMMFee
   );
@@ -231,6 +263,7 @@ export async function getCurrentBidPrice(
  * Calculates the raw bid/ask price of a pool / pool config
  * @param pool Pool or PoolConfig with additional parameters
  * @param side TakerSide.Buy for getting Ask prices / TakerSide.Sell for getting Bid prices
+ * @param royaltyFeeBps Creator royalties in BPS
  * @param extraOffset Additional offset to calculate further prices (> 0)
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Resulting bid/ask price
@@ -238,6 +271,7 @@ export async function getCurrentBidPrice(
 export function calculatePrice(
   pool: Pool | { config: PoolConfig; priceOffset: number },
   side: TakerSide,
+  royaltyFeeBps: number,
   extraOffset: number = 0,
   excludeMMFee: boolean = false
 ): number {
@@ -283,15 +317,29 @@ export function calculatePrice(
   }
 
   // account for mm fee for trade pools if not explicitly specified otherwise
+  let resultPriceIncludingMmFees;
   if (pool.config.poolType === PoolType.Trade && !excludeMMFee) {
     const mmFees =
       (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n;
-    resultPrice =
+    resultPriceIncludingMmFees =
       side === TakerSide.Sell
         ? Number(BigInt(resultPrice) - mmFees)
         : Number(BigInt(resultPrice) + mmFees);
+  } else {
+    resultPriceIncludingMmFees = resultPrice;
   }
-  return resultPrice;
+
+  // account for creator royalties
+  let resultPriceIncludingMmFeesAndRoyalties;
+  if (royaltyFeeBps === 0) return resultPriceIncludingMmFees;
+  else {
+    const royalties = (BigInt(resultPrice) * BigInt(royaltyFeeBps)) / 100_00n;
+    resultPriceIncludingMmFeesAndRoyalties =
+      side === TakerSide.Sell
+        ? Number(BigInt(resultPriceIncludingMmFees) - royalties)
+        : Number(BigInt(resultPriceIncludingMmFees) + royalties);
+  }
+  return resultPriceIncludingMmFeesAndRoyalties;
 }
 // Calculate power for BigInt using exponentiation by squaring
 // with 12 mantissa decimal precision

@@ -37,7 +37,8 @@ test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
   const onChainBidPrice = poolAccount.data.config.startingPrice;
   const calculatedBidPrice = await getCurrentBidPrice(
     client.rpc,
-    poolAccount.data
+    poolAccount.data,
+    0
   );
 
   t.assert(calculatedBidPrice === Number(onChainBidPrice));
@@ -51,7 +52,7 @@ test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
   });
 
   const poolAccount = await fetchPool(client.rpc, pool);
-  const calculatedAskPrice = getCurrentAskPrice(poolAccount.data);
+  const calculatedAskPrice = getCurrentAskPrice(poolAccount.data, 0);
 
   t.assert(calculatedAskPrice === null);
 });
@@ -67,7 +68,8 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   const poolAccount = await fetchPool(client.rpc, pool);
   const calculatedBidPrice = await getCurrentBidPrice(
     client.rpc,
-    poolAccount.data
+    poolAccount.data,
+    0
   );
 
   t.assert(
@@ -112,7 +114,8 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   // Get the calculated bid price
   let calculatedBidPrice = await getCurrentBidPrice(
     client.rpc,
-    poolAccount.data
+    poolAccount.data,
+    0
   );
   // Assert that the calculated bid price is null
   t.is(calculatedBidPrice, null);
@@ -134,7 +137,11 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   poolAccount = await fetchPool(client.rpc, pool);
 
   // Get the new calculated bid price
-  calculatedBidPrice = await getCurrentBidPrice(client.rpc, poolAccount.data);
+  calculatedBidPrice = await getCurrentBidPrice(
+    client.rpc,
+    poolAccount.data,
+    0
+  );
 
   // Assert that the calculated bid price is now a number
   t.true(typeof calculatedBidPrice === 'number');
@@ -312,7 +319,7 @@ test('Exponential pool pricing speed test', async (t) => {
   const poolData = (await fetchPool(client.rpc, pool)).data;
   const start = performance.now();
   for (let i = 0; i <= 1000; i++) {
-    getCurrentBidPrice(client.rpc, poolData, i);
+    getCurrentBidPrice(client.rpc, poolData, 0, i);
   }
   const end = performance.now();
   t.log(
@@ -478,9 +485,10 @@ async function buyNftsFromPool(
       .send();
     const buyerBefore = await client.rpc.getBalance(buyer.address).send();
     const poolAccountBefore = await fetchPool(client.rpc, pool);
-    const currentTakerPrice = getCurrentAskPrice(poolAccountBefore.data);
+    const currentTakerPrice = getCurrentAskPrice(poolAccountBefore.data, 0);
     const currentMakerPrice = getCurrentAskPrice(
       poolAccountBefore.data,
+      0,
       undefined,
       true
     );
@@ -537,11 +545,13 @@ async function sellNftsIntoPool(
     const poolAccountBefore = await fetchPool(client.rpc, pool);
     const calculatedTakerPrice = await getCurrentBidPrice(
       client.rpc,
-      poolAccountBefore.data
+      poolAccountBefore.data,
+      0
     );
     const calculatedMakerPrice = await getCurrentBidPrice(
       client.rpc,
       poolAccountBefore.data,
+      0,
       undefined,
       true
     );
