@@ -23,7 +23,7 @@ export function getNeededBalanceForBidQuantity(
 
   // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
   // Token pool / Trade pool that does not compound fees => exclude MM Fee
-  let excludeMMFee =
+  const excludeMMFee =
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
@@ -56,6 +56,7 @@ export function getNeededBalanceForBidQuantity(
       totalPrice += calculatePrice(pool, TakerSide.Sell, 0, i, excludeMMFee);
       bidQuantity -= 1;
       if (totalPrice === 0) break;
+      i += 1;
     }
     return totalPrice;
   }
@@ -84,7 +85,7 @@ export function getAmountOfBids(
   let amountOfBidsWithoutMaxCount: number;
   // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
   // Token pool / Trade pool that does not compound fees => exclude MM Fee
-  let excludeMMFee =
+  const excludeMMFee =
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
@@ -105,7 +106,7 @@ export function getAmountOfBids(
       accumulatedPrice < BigInt(availableLamports) &&
       bidCount < maxPossibleBidsBeforeZero + 1
     ) {
-      let price = calculatePrice(
+      const price = calculatePrice(
         pool,
         TakerSide.Sell,
         0,
@@ -127,7 +128,7 @@ export function getAmountOfBids(
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
-      let price = calculatePrice(
+      const price = calculatePrice(
         pool,
         TakerSide.Sell,
         0,

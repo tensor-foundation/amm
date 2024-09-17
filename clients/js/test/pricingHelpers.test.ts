@@ -20,6 +20,7 @@ import {
   calculatePrice,
   TakerSide,
   getAmountOfBids,
+  getNeededBalanceForBidQuantity,
 } from '../src';
 import {
   signAndSendTransaction,
@@ -37,6 +38,7 @@ import {
   getDepositMarginAccountInstructionAsync,
   TENSOR_ESCROW_PROGRAM_ADDRESS,
 } from '@tensor-foundation/escrow';
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
   const { client, pool } = await setupLegacyTest({
@@ -111,6 +113,10 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   // get theoretical bid price
   let theoreticalBidPrice = calculatePrice(poolAccount.data, TakerSide.Sell, 0);
 
+  const cuLimitIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
   // Then we expect the sell ix to fail due to not enough funds
   let sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
@@ -126,6 +132,7 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
 
   let promiseSellTx = pipe(
     await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -173,6 +180,7 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -636,6 +644,42 @@ test('getAmountOfBids returns correct values for linear pools', async (t) => {
   // 23 => 19687999724 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D23
   // 24 => 20399999700 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D24g
   t.true(amountOfBids === 23);
+});
+
+test('getNeededBalanceForBidQuantity returns correct values for exponential pools', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Exponential,
+    startingPrice: 1_000_000_000n,
+    delta: 1_00n,
+    mmCompoundFees: false,
+    mmFeeBps: null,
+  };
+  const lamportsNeeded = getNeededBalanceForBidQuantity(
+    { config, priceOffset: 0 },
+    2
+  );
+  const expectedLamports = 1_000_000_000 + Math.round(1_000_000_000 / 1.01);
+  t.true(lamportsNeeded === expectedLamports);
+});
+
+test('getNeededBalanceForBidQuantity returns correct values for linear pools', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000_000n,
+    delta: 1_00n,
+    mmCompoundFees: false,
+    mmFeeBps: null,
+  };
+  const lamportsNeeded = getNeededBalanceForBidQuantity(
+    { config, priceOffset: 0 },
+    5
+  );
+  const expectedLamports = Number(
+    5n * config.startingPrice - (4n * 5n * config.delta) / 2n
+  );
+  t.true(lamportsNeeded === expectedLamports);
 });
 
 ///////////////////////////////////////////////////////////////////////////////////
