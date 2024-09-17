@@ -48,7 +48,11 @@ test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
   });
 
   const poolAccount = await fetchPool(client.rpc, pool);
-  const calculatedAskPrice = getCurrentAskPrice(poolAccount.data, 0);
+  const calculatedAskPrice = getCurrentAskPrice({
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
 
   t.assert(calculatedAskPrice === null);
 });
@@ -102,16 +106,22 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   poolAccount = await fetchPool(client.rpc, pool);
 
   // Get the calculated bid price
-  let calculatedBidPrice = await getCurrentBidPrice(
-    client.rpc,
-    poolAccount.data,
-    0
-  );
+  let calculatedBidPrice = await getCurrentBidPrice({
+    rpc: client.rpc,
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
   // Assert that the calculated bid price is null
   t.is(calculatedBidPrice, null);
 
   // get theoretical bid price
-  let theoreticalBidPrice = calculatePrice(poolAccount.data, TakerSide.Sell, 0);
+  let theoreticalBidPrice = calculatePrice({
+    pool: poolAccount.data,
+    side: TakerSide.Sell,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
 
   const cuLimitIx = getSetComputeUnitLimitInstruction({
     units: 400_000,
@@ -156,11 +166,12 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   poolAccount = await fetchPool(client.rpc, pool);
 
   // Get the new calculated bid price
-  calculatedBidPrice = await getCurrentBidPrice(
-    client.rpc,
-    poolAccount.data,
-    0
-  );
+  calculatedBidPrice = await getCurrentBidPrice({
+    rpc: client.rpc,
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
 
   // Assert that the calculated bid price is now a number
   t.true(typeof calculatedBidPrice === 'number');
@@ -221,11 +232,12 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   poolAccount = await fetchPool(client.rpc, pool);
 
   // Get the calculated bid price
-  let calculatedBidPrice = await getCurrentBidPrice(
-    client.rpc,
-    poolAccount.data,
-    0
-  );
+  let calculatedBidPrice = await getCurrentBidPrice({
+    rpc: client.rpc,
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
   // Assert that the calculated bid price is null
   t.is(calculatedBidPrice, null);
 
@@ -246,11 +258,12 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   poolAccount = await fetchPool(client.rpc, pool);
 
   // Get the new calculated bid price
-  calculatedBidPrice = await getCurrentBidPrice(
-    client.rpc,
-    poolAccount.data,
-    0
-  );
+  calculatedBidPrice = await getCurrentBidPrice({
+    rpc: client.rpc,
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    extraOffset: 0,
+  });
 
   // Assert that the calculated bid price is now a number
   t.true(typeof calculatedBidPrice === 'number');
@@ -428,7 +441,12 @@ test('Exponential pool pricing speed test', async (t) => {
   const poolData = (await fetchPool(client.rpc, pool)).data;
   const start = performance.now();
   for (let i = 0; i <= 1000; i++) {
-    getCurrentBidPrice(client.rpc, poolData, 0, i);
+    getCurrentBidPrice({
+      rpc: client.rpc,
+      pool: poolData,
+      royaltyFeeBps: 0,
+      extraOffset: i,
+    });
   }
   const end = performance.now();
   t.log(
@@ -564,7 +582,10 @@ test('getAmountOfBids returns a max of 1000 bids for "indefinite" amounts', asyn
     (tx) => signAndSendTransaction(client, tx)
   );
   const poolAccount = await fetchPool(client.rpc, pool);
-  const amountOfBids = getAmountOfBids(poolAccount.data, 800n * ONE_SOL);
+  const amountOfBids = getAmountOfBids({
+    pool: poolAccount.data,
+    availableLamports: 800n * ONE_SOL,
+  });
   t.true(amountOfBids === 1000);
 });
 
@@ -602,7 +623,10 @@ test('getAmountOfBids returns correct values for exponential pools', async (t) =
     (tx) => signAndSendTransaction(client, tx)
   );
   const poolAccount = await fetchPool(client.rpc, pool);
-  const amountOfBids = getAmountOfBids(poolAccount.data, 15n * ONE_SOL);
+  const amountOfBids = getAmountOfBids({
+    pool: poolAccount.data,
+    availableLamports: 15n * ONE_SOL,
+  });
   t.true(amountOfBids === 16);
 });
 
@@ -639,7 +663,10 @@ test('getAmountOfBids returns correct values for linear pools', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
   const poolAccount = await fetchPool(client.rpc, pool);
-  const amountOfBids = getAmountOfBids(poolAccount.data, 20n * ONE_SOL);
+  const amountOfBids = getAmountOfBids({
+    pool: poolAccount.data,
+    availableLamports: 20n * ONE_SOL,
+  });
 
   // 23 => 19687999724 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D23
   // 24 => 20399999700 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D24g
@@ -655,10 +682,10 @@ test('getNeededBalanceForBidQuantity returns correct values for exponential pool
     mmCompoundFees: false,
     mmFeeBps: null,
   };
-  const lamportsNeeded = getNeededBalanceForBidQuantity(
-    { config, priceOffset: 0 },
-    2
-  );
+  const lamportsNeeded = getNeededBalanceForBidQuantity({
+    pool: { config, priceOffset: 0 },
+    bidQuantity: 2,
+  });
   const expectedLamports = 1_000_000_000 + Math.round(1_000_000_000 / 1.01);
   t.true(lamportsNeeded === expectedLamports);
 });
@@ -672,10 +699,10 @@ test('getNeededBalanceForBidQuantity returns correct values for linear pools', a
     mmCompoundFees: false,
     mmFeeBps: null,
   };
-  const lamportsNeeded = getNeededBalanceForBidQuantity(
-    { config, priceOffset: 0 },
-    5
-  );
+  const lamportsNeeded = getNeededBalanceForBidQuantity({
+    pool: { config, priceOffset: 0 },
+    bidQuantity: 5,
+  });
   const expectedLamports = Number(
     5n * config.startingPrice - (4n * 5n * config.delta) / 2n
   );
@@ -745,13 +772,17 @@ async function buyNftsFromPool(
       .send();
     const buyerBefore = await client.rpc.getBalance(buyer.address).send();
     const poolAccountBefore = await fetchPool(client.rpc, pool);
-    const currentTakerPrice = getCurrentAskPrice(poolAccountBefore.data, 0);
-    const currentMakerPrice = getCurrentAskPrice(
-      poolAccountBefore.data,
-      0,
-      undefined,
-      true
-    );
+    const currentTakerPrice = getCurrentAskPrice({
+      pool: poolAccountBefore.data,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+    });
+    const currentMakerPrice = getCurrentAskPrice({
+      pool: poolAccountBefore.data,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+      excludeMMFee: true,
+    });
     if (currentTakerPrice === null || currentMakerPrice === null) {
       t.fail('Current price is null');
     }
@@ -803,18 +834,19 @@ async function sellNftsIntoPool(
   for (const nft of nfts) {
     const sellerBefore = await client.rpc.getBalance(nftOwner.address).send();
     const poolAccountBefore = await fetchPool(client.rpc, pool);
-    const calculatedTakerPrice = await getCurrentBidPrice(
-      client.rpc,
-      poolAccountBefore.data,
-      0
-    );
-    const calculatedMakerPrice = await getCurrentBidPrice(
-      client.rpc,
-      poolAccountBefore.data,
-      0,
-      undefined,
-      true
-    );
+    const calculatedTakerPrice = await getCurrentBidPrice({
+      rpc: client.rpc,
+      pool: poolAccountBefore.data,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+    });
+    const calculatedMakerPrice = await getCurrentBidPrice({
+      rpc: client.rpc,
+      pool: poolAccountBefore.data,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+      excludeMMFee: true,
+    });
 
     if (calculatedMakerPrice === null || calculatedTakerPrice === null) {
       t.fail('Calculated price is null');

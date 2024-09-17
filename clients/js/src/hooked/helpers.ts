@@ -14,10 +14,13 @@ import { DEFAULT_ADDRESS, NullableAddress } from './nullableAddress';
  * @param bidQuantity Amount of bids
  * @returns Amount of lamports needed
  */
-export function getNeededBalanceForBidQuantity(
-  pool: Pool | { config: PoolConfig; priceOffset: number },
-  bidQuantity: number
-): number {
+export function getNeededBalanceForBidQuantity({
+  pool,
+  bidQuantity,
+}: {
+  pool: Pool | { config: PoolConfig; priceOffset: number };
+  bidQuantity: number;
+}): number {
   if (bidQuantity < 1) return 0;
   if (pool.config.poolType === PoolType.NFT) return 0;
 
@@ -27,13 +30,13 @@ export function getNeededBalanceForBidQuantity(
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
-    const currentPrice = calculatePrice(
+    const currentPrice = calculatePrice({
       pool,
-      TakerSide.Sell,
-      0,
-      0,
-      excludeMMFee
-    );
+      side: TakerSide.Sell,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+      excludeMMFee,
+    });
     if (bidQuantity === 1) return currentPrice;
     const maxPossibleBidsBeforeZero =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
@@ -53,7 +56,13 @@ export function getNeededBalanceForBidQuantity(
     let totalPrice = 0;
     let i = 0;
     while (bidQuantity > 0) {
-      totalPrice += calculatePrice(pool, TakerSide.Sell, 0, i, excludeMMFee);
+      totalPrice += calculatePrice({
+        pool,
+        side: TakerSide.Sell,
+        royaltyFeeBps: 0,
+        extraOffset: i,
+        excludeMMFee,
+      });
       bidQuantity -= 1;
       if (totalPrice === 0) break;
       i += 1;
@@ -69,7 +78,10 @@ export function getNeededBalanceForBidQuantity(
  * @param availableLamports Amount of Lamports available to the pool
  * @returns Number of Bids (MAX 1000)
  */
-export function getAmountOfBids(
+export function getAmountOfBids({
+  pool,
+  availableLamports,
+}: {
   pool:
     | Pool
     | {
@@ -77,9 +89,9 @@ export function getAmountOfBids(
         priceOffset: number;
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
-      },
-  availableLamports: number | bigint
-): number {
+      };
+  availableLamports: number | bigint;
+}): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
 
   let amountOfBidsWithoutMaxCount: number;
@@ -89,13 +101,13 @@ export function getAmountOfBids(
     pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
   if (pool.config.curveType === CurveType.Linear) {
-    const currentPrice = calculatePrice(
+    const currentPrice = calculatePrice({
       pool,
-      TakerSide.Sell,
-      0,
-      0,
-      excludeMMFee
-    );
+      side: TakerSide.Sell,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+      excludeMMFee,
+    });
     if (currentPrice < 0) return 0;
     let maxPossibleBidsBeforeZero =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
@@ -106,13 +118,13 @@ export function getAmountOfBids(
       accumulatedPrice < BigInt(availableLamports) &&
       bidCount < maxPossibleBidsBeforeZero + 1
     ) {
-      const price = calculatePrice(
+      const price = calculatePrice({
         pool,
-        TakerSide.Sell,
-        0,
-        bidCount,
-        excludeMMFee
-      );
+        side: TakerSide.Sell,
+        royaltyFeeBps: 0,
+        extraOffset: bidCount,
+        excludeMMFee,
+      });
       accumulatedPrice += BigInt(price);
       bidCount += 1;
     }
@@ -128,13 +140,13 @@ export function getAmountOfBids(
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
-      const price = calculatePrice(
+      const price = calculatePrice({
         pool,
-        TakerSide.Sell,
-        0,
-        bidCount,
-        excludeMMFee
-      );
+        side: TakerSide.Sell,
+        royaltyFeeBps: 0,
+        extraOffset: bidCount,
+        excludeMMFee,
+      });
       accumulatedPrice += BigInt(price);
       bidCount += 1;
     }
@@ -155,7 +167,12 @@ export function getAmountOfBids(
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Ask Price OR null
  */
-export function getCurrentAskPrice(
+export function getCurrentAskPrice({
+  pool,
+  royaltyFeeBps,
+  extraOffset = 0,
+  excludeMMFee = false,
+}: {
   pool:
     | Pool
     | {
@@ -164,20 +181,20 @@ export function getCurrentAskPrice(
         priceOffset: number;
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
-      },
-  royaltyFeeBps: number,
-  extraOffset: number = 0,
-  excludeMMFee: boolean = false
-): number | null {
+      };
+  royaltyFeeBps: number;
+  extraOffset?: number;
+  excludeMMFee?: boolean;
+}): number | null {
   if (pool.nftsHeld < 1) return null;
-  if (isNotFulfillable(pool, TakerSide.Buy)) return null;
-  return calculatePrice(
+  if (isNotFulfillable({ pool, side: TakerSide.Buy })) return null;
+  return calculatePrice({
     pool,
-    TakerSide.Buy,
+    side: TakerSide.Buy,
     royaltyFeeBps,
     extraOffset,
-    excludeMMFee
-  );
+    excludeMMFee,
+  });
 }
 /**
  * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left)
@@ -188,7 +205,13 @@ export function getCurrentAskPrice(
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Bid Price OR null
  */
-export function getCurrentBidPriceSync(
+export function getCurrentBidPriceSync({
+  pool,
+  availableLamports,
+  royaltyFeeBps,
+  extraOffset = 0,
+  excludeMMFee = false,
+}: {
   pool:
     | Pool
     | {
@@ -196,21 +219,21 @@ export function getCurrentBidPriceSync(
         priceOffset: number;
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
-      },
-  availableLamports: number | bigint,
-  royaltyFeeBps: number,
-  extraOffset: number = 0,
-  excludeMMFee: boolean = false
-): number | null {
-  const bidPrice = calculatePrice(
+      };
+  availableLamports: number | bigint;
+  royaltyFeeBps: number;
+  extraOffset?: number;
+  excludeMMFee?: boolean;
+}): number | null {
+  const bidPrice = calculatePrice({
     pool,
-    TakerSide.Sell,
+    side: TakerSide.Sell,
     royaltyFeeBps,
     extraOffset,
-    excludeMMFee
-  );
+    excludeMMFee,
+  });
   if (bidPrice < 1) return 0;
-  if (isNotFulfillable(pool, TakerSide.Buy)) return null;
+  if (isNotFulfillable({ pool, side: TakerSide.Buy })) return null;
   return availableLamports >= bidPrice ? bidPrice : null;
 }
 /**
@@ -223,8 +246,14 @@ export function getCurrentBidPriceSync(
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Current Bid Price OR null
  */
-export async function getCurrentBidPrice(
-  rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>,
+export async function getCurrentBidPrice({
+  rpc,
+  pool,
+  royaltyFeeBps,
+  extraOffset = 0,
+  excludeMMFee = false,
+}: {
+  rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>;
   pool:
     | Pool
     | {
@@ -235,19 +264,19 @@ export async function getCurrentBidPrice(
         priceOffset: number;
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
-      },
-  royaltyFeeBps: number,
-  extraOffset: number = 0,
-  excludeMMFee: boolean = false
-): Promise<number | null> {
-  if (isNotFulfillable(pool, TakerSide.Sell)) return null;
-  const bidPrice = calculatePrice(
+      };
+  royaltyFeeBps: number;
+  extraOffset?: number;
+  excludeMMFee?: boolean;
+}): Promise<number | null> {
+  if (isNotFulfillable({ pool, side: TakerSide.Sell })) return null;
+  const bidPrice = calculatePrice({
     pool,
-    TakerSide.Sell,
+    side: TakerSide.Sell,
     royaltyFeeBps,
     extraOffset,
-    excludeMMFee
-  );
+    excludeMMFee,
+  });
   if (bidPrice === null) return null;
   if (bidPrice < 1) return 0;
   // No shared escrow, so we can just check if the pool has enough balance
@@ -279,13 +308,19 @@ export async function getCurrentBidPrice(
  * @param excludeMMFee Whether to exclude the MM fee in the returned price
  * @returns Resulting bid/ask price
  */
-export function calculatePrice(
-  pool: Pool | { config: PoolConfig; priceOffset: number },
-  side: TakerSide,
-  royaltyFeeBps: number,
-  extraOffset: number = 0,
-  excludeMMFee: boolean = false
-): number {
+export function calculatePrice({
+  pool,
+  side,
+  royaltyFeeBps,
+  extraOffset = 0,
+  excludeMMFee = false,
+}: {
+  pool: Pool | { config: PoolConfig; priceOffset: number };
+  side: TakerSide;
+  royaltyFeeBps: number;
+  extraOffset?: number;
+  excludeMMFee?: boolean;
+}): number {
   // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Sell)
   const extraOffsetNormalized = Math.abs(extraOffset);
 
@@ -437,7 +472,10 @@ function isMaxTakerSellCountReached(
   );
 }
 
-const isNotFulfillable = (
+const isNotFulfillable = ({
+  pool,
+  side,
+}: {
   pool:
     | Pool
     | {
@@ -445,9 +483,9 @@ const isNotFulfillable = (
         priceOffset: number;
         maxTakerSellCount: number;
         sharedEscrow: NullableAddress;
-      },
-  side: TakerSide
-) => {
+      };
+  side: TakerSide;
+}) => {
   return (
     // can't sell into PoolType.NFT
     (pool.config.poolType === PoolType.NFT && side === TakerSide.Sell) ||
