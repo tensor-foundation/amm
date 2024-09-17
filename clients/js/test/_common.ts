@@ -851,7 +851,7 @@ export async function setupLegacyTest(
   let mmFees = 0n;
 
   let startingPrice;
-  if(!poolConfig) {
+  if (!poolConfig) {
     switch (poolType) {
       case PoolType.Trade:
         config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
@@ -874,12 +874,10 @@ export async function setupLegacyTest(
       default:
         throw new Error('Invalid pool type');
     }
-  }
-  else {
+  } else {
     config = poolConfig;
     startingPrice = poolConfig.startingPrice;
   }
-  
 
   const md = (await fetchMetadata(client.rpc, nft.metadata)).data;
   const { sellerFeeBasisPoints } = md;
