@@ -1,5 +1,10 @@
 import test, { ExecutionContext } from 'ava';
-import { ONE_SOL, setupLegacyTest, TestAction } from './_common';
+import {
+  expectCustomError,
+  ONE_SOL,
+  setupLegacyTest,
+  TestAction,
+} from './_common';
 import {
   PoolType,
   getCurrentBidPrice,
@@ -12,6 +17,8 @@ import {
   getCurrentAskPrice,
   getDepositNftInstructionAsync,
   getBuyNftInstructionAsync,
+  calculatePrice,
+  TakerSide,
 } from '../src';
 import {
   signAndSendTransaction,
@@ -25,6 +32,10 @@ import {
   pipe,
 } from '@solana/web3.js';
 import { createDefaultNft, Nft } from '@tensor-foundation/mpl-token-metadata';
+import {
+  getDepositMarginAccountInstructionAsync,
+  TENSOR_ESCROW_PROGRAM_ADDRESS,
+} from '@tensor-foundation/escrow';
 
 test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
   const { client, pool } = await setupLegacyTest({
@@ -58,22 +69,129 @@ test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
 });
 
 test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
-  const { client, pool } = await setupLegacyTest({
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Exponential,
+    startingPrice: 2_145_000_045n,
+    delta: 14_40n, // 14.4%  delta
+    mmCompoundFees: false,
+    mmFeeBps: null, // 4.58% mmFeeBps
+  };
+  const {
+    client,
+    pool,
+    signers: { poolOwner, nftOwner, nftUpdateAuthority },
+    testConfig: {
+      poolConfig: { startingPrice },
+    },
+    nft,
+    whitelist,
+    sharedEscrow: marginAccount,
+  } = await setupLegacyTest({
     t,
-    poolType: PoolType.Trade,
-    action: TestAction.Sell,
+    poolType: PoolType.Token,
     useSharedEscrow: true,
+    action: TestAction.Sell,
+    depositAmount: 0n,
+    poolConfig: config,
   });
 
-  const poolAccount = await fetchPool(client.rpc, pool);
-  const calculatedBidPrice = await getCurrentBidPrice(
+  let poolAccount = await fetchPool(client.rpc, pool);
+
+  // Deposit SOL into the pool, 1 lamport less than the current price,
+  // setupLegacyTest deposits 1 sol into escrow by default
+  const depositAmount = BigInt(startingPrice) - 1n - 1n * ONE_SOL;
+  const depositSolIx = await getDepositMarginAccountInstructionAsync({
+    owner: poolOwner,
+    marginAccount,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Fetch the updated pool account
+  poolAccount = await fetchPool(client.rpc, pool);
+
+  // Get the calculated bid price
+  let calculatedBidPrice = await getCurrentBidPrice(
+    client.rpc,
+    poolAccount.data,
+    0
+  );
+  // Assert that the calculated bid price is null
+  t.is(calculatedBidPrice, null);
+
+  // get theoretical bid price
+  let theoreticalBidPrice = calculatePrice(poolAccount.data, TakerSide.Sell, 0);
+
+  // Then we expect the sell ix to fail due to not enough funds
+  let sellNftIx = await getSellNftTokenPoolInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    mint: nft.mint,
+    minPrice: BigInt(theoreticalBidPrice),
+    whitelist,
+    sharedEscrow: marginAccount,
+    escrowProgram: TENSOR_ESCROW_PROGRAM_ADDRESS,
+    creators: [nftUpdateAuthority.address],
+  });
+
+  let promiseSellTx = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promiseSellTx, 15002);
+
+  // Deposit one more lamport
+  const additionalDepositIx = await getDepositMarginAccountInstructionAsync({
+    owner: poolOwner,
+    marginAccount,
+    lamports: 1n,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(additionalDepositIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Fetch the updated pool account again
+  poolAccount = await fetchPool(client.rpc, pool);
+
+  // Get the new calculated bid price
+  calculatedBidPrice = await getCurrentBidPrice(
     client.rpc,
     poolAccount.data,
     0
   );
 
-  t.assert(
-    typeof calculatedBidPrice === 'number' || calculatedBidPrice === null
+  // Assert that the calculated bid price is now a number
+  t.true(typeof calculatedBidPrice === 'number');
+
+  // And then we expect the transaction to succeed
+  sellNftIx = await getSellNftTokenPoolInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    mint: nft.mint,
+    minPrice: BigInt(theoreticalBidPrice),
+    whitelist,
+    sharedEscrow: marginAccount,
+    escrowProgram: TENSOR_ESCROW_PROGRAM_ADDRESS,
+    creators: [nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
   );
 });
 

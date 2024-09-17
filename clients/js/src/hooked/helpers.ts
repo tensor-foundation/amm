@@ -5,14 +5,7 @@ import {
   ReadonlyUint8Array,
   Rpc,
 } from '@solana/web3.js';
-import {
-  CurveType,
-  Pool,
-  PoolConfig,
-  PoolType,
-  TakerSide,
-  findPoolPda,
-} from '../generated';
+import { CurveType, Pool, PoolConfig, PoolType, TakerSide } from '../generated';
 import { DEFAULT_ADDRESS, NullableAddress } from './nullableAddress';
 
 /**
@@ -239,12 +232,8 @@ export async function getCurrentBidPrice(
   if (!pool.sharedEscrow || pool.sharedEscrow === DEFAULT_ADDRESS)
     return pool.amount >= bidPrice ? bidPrice : null;
   // Shared escrow, so we need to check if the escrow has enough balance
-  const [poolAddress] = await findPoolPda({
-    owner: pool.owner,
-    poolId: pool.poolId,
-  });
   const [escrowLamports, escrowDataLength] = await rpc
-    .getAccountInfo(poolAddress, { encoding: 'base64' })
+    .getAccountInfo(pool.sharedEscrow, { encoding: 'base64' })
     .send()
     .then((resp) => {
       const dataLength = resp.value?.data
