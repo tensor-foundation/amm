@@ -101,7 +101,10 @@ export function getAmountOfBids(
     maxPossibleBidsBeforeZero = Math.min(maxPossibleBidsBeforeZero, 1000);
     let bidCount = 0;
     let accumulatedPrice = 0n;
-    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
+    while (
+      accumulatedPrice < BigInt(availableLamports) &&
+      bidCount < maxPossibleBidsBeforeZero + 1
+    ) {
       let price = calculatePrice(
         pool,
         TakerSide.Sell,
