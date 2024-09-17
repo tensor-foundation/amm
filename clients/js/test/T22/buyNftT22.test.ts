@@ -54,9 +54,9 @@ test('it can buy a T22 NFT from a Trade pool', async (t) => {
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
-  const { price: maxAmount } = testConfig;
+  const { price: maxAmount, sellerFeeBasisPoints } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -138,9 +138,9 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
-  const { poolConfig, price: maxAmount } = testConfig;
+  const { poolConfig, price: maxAmount, sellerFeeBasisPoints } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
@@ -244,9 +244,9 @@ test('it can buy a T22 NFT from a Trade pool w/ a shared escrow', async (t) => {
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
-  const { poolConfig, price: maxAmount } = testConfig;
+  const { poolConfig, price: maxAmount, sellerFeeBasisPoints } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   // Starting balance of the shared escrow.
   const startingEscrowBalance = (
@@ -341,9 +341,9 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
 
-  const { price: maxAmount } = testConfig;
+  const { price: maxAmount, sellerFeeBasisPoints } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;

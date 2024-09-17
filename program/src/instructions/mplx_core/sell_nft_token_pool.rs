@@ -2,6 +2,12 @@
 //!
 //! This is separated from Trade pool since the owner will receive the NFT directly.
 use super::*;
+use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
+    types::{PluginType, UpdateAuthority, VerifiedCreators},
+};
+use mpl_token_metadata::types::{Collection, Creator};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -142,6 +148,42 @@ impl<'info> Validate<'info> for SellNftTokenPoolCore<'info> {
 
 impl<'info> SellNftTokenPoolCore<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
+        validate_asset(
+            &self.asset.to_account_info(),
+            self.collection
+                .as_ref()
+                .map(|a| a.to_account_info())
+                .as_ref(),
+        )?;
+
+        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
+
+        // Fetch the verified creators from the MPL Core asset and map into the expected type.
+        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
+            &self.asset.to_account_info(),
+            PluginType::VerifiedCreators,
+        )
+        .map(|(_, verified_creators, _)| {
+            verified_creators
+                .signatures
+                .into_iter()
+                .map(|c| Creator {
+                    address: c.address,
+                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
+                    verified: c.verified,
+                })
+                .collect()
+        })
+        .ok();
+
+        let collection = match asset.update_authority {
+            UpdateAuthority::Collection(address) => Some(Collection {
+                key: address,
+                verified: true, // Only the collection update authority can set a collection, so this is always verified.
+            }),
+            _ => None,
+        };
+
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof =
                 assert_decode_mint_proof_v2(&self.whitelist, &self.asset.key(), mint_proof)?;
@@ -154,12 +196,11 @@ impl<'info> SellNftTokenPoolCore<'info> {
                 proof: proof.clone(),
             })
         } else {
-            // Requires a mint proof unless other Whitelist modes are supported for T22.
-            return Err(ErrorCode::MintProofNotSet.into());
+            None
         };
 
-        // Only supporting Merkle proof for now.
-        self.whitelist.verify(&None, &None, &full_merkle_proof)
+        self.whitelist
+            .verify(&collection, &creators, &full_merkle_proof)
     }
 }
 
@@ -174,14 +215,17 @@ pub fn process_sell_nft_token_pool_core<'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
+    // No mm_fee for token pools.
 
     // Validate asset account and determine if royalites need to be paid.
     let royalties = validate_asset(
@@ -202,15 +246,6 @@ pub fn process_sell_nft_token_pool_core<'info>(
     // No optional royalties.
     let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
 
-    // Transfer the NFT from the seller directly to the pool owner.
-    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
-        .asset(&ctx.accounts.asset)
-        .authority(Some(&ctx.accounts.seller.to_account_info()))
-        .new_owner(&ctx.accounts.owner)
-        .payer(&ctx.accounts.seller)
-        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
-        .invoke()?;
-
     // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     let event = TAmmEvent::BuySellEvent(BuySellEvent {
@@ -220,9 +255,13 @@ pub fn process_sell_nft_token_pool_core<'info>(
         creators_fee,
     });
 
-    // Self-CPI log the event.
+    // Self-CPI log the event before price check for easier debugging.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
-    if current_price < min_price {
+
+    // Check that the total price the seller receives isn't lower than the min price the user specified.
+    let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
+
+    if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);
     }
 
@@ -233,6 +272,15 @@ pub fn process_sell_nft_token_pool_core<'info>(
         pool.pool_id.as_ref(),
         &[pool.bump[0]],
     ]];
+
+    // Transfer the NFT from the seller directly to the pool owner.
+    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+        .asset(&ctx.accounts.asset)
+        .authority(Some(&ctx.accounts.seller.to_account_info()))
+        .new_owner(&ctx.accounts.owner)
+        .payer(&ctx.accounts.seller)
+        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
+        .invoke()?;
 
     /*  **Transfer Fees**
     The sell price is the total price the seller receives for selling the NFT into the pool.
@@ -323,7 +371,7 @@ pub fn process_sell_nft_token_pool_core<'info>(
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
 
     // Pay creators fee, if required.
-    if let Some(Royalties { creators, .. }) = royalties {
+    let actual_creators_fee = if let Some(Royalties { creators, .. }) = royalties {
         transfer_creators_fee(
             &creators.into_iter().map(Into::into).collect(),
             &mut ctx.remaining_accounts.iter(),
@@ -331,8 +379,13 @@ pub fn process_sell_nft_token_pool_core<'info>(
             &CreatorFeeMode::Sol {
                 from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
             },
-        )?;
-    }
+        )?
+    } else {
+        0
+    };
+
+    // Taker pays royalties, so we subtract them from the amount left for the seller.
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
 
     // Token pools do not have MM fees.
 

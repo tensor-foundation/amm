@@ -162,8 +162,10 @@ pub fn process_buy_nft_core<'info, 'b>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
+
+    // Protocol and broker fees.
     let Fees {
         taker_fee,
         tamm_fee,
@@ -171,6 +173,7 @@ pub fn process_buy_nft_core<'info, 'b>(
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
+    // This resolves to 0 for NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate asset account and determine if royalites need to be paid.
@@ -192,6 +195,26 @@ pub fn process_buy_nft_core<'info, 'b>(
     // No optional royalties.
     let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
 
+    // For keeping track of current price + fees charged (computed dynamically)
+    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    let event = TAmmEvent::BuySellEvent(BuySellEvent {
+        current_price,
+        taker_fee,
+        mm_fee,
+        creators_fee,
+    });
+
+    // Self-CPI log the event.
+    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
+
+    // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
+    let price = unwrap_checked!({ current_price.checked_add(mm_fee)?.checked_add(creators_fee) });
+
+    // Check slippage including fees.
+    if price > max_amount {
+        throw_err!(ErrorCode::PriceMismatch);
+    }
+
     // Transfer the NFT from the pool to the buyer.
 
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -208,25 +231,6 @@ pub fn process_buy_nft_core<'info, 'b>(
         .payer(&ctx.accounts.buyer)
         .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
         .invoke_signed(signer_seeds)?;
-
-    // For keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    let event = TAmmEvent::BuySellEvent(BuySellEvent {
-        current_price,
-        taker_fee,
-        mm_fee,
-        creators_fee,
-    });
-
-    // Self-CPI log the event.
-    record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
-
-    let total_price = current_price + taker_fee + mm_fee + creators_fee;
-
-    // Check slippage including fees.
-    if total_price > max_amount {
-        throw_err!(ErrorCode::PriceMismatch);
-    }
 
     /*  **Transfer Fees**
     The buy price is the total price the buyer pays for buying the NFT from the pool.

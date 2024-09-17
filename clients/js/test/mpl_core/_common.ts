@@ -25,6 +25,7 @@ import {
   getDepositNftCoreInstructionAsync,
 } from '../../src/index.js';
 import {
+  BASIS_POINTS,
   SetupTestParams,
   TestAction,
   TestConfig,
@@ -82,12 +83,23 @@ export async function setupCoreTest(
     nftOwner = poolOwner;
   }
 
+  let sellerFeeBasisPoints = 500;
+
   // Mint NFT
   const [asset, collection] = await createDefaultAssetWithCollection({
     client,
     payer,
     collectionAuthority: nftUpdateAuthority,
     owner: nftOwner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: sellerFeeBasisPoints,
+    },
   });
 
   // Reset test timeout for long-running tests.
@@ -95,20 +107,35 @@ export async function setupCoreTest(
 
   let config: PoolConfig;
   let price: bigint;
+  let mmFees = 0n;
+
+  let startingPrice;
 
   switch (poolType) {
     case PoolType.Trade:
       config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+      // Sells on trade pools need to to have the price shifted down by 1 step.
+      if (action === TestAction.Sell) {
+        startingPrice = config.startingPrice - config.delta;
+      } else {
+        startingPrice = config.startingPrice;
+      }
+      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
       break;
     case PoolType.Token:
       config = tokenPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     case PoolType.NFT:
       config = nftPoolConfig;
+      startingPrice = config.startingPrice;
       break;
     default:
       throw new Error('Invalid pool type');
   }
+
+  const royalties =
+    (startingPrice * BigInt(sellerFeeBasisPoints)) / BASIS_POINTS;
 
   const depositAmount = dA ?? config.startingPrice * 10n;
 
@@ -172,7 +199,8 @@ export async function setupCoreTest(
 
   switch (action) {
     case TestAction.Buy: {
-      price = (config.startingPrice * 11n) / 10n; // maxPrice
+      // Max price needs to account for royalties and mm fees.
+      price = startingPrice + royalties + mmFees;
 
       if (whitelistMode === Mode.MerkleTree) {
         // Create the mint proof for the whitelist.
@@ -223,7 +251,8 @@ export async function setupCoreTest(
       break;
     }
     case TestAction.Sell:
-      price = (config.startingPrice * 85n) / 100n; // minPrice
+      // Min price needs to account for royalties and mm fees.
+      price = startingPrice - royalties - mmFees;
       break;
     default:
       throw new Error('Invalid action');
@@ -238,6 +267,7 @@ export async function setupCoreTest(
       poolConfig: config,
       depositAmount,
       price,
+      sellerFeeBasisPoints: BigInt(sellerFeeBasisPoints),
     },
     mintProof,
     whitelist,

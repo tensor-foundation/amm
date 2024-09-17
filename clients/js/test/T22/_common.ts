@@ -45,7 +45,7 @@ import {
 export interface T22Test {
   client: Client;
   signers: TestSigners;
-  nft: T22NftReturn & { sellerFeeBasisPoints: bigint };
+  nft: T22NftReturn;
   testConfig: TestConfig;
   whitelist: Address;
   pool: Address;
@@ -249,11 +249,12 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
   return {
     client,
     signers: testSigners,
-    nft: { ...t22Nft, sellerFeeBasisPoints },
+    nft: t22Nft,
     testConfig: {
       poolConfig: config,
       depositAmount,
       price,
+      sellerFeeBasisPoints,
     },
     whitelist,
     pool,

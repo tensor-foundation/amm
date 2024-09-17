@@ -21,7 +21,7 @@ use tensor_toolbox::{
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc,
 };
-use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
@@ -294,11 +294,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
     // Check that the total price the seller receives isn't lower than the min price the user specified.
-    let price = current_price
-        .checked_sub(mm_fee)
-        .ok_or(ErrorCode::PriceMismatch)?
-        .checked_sub(creators_fee)
-        .ok_or(ErrorCode::PriceMismatch)?;
+    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
 
     if price < min_price {
         return Err(ErrorCode::PriceMismatch.into());

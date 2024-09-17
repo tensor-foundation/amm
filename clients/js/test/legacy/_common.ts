@@ -274,6 +274,7 @@ export async function setupLegacyTest(
       poolConfig: config,
       depositAmount,
       price,
+      sellerFeeBasisPoints: BigInt(sellerFeeBasisPoints),
     },
     whitelist,
     pool,

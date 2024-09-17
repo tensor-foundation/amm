@@ -2,7 +2,7 @@
 use mpl_core::{
     accounts::BaseAssetV1,
     fetch_plugin,
-    types::{PluginType, UpdateAuthority, VerifiedCreators}
+    types::{PluginType, UpdateAuthority, VerifiedCreators},
 };
 use mpl_token_metadata::types::{Collection, Creator};
 
@@ -85,14 +85,13 @@ pub struct DepositNftCore<'info> {
 
 impl<'info> DepositNftCore<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
-        let royalties = validate_asset(
+        validate_asset(
             &self.asset.to_account_info(),
             self.collection
                 .as_ref()
                 .map(|a| a.to_account_info())
                 .as_ref(),
         )?;
-        msg!("royalties: {:?}", royalties);
 
         let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
 
@@ -122,11 +121,7 @@ impl<'info> DepositNftCore<'info> {
             _ => None,
         };
 
-        msg!("creators: {:?}", creators);
-        msg!("collection: {:?}", collection);
-
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
-            msg!("mint_proof: {:?}", mint_proof.key());
             let mint_proof =
                 assert_decode_mint_proof_v2(&self.whitelist, &self.asset.key(), mint_proof)?;
 
@@ -140,8 +135,6 @@ impl<'info> DepositNftCore<'info> {
         } else {
             None
         };
-
-        msg!("full_merkle_proof: {:?}", full_merkle_proof);
 
         self.whitelist
             .verify(&collection, &creators, &full_merkle_proof)

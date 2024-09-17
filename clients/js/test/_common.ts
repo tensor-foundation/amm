@@ -81,6 +81,7 @@ export const getAndFundOwner = async (client: Client) => {
 
 export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
 export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
+export const VIPER_ERROR__INTEGER_OVERFLOW = 1103;
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -735,6 +736,7 @@ export interface TestConfig {
   poolConfig: PoolConfig;
   depositAmount: bigint;
   price: bigint;
+  sellerFeeBasisPoints: bigint;
 }
 
 export interface SetupTestParams {

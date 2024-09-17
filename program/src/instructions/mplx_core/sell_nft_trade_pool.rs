@@ -4,6 +4,12 @@
 //! The seller is the owner of the NFT and receives the pool's current price in return.
 //! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
 use super::*;
+use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
+    types::{PluginType, UpdateAuthority, VerifiedCreators},
+};
+use mpl_token_metadata::types::{Collection, Creator};
 
 /// Sell a Token22 NFT into a Trade pool.
 #[derive(Accounts)]
@@ -150,6 +156,42 @@ impl<'info> Validate<'info> for SellNftTradePoolCore<'info> {
 
 impl<'info> SellNftTradePoolCore<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
+        validate_asset(
+            &self.asset.to_account_info(),
+            self.collection
+                .as_ref()
+                .map(|a| a.to_account_info())
+                .as_ref(),
+        )?;
+
+        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
+
+        // Fetch the verified creators from the MPL Core asset and map into the expected type.
+        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
+            &self.asset.to_account_info(),
+            PluginType::VerifiedCreators,
+        )
+        .map(|(_, verified_creators, _)| {
+            verified_creators
+                .signatures
+                .into_iter()
+                .map(|c| Creator {
+                    address: c.address,
+                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
+                    verified: c.verified,
+                })
+                .collect()
+        })
+        .ok();
+
+        let collection = match asset.update_authority {
+            UpdateAuthority::Collection(address) => Some(Collection {
+                key: address,
+                verified: true, // Only the collection update authority can set a collection, so this is always verified.
+            }),
+            _ => None,
+        };
+
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof =
                 assert_decode_mint_proof_v2(&self.whitelist, &self.asset.key(), mint_proof)?;
@@ -162,11 +204,11 @@ impl<'info> SellNftTradePoolCore<'info> {
                 proof: proof.clone(),
             })
         } else {
-            return Err(ErrorCode::MintProofNotSet.into());
+            None
         };
 
-        // Only supporting Merkle proof for now.
-        self.whitelist.verify(&None, &None, &full_merkle_proof)
+        self.whitelist
+            .verify(&collection, &creators, &full_merkle_proof)
     }
 }
 
@@ -181,14 +223,16 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.owner.key();
 
-    // Calculate fees.
+    // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
+
     let Fees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate asset account and determine if royalites need to be paid.
@@ -210,15 +254,6 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     // No optional royalties.
     let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
 
-    // Transfer the NFT from the seller directly to the pool owner.
-    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
-        .asset(&ctx.accounts.asset)
-        .authority(Some(&ctx.accounts.seller.to_account_info()))
-        .new_owner(&ctx.accounts.owner)
-        .payer(&ctx.accounts.seller)
-        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
-        .invoke()?;
-
     // for keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
     //
@@ -232,10 +267,11 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Need to include mm_fee to prevent someone editing the MM fee from rugging the seller.
+    // Check that the price + mm and creators feesthe seller receives isn't lower than the min price the user specified.
+    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
 
-    if unwrap_int!(current_price.checked_sub(mm_fee)) < min_price {
-        throw_err!(ErrorCode::PriceMismatch);
+    if price < min_price {
+        return Err(ErrorCode::PriceMismatch.into());
     }
 
     // Signer seeds for the pool account.
@@ -245,6 +281,15 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
         pool.pool_id.as_ref(),
         &[pool.bump[0]],
     ]];
+
+    // Transfer the NFT from the seller to the pool.
+    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+        .asset(&ctx.accounts.asset)
+        .payer(&ctx.accounts.seller)
+        .authority(Some(&ctx.accounts.seller.to_account_info()))
+        .new_owner(&ctx.accounts.pool.to_account_info())
+        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
+        .invoke()?;
 
     /*  **Transfer Fees**
     The sell price is the total price the seller receives for selling the NFT into the pool.
@@ -333,7 +378,7 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
 
     // Pay creators fee, if required.
-    if let Some(Royalties { creators, .. }) = royalties {
+    let actual_creators_fee = if let Some(Royalties { creators, .. }) = royalties {
         transfer_creators_fee(
             &creators.into_iter().map(Into::into).collect(),
             &mut ctx.remaining_accounts.iter(),
@@ -341,8 +386,13 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
             &CreatorFeeMode::Sol {
                 from: &FromAcc::Pda(&ctx.accounts.pool.to_account_info()),
             },
-        )?;
-    }
+        )?
+    } else {
+        0
+    };
+
+    // Taker pays royalties, so we subtract them from the amount left for the seller.
+    left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
 
     // Taker pays MM fee, so we subtract it from the amount left for the seller.
     left_for_seller = unwrap_int!(left_for_seller.checked_sub(mm_fee));

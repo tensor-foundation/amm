@@ -4,14 +4,9 @@ import {
   Address,
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
+  generateKeyPairSigner,
   pipe,
 } from '@solana/web3.js';
-import {
-  Creator,
-  TokenStandard,
-  createDefaultNft,
-  fetchMetadata,
-} from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -19,13 +14,9 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  CurveType,
   NftDepositReceipt,
-  Pool,
-  PoolConfig,
   PoolType,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   fetchMaybePool,
@@ -35,89 +26,70 @@ import {
   getCurrentBidPrice,
   getDepositSolInstruction,
   getEditPoolInstruction,
-  getSellNftTokenPoolInstructionAsync,
-  getSellNftTradePoolInstructionAsync,
+  getSellNftTokenPoolCoreInstructionAsync,
+  getSellNftTradePoolCoreInstructionAsync,
   isSol,
 } from '../../src/index.js';
 import {
-  DEFAULT_DELTA,
-  TestAction,
-  VIPER_ERROR__INTEGER_OVERFLOW,
   assertTammNoop,
-  createAndFundEscrow,
   createPool,
-  createPoolAndWhitelist,
   createWhitelistV2,
   expectCustomError,
-  findAtaPda,
   getAndFundFeeVault,
   getTestSigners,
-  getTokenAmount,
-  getTokenOwner,
+  TestAction,
   tokenPoolConfig,
   tradePoolConfig,
+  VIPER_ERROR__INTEGER_OVERFLOW,
 } from '../_common.js';
-import { setupLegacyTest } from './_common.js';
+import { setupCoreTest } from './_common.js';
+import {
+  AssetV1,
+  createDefaultAssetWithCollection,
+  fetchAssetV1,
+} from '@tensor-foundation/mpl-core';
+import { Mode } from '@tensor-foundation/whitelist';
+import { Creator } from '@tensor-foundation/mpl-token-metadata';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
-  const client = createDefaultSolanaClient();
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    feeVault,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useSharedEscrow: false,
+    compoundFees: false,
+    fundPool: true,
+  });
+
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    await getTestSigners(client);
-
-  const config = tradePoolConfig;
-
-  const depositAmount = config.startingPrice * 10n;
-
-  // Create a whitelist and a funded pool.
-  const { whitelist, pool, cosigner } = await createPoolAndWhitelist({
-    client,
-    payer: poolOwner,
-    owner: poolOwner,
-    makerBroker: makerBroker.address,
-    config,
-    depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-    funded: true,
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
-  t.assert(poolAccount.data.config.mmFeeBps === 50);
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer: nftUpdateAuthority,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  // Balance of pool before any sales operations, but including the SOL deposit.
-  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
-
-  // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, pool);
+    signers;
+  const { poolConfig, price: minPrice, depositAmount } = testConfig;
 
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+  // Balance of pool before any sales operations, but including the SOL deposit.
+  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
-    cosigner,
     minPrice,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
@@ -138,17 +110,14 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const poolAtaData = poolAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
 
   // Fee vault balance increases.
   const postSaleFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
@@ -158,7 +127,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   // This is a Trade pool without a shared escrow, so funds come from the pool.
 
   // Because this is a trade pool sell our starting price is shifted down one delta.
-  const price = config.startingPrice - config.delta;
+  const price = poolConfig.startingPrice - poolConfig.delta;
 
   // The pool pays out the current_price - mm_fees, if compounded.
   // In this case, no compounding, so the pool pays out the full price.
@@ -175,86 +144,63 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
 
   // Deposit Receipt should be created
-  const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
+  const [nftReceipt] = await findNftDepositReceiptPda({
+    mint: asset.address,
+    pool,
+  });
   t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <
     Account<NftDepositReceipt, Address>
   >{
     address: nftReceipt,
     data: {
-      mint,
+      mint: asset.address,
       pool,
     },
   });
 });
 
 test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    await getTestSigners(client);
-
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 10n * DEFAULT_DELTA,
-    delta: DEFAULT_DELTA,
-    mmCompoundFees: false,
-    mmFeeBps: 50,
-  };
-
-  const depositAmount = config.startingPrice * 10n;
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
+  const {
     client,
-    payer: nftUpdateAuthority,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    sharedEscrow,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useSharedEscrow: true,
+    compoundFees: false,
+    fundPool: true,
   });
 
-  // Create a shared escrow account.
-  const sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
+  const {
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+    cosigner,
+  } = signers;
+  const { poolConfig, price: minPrice } = testConfig;
 
   // Starting balance of the shared escrow.
   const preSharedEscrowBalance = (
-    await client.rpc.getBalance(sharedEscrow).send()
+    await client.rpc.getBalance(sharedEscrow!).send()
   ).value;
 
-  // Create a whitelist and a funded pool.
-  const { whitelist, pool, cosigner } = await createPoolAndWhitelist({
-    client,
-    payer: poolOwner,
-    owner: poolOwner,
-    makerBroker: makerBroker.address,
-    config,
-    sharedEscrow,
-    depositAmount,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-    funded: false, // cannot deposit to shared escrow pool
-  });
-
-  // Derives fee vault from mint and airdrops keep-alive rent to it.
-  await getAndFundFeeVault(client, pool);
-
-  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
-    address: pool,
-    data: {
-      sharedEscrow,
-      config,
-    },
-  });
-
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
-
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     sharedEscrow,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
@@ -277,26 +223,23 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   );
 
   const postSharedEscrowBalance = (
-    await client.rpc.getBalance(sharedEscrow).send()
+    await client.rpc.getBalance(sharedEscrow!).send()
   ).value;
 
   // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const poolAtaData = poolAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(poolAtaData);
-  const tokenOwner = getTokenOwner(poolAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === pool);
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
 
   // This is a linear Trade pool with a shared escrow, so funds come from the escrow.
   //
   // Because this is a sell our starting price is shifted down one delta.
-  const price = config.startingPrice - config.delta;
+  const price = poolConfig.startingPrice - poolConfig.delta;
 
   // Compounding is off so the shared escrow loses the full price.
   const lamportsTaken = price;
@@ -313,83 +256,44 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 });
 
 test('it can sell an NFT into a Token pool', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    await getTestSigners(client);
-
-  const config = tokenPoolConfig;
-
-  const depositAmount = config.startingPrice * 10n;
-
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
+  const {
     client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool, cosigner } = await createPool({
-    client,
-    payer: poolOwner,
-    whitelist,
-    owner: poolOwner,
-    makerBroker: makerBroker.address,
-    config,
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === PoolType.Token);
-
-  // New pool so currency amount is 0.
-  t.assert(poolAccount.data.amount === 0n);
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer: nftUpdateAuthority,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
+    signers,
+    asset,
+    collection,
+    testConfig,
     pool,
-    owner: poolOwner,
-    lamports: depositAmount,
+    whitelist,
+    feeVault,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useSharedEscrow: false,
+    compoundFees: false,
+    fundPool: true,
   });
 
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
+  const { poolConfig, price: minPrice, depositAmount } = testConfig;
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
-  const feeVault = await getAndFundFeeVault(client, pool);
-
   const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
     .value;
 
-  const [poolOwnerAta] = await findAtaPda({ mint, owner: poolOwner.address });
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
-
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
-    cosigner,
     minPrice,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
@@ -410,17 +314,14 @@ test('it can sell an NFT into a Token pool', async (t) => {
   const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // NFT is now owned by the pool owner.
-  const poolOwnerAtaAccount = await client.rpc
-    .getAccountInfo(poolOwnerAta, { encoding: 'base64' })
-    .send();
-
-  const ownerAtaData = poolOwnerAtaAccount!.value!.data;
-
-  const tokenAmount = getTokenAmount(ownerAtaData);
-  const tokenOwner = getTokenOwner(ownerAtaData);
-
-  t.assert(tokenAmount === 1n);
-  t.assert(tokenOwner === poolOwner.address);
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: poolOwner.address,
+    },
+  });
 
   // Fee vault balance increases.
   const postSaleFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
@@ -429,7 +330,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
 
   // This is a Token pool without a shared escrow, so funds come from the pool.
   // Token pools do not get the mmFee.
-  t.assert(postPoolBalance === prePoolBalance - config.startingPrice);
+  t.assert(postPoolBalance === prePoolBalance - poolConfig.startingPrice);
 
   const updatedPoolAccount = await fetchPool(client.rpc, pool);
 
@@ -438,74 +339,32 @@ test('it can sell an NFT into a Token pool', async (t) => {
 
   // Only one sell, so the currency amount should be the deposit - price for the sale.
   t.assert(
-    updatedPoolAccount.data.amount === depositAmount - config.startingPrice
+    updatedPoolAccount.data.amount === depositAmount - poolConfig.startingPrice
   );
 });
 
 test('token pool autocloses when currency amount drops below current price', async (t) => {
-  const client = createDefaultSolanaClient();
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Token,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useCosigner: true,
+      compoundFees: false,
+      fundPool: true,
+      depositAmount: (tokenPoolConfig.startingPrice * 3n) / 2n, // 1.5x the starting price
+    });
+
   const {
-    payer,
+    cosigner,
     poolOwner,
     nftOwner,
     nftUpdateAuthority,
     makerBroker,
     takerBroker,
-  } = await getTestSigners(client);
-
-  const config = tokenPoolConfig;
-  const depositAmount = config.startingPrice + 50_000_000n; // 1.5x the starting price
-
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool, cosigner } = await createPool({
-    client,
-    payer, // Original rent payer
-    whitelist,
-    owner: poolOwner,
-    makerBroker: makerBroker.address,
-    config,
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === PoolType.Token);
-
-  // New pool so currency amount is 0.
-  t.assert(poolAccount.data.amount === 0n);
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer, // test generic payer
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: depositAmount,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  await getAndFundFeeVault(client, pool);
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+  } = signers;
+  const { poolConfig, price: minPrice } = testConfig;
 
   const startingPoolOwnerBalance = (
     await client.rpc.getBalance(poolOwner.address).send()
@@ -513,13 +372,14 @@ test('token pool autocloses when currency amount drops below current price', asy
   const poolBalance = (await client.rpc.getBalance(pool).send()).value;
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
-    rentPayer: payer.address, // rent payer
+    rentPayer: poolOwner.address, // rent payer
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
     cosigner,
@@ -550,78 +410,43 @@ test('token pool autocloses when currency amount drops below current price', asy
   ).value;
   t.assert(
     startingPoolOwnerBalance <=
-      endingPoolOwnerBalance + (poolBalance - config.startingPrice)
+      endingPoolOwnerBalance + (poolBalance - poolConfig.startingPrice)
   );
 });
 
 test('sellNftTokenPool emits self-cpi logging event', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners(client);
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Token,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useCosigner: true,
+      compoundFees: false,
+      fundPool: true,
+    });
 
-  const config = tokenPoolConfig;
-  const depositAmount = config.startingPrice * 10n;
-
-  // Create whitelist with FVC where the NFT owner is the FVC.
-
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool, cosigner } = await createPool({
-    client,
-    payer,
-    whitelist,
-    owner: poolOwner,
-    config,
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === PoolType.Token);
-
-  // New pool so currency amount is 0.
-  t.assert(poolAccount.data.amount === 0n);
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer: nftUpdateAuthority,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  // Deposit SOL
-
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: depositAmount,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  await getAndFundFeeVault(client, pool);
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+  const {
+    cosigner,
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
 
-  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     cosigner,
     minPrice,
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -644,62 +469,37 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 });
 
 test('sellNftTradePool emits self-cpi logging event', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
-    await getTestSigners(client);
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useCosigner: true,
+      compoundFees: false,
+      fundPool: true,
+    });
 
-  const config = tradePoolConfig;
-  const depositAmount = config.startingPrice * 10n;
-
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool and whitelist
-  const { pool, cosigner } = await createPool({
-    client,
-    payer,
-    whitelist,
-    owner: poolOwner,
-    config,
-  });
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: depositAmount,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  await getAndFundFeeVault(client, pool);
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+  const {
+    cosigner,
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
     seller: nftOwner, // nft owner--the seller
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     cosigner,
     minPrice,
     // Remaining accounts
@@ -725,60 +525,36 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
-    await getTestSigners(client);
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useCosigner: true,
+      compoundFees: false,
+      fundPool: true,
+    });
 
-  const config = tradePoolConfig;
-
-  // Create whitelist with FVC where the NFT update authority is the FVC.
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool w/ cosigner
-  const { pool } = await createPool({
-    client,
-    whitelist,
-    owner: poolOwner,
-    config,
+  const {
     cosigner,
-  });
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: 500_000_000n,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  await getAndFundFeeVault(client, pool);
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     whitelist: whitelist,
     minPrice: minPrice,
     creators: [nftUpdateAuthority.address],
@@ -792,80 +568,42 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   );
 
   // NFT is now owned by the pool.
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const data = poolAtaAccount!.value!.data;
-
-  const postSellTokenAmount = getTokenAmount(data);
-  const postSellTokenOwner = getTokenOwner(data);
-
-  t.assert(postSellTokenAmount === 1n);
-  t.assert(postSellTokenOwner === pool);
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) => {
-  const client = createDefaultSolanaClient();
-  const { payer, poolOwner, nftOwner, nftUpdateAuthority, cosigner } =
-    await getTestSigners(client);
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useCosigner: true,
+      compoundFees: false,
+      fundPool: true,
+    });
 
-  // Incorrect Cosigner
-  const arbitraryCosigner = await generateKeyPairSignerWithSol(client);
+  const arbitraryCosigner = await generateKeyPairSigner();
 
-  const config = tradePoolConfig;
-
-  // Create whitelist with FVC where the NFT owner is the FVC.
-  const { whitelist } = await createWhitelistV2({
-    client,
-    updateAuthority: poolOwner,
-    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
-  });
-
-  // Create pool w/ cosigner
-  const { pool } = await createPool({
-    client,
-    whitelist,
-    owner: poolOwner,
-    config,
-    cosigner: cosigner,
-  });
-
-  // Deposit SOL
-  const depositSolIx = getDepositSolInstruction({
-    pool,
-    owner: poolOwner,
-    lamports: 500_000_000n,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, poolOwner),
-    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  // Mint NFT
-  const { mint } = await createDefaultNft({
-    client,
-    payer,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-  });
-
-  await getAndFundFeeVault(client, pool);
-
-  // 0.8x the starting price
-  const minPrice = (config.startingPrice * 8n) / 10n;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
 
   // Sell NFT into pool without specififying cosigner
-  const sellNftIxNoCosigner = await getSellNftTradePoolInstructionAsync({
+  const sellNftIxNoCosigner = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     whitelist,
-    minPrice: minPrice,
+    minPrice,
     creators: [nftUpdateAuthority.address],
   });
   const BAD_COSIGNER_ERROR_CODE = 12025;
@@ -878,16 +616,18 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   await expectCustomError(t, promiseNoCosigner, BAD_COSIGNER_ERROR_CODE);
 
   // Sell NFT into pool with arbitraryCosigner
-  const sellNftIxIncorrectCosigner = await getSellNftTradePoolInstructionAsync({
-    owner: poolOwner.address,
-    seller: nftOwner,
-    pool,
-    mint,
-    whitelist,
-    minPrice,
-    creators: [nftUpdateAuthority.address],
-    cosigner: arbitraryCosigner,
-  });
+  const sellNftIxIncorrectCosigner =
+    await getSellNftTradePoolCoreInstructionAsync({
+      owner: poolOwner.address,
+      seller: nftOwner,
+      pool,
+      asset: asset.address,
+      collection: collection.address,
+      whitelist,
+      minPrice,
+      creators: [nftUpdateAuthority.address],
+      cosigner: arbitraryCosigner,
+    });
 
   const promiseIncorrectCosigner = pipe(
     await createDefaultTransaction(client, nftOwner),
@@ -942,12 +682,23 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => signAndSendTransaction(client, tx)
   );
 
+  const sellerFeeBasisPoints = 100;
+
   // Mint NFT
-  const { mint } = await createDefaultNft({
+  const [asset, collection] = await createDefaultAssetWithCollection({
     client,
     payer,
-    authority: mintWhitelistAuthority,
-    owner: nftOwner,
+    collectionAuthority: nftUpdateAuthority,
+    owner: nftOwner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: sellerFeeBasisPoints,
+    },
   });
 
   await getAndFundFeeVault(client, pool);
@@ -956,11 +707,12 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   const minPrice = (config.startingPrice * 8n) / 10n;
 
   // Sell NFT into pool w/ specifying pool's whitelist & non-matching mint
-  const sellNftIxPoolWL = await getSellNftTradePoolInstructionAsync({
+  const sellNftIxPoolWL = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     whitelist: poolWhitelist,
     minPrice: minPrice,
     creators: [mintWhitelistAuthority.address],
@@ -976,11 +728,12 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   await expectCustomError(t, promisePoolWL, FAILED_FVC_VERIFICATION_ERROR_CODE);
 
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
-  const sellNftIxMintWL = await getSellNftTradePoolInstructionAsync({
+  const sellNftIxMintWL = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     whitelist: mintWhitelist,
     minPrice,
     creators: [mintWhitelistAuthority.address],
@@ -994,7 +747,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
 });
 
-test('it can sell a pNFT into a trade pool and pay the correct amount of royalties', async (t) => {
+test('it can sell a NFT into a trade pool and pay the correct amount of royalties', async (t) => {
   const client = createDefaultSolanaClient();
   const { payer, poolOwner, nftOwner, nftUpdateAuthority } =
     await getTestSigners(client);
@@ -1007,11 +760,29 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
 
   const config = tradePoolConfig;
 
+  const sellerFeeBasisPoints = 100;
+
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer,
+    collectionAuthority: nftUpdateAuthority,
+    owner: nftOwner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: sellerFeeBasisPoints,
+    },
+  });
+
   // Create whitelist with FVC where the NFT owner is the FVC.
   const { whitelist } = await createWhitelistV2({
     client,
     updateAuthority: nftUpdateAuthority,
-    conditions: [{ mode: Mode.FVC, value: creator.address }],
+    conditions: [{ mode: Mode.VOC, value: collection.address }],
   });
 
   // Create pool and whitelist
@@ -1036,25 +807,12 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Mint a ProgrammableNonFungible.
-  const { mint, metadata } = await createDefaultNft({
-    client,
-    payer,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-    standard: TokenStandard.ProgrammableNonFungible,
-    creators: [creator],
-  });
-
   // 0.8x the starting price
   const minPrice = (config.startingPrice * 8n) / 10n;
 
   const poolAccount = await fetchPool(client.rpc, pool);
 
   t.assert(poolAccount.data.config.poolType === PoolType.Trade);
-
-  const { sellerFeeBasisPoints } = (await fetchMetadata(client.rpc, metadata))
-    .data;
 
   const feeVault = await getAndFundFeeVault(client, pool);
 
@@ -1067,44 +825,33 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
   const exactBidPrice = await getCurrentBidPrice(client.rpc, poolAccount.data);
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     minPrice,
     whitelist,
-    tokenStandard: TokenStandard.ProgrammableNonFungible,
     // Remaining accounts
     creators: [creator.address],
   });
 
-  // Use higher CU limit, pNFTs expensive
-  const cuLimitIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
   await pipe(
     await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionMessageInstruction(cuLimitIx, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  const [poolAta] = await findAtaPda({ mint, owner: pool });
-
   // NFT is now owned by the pool.
-  const poolAtaAccount = await client.rpc
-    .getAccountInfo(poolAta, { encoding: 'base64' })
-    .send();
-
-  const data = poolAtaAccount!.value!.data;
-
-  const postSellTokenAmount = getTokenAmount(data);
-  const postSellTokenOwner = getTokenOwner(data);
-
-  t.assert(postSellTokenAmount === 1n);
-  t.assert(postSellTokenOwner === pool);
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
 
   // Fee vault balance increases.
   const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
@@ -1125,29 +872,27 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
 });
 
 test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', async (t) => {
-  const { client, signers, nft, testConfig, pool, whitelist } =
-    await setupLegacyTest({
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
       useSharedEscrow: false,
       fundPool: true,
-      pNft: true,
     });
 
   const { buyer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
   const { price: minPrice } = testConfig;
-  const { mint } = nft;
 
   // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     seller: nftOwner,
     pool,
     whitelist,
-    mint,
+    asset: asset.address,
+    collection: collection.address,
     minPrice, // exact price + mm_fees + royalties
-    tokenStandard: TokenStandard.ProgrammableNonFungible,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
   });

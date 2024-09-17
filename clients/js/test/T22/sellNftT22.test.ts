@@ -73,9 +73,14 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
     signers;
 
-  const { poolConfig, depositAmount, price: minPrice } = testConfig;
+  const {
+    poolConfig,
+    depositAmount,
+    price: minPrice,
+    sellerFeeBasisPoints,
+  } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
@@ -291,9 +296,14 @@ test('it can sell a T22 NFT into a Token pool', async (t) => {
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
     signers;
 
-  const { poolConfig, depositAmount, price: minPrice } = testConfig;
+  const {
+    poolConfig,
+    depositAmount,
+    price: minPrice,
+    sellerFeeBasisPoints,
+  } = testConfig;
 
-  const { mint, ownerAta, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, ownerAta, extraAccountMetas } = nft;
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
