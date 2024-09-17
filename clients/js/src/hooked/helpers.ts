@@ -213,7 +213,7 @@ export function getCurrentBidPriceSync(
   return availableLamports >= bidPrice ? bidPrice : null;
 }
 /**
- * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left)
+ * Either returns the current bid price (price the pool bids for) or null if the pool does not bid anymore (e.g. if the pool does not have sufficient funds left).
  * Fetches the current escrow balance - account rent if needed via given RPC
  * @param rpc Rpc proxy instance
  * @param pool Pool or PoolConfig with additional parameters
