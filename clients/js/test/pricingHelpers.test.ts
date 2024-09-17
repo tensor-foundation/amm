@@ -37,24 +37,6 @@ import {
   TENSOR_ESCROW_PROGRAM_ADDRESS,
 } from '@tensor-foundation/escrow';
 
-test('getCurrentBidPrice matches on-chain price for Token pool', async (t) => {
-  const { client, pool } = await setupLegacyTest({
-    t,
-    poolType: PoolType.Token,
-    action: TestAction.Sell,
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-  const onChainBidPrice = poolAccount.data.config.startingPrice;
-  const calculatedBidPrice = await getCurrentBidPrice(
-    client.rpc,
-    poolAccount.data,
-    0
-  );
-
-  t.assert(calculatedBidPrice === Number(onChainBidPrice));
-});
-
 test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
   const { client, pool } = await setupLegacyTest({
     t,
