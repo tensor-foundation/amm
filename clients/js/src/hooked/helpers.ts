@@ -8,6 +8,10 @@ import {
 import { CurveType, Pool, PoolConfig, PoolType, TakerSide } from '../generated';
 import { DEFAULT_ADDRESS, NullableAddress } from './nullableAddress';
 
+const BASIS_POINTS = 100_00n;
+const BASIS_POINTS_DECIMAL_OFFSET = 4;
+const BID_AMOUNT_LIMIT = 1000;
+
 /**
  * Returns the amount of lamports needed for a given quantity of bids
  * @param pool Pool or PoolConfig with priceOffset
@@ -111,7 +115,10 @@ export function getAmountOfBids({
     if (currentPrice < 0) return 0;
     let maxPossibleBidsBeforeZero =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
-    maxPossibleBidsBeforeZero = Math.min(maxPossibleBidsBeforeZero, 1000);
+    maxPossibleBidsBeforeZero = Math.min(
+      maxPossibleBidsBeforeZero,
+      BID_AMOUNT_LIMIT
+    );
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (
@@ -139,7 +146,10 @@ export function getAmountOfBids({
     // instead of using geometric sum w/ potentially incorrect roundings
     let bidCount = 0;
     let accumulatedPrice = 0n;
-    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
+    while (
+      accumulatedPrice < BigInt(availableLamports) &&
+      bidCount < BID_AMOUNT_LIMIT + 1
+    ) {
       const price = calculatePrice({
         pool,
         side: TakerSide.Sell,
@@ -341,7 +351,7 @@ export function calculatePrice({
   // missing rounding that bigint's can't do (e.g. 16n / 10n === 1)
   // but on-chain the price gets rounded float-esque => int
   if (pool.config.curveType === CurveType.Exponential) {
-    const base = 100_00n + delta;
+    const base = BASIS_POINTS + delta;
     const exponent = BigInt(Math.abs(offset));
     const [scaling, decimalOffset] =
       powerBpsAsBigInt_12DecimalMantissaPrecision(base, exponent);
@@ -366,7 +376,7 @@ export function calculatePrice({
   let resultPriceIncludingMmFees;
   if (pool.config.poolType === PoolType.Trade && !excludeMMFee) {
     const mmFees =
-      (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / 100_00n;
+      (BigInt(resultPrice) * BigInt(pool.config.mmFeeBps ?? 0)) / BASIS_POINTS;
     resultPriceIncludingMmFees =
       side === TakerSide.Sell
         ? Number(BigInt(resultPrice) - mmFees)
@@ -379,7 +389,8 @@ export function calculatePrice({
   let resultPriceIncludingMmFeesAndRoyalties;
   if (royaltyFeeBps === 0) return resultPriceIncludingMmFees;
   else {
-    const royalties = (BigInt(resultPrice) * BigInt(royaltyFeeBps)) / 100_00n;
+    const royalties =
+      (BigInt(resultPrice) * BigInt(royaltyFeeBps)) / BASIS_POINTS;
     resultPriceIncludingMmFeesAndRoyalties =
       side === TakerSide.Sell
         ? Number(BigInt(resultPriceIncludingMmFees) - royalties)
@@ -394,13 +405,14 @@ function powerBpsAsBigInt_12DecimalMantissaPrecision(
   exponent: bigint
 ): [bigint, bigint] {
   let result;
-  let decimalOffset = 4;
-  let resultDecimalOffset = 4;
-  if (exponent === 0n) return [100_00n, 4n];
+  let decimalOffset = BASIS_POINTS_DECIMAL_OFFSET;
+  let resultDecimalOffset = BASIS_POINTS_DECIMAL_OFFSET;
+  if (exponent === 0n)
+    return [1n * BASIS_POINTS, 1n * BigInt(BASIS_POINTS_DECIMAL_OFFSET)];
   if (exponent % 2n === 1n) {
     result = base;
   } else {
-    result = 100_00n;
+    result = 1n * BASIS_POINTS;
   }
   let pow = base;
   exponent /= 2n;
