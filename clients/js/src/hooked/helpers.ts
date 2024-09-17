@@ -95,9 +95,27 @@ export function getAmountOfBids(
       0,
       excludeMMFee
     );
-    if (!currentPrice) return 0;
-    amountOfBidsWithoutMaxCount =
+    if (currentPrice < 0) return 0;
+    let maxPossibleBidsBeforeZero =
       1 + Number(BigInt(currentPrice) / pool.config.delta);
+    maxPossibleBidsBeforeZero = Math.min(maxPossibleBidsBeforeZero, 1000);
+    let bidCount = 0;
+    let accumulatedPrice = 0n;
+    while (accumulatedPrice < BigInt(availableLamports) && bidCount < 1001) {
+      let price = calculatePrice(
+        pool,
+        TakerSide.Sell,
+        0,
+        bidCount,
+        excludeMMFee
+      );
+      accumulatedPrice += BigInt(price);
+      bidCount += 1;
+    }
+    amountOfBidsWithoutMaxCount = Math.min(
+      bidCount - 1,
+      maxPossibleBidsBeforeZero
+    );
   }
   // exponential
   else {

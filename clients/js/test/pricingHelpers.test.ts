@@ -19,6 +19,7 @@ import {
   getBuyNftInstructionAsync,
   calculatePrice,
   TakerSide,
+  getAmountOfBids,
 } from '../src';
 import {
   signAndSendTransaction,
@@ -520,6 +521,121 @@ test('Exponential pool pricing after 30 buys', async (t) => {
   // Verify final pool state
   const finalPoolAccount = await fetchPool(client.rpc, pool);
   t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
+});
+
+test('getAmountOfBids returns a max of 1000 bids for "indefinite" amounts', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Exponential,
+    startingPrice: 1_000_000_000n,
+    delta: 95_00n, // 95% delta, converges to 0 very quickly
+    mmCompoundFees: false,
+    mmFeeBps: 4_58,
+  };
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    fundPool: false,
+    signerFunds: 1000n * ONE_SOL,
+    poolConfig: config,
+  });
+
+  const { poolOwner } = signers;
+
+  const depositAmount = 800n * ONE_SOL;
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  const poolAccount = await fetchPool(client.rpc, pool);
+  const amountOfBids = getAmountOfBids(poolAccount.data, 800n * ONE_SOL);
+  t.true(amountOfBids === 1000);
+});
+
+test('getAmountOfBids returns correct values for exponential pools', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Exponential,
+    startingPrice: 1_000_000_000n,
+    delta: 1_00n,
+    mmCompoundFees: false,
+    mmFeeBps: 4_58,
+  };
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    fundPool: false,
+    signerFunds: 1000n * ONE_SOL,
+    poolConfig: config,
+  });
+
+  const { poolOwner } = signers;
+
+  // Deposit a large amount of SOL into the pool
+  const depositAmount = 15n * ONE_SOL;
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  const poolAccount = await fetchPool(client.rpc, pool);
+  const amountOfBids = getAmountOfBids(poolAccount.data, 15n * ONE_SOL);
+  t.true(amountOfBids === 16);
+});
+
+test('getAmountOfBids returns correct values for linear pools', async (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000_000n,
+    delta: 12_000_001n, //
+    mmCompoundFees: false,
+    mmFeeBps: null,
+  };
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    fundPool: false,
+    signerFunds: 1000n * ONE_SOL,
+    poolConfig: config,
+  });
+
+  const { poolOwner } = signers;
+
+  const depositAmount = 20n * ONE_SOL;
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+  const poolAccount = await fetchPool(client.rpc, pool);
+  const amountOfBids = getAmountOfBids(poolAccount.data, 20n * ONE_SOL);
+
+  // 23 => 19687999724 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D23
+  // 24 => 20399999700 https://www.wolframalpha.com/input?i=sum+1000000000-i*12000001%2C+i%3D1%2C+i%3D24g
+  t.true(amountOfBids === 23);
 });
 
 ///////////////////////////////////////////////////////////////////////////////////
