@@ -408,6 +408,7 @@ pub fn close_pool<'info>(
     // Any SOL above the minimum rent/state bond goes to the owner.
     if pool_lamports > pool_state_bond {
         let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_state_bond));
+        // If owner is not rent exempt, this skips the transfer and the rent destination will get it instead.
         transfer_lamports_from_pda_min_balance(&pool.to_account_info(), &owner, owner_amount)?;
     }
 
