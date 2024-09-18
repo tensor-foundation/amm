@@ -234,8 +234,8 @@ impl Pool {
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
-            | (PoolType::Token, TakerSide::Sell)
-            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
+            | (PoolType::NFT, TakerSide::Buy)
+            | (PoolType::Token, TakerSide::Sell) => self.shift_price(self.price_offset),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
@@ -301,14 +301,20 @@ impl Pool {
                     .checked_pow(offset.into())
                 });
 
-                let result = match direction {
+                let result = unwrap_int!(match direction {
                     // price * (1 + delta)^trade_count
                     Direction::Up => base.checked_mul(&factor),
                     //same but / instead of *
                     Direction::Down => base.checked_div(&factor),
-                };
+                });
 
-                unwrap_int!(u64::try_from(unwrap_checked!({ result?.to_imprecise() })).ok())
+                // Round up for buys (Direction::Up), down for sells (Direction::Down)
+                let rounded_result = unwrap_int!(match direction {
+                    Direction::Up => result.ceiling(),
+                    Direction::Down => result.floor(),
+                });
+
+                unwrap_int!(u64::try_from(unwrap_checked!({ rounded_result.to_imprecise() })).ok())
             }
         };
 

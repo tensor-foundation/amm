@@ -82,7 +82,9 @@ export type Pool = {
   updatedAt: bigint;
   /** Unix timestamp of when the pool expires, in seconds. */
   expiry: bigint;
+  /** The owner of the pool. */
   owner: Address;
+  /** The whitelist of the pool, determining which NFTs can be deposited or sold into the pool. */
   whitelist: Address;
   rentPayer: Address;
   currency: Currency;
@@ -126,7 +128,9 @@ export type PoolArgs = {
   updatedAt: number | bigint;
   /** Unix timestamp of when the pool expires, in seconds. */
   expiry: number | bigint;
+  /** The owner of the pool. */
   owner: Address;
+  /** The whitelist of the pool, determining which NFTs can be deposited or sold into the pool. */
   whitelist: Address;
   rentPayer: Address;
   currency: CurrencyArgs;

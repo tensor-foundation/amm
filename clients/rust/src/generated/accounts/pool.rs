@@ -32,11 +32,13 @@ pub struct Pool {
     pub updated_at: i64,
     /// Unix timestamp of when the pool expires, in seconds.
     pub expiry: i64,
+    /// The owner of the pool.
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
     pub owner: Pubkey,
+    /// The whitelist of the pool, determining which NFTs can be deposited or sold into the pool.
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
