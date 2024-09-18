@@ -16,13 +16,13 @@ pub const POOL_SIZE: usize =
         + (2 * 1)                        // version + bump
         + 32                             // identifier
         + 8 * 3                          // created_at, updated_at, expiry
-        + (2 * 1) + (2 * 8) + 1 + 3      // pool config
         + (3 * 32)                       // owner, whitelist, rent_payer
         + (32 + 8)                       // currency and currency amount
-        + (3 * 4)                        // taker_sell_count, taker_buy_count, nfts_held
+        + (2 * 4)                        // price_offset, nfts_held
         + (2 * 4) + 8                    // pool stats
         + (3 * 32)                       // shared escrow, cosigner, maker_broker
         + 4                              // max_taker_sell_count
+        + (2 * 1) + (2 * 8) + 1 + 2      // pool config
         + 100                            // _reserved
         ;
 
@@ -116,11 +116,14 @@ pub struct Pool {
     /// Unix timestamp of when the pool expires, in seconds.
     pub expiry: i64,
 
+    /// The owner of the pool.
     pub owner: Pubkey,
+    /// The whitelist of the pool, determining which NFTs can be deposited or sold into the pool.
     pub whitelist: Pubkey,
     // Store the rent payer, if different from the owner so they can be refunded
     // without signing when the pool is closed.
     pub rent_payer: Pubkey,
+
     // Default Pubkey is SOL, otherwise SPL token mint.
     pub currency: Currency,
     /// The amount of currency held in the pool.
