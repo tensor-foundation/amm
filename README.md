@@ -1,6 +1,9 @@
 # Amm
 
-Version 2 of the Tensor AMM program..
+Version 2 of the Tensor AMM program.  
+
+This program is currently deployed on **devnet**.  
+It will get deployed to **mainnet on Oct 2nd 2024**.
 
 ## Programs
 
