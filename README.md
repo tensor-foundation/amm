@@ -8,7 +8,7 @@ The new AMM program is currently deployed to devnet, and will get deployed to ma
 
 | Devnet | Mainnet |
 | ------ | ------- |
-| +      | -       |
+| v0.3.1 | -       |
 
 ## Programs
 
