@@ -2,6 +2,14 @@
 
 Version 2 of the Tensor AMM program..
 
+## Status
+
+The new AMM program is currently deployed to devnet, and will get deployed to mainnet on October 2nd.
+
+| Devnet | Mainnet |
+| ------ | ------- |
+| +      | -       |
+
 ## Programs
 
 This project contains the following programs:
