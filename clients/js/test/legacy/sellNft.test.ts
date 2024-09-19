@@ -1063,7 +1063,12 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
     await client.rpc.getBalance(creator.address).send()
   ).value;
 
-  const exactBidPrice = await getCurrentBidPrice({rpc: client.rpc, pool: poolAccount.data, royaltyFeeBps: 0, excludeMMFee: true});
+  const exactBidPrice = await getCurrentBidPrice({
+    rpc: client.rpc,
+    pool: poolAccount.data,
+    royaltyFeeBps: 0,
+    excludeMMFee: true,
+  });
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
