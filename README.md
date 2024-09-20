@@ -1,6 +1,6 @@
 # Amm
 
-Version 2 of the Tensor AMM program..
+Version 2 of the Tensor AMM program.
 
 ## Status
 
