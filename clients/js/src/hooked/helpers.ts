@@ -243,7 +243,7 @@ export function getCurrentBidPriceSync({
     excludeMMFee,
   });
   if (bidPrice < 1) return 0;
-  if (isNotFulfillable({ pool, side: TakerSide.Buy })) return null;
+  if (isNotFulfillable({ pool, side: TakerSide.Sell })) return null;
   return availableLamports >= bidPrice ? bidPrice : null;
 }
 /**
