@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
@@ -23,6 +25,16 @@ impl NullableAddress {
     }
 }
 
+impl Display for NullableAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.0 == Pubkey::default() {
+            write!(f, "None")
+        } else {
+            write!(f, "{}", self.0)
+        }
+    }
+}
+
 pub type NullableU16 = NullableNumber<u16>;
 pub type NullableU64 = NullableNumber<u64>;
 
@@ -45,5 +57,15 @@ impl<T: BorshSerialize + BorshDeserialize + Default + PartialEq> NullableNumber<
 
     pub fn none() -> Self {
         Self(T::default())
+    }
+}
+
+impl Display for NullableNumber<u64> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.0 == 0 {
+            write!(f, "None")
+        } else {
+            write!(f, "{}", self.0)
+        }
     }
 }

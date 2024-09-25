@@ -133,27 +133,27 @@ export interface TestSigners {
   takerBroker: KeyPairSigner;
 }
 
-export async function getTestSigners(client: Client) {
+export async function getTestSigners(
+  client: Client,
+  funds: bigint = 5n * ONE_SOL
+) {
   // Generic payer.
-  const payer = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const payer = await generateKeyPairSignerWithSol(client, funds);
 
   // Cosigner.
   const cosigner = await generateKeyPairSigner();
 
   // NFT Update Authority
-  const nftUpdateAuthority = await generateKeyPairSignerWithSol(
-    client,
-    5n * ONE_SOL
-  );
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client, funds);
 
   // Pool owner.
-  const poolOwner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const poolOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // NFT owner and seller.
-  const nftOwner = await generateKeyPairSignerWithSol(client);
+  const nftOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // Buyer of the NFT.
-  const buyer = await generateKeyPairSignerWithSol(client);
+  const buyer = await generateKeyPairSignerWithSol(client, funds);
 
   const makerBroker = await generateKeyPairSignerWithSol(client);
   const takerBroker = await generateKeyPairSignerWithSol(client);
@@ -795,7 +795,11 @@ export enum TestAction {
 }
 
 export async function setupLegacyTest(
-  params: SetupTestParams & { pNft?: boolean }
+  params: SetupTestParams & {
+    pNft?: boolean;
+    signerFunds?: bigint;
+    poolConfig?: PoolConfig | null;
+  }
 ): Promise<LegacyTest> {
   const {
     t,
@@ -808,10 +812,12 @@ export async function setupLegacyTest(
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
+    signerFunds = 5n * ONE_SOL,
+    poolConfig,
   } = params;
 
   const client = createDefaultSolanaClient();
-  const testSigners = await getTestSigners(client);
+  const testSigners = await getTestSigners(client, signerFunds);
 
   const { payer, poolOwner, nftUpdateAuthority, cosigner, makerBroker } =
     testSigners;
@@ -845,28 +851,32 @@ export async function setupLegacyTest(
   let mmFees = 0n;
 
   let startingPrice;
-
-  switch (poolType) {
-    case PoolType.Trade:
-      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-      // Sells on trade pools need to to have the price shifted down by 1 step.
-      if (action === TestAction.Sell) {
-        startingPrice = config.startingPrice - config.delta;
-      } else {
+  if (!poolConfig) {
+    switch (poolType) {
+      case PoolType.Trade:
+        config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+        // Sells on trade pools need to to have the price shifted down by 1 step.
+        if (action === TestAction.Sell) {
+          startingPrice = config.startingPrice - config.delta;
+        } else {
+          startingPrice = config.startingPrice;
+        }
+        mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
+        break;
+      case PoolType.Token:
+        config = tokenPoolConfig;
         startingPrice = config.startingPrice;
-      }
-      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
-      break;
-    case PoolType.Token:
-      config = tokenPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    case PoolType.NFT:
-      config = nftPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    default:
-      throw new Error('Invalid pool type');
+        break;
+      case PoolType.NFT:
+        config = nftPoolConfig;
+        startingPrice = config.startingPrice;
+        break;
+      default:
+        throw new Error('Invalid pool type');
+    }
+  } else {
+    config = poolConfig;
+    startingPrice = poolConfig.startingPrice;
   }
 
   const md = (await fetchMetadata(client.rpc, nft.metadata)).data;
