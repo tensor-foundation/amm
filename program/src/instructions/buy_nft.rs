@@ -161,7 +161,7 @@ pub struct BuyNft<'info> {
     /// CHECK: Must match the pool's maker_broker
     #[account(
         mut,
-        constraint = maker_broker.key() == pool.maker_broker @ ErrorCode::WrongBrokerAccount,
+        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongBrokerAccount,
     )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
