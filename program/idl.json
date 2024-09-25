@@ -57,7 +57,7 @@
       "type": {
         "defined": "usize"
       },
-      "value": "8 + (2 * 1) + 32 + 8 * 3 + (2 * 1) + (2 * 8) + 1 + 3 + (3 * 32) + (32 + 8) + (3 * 4) + (2 * 4) + 8 + (3 * 32) + 4 + 100"
+      "value": "8 + (2 * 1) + 32 + 8 * 3 + (3 * 32) + (32 + 8) + (2 * 4) + (2 * 4) + 8 + (3 * 32) + 4 + (2 * 1) + (2 * 8) + 1 + 2 + 100"
     }
   ],
   "instructions": [
@@ -2235,10 +2235,16 @@
           },
           {
             "name": "owner",
+            "docs": [
+              "The owner of the pool."
+            ],
             "type": "publicKey"
           },
           {
             "name": "whitelist",
+            "docs": [
+              "The whitelist of the pool, determining which NFTs can be deposited or sold into the pool."
+            ],
             "type": "publicKey"
           },
           {

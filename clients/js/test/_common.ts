@@ -110,7 +110,7 @@ export const ONE_YEAR = 60 * 60 * 24 * 365;
 export const ZERO_ACCOUNT_RENT_LAMPORTS = 890880n;
 export const ONE_SOL = 1_000_000_000n;
 
-export const POOL_SIZE = 452n;
+export const POOL_SIZE = 447n;
 
 export const TAKER_FEE_BPS = 200n;
 export const BROKER_FEE_PCT = 80n;

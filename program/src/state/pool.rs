@@ -3,7 +3,7 @@ use std::ops::Deref;
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::{calc_creators_fee, transfer_lamports_from_pda, NullableOption};
+use tensor_toolbox::{calc_creators_fee, transfer_lamports_checked, NullableOption};
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
@@ -16,13 +16,13 @@ pub const POOL_SIZE: usize =
         + (2 * 1)                        // version + bump
         + 32                             // identifier
         + 8 * 3                          // created_at, updated_at, expiry
-        + (2 * 1) + (2 * 8) + 1 + 3      // pool config
         + (3 * 32)                       // owner, whitelist, rent_payer
         + (32 + 8)                       // currency and currency amount
-        + (3 * 4)                        // taker_sell_count, taker_buy_count, nfts_held
+        + (2 * 4)                        // price_offset, nfts_held
         + (2 * 4) + 8                    // pool stats
         + (3 * 32)                       // shared escrow, cosigner, maker_broker
         + 4                              // max_taker_sell_count
+        + (2 * 1) + (2 * 8) + 1 + 2      // pool config
         + 100                            // _reserved
         ;
 
@@ -116,11 +116,14 @@ pub struct Pool {
     /// Unix timestamp of when the pool expires, in seconds.
     pub expiry: i64,
 
+    /// The owner of the pool.
     pub owner: Pubkey,
+    /// The whitelist of the pool, determining which NFTs can be deposited or sold into the pool.
     pub whitelist: Pubkey,
     // Store the rent payer, if different from the owner so they can be refunded
     // without signing when the pool is closed.
     pub rent_payer: Pubkey,
+
     // Default Pubkey is SOL, otherwise SPL token mint.
     pub currency: Currency,
     /// The amount of currency held in the pool.
@@ -231,8 +234,8 @@ impl Pool {
     pub fn current_price(&self, side: TakerSide) -> Result<u64> {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
-            | (PoolType::Token, TakerSide::Sell)
-            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
+            | (PoolType::NFT, TakerSide::Buy)
+            | (PoolType::Token, TakerSide::Sell) => self.shift_price(self.price_offset),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
@@ -298,14 +301,16 @@ impl Pool {
                     .checked_pow(offset.into())
                 });
 
-                let result = match direction {
+                let result = unwrap_int!(match direction {
                     // price * (1 + delta)^trade_count
                     Direction::Up => base.checked_mul(&factor),
                     //same but / instead of *
                     Direction::Down => base.checked_div(&factor),
-                };
+                });
 
-                unwrap_int!(u64::try_from(unwrap_checked!({ result?.to_imprecise() })).ok())
+                let rounded_result = unwrap_int!(result.floor());
+
+                unwrap_int!(u64::try_from(unwrap_checked!({ rounded_result.to_imprecise() })).ok())
             }
         };
 
@@ -399,7 +404,8 @@ pub fn close_pool<'info>(
     // Any SOL above the minimum rent/state bond goes to the owner.
     if pool_lamports > pool_state_bond {
         let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_state_bond));
-        transfer_lamports_from_pda(&pool.to_account_info(), &owner, owner_amount)?;
+        // If owner is not rent exempt, this skips the transfer and the rent destination will get it instead.
+        transfer_lamports_checked(&pool.to_account_info(), &owner, owner_amount)?;
     }
 
     // Rent goes back to the rent payer.

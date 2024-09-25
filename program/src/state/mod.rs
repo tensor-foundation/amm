@@ -501,18 +501,26 @@ mod tests {
 
     const MAX_BPS: u64 = HUNDRED_PCT_BPS as u64;
 
-    fn calc_price_frac(price: u64, numer: u64, denom: u64) -> u64 {
-        u64::try_from(
-            PreciseNumber::new(price.into())
-                .unwrap()
-                .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
-                .unwrap()
-                .checked_div(&PreciseNumber::new(denom.into()).unwrap())
-                .unwrap()
-                .to_imprecise()
-                .unwrap(),
-        )
-        .unwrap()
+    fn calc_price_frac(price: u64, numer: u64, denom: u64, price_offset: i32) -> u64 {
+        let direction = if price_offset > 0 {
+            Direction::Up
+        } else {
+            Direction::Down
+        };
+
+        let result = PreciseNumber::new(price.into())
+            .unwrap()
+            .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
+            .unwrap()
+            .checked_div(&PreciseNumber::new(denom.into()).unwrap())
+            .unwrap();
+
+        let rounded_result = match direction {
+            Direction::Up => result.ceiling().unwrap(),
+            Direction::Down => result.floor().unwrap(),
+        };
+
+        u64::try_from(rounded_result.to_imprecise().unwrap()).unwrap()
     }
 
     #[test]
@@ -537,7 +545,7 @@ mod tests {
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
         );
 
         p.price_offset -= 7;
@@ -548,7 +556,7 @@ mod tests {
         p.price_offset -= 90;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123, p.price_offset)
         );
     }
 
@@ -632,12 +640,12 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100, p.price_offset)
         );
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
@@ -698,5 +706,66 @@ mod tests {
         );
         // 1 tick lower, should not panic.
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), u64::MAX - 1);
+    }
+
+    #[test]
+    fn test_expo_rounding_token_pool() {
+        let delta = 123;
+        let mut p = Pool::new(
+            PoolType::Token,
+            CurveType::Exponential,
+            LAMPORTS_PER_SOL,
+            delta,
+            0,
+            NullableOption::none(),
+        );
+
+        // Test rounding down for sell (Token pools only handle sells)
+        p.price_offset -= 1;
+        let price = p.current_price(TakerSide::Sell).unwrap();
+        assert_eq!(price, 987_849_451); // Rounded down from 987,849,451.743554282327...
+    }
+
+    #[test]
+    fn test_expo_rounding_nft_pool() {
+        let delta = 123;
+        let mut p = Pool::new(
+            PoolType::NFT,
+            CurveType::Exponential,
+            1_000,
+            delta,
+            0,
+            NullableOption::none(),
+        );
+
+        // Test rounding down for buy (NFT pools only handle buys)
+        p.price_offset += 1;
+        let price = p.current_price(TakerSide::Buy).unwrap();
+        assert_eq!(price, 1012); // Rounded down from 1012.3
+    }
+
+    #[test]
+    fn test_expo_rounding_trade_pool() {
+        let delta = 111;
+        let mut p = Pool::new(
+            PoolType::Trade,
+            CurveType::Exponential,
+            1_000,
+            delta,
+            0,
+            NullableOption::none(),
+        );
+
+        // Test rounding down for buy
+        p.price_offset += 1;
+        let buy_price = p.current_price(TakerSide::Buy).unwrap();
+        assert_eq!(buy_price, 1011); // Rounded down from 1011.1
+
+        // Test rounding down for sell
+        p.price_offset -= 1;
+        p.config.delta = 789;
+        p.config.starting_price = LAMPORTS_PER_SOL;
+        let sell_price = p.current_price(TakerSide::Sell).unwrap();
+        assert_eq!(sell_price, 926_869_960); // Rounded down from 926,869,960.144591713783...
     }
 }
