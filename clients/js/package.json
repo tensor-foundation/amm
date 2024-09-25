@@ -1,6 +1,6 @@
 {
   "name": "@tensor-foundation/amm",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Version 2 of the Tensor AMM program.",
   "sideEffects": false,
   "module": "./dist/src/index.mjs",
