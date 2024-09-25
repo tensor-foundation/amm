@@ -2253,9 +2253,7 @@
           },
           {
             "name": "currency",
-            "type": {
-              "defined": "Currency"
-            }
+            "type": "publicKey"
           },
           {
             "name": "amount",
@@ -2293,29 +2291,26 @@
           {
             "name": "sharedEscrow",
             "docs": [
-              "If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools."
+              "If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.",
+              "Default pubkey is interpreted as no value."
             ],
-            "type": {
-              "defined": "NullableOption<Pubkey>"
-            }
+            "type": "publicKey"
           },
           {
             "name": "cosigner",
             "docs": [
-              "An offchain actor that signs off to make sure an offchain condition is met (eg trait present)."
+              "An offchain actor that signs off to make sure an offchain condition is met (eg trait present).",
+              "Default pubkey is interpreted as no value."
             ],
-            "type": {
-              "defined": "NullableOption<Pubkey>"
-            }
+            "type": "publicKey"
           },
           {
             "name": "makerBroker",
             "docs": [
-              "Maker broker fees will be sent to this address if populated."
+              "Maker broker fees will be sent to this address if populated.",
+              "Default pubkey is interpreted as no value."
             ],
-            "type": {
-              "defined": "NullableOption<Pubkey>"
-            }
+            "type": "publicKey"
           },
           {
             "name": "maxTakerSellCount",
@@ -2518,9 +2513,7 @@
           },
           {
             "name": "mmFeeBps",
-            "type": {
-              "defined": "NullableOption<u16>"
-            }
+            "type": "u16"
           }
         ]
       }

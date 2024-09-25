@@ -122,7 +122,7 @@ pub struct BuyNftT22<'info> {
     /// CHECK: Must match the pool's maker_broker
     #[account(
         mut,
-        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+        constraint = maker_broker.key() == pool.maker_broker @ ErrorCode::WrongBrokerAccount,
     )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
@@ -180,10 +180,11 @@ impl<'info> BuyNftT22<'info> {
 impl<'info> Validate<'info> for BuyNftT22<'info> {
     fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
-        if let Some(cosigner) = self.pool.cosigner.value() {
-            if self.cosigner.is_none() || self.cosigner.as_ref().unwrap().key != cosigner {
-                throw_err!(ErrorCode::BadCosigner);
-            }
+        if self.pool.cosigner != Pubkey::default()
+            && (self.cosigner.is_none()
+                || self.cosigner.as_ref().unwrap().key != &self.pool.cosigner)
+        {
+            throw_err!(ErrorCode::BadCosigner);
         }
 
         if self.pool.version != CURRENT_POOL_VERSION {
@@ -332,8 +333,8 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
         //send money to the pool
         // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
-        PoolType::Trade => match &pool.shared_escrow.value() {
-            Some(stored_shared_escrow) => {
+        PoolType::Trade => {
+            if pool.shared_escrow != Pubkey::default() {
                 let incoming_shared_escrow = unwrap_opt!(
                     ctx.accounts.shared_escrow.as_ref(),
                     ErrorCode::BadSharedEscrow
@@ -345,13 +346,14 @@ pub fn process_t22_buy_nft<'info, 'b>(
                     &ctx.accounts.owner.to_account_info(),
                 )?;
 
-                if incoming_shared_escrow.key != *stored_shared_escrow {
+                if incoming_shared_escrow.key != &pool.shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
                 incoming_shared_escrow
+            } else {
+                ctx.accounts.pool.to_account_info()
             }
-            None => ctx.accounts.pool.to_account_info(),
-        },
+        }
         PoolType::Token => unreachable!(),
     };
 
@@ -432,7 +434,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
 
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
-    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+    if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
         let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_added =

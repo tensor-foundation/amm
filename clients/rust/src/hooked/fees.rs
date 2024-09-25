@@ -1,7 +1,10 @@
+use borsh::{BorshDeserialize, BorshSerialize};
+
 use crate::errors::TensorAmmError;
 
 use super::{BROKER_FEE_PCT, HUNDRED_PCT_BPS, MAKER_BROKER_PCT, TAKER_FEE_BPS};
 
+#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Fees {
     pub taker_fee: u64,
     pub protocol_fee: u64,

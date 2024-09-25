@@ -1,6 +1,5 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
-use tensor_toolbox::NullableOption;
 use tensor_vipers::{throw_err, try_or_err, Validate};
 use whitelist_program::{self, WhitelistV2};
 
@@ -8,7 +7,7 @@ use crate::{
     constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
     error::ErrorCode,
     state::{Pool, PoolConfig, POOL_SIZE},
-    Currency, CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
+    CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
 
 /// Create pool arguments.
@@ -68,15 +67,15 @@ impl<'info> CreatePool<'info> {
     fn validate_pool_type(&self, config: PoolConfig) -> Result<()> {
         match config.pool_type {
             PoolType::NFT | PoolType::Token => {
-                if config.mm_fee_bps.value().is_some() {
+                if config.mm_fee_bps > 0 {
                     throw_err!(ErrorCode::FeesNotAllowed);
                 }
             }
             PoolType::Trade => {
-                if config.mm_fee_bps.value().is_none() {
+                if config.mm_fee_bps == 0 {
                     throw_err!(ErrorCode::MissingFees);
                 }
-                if *config.mm_fee_bps.value().unwrap() > MAX_MM_FEES_BPS {
+                if config.mm_fee_bps > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }
@@ -119,7 +118,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.rent_payer = ctx.accounts.rent_payer.key();
 
     // Only SOL currently supported
-    pool.currency = Currency::sol();
+    pool.currency = Pubkey::default();
     pool.amount = 0;
 
     pool.price_offset = 0;
@@ -127,12 +126,9 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     pool.stats = PoolStats::default();
 
-    pool.cosigner = args.cosigner.into();
-    pool.shared_escrow = args.shared_escrow.into();
-
-    if let Some(maker_broker) = args.maker_broker {
-        pool.maker_broker = NullableOption::new(maker_broker.key());
-    }
+    pool.cosigner = args.cosigner.unwrap_or_default();
+    pool.shared_escrow = args.shared_escrow.unwrap_or_default();
+    pool.maker_broker = args.maker_broker.unwrap_or_default();
 
     let timestamp = Clock::get()?.unix_timestamp;
 

@@ -4,16 +4,16 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  Mode,
-  WhitelistV2,
-  fetchWhitelistV2,
-} from '@tensor-foundation/whitelist';
-import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import {
+  Mode,
+  WhitelistV2,
+  fetchWhitelistV2,
+} from '@tensor-foundation/whitelist';
 import test from 'ava';
 import { fetchPool, getEditPoolInstruction } from '../src/index.js';
 import { ONE_WEEK, createPool, createWhitelistV2 } from './_common.js';
