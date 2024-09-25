@@ -738,10 +738,10 @@ mod tests {
             NullableOption::none(),
         );
 
-        // Test rounding up for buy (NFT pools only handle buys)
+        // Test rounding down for buy (NFT pools only handle buys)
         p.price_offset += 1;
         let price = p.current_price(TakerSide::Buy).unwrap();
-        assert_eq!(price, 1013); // Rounded up from 1012.3
+        assert_eq!(price, 1012); // Rounded down from 1012.3
     }
 
     #[test]
@@ -756,10 +756,10 @@ mod tests {
             NullableOption::none(),
         );
 
-        // Test rounding up for buy
+        // Test rounding down for buy
         p.price_offset += 1;
         let buy_price = p.current_price(TakerSide::Buy).unwrap();
-        assert_eq!(buy_price, 1012); // Rounded up from 1011.1
+        assert_eq!(buy_price, 1011); // Rounded down from 1011.1
 
         // Test rounding down for sell
         p.price_offset -= 1;

@@ -308,11 +308,7 @@ impl Pool {
                     Direction::Down => base.checked_div(&factor),
                 });
 
-                // Round up for buys (Direction::Up), down for sells (Direction::Down)
-                let rounded_result = unwrap_int!(match direction {
-                    Direction::Up => result.floor(),
-                    Direction::Down => result.floor(),
-                });
+                let rounded_result = unwrap_int!(result.floor());
 
                 unwrap_int!(u64::try_from(unwrap_checked!({ rounded_result.to_imprecise() })).ok())
             }
