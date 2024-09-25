@@ -72,9 +72,6 @@ impl<'info> EditPool<'info> {
                 }
             }
             PoolType::Trade => {
-                if new_config.mm_fee_bps == 0 {
-                    throw_err!(ErrorCode::MissingFees);
-                }
                 if new_config.mm_fee_bps > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }

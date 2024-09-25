@@ -72,9 +72,6 @@ impl<'info> CreatePool<'info> {
                 }
             }
             PoolType::Trade => {
-                if config.mm_fee_bps == 0 {
-                    throw_err!(ErrorCode::MissingFees);
-                }
                 if config.mm_fee_bps > MAX_MM_FEES_BPS {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
