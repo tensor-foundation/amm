@@ -310,7 +310,7 @@ impl Pool {
 
                 // Round up for buys (Direction::Up), down for sells (Direction::Down)
                 let rounded_result = unwrap_int!(match direction {
-                    Direction::Up => result.ceiling(),
+                    Direction::Up => result.floor(),
                     Direction::Down => result.floor(),
                 });
 
