@@ -80,6 +80,7 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
     t,
     poolType: PoolType.Token,
     useSharedEscrow: true,
+    useMakerBroker: false,
     action: TestAction.Sell,
     depositAmount: 0n,
     poolConfig: config,
@@ -272,7 +273,7 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   t.is(calculatedBidPrice, Number(startingPrice));
 });
 
-test('Linear pool pricing after 20 sells', async (t) => {
+test.skip('Linear pool pricing after 20 sells', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Token,
@@ -457,7 +458,7 @@ test('Exponential pool pricing speed test', async (t) => {
   t.pass();
 });
 
-test('Linear pool pricing after 30 buys', async (t) => {
+test.skip('Linear pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.NFT,

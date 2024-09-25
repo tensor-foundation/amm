@@ -889,7 +889,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -1159,7 +1159,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -1420,7 +1420,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -1603,7 +1603,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -1866,7 +1866,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -2040,7 +2040,7 @@
           "isOptional": true,
           "docs": [
             "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Checks are performed in the handler."
+            "Missing check is performed in the handler."
           ]
         },
         {
@@ -3004,8 +3004,8 @@
     },
     {
       "code": 12047,
-      "name": "WrongBrokerAccount",
-      "msg": "Wrong broker account"
+      "name": "WrongMakerBroker",
+      "msg": "Wrong maker broker account"
     },
     {
       "code": 12048,
@@ -3021,6 +3021,16 @@
       "code": 12050,
       "name": "MintProofNotSet",
       "msg": "Mint proof not set"
+    },
+    {
+      "code": 12051,
+      "name": "MissingMakerBroker",
+      "msg": "Missing maker broker account"
+    },
+    {
+      "code": 12052,
+      "name": "MissingCosigner",
+      "msg": "Missing cosigner account"
     }
   ],
   "metadata": {

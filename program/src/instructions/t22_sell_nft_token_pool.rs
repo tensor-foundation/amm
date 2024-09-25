@@ -127,7 +127,7 @@ pub struct SellNftTokenPoolT22<'info> {
     /// CHECK: Must match the pool's maker_broker
     #[account(
         mut,
-        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongBrokerAccount,
+        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
     )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
@@ -137,7 +137,10 @@ pub struct SellNftTokenPoolT22<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
+    #[account(
+        constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
+    )]
     pub cosigner: Option<Signer<'info>>,
 
     /// The AMM program account, used for self-cpi logging.
@@ -153,12 +156,14 @@ pub struct SellNftTokenPoolT22<'info> {
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
     fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
-        if self.pool.cosigner != Pubkey::default()
-            && (self.cosigner.is_none()
-                || self.cosigner.as_ref().unwrap().key != &self.pool.cosigner)
-        {
-            throw_err!(ErrorCode::BadCosigner);
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        if self.pool.cosigner != Pubkey::default() {
+            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
+        }
+
+        // If the pool has a maker broker set, the maker broker account must be passed in.
+        if self.pool.maker_broker != Pubkey::default() {
+            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
         }
 
         match self.pool.config.pool_type {
