@@ -188,7 +188,6 @@ impl Pool {
         let fee = match self.config.pool_type {
             PoolType::Trade => {
                 unwrap_checked!({
-                    // NB: unwrap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
                     (self.config.mm_fee_bps as u64)
                         .checked_mul(current_price)?
                         .checked_div(HUNDRED_PCT_BPS as u64)
