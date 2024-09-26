@@ -48,7 +48,7 @@ impl<'info> DepositSol<'info> {
 
 impl<'info> Validate<'info> for DepositSol<'info> {
     fn validate(&self) -> Result<()> {
-        if self.pool.shared_escrow.value().is_some() {
+        if self.pool.shared_escrow != Pubkey::default() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())
@@ -64,7 +64,7 @@ pub fn process_deposit_sol<'info>(
     let pool = &mut ctx.accounts.pool;
 
     // Update the pool's currency amount
-    if pool.currency.is_sol() {
+    if pool.currency == Pubkey::default() {
         pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports) });
     }
 

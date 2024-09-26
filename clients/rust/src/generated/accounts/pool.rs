@@ -62,10 +62,13 @@ pub struct Pool {
     /// Various stats about the pool, including the number of buys and sells.
     pub stats: PoolStats,
     /// If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
+    /// Default pubkey is interpreted as no value.
     pub shared_escrow: NullableAddress,
     /// An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
+    /// Default pubkey is interpreted as no value.
     pub cosigner: NullableAddress,
     /// Maker broker fees will be sent to this address if populated.
+    /// Default pubkey is interpreted as no value.
     pub maker_broker: NullableAddress,
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity.
     pub max_taker_sell_count: u32,
@@ -77,6 +80,8 @@ pub struct Pool {
 }
 
 impl Pool {
+    pub const LEN: usize = 447;
+
     /// Prefix values used to generate a PDA for this account.
     ///
     /// Values are positional and appear in the following order:

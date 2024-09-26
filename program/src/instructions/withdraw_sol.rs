@@ -37,7 +37,7 @@ impl<'info> WithdrawSol<'info> {
 
 impl<'info> WithdrawSol<'info> {
     fn validate_sol_transfer(&self) -> Result<()> {
-        if self.pool.shared_escrow.value().is_some() {
+        if self.pool.shared_escrow != Pubkey::default() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         Ok(())
@@ -79,7 +79,7 @@ pub fn process_withdraw_sol<'info>(
     }
 
     // Update the pool's currency amount
-    if pool.currency.is_sol() {
+    if pool.currency == Pubkey::default() {
         pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports) });
     }
 

@@ -593,7 +593,9 @@ export function getTokenAmount(data: Base64EncodedDataResponse): BigInt {
 export function getTokenOwner(data: Base64EncodedDataResponse): Address {
   const buffer = Buffer.from(String(data), 'base64');
   const base58string = bs58.encode(
-    buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
+    Uint8Array.from(
+      buffer.subarray(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
+    )
   );
   return address(base58string);
 }
@@ -783,6 +785,7 @@ export interface SetupTestParams {
   action: TestAction;
   whitelistMode?: Mode;
   depositAmount?: bigint;
+  useMakerBroker?: boolean;
   useSharedEscrow?: boolean;
   useCosigner?: boolean;
   compoundFees?: boolean;
@@ -809,6 +812,7 @@ export async function setupLegacyTest(
     depositAmount: dA,
     pNft = false,
     useSharedEscrow = false,
+    useMakerBroker = true,
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
@@ -934,7 +938,7 @@ export async function setupLegacyTest(
     client,
     payer: poolOwner,
     owner: poolOwner,
-    makerBroker: makerBroker.address,
+    makerBroker: useMakerBroker ? makerBroker.address : undefined,
     cosigner: useCosigner ? cosigner : undefined,
     sharedEscrow,
     config,
@@ -1037,6 +1041,7 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
     poolType,
     action,
     depositAmount: dA,
+    useMakerBroker = true,
     useSharedEscrow = false,
     useCosigner = false,
     compoundFees = false,
@@ -1141,7 +1146,7 @@ export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
     client,
     payer: poolOwner,
     owner: poolOwner,
-    makerBroker: makerBroker.address,
+    makerBroker: useMakerBroker ? makerBroker.address : undefined,
     cosigner: useCosigner ? cosigner : undefined,
     sharedEscrow,
     config,

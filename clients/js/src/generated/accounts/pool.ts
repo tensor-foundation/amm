@@ -101,11 +101,20 @@ export type Pool = {
   nftsHeld: number;
   /** Various stats about the pool, including the number of buys and sells. */
   stats: PoolStats;
-  /** If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools. */
+  /**
+   * If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
+   * Default pubkey is interpreted as no value.
+   */
   sharedEscrow: NullableAddress;
-  /** An offchain actor that signs off to make sure an offchain condition is met (eg trait present). */
+  /**
+   * An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
+   * Default pubkey is interpreted as no value.
+   */
   cosigner: NullableAddress;
-  /** Maker broker fees will be sent to this address if populated. */
+  /**
+   * Maker broker fees will be sent to this address if populated.
+   * Default pubkey is interpreted as no value.
+   */
   makerBroker: NullableAddress;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
@@ -147,11 +156,20 @@ export type PoolArgs = {
   nftsHeld: number;
   /** Various stats about the pool, including the number of buys and sells. */
   stats: PoolStatsArgs;
-  /** If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools. */
+  /**
+   * If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
+   * Default pubkey is interpreted as no value.
+   */
   sharedEscrow: NullableAddressArgs;
-  /** An offchain actor that signs off to make sure an offchain condition is met (eg trait present). */
+  /**
+   * An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
+   * Default pubkey is interpreted as no value.
+   */
   cosigner: NullableAddressArgs;
-  /** Maker broker fees will be sent to this address if populated. */
+  /**
+   * Maker broker fees will be sent to this address if populated.
+   * Default pubkey is interpreted as no value.
+   */
   makerBroker: NullableAddressArgs;
   /** Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity. */
   maxTakerSellCount: number;
@@ -274,6 +292,10 @@ export async function fetchAllMaybePool(
 ): Promise<MaybeAccount<Pool>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodePool(maybeAccount));
+}
+
+export function getPoolSize(): number {
+  return 447;
 }
 
 export async function fetchPoolFromSeeds(

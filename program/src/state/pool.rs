@@ -1,9 +1,7 @@
-use std::ops::Deref;
-
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::{calc_creators_fee, transfer_lamports_checked, NullableOption};
+use tensor_toolbox::{calc_creators_fee, transfer_lamports_checked};
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 
 use crate::{constants::*, error::ErrorCode};
@@ -54,48 +52,22 @@ pub enum CurveType {
 }
 
 /// Configuration values for a pool define the type of pool, curve, and other parameters.
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PoolConfig {
     pub pool_type: PoolType,
     pub curve_type: CurveType,
     pub starting_price: u64,
     pub delta: u64,
     pub mm_compound_fees: bool,
-    pub mm_fee_bps: NullableOption<u16>,
+    pub mm_fee_bps: u16,
 }
 
 /// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct PoolStats {
     pub taker_sell_count: u32,
     pub taker_buy_count: u32,
     pub accumulated_mm_profit: u64,
-}
-
-/// A currency is a SPL token mint or SOL native mint.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
-pub struct Currency(Pubkey);
-
-impl Deref for Currency {
-    type Target = Pubkey;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Currency {
-    pub fn new(pubkey: Pubkey) -> Self {
-        Self(pubkey)
-    }
-
-    pub fn sol() -> Self {
-        Self::default()
-    }
-
-    pub fn is_sol(&self) -> bool {
-        *self == Self::default()
-    }
 }
 
 /// `Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.
@@ -125,7 +97,7 @@ pub struct Pool {
     pub rent_payer: Pubkey,
 
     // Default Pubkey is SOL, otherwise SPL token mint.
-    pub currency: Currency,
+    pub currency: Pubkey,
     /// The amount of currency held in the pool.
     pub amount: u64,
 
@@ -141,11 +113,14 @@ pub struct Pool {
     pub stats: PoolStats,
 
     /// If an escrow account is present, it means it's a shared-escrow pool where liquidity is shared with other pools.
-    pub shared_escrow: NullableOption<Pubkey>,
+    /// Default pubkey is interpreted as no value.
+    pub shared_escrow: Pubkey,
     /// An offchain actor that signs off to make sure an offchain condition is met (eg trait present).
-    pub cosigner: NullableOption<Pubkey>,
+    /// Default pubkey is interpreted as no value.
+    pub cosigner: Pubkey,
     /// Maker broker fees will be sent to this address if populated.
-    pub maker_broker: NullableOption<Pubkey>,
+    /// Default pubkey is interpreted as no value.
+    pub maker_broker: Pubkey,
 
     /// Limit how many buys a pool can execute - useful for shared escrow pools, else keeps buying into infinity.
     pub max_taker_sell_count: u32,
@@ -172,7 +147,7 @@ impl Pool {
     /// Determines if a taker is able to sell into a pool.
     pub fn taker_allowed_to_sell(&self) -> Result<()> {
         //0 indicates no restriction on buy count / if no shared_escrow, not relevant
-        if self.max_taker_sell_count == 0 || self.shared_escrow.value().is_none() {
+        if self.max_taker_sell_count == 0 || self.shared_escrow == Pubkey::default() {
             return Ok(());
         }
 
@@ -213,8 +188,7 @@ impl Pool {
         let fee = match self.config.pool_type {
             PoolType::Trade => {
                 unwrap_checked!({
-                    // NB: unrwap_or(0) since we had a bug where we allowed someone to edit a trade pool to have null mm_fees.
-                    (*self.config.mm_fee_bps.value().unwrap_or(&0) as u64)
+                    (self.config.mm_fee_bps as u64)
                         .checked_mul(current_price)?
                         .checked_div(HUNDRED_PCT_BPS as u64)
                 })
@@ -367,7 +341,9 @@ pub fn try_autoclose_pool<'info>(
         PoolType::Trade => (), // Cannot be auto-closed
         PoolType::Token => {
             // Not enough SOL to purchase another NFT, so we can close the pool.
-            if pool.currency.is_sol() && pool.amount < pool.current_price(TakerSide::Sell)? {
+            if pool.currency == Pubkey::default()
+                && pool.amount < pool.current_price(TakerSide::Sell)?
+            {
                 close_pool(pool, rent_payer, owner)?;
             }
         }

@@ -196,8 +196,8 @@ pub enum ErrorCode {
     InvalidPoolAmount,
 
     // 6047 | 0x179f
-    #[msg("Wrong broker account")]
-    WrongBrokerAccount,
+    #[msg("Wrong maker broker account")]
+    WrongMakerBroker,
 
     // 6048 | 0x17a0
     #[msg("Wrong rent payer")]
@@ -210,4 +210,12 @@ pub enum ErrorCode {
     // 6050 | 0x17a2
     #[msg("Mint proof not set")]
     MintProofNotSet,
+
+    // 6051 | 0x17a3
+    #[msg("Missing maker broker account")]
+    MissingMakerBroker,
+
+    // 6052 | 0x17a4
+    #[msg("Missing cosigner account")]
+    MissingCosigner,
 }
