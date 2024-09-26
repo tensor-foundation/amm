@@ -1,12 +1,10 @@
 import {
-  Address,
   GetAccountInfoApi,
   GetMinimumBalanceForRentExemptionApi,
-  ReadonlyUint8Array,
   Rpc,
 } from '@solana/web3.js';
-import { CurveType, Pool, PoolConfig, PoolType, TakerSide } from '../generated';
-import { DEFAULT_ADDRESS, NullableAddress } from './nullableAddress';
+import { CurveType, Pool, PoolType, TakerSide } from '../generated';
+import { DEFAULT_ADDRESS } from './nullableAddress';
 
 const BASIS_POINTS = 100_00n;
 const BASIS_POINTS_DECIMAL_OFFSET = 4;
@@ -22,7 +20,7 @@ export function getNeededBalanceForBidQuantity({
   pool,
   bidQuantity,
 }: {
-  pool: Pool | { config: PoolConfig; priceOffset: number };
+  pool: Pick<Pool, 'config' | 'priceOffset'>;
   bidQuantity: number;
 }): number {
   if (bidQuantity < 1) return 0;
@@ -86,14 +84,10 @@ export function getAmountOfBids({
   pool,
   availableLamports,
 }: {
-  pool:
-    | Pool
-    | {
-        config: PoolConfig;
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      };
+  pool: Pick<
+    Pool,
+    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+  >;
   availableLamports: number | bigint;
 }): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
@@ -183,15 +177,10 @@ export function getCurrentAskPrice({
   extraOffset = 0,
   excludeMMFee = false,
 }: {
-  pool:
-    | Pool
-    | {
-        config: PoolConfig;
-        nftsHeld: number;
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      };
+  pool: Pick<
+    Pool,
+    'config' | 'nftsHeld' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+  >;
   royaltyFeeBps: number;
   extraOffset?: number;
   excludeMMFee?: boolean;
@@ -222,14 +211,10 @@ export function getCurrentBidPriceSync({
   extraOffset = 0,
   excludeMMFee = false,
 }: {
-  pool:
-    | Pool
-    | {
-        config: PoolConfig;
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      };
+  pool: Pick<
+    Pool,
+    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+  >;
   availableLamports: number | bigint;
   royaltyFeeBps: number;
   extraOffset?: number;
@@ -264,17 +249,15 @@ export async function getCurrentBidPrice({
   excludeMMFee = false,
 }: {
   rpc: Rpc<GetAccountInfoApi & GetMinimumBalanceForRentExemptionApi>;
-  pool:
-    | Pool
-    | {
-        config: PoolConfig;
-        owner: Address;
-        amount: number;
-        poolId: ReadonlyUint8Array;
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      };
+  pool: Pick<
+    Pool,
+    | 'config'
+    | 'owner'
+    | 'amount'
+    | 'priceOffset'
+    | 'maxTakerSellCount'
+    | 'sharedEscrow'
+  >;
   royaltyFeeBps: number;
   extraOffset?: number;
   excludeMMFee?: boolean;
@@ -325,7 +308,7 @@ export function calculatePrice({
   extraOffset = 0,
   excludeMMFee = false,
 }: {
-  pool: Pool | { config: PoolConfig; priceOffset: number };
+  pool: Pick<Pool, 'config' | 'priceOffset'>;
   side: TakerSide;
   royaltyFeeBps: number;
   extraOffset?: number;
@@ -468,13 +451,7 @@ const cutTo12MantissaDecimals = (
 };
 
 function isMaxTakerSellCountReached(
-  pool:
-    | Pool
-    | {
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      }
+  pool: Pick<Pool, 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'>
 ): boolean {
   return (
     pool.priceOffset * -1 === pool.maxTakerSellCount &&
@@ -488,14 +465,10 @@ const isNotFulfillable = ({
   pool,
   side,
 }: {
-  pool:
-    | Pool
-    | {
-        config: PoolConfig;
-        priceOffset: number;
-        maxTakerSellCount: number;
-        sharedEscrow: NullableAddress;
-      };
+  pool: Pick<
+    Pool,
+    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+  >;
   side: TakerSide;
 }) => {
   return (
