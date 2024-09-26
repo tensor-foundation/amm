@@ -493,24 +493,30 @@ mod tests {
 
     const MAX_BPS: u64 = HUNDRED_PCT_BPS as u64;
 
-    fn calc_price_frac(price: u64, numer: u64, denom: u64, price_offset: i32) -> u64 {
+    fn calc_price_frac(
+        price: u64,
+        numer: u64,
+        denom: u64,
+        price_offset: i32,
+        side: TakerSide,
+    ) -> u64 {
         let direction = if price_offset > 0 {
             Direction::Up
         } else {
             Direction::Down
         };
 
-        let result = PreciseNumber::new(price.into())
-            .unwrap()
-            .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
-            .unwrap()
-            .checked_div(&PreciseNumber::new(denom.into()).unwrap())
-            .unwrap();
+        let result = unwrap_int!(match direction {
+            // price * (1 + delta)^trade_count
+            Direction::Up => base.checked_mul(&factor),
+            //same but / instead of *
+            Direction::Down => base.checked_div(&factor),
+        });
 
-        let rounded_result = match direction {
-            Direction::Up => result.ceiling().unwrap(),
-            Direction::Down => result.floor().unwrap(),
-        };
+        let rounded_result = unwrap_int!(match side {
+            TakerSide::Buy => result.ceiling(),
+            TakerSide::Sell => result.floor(),
+        });
 
         u64::try_from(rounded_result.to_imprecise().unwrap()).unwrap()
     }
@@ -537,7 +543,13 @@ mod tests {
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
+            calc_price_frac(
+                LAMPORTS_PER_SOL,
+                MAX_BPS,
+                13310,
+                p.price_offset,
+                TakerSide::Sell
+            )
         );
 
         p.price_offset -= 7;
@@ -548,7 +560,13 @@ mod tests {
         p.price_offset -= 90;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123, p.price_offset)
+            calc_price_frac(
+                LAMPORTS_PER_SOL,
+                MAX_BPS,
+                137806123,
+                p.price_offset,
+                TakerSide::Sell
+            )
         );
     }
 
@@ -632,12 +650,24 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100, p.price_offset)
+            calc_price_frac(
+                LAMPORTS_PER_SOL,
+                MAX_BPS,
+                12100,
+                p.price_offset,
+                TakerSide::Sell
+            )
         );
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
+            calc_price_frac(
+                LAMPORTS_PER_SOL,
+                MAX_BPS,
+                13310,
+                p.price_offset,
+                TakerSide::Buy
+            )
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),

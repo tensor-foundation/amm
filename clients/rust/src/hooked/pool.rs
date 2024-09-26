@@ -5,8 +5,6 @@ use crate::errors::TensorAmmError;
 use crate::types::{CurveType, Direction, PoolStats, PoolType, TakerSide};
 use crate::HUNDRED_PCT_BPS;
 
-use spl_math::precise_number::PreciseNumber;
-
 #[allow(clippy::derivable_impls)]
 impl Default for PoolStats {
     fn default() -> Self {
@@ -20,7 +18,7 @@ impl Default for PoolStats {
 
 impl Pool {
     /// Shifts the price of a pool by a certain offset.
-    pub fn shift_price(&self, price_offset: i32) -> Result<u64, TensorAmmError> {
+    pub fn shift_price(&self, price_offset: i32, side: TakerSide) -> Result<u64, TensorAmmError> {
         let direction = if price_offset > 0 {
             Direction::Up
         } else {
@@ -77,7 +75,12 @@ impl Pool {
                     Direction::Down => base.checked_div(&factor),
                 };
 
-                let imprecise = result
+                let rounded_result = match side {
+                    TakerSide::Buy => result.ceiling(),
+                    TakerSide::Sell => result.floor(),
+                };
+
+                let imprecise = rounded_result
                     .ok_or(TensorAmmError::ArithmeticError)?
                     .to_imprecise()
                     .ok_or(TensorAmmError::ArithmeticError)?;
