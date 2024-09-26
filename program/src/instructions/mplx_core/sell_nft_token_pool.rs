@@ -68,8 +68,6 @@ pub struct SellNftTokenPoolCore<'info> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
-    // Merkle Trees are the only mode that can be used for whitelists in T22 but we set this as an
-    // option to support the ability to use other modes in the future, e.g. FVC w/ T22 Metadata.
     pub mint_proof: Option<UncheckedAccount<'info>>,
 
     /// The MPL core asset account.
@@ -86,7 +84,8 @@ pub struct SellNftTokenPoolCore<'info> {
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the maker broker fee.
-    /// CHECK: Must match the pool's maker_broker
+    /// CHECK: Must match the pool's maker_broker if passed in.
+    // validate() checks that the maker broker is passed in if the pool has a maker broker.
     #[account(
         mut,
         constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
@@ -99,7 +98,7 @@ pub struct SellNftTokenPoolCore<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
+    // validate() checks that the cosigner is passed in if the pool has a cosigner.
     #[account(
         constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
     )]

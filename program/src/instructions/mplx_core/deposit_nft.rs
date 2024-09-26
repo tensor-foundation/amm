@@ -150,7 +150,7 @@ impl<'info> Validate<'info> for DepositNftCore<'info> {
     }
 }
 
-/// Deposit a Token22 NFT into a NFT or Trade pool.
+/// Deposit a MPL Core asset into a NFT or Trade pool.
 #[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
 pub fn process_deposit_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,

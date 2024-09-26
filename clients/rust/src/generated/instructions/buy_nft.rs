@@ -24,7 +24,7 @@ pub struct BuyNft {
     pub fee_vault: solana_program::pubkey::Pubkey,
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     pub pool: solana_program::pubkey::Pubkey,
     /// The TA of the buyer, where the NFT will be transferred.
     pub buyer_ta: solana_program::pubkey::Pubkey,
@@ -383,7 +383,7 @@ impl BuyNftBuilder {
     }
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
@@ -651,7 +651,7 @@ pub struct BuyNftCpiAccounts<'a, 'b> {
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the buyer, where the NFT will be transferred.
     pub buyer_ta: &'b solana_program::account_info::AccountInfo<'a>,
@@ -713,7 +713,7 @@ pub struct BuyNftCpi<'a, 'b> {
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the buyer, where the NFT will be transferred.
     pub buyer_ta: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1180,7 +1180,7 @@ impl<'a, 'b> BuyNftCpiBuilder<'a, 'b> {
     }
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);

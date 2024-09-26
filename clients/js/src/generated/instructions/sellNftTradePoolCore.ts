@@ -214,10 +214,7 @@ export type SellNftTradePoolCoreAsyncInput<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
-  /**
-   * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Missing check is performed in the handler.
-   */
+  /** The optional cosigner account that must be passed in if the pool has a cosigner. */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The MPL Core program. */
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
@@ -450,10 +447,7 @@ export type SellNftTradePoolCoreInput<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
-  /**
-   * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Missing check is performed in the handler.
-   */
+  /** The optional cosigner account that must be passed in if the pool has a cosigner. */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The MPL Core program. */
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
@@ -657,11 +651,7 @@ export type ParsedSellNftTradePoolCoreInstruction<
     makerBroker?: TAccountMetas[10] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[11] | undefined;
-    /**
-     * The optional cosigner account that must be passed in if the pool has a cosigner.
-     * Missing check is performed in the handler.
-     */
-
+    /** The optional cosigner account that must be passed in if the pool has a cosigner. */
     cosigner?: TAccountMetas[12] | undefined;
     /** The MPL Core program. */
     mplCoreProgram: TAccountMetas[13];

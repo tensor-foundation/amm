@@ -195,7 +195,7 @@ export type BuyNftCoreAsyncInput<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The MPL core asset account. */
@@ -209,10 +209,7 @@ export type BuyNftCoreAsyncInput<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
-  /**
-   * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Missing check is performed in the handler.
-   */
+  /** The optional cosigner account that must be passed in if the pool has a cosigner. */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
@@ -425,7 +422,7 @@ export type BuyNftCoreInput<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The MPL core asset account. */
@@ -439,10 +436,7 @@ export type BuyNftCoreInput<
   makerBroker?: Address<TAccountMakerBroker>;
   /** The account that receives the taker broker fee. */
   takerBroker?: Address<TAccountTakerBroker>;
-  /**
-   * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Missing check is performed in the handler.
-   */
+  /** The optional cosigner account that must be passed in if the pool has a cosigner. */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
   ammProgram?: Address<TAccountAmmProgram>;
@@ -629,7 +623,7 @@ export type ParsedBuyNftCoreInstruction<
     /**
      * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-     * Any active pool can be specified provided it is a Trade or NFT type.
+     * Any active pool can be specified provided if it is a Trade or NFT type.
      */
 
     pool: TAccountMetas[4];
@@ -644,11 +638,7 @@ export type ParsedBuyNftCoreInstruction<
     makerBroker?: TAccountMetas[9] | undefined;
     /** The account that receives the taker broker fee. */
     takerBroker?: TAccountMetas[10] | undefined;
-    /**
-     * The optional cosigner account that must be passed in if the pool has a cosigner.
-     * Missing check is performed in the handler.
-     */
-
+    /** The optional cosigner account that must be passed in if the pool has a cosigner. */
     cosigner?: TAccountMetas[11] | undefined;
     /** The AMM program account, used for self-cpi logging. */
     ammProgram: TAccountMetas[12];

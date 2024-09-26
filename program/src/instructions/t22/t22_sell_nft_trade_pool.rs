@@ -20,7 +20,7 @@ use tensor_toolbox::{
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
-use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof, WhitelistV2};
 
 use crate::{
@@ -318,12 +318,8 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // Self-CPI log the event.
     record_event(event, &ctx.accounts.amm_program, &ctx.accounts.pool)?;
 
-    // Check that the price + fees the seller receives isn't lower than the min price the user specified.
-    let price = current_price
-        .checked_sub(mm_fee)
-        .ok_or(ErrorCode::PriceMismatch)?
-        .checked_sub(creators_fee)
-        .ok_or(ErrorCode::PriceMismatch)?;
+    // Check that the total price the seller receives isn't lower than the min price the user specified.
+    let price = unwrap_checked!({ current_price.checked_sub(mm_fee)?.checked_sub(creators_fee) });
 
     if price < min_price {
         throw_err!(ErrorCode::PriceMismatch);

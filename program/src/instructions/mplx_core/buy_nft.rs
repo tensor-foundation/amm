@@ -35,7 +35,7 @@ pub struct BuyNftCore<'info> {
 
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     #[account(
         mut,
         seeds = [
@@ -67,7 +67,7 @@ pub struct BuyNftCore<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // Check the receipt is for the correct pool and mint.
+        // Check the receipt is for the correct pool and asset.
         constraint = nft_receipt.mint == asset.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = buyer,
@@ -80,7 +80,8 @@ pub struct BuyNftCore<'info> {
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the maker broker fee.
-    /// CHECK: Must match the pool's maker_broker
+    /// CHECK: Must match the pool's maker_broker if passed in.
+    // validate() checks that the maker broker is passed in if the pool has a maker broker.
     #[account(
         mut,
         constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
@@ -93,7 +94,7 @@ pub struct BuyNftCore<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
+    // validate() checks that the cosigner is passed in if the pool has a cosigner.
     #[account(
         constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
     )]
@@ -157,7 +158,7 @@ impl<'info> BuyNftCore<'info> {
     }
 }
 
-/// Buy a Token22 NFT from a NFT or Trade pool.
+/// Buy a MPL Core asset from a NFT or Trade pool.
 #[access_control(ctx.accounts.validate())]
 pub fn process_buy_nft_core<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftCore<'info>>,
@@ -359,6 +360,7 @@ pub fn process_buy_nft_core<'info, 'b>(
 
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+    // No currency support yet, only SOL.
     if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
         let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();

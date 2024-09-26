@@ -292,7 +292,7 @@ export type BuyNftAsyncInput<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
@@ -695,7 +695,7 @@ export type BuyNftInput<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
@@ -1029,7 +1029,7 @@ export type ParsedBuyNftInstruction<
     /**
      * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-     * Any active pool can be specified provided it is a Trade or NFT type.
+     * Any active pool can be specified provided if it is a Trade or NFT type.
      */
 
     pool: TAccountMetas[4];
