@@ -151,9 +151,9 @@ pub enum TensorAmmError {
     /// 12046 - Invalid pool amount
     #[error("Invalid pool amount")]
     InvalidPoolAmount = 0x2F0E,
-    /// 12047 - Wrong broker account
-    #[error("Wrong broker account")]
-    WrongBrokerAccount = 0x2F0F,
+    /// 12047 - Wrong maker broker account
+    #[error("Wrong maker broker account")]
+    WrongMakerBroker = 0x2F0F,
     /// 12048 - Wrong rent payer
     #[error("Wrong rent payer")]
     WrongOwner = 0x2F10,
@@ -163,6 +163,12 @@ pub enum TensorAmmError {
     /// 12050 - Mint proof not set
     #[error("Mint proof not set")]
     MintProofNotSet = 0x2F12,
+    /// 12051 - Missing maker broker account
+    #[error("Missing maker broker account")]
+    MissingMakerBroker = 0x2F13,
+    /// 12052 - Missing cosigner account
+    #[error("Missing cosigner account")]
+    MissingCosigner = 0x2F14,
 }
 
 impl solana_program::program_error::PrintProgramError for TensorAmmError {

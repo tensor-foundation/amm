@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use crate::accounts::Pool;
 use crate::errors::TensorAmmError;
 use crate::types::{CurveType, Direction, PoolStats, PoolType, TakerSide};
@@ -102,6 +104,25 @@ impl Pool {
 
             // Invalid combinations of pool type and side.
             _ => Err(TensorAmmError::WrongPoolType),
+        }
+    }
+}
+
+impl Display for PoolType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            PoolType::Trade => write!(f, "Trade"),
+            PoolType::Token => write!(f, "Token"),
+            PoolType::NFT => write!(f, "NFT"),
+        }
+    }
+}
+
+impl Display for CurveType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            CurveType::Linear => write!(f, "Linear"),
+            CurveType::Exponential => write!(f, "Exponential"),
         }
     }
 }

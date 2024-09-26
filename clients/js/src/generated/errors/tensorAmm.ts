@@ -100,14 +100,18 @@ export const TENSOR_AMM_ERROR__POOL_NOT_EXPIRED = 0x2f0c; // 12044
 export const TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY = 0x2f0d; // 12045
 /** InvalidPoolAmount: Invalid pool amount */
 export const TENSOR_AMM_ERROR__INVALID_POOL_AMOUNT = 0x2f0e; // 12046
-/** WrongBrokerAccount: Wrong broker account */
-export const TENSOR_AMM_ERROR__WRONG_BROKER_ACCOUNT = 0x2f0f; // 12047
+/** WrongMakerBroker: Wrong maker broker account */
+export const TENSOR_AMM_ERROR__WRONG_MAKER_BROKER = 0x2f0f; // 12047
 /** WrongOwner: Wrong rent payer */
 export const TENSOR_AMM_ERROR__WRONG_OWNER = 0x2f10; // 12048
 /** EscrowProgramNotSet: Escrow program not set */
 export const TENSOR_AMM_ERROR__ESCROW_PROGRAM_NOT_SET = 0x2f11; // 12049
 /** MintProofNotSet: Mint proof not set */
 export const TENSOR_AMM_ERROR__MINT_PROOF_NOT_SET = 0x2f12; // 12050
+/** MissingMakerBroker: Missing maker broker account */
+export const TENSOR_AMM_ERROR__MISSING_MAKER_BROKER = 0x2f13; // 12051
+/** MissingCosigner: Missing cosigner account */
+export const TENSOR_AMM_ERROR__MISSING_COSIGNER = 0x2f14; // 12052
 
 export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__ARITHMETIC_ERROR
@@ -136,7 +140,9 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED
   | typeof TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL
   | typeof TENSOR_AMM_ERROR__MINT_PROOF_NOT_SET
+  | typeof TENSOR_AMM_ERROR__MISSING_COSIGNER
   | typeof TENSOR_AMM_ERROR__MISSING_FEES
+  | typeof TENSOR_AMM_ERROR__MISSING_MAKER_BROKER
   | typeof TENSOR_AMM_ERROR__POOL_FEES_COMPOUNDED
   | typeof TENSOR_AMM_ERROR__POOL_FROZEN
   | typeof TENSOR_AMM_ERROR__POOL_KEEP_ALIVE
@@ -152,8 +158,8 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY
   | typeof TENSOR_AMM_ERROR__WHITELIST_NOT_VERIFIED
   | typeof TENSOR_AMM_ERROR__WRONG_AUTHORITY
-  | typeof TENSOR_AMM_ERROR__WRONG_BROKER_ACCOUNT
   | typeof TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS
+  | typeof TENSOR_AMM_ERROR__WRONG_MAKER_BROKER
   | typeof TENSOR_AMM_ERROR__WRONG_MINT
   | typeof TENSOR_AMM_ERROR__WRONG_ORDER_TYPE
   | typeof TENSOR_AMM_ERROR__WRONG_OWNER
@@ -191,7 +197,9 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED]: `max taker sell count exceeded, pool cannot buy anymore NFTs`,
     [TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL]: `max taker sell count is too small`,
     [TENSOR_AMM_ERROR__MINT_PROOF_NOT_SET]: `Mint proof not set`,
+    [TENSOR_AMM_ERROR__MISSING_COSIGNER]: `Missing cosigner account`,
     [TENSOR_AMM_ERROR__MISSING_FEES]: `when setting up a Trade pool, must provide fee bps`,
+    [TENSOR_AMM_ERROR__MISSING_MAKER_BROKER]: `Missing maker broker account`,
     [TENSOR_AMM_ERROR__POOL_FEES_COMPOUNDED]: `this pool compounds fees and they cannot be withdrawn separately`,
     [TENSOR_AMM_ERROR__POOL_FROZEN]: `pool is frozen and cannot execute normal operations`,
     [TENSOR_AMM_ERROR__POOL_KEEP_ALIVE]: `Pool must keep minimum rent balance`,
@@ -207,8 +215,8 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY]: `Unsupported currency`,
     [TENSOR_AMM_ERROR__WHITELIST_NOT_VERIFIED]: `whitelist not verified -- currently only verified pools supported`,
     [TENSOR_AMM_ERROR__WRONG_AUTHORITY]: `wrong nft authority account provided`,
-    [TENSOR_AMM_ERROR__WRONG_BROKER_ACCOUNT]: `Wrong broker account`,
     [TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS]: `wrong frozen status`,
+    [TENSOR_AMM_ERROR__WRONG_MAKER_BROKER]: `Wrong maker broker account`,
     [TENSOR_AMM_ERROR__WRONG_MINT]: `wrong mint passed for provided accounts`,
     [TENSOR_AMM_ERROR__WRONG_ORDER_TYPE]: `wrong order type`,
     [TENSOR_AMM_ERROR__WRONG_OWNER]: `Wrong rent payer`,
