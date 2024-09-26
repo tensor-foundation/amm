@@ -209,11 +209,11 @@ impl Pool {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
             | (PoolType::NFT, TakerSide::Buy)
-            | (PoolType::Token, TakerSide::Sell) => self.shift_price(self.price_offset),
+            | (PoolType::Token, TakerSide::Sell) => self.shift_price(self.price_offset, side),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
-            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
+            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1, side),
 
             // Invalid combinations of pool type and side.
             _ => {
@@ -238,7 +238,7 @@ impl Pool {
     }
 
     /// Shifts the price of a pool by a certain offset.
-    pub fn shift_price(&self, price_offset: i32) -> Result<u64> {
+    pub fn shift_price(&self, price_offset: i32, side: TakerSide) -> Result<u64> {
         let direction = if price_offset > 0 {
             Direction::Up
         } else {
@@ -282,7 +282,10 @@ impl Pool {
                     Direction::Down => base.checked_div(&factor),
                 });
 
-                let rounded_result = unwrap_int!(result.floor());
+                let rounded_result = unwrap_int!(match side {
+                    TakerSide::Buy => result.ceiling(),
+                    TakerSide::Sell => result.floor(),
+                });
 
                 unwrap_int!(u64::try_from(unwrap_checked!({ rounded_result.to_imprecise() })).ok())
             }
@@ -325,7 +328,7 @@ pub enum Direction {
 }
 
 /// Indicates the side of the taker.
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub enum TakerSide {
     Buy,  // Buying from the pool.
     Sell, // Selling into the pool.

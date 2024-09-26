@@ -679,7 +679,7 @@ test('getAmountOfBids returns correct values for linear pools', async (t) => {
   t.true(amountOfBids === 23);
 });
 
-test('getNeededBalanceForBidQuantity returns correct values for exponential pools', (t) => {
+test('calculateAmountForQuantity returns correct values for exponential pools for sell side', (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Exponential,
@@ -693,11 +693,11 @@ test('getNeededBalanceForBidQuantity returns correct values for exponential pool
     quantity: 2,
     side: TakerSide.Sell,
   });
-  const expectedLamports = 1_000_000_000 + Math.round(1_000_000_000 / 1.01);
+  const expectedLamports = 1_000_000_000 + Math.floor(1_000_000_000 / 1.01);
   t.true(lamportsNeeded === expectedLamports);
 });
 
-test('getNeededBalanceForBidQuantity returns correct values for linear pools', (t) => {
+test('calculateAmountForQuantity returns correct values for linear pools for sell side', (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Linear,

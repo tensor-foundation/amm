@@ -372,12 +372,14 @@ export function calculatePrice({
       const divident = startingPrice * 10n ** decimalOffset;
       const divisor = scaling;
       resultPriceIntermediate =
-        divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
+        divident / divisor +
+        BigInt(+needsRoundingAddedBack(divident, divisor, side));
     } else {
       const divident = startingPrice * scaling;
       const divisor = 10n ** decimalOffset;
       resultPriceIntermediate =
-        divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
+        divident / divisor +
+        BigInt(+needsRoundingAddedBack(divident, divisor, side));
     }
     resultPrice = Number(resultPriceIntermediate);
   } else {
@@ -450,12 +452,13 @@ function powerBpsAsBigInt_12DecimalMantissaPrecision(
   return [result, BigInt(resultDecimalOffset)];
 }
 
-// checks if bigint division would have gotten rounded up if floating division would've been applied instead
-// i.e.: a / b = c with c == e.m ==> m >= 0.5?
-// equivalent to a % b = r ==> b - r >= r ?
-const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
+const needsRoundingAddedBack = (
+  divident: bigint,
+  divisor: bigint,
+  side: TakerSide
+): boolean => {
   const remainder = divident % divisor;
-  return divisor - remainder <= remainder;
+  return remainder > 0 && side === TakerSide.Buy;
 };
 
 const cutTo12MantissaDecimals = (

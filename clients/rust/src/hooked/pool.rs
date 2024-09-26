@@ -96,11 +96,11 @@ impl Pool {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
             | (PoolType::Token, TakerSide::Sell)
-            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
+            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset, side),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
-            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
+            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1, side),
 
             // Invalid combinations of pool type and side.
             _ => Err(TensorAmmError::WrongPoolType),
