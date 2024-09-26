@@ -94,7 +94,7 @@ export const ONE_YEAR = 60 * 60 * 24 * 365;
 export const ZERO_ACCOUNT_RENT_LAMPORTS = 890880n;
 export const ONE_SOL = 1_000_000_000n;
 
-export const POOL_SIZE = 452n;
+export const POOL_SIZE = 447n;
 
 export const TAKER_FEE_BPS = 200n;
 export const BROKER_FEE_PCT = 80n;
@@ -117,27 +117,27 @@ export interface TestSigners {
   takerBroker: KeyPairSigner;
 }
 
-export async function getTestSigners(client: Client) {
+export async function getTestSigners(
+  client: Client,
+  funds: bigint = 5n * ONE_SOL
+) {
   // Generic payer.
-  const payer = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const payer = await generateKeyPairSignerWithSol(client, funds);
 
   // Cosigner.
   const cosigner = await generateKeyPairSigner();
 
   // NFT Update Authority
-  const nftUpdateAuthority = await generateKeyPairSignerWithSol(
-    client,
-    5n * ONE_SOL
-  );
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client, funds);
 
   // Pool owner.
-  const poolOwner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const poolOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // NFT owner and seller.
-  const nftOwner = await generateKeyPairSignerWithSol(client);
+  const nftOwner = await generateKeyPairSignerWithSol(client, funds);
 
   // Buyer of the NFT.
-  const buyer = await generateKeyPairSignerWithSol(client);
+  const buyer = await generateKeyPairSignerWithSol(client, funds);
 
   const makerBroker = await generateKeyPairSignerWithSol(client);
   const takerBroker = await generateKeyPairSignerWithSol(client);
@@ -577,7 +577,9 @@ export function getTokenAmount(data: Base64EncodedDataResponse): BigInt {
 export function getTokenOwner(data: Base64EncodedDataResponse): Address {
   const buffer = Buffer.from(String(data), 'base64');
   const base58string = bs58.encode(
-    buffer.slice(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
+    Uint8Array.from(
+      buffer.subarray(TOKEN_OWNER_START_INDEX, TOKEN_OWNER_END_INDEX)
+    )
   );
   return address(base58string);
 }
@@ -745,6 +747,7 @@ export interface SetupTestParams {
   action: TestAction;
   whitelistMode?: Mode;
   depositAmount?: bigint;
+  useMakerBroker?: boolean;
   useSharedEscrow?: boolean;
   useCosigner?: boolean;
   compoundFees?: boolean;

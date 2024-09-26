@@ -23,6 +23,7 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   fetchMaybePool,
   fetchPool,
@@ -190,11 +191,13 @@ test('it can buy an NFT from a Trade pool w/ Merkle Root whitelist', async (t) =
       poolType: PoolType.Trade,
       action: TestAction.Buy,
       whitelistMode: Mode.MerkleTree,
+      useMakerBroker: true,
       useSharedEscrow: false,
       fundPool: false,
     });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
   const { poolConfig } = testConfig;
 
   // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
@@ -213,6 +216,8 @@ test('it can buy an NFT from a Trade pool w/ Merkle Root whitelist', async (t) =
     pool,
     asset: asset.address,
     collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     maxAmount,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
@@ -261,6 +266,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
       poolType: PoolType.Trade,
       action: TestAction.Buy,
       useSharedEscrow: false,
+      useMakerBroker: true,
       compoundFees: true,
       fundPool: false,
     });
@@ -744,7 +750,11 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__MISSING_COSIGNER
+  );
 
   // Buy NFT from pool with fakeCosigner
   const buyNftIxIncorrectCosigner = await getBuyNftCoreInstructionAsync({

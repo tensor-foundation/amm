@@ -98,7 +98,7 @@ pub struct SellNftTradePoolCore<'info> {
     /// CHECK: Must match the pool's maker_broker
     #[account(
         mut,
-        constraint = Some(&maker_broker.key()) == pool.maker_broker.value() @ ErrorCode::WrongBrokerAccount,
+        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
     )]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
@@ -108,7 +108,10 @@ pub struct SellNftTradePoolCore<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
+    #[account(
+        constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
+    )]
     pub cosigner: Option<Signer<'info>>,
 
     /// The MPL Core program.
@@ -131,11 +134,14 @@ pub struct SellNftTradePoolCore<'info> {
 
 impl<'info> Validate<'info> for SellNftTradePoolCore<'info> {
     fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner must be passed in and must equal the pool's cosigner.
-        if let Some(cosigner) = self.pool.cosigner.value() {
-            if self.cosigner.is_none() || self.cosigner.as_ref().unwrap().key != cosigner {
-                throw_err!(ErrorCode::BadCosigner);
-            }
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        if self.pool.cosigner != Pubkey::default() {
+            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
+        }
+
+        // If the pool has a maker broker set, the maker broker account must be passed in.
+        if self.pool.maker_broker != Pubkey::default() {
+            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
         }
 
         match self.pool.config.pool_type {
@@ -305,7 +311,7 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     // If the source funds are from a shared escrow account, we first transfer from there
     // to the pool, to make payments cleaner. After this, we can always send from the pool
     // so the logic is simpler.
-    if let Some(stored_shared_escrow) = pool.shared_escrow.value() {
+    if pool.shared_escrow != Pubkey::default() {
         let incoming_shared_escrow = unwrap_opt!(
             ctx.accounts.shared_escrow.as_ref(),
             ErrorCode::BadSharedEscrow
@@ -325,7 +331,7 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
         )?;
 
         // Validate it's the correct account: the stored escrow account matches the one passed in.
-        if incoming_shared_escrow.key != stored_shared_escrow {
+        if incoming_shared_escrow.key != &pool.shared_escrow {
             throw_err!(ErrorCode::BadSharedEscrow);
         }
 
@@ -409,7 +415,7 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     // If MM fees are compounded they go to the pool or shared escrow, otherwise to the owner.
     if pool.config.mm_compound_fees {
         // Send back to shared escrow
-        if pool.shared_escrow.value().is_some() {
+        if pool.shared_escrow != Pubkey::default() {
             let incoming_shared_escrow = unwrap_opt!(
                 ctx.accounts.shared_escrow.as_ref(),
                 ErrorCode::BadSharedEscrow
@@ -455,7 +461,7 @@ pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
 
     // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
     // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
-    if pool.currency.is_sol() && pool.shared_escrow.value().is_none() {
+    if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
         let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
         let pool_final_balance = pool.get_lamports();
         let lamports_taken = unwrap_int!(pool_initial_balance.checked_sub(pool_final_balance));

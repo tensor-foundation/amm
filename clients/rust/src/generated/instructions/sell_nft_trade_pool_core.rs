@@ -36,7 +36,7 @@ pub struct SellNftTradePoolCore {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
     /// The MPL Core program.
     pub mpl_core_program: solana_program::pubkey::Pubkey,
@@ -349,7 +349,7 @@ impl SellNftTradePoolCoreBuilder {
     }
     /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
     #[inline(always)]
     pub fn cosigner(&mut self, cosigner: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
         self.cosigner = cosigner;
@@ -474,7 +474,7 @@ pub struct SellNftTradePoolCoreCpiAccounts<'a, 'b> {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The MPL Core program.
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -516,7 +516,7 @@ pub struct SellNftTradePoolCoreCpi<'a, 'b> {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The MPL Core program.
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -930,7 +930,7 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Checks are performed in the handler.
+    /// Missing check is performed in the handler.
     #[inline(always)]
     pub fn cosigner(
         &mut self,

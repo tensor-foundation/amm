@@ -263,18 +263,6 @@ kinobi.update(
       })
     },
     {
-      account: "sellerTa",
-      ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode("resolveSellerAta", {
-        importFrom: "resolvers",
-        dependsOn: [
-          k.accountValueNode("owner"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
-        ]
-      })
-    },
-    {
       account: "ownerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveOwnerAta", {

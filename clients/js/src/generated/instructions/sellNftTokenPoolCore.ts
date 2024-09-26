@@ -220,7 +220,7 @@ export type SellNftTokenPoolCoreAsyncInput<
   takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Checks are performed in the handler.
+   * Missing check is performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The MPL Core program. */
@@ -459,7 +459,7 @@ export type SellNftTokenPoolCoreInput<
   takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Checks are performed in the handler.
+   * Missing check is performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The MPL Core program. */
@@ -676,7 +676,7 @@ export type ParsedSellNftTokenPoolCoreInstruction<
     takerBroker?: TAccountMetas[11] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
-     * Checks are performed in the handler.
+     * Missing check is performed in the handler.
      */
 
     cosigner?: TAccountMetas[12] | undefined;

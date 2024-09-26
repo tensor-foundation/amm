@@ -18,12 +18,13 @@ import test from 'ava';
 import {
   NftDepositReceipt,
   PoolType,
+  TENSOR_AMM_ERROR__BAD_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   fetchMaybePool,
   fetchNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
-  getCurrentBidPrice,
   getDepositSolInstruction,
   getEditPoolInstruction,
   getSellNftTokenPoolCoreInstructionAsync,
@@ -66,6 +67,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Sell,
     useSharedEscrow: false,
+    useMakerBroker: true,
     compoundFees: false,
     fundPool: true,
   });
@@ -173,19 +175,14 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Sell,
+    useMakerBroker: true,
     useSharedEscrow: true,
     compoundFees: false,
     fundPool: true,
   });
 
-  const {
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-    cosigner,
-  } = signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
   const { poolConfig, price: minPrice } = testConfig;
 
   // Starting balance of the shared escrow.
@@ -204,7 +201,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     sharedEscrow,
     makerBroker: makerBroker.address,
     takerBroker: takerBroker.address,
-    cosigner,
     minPrice,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
@@ -269,6 +265,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
     t,
     poolType: PoolType.Token,
     action: TestAction.Sell,
+    useMakerBroker: true,
     useSharedEscrow: false,
     compoundFees: false,
     fundPool: true,
@@ -350,6 +347,7 @@ test('token pool autocloses when currency amount drops below current price', asy
       poolType: PoolType.Token,
       action: TestAction.Sell,
       useSharedEscrow: false,
+      useMakerBroker: true,
       useCosigner: true,
       compoundFees: false,
       fundPool: true,
@@ -426,14 +424,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
       fundPool: true,
     });
 
-  const {
-    cosigner,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { cosigner, poolOwner, nftOwner, nftUpdateAuthority } = signers;
   const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
@@ -445,8 +436,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     whitelist,
     asset: asset.address,
     collection: collection.address,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
     cosigner,
     minPrice,
     escrowProgram: TSWAP_PROGRAM_ID,
@@ -480,14 +469,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
       fundPool: true,
     });
 
-  const {
-    cosigner,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { cosigner, poolOwner, nftOwner, nftUpdateAuthority } = signers;
   const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
@@ -498,8 +480,6 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     whitelist,
     asset: asset.address,
     collection: collection.address,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
     cosigner,
     minPrice,
     // Remaining accounts
@@ -536,14 +516,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
       fundPool: true,
     });
 
-  const {
-    cosigner,
-    poolOwner,
-    nftOwner,
-    nftUpdateAuthority,
-    makerBroker,
-    takerBroker,
-  } = signers;
+  const { cosigner, poolOwner, nftOwner, nftUpdateAuthority } = signers;
   const { price: minPrice } = testConfig;
 
   // Sell NFT into pool
@@ -553,12 +526,10 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
     pool,
     asset: asset.address,
     collection: collection.address,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
     whitelist: whitelist,
     minPrice: minPrice,
     creators: [nftUpdateAuthority.address],
-    cosigner: cosigner,
+    cosigner,
   });
 
   await pipe(
@@ -578,7 +549,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   });
 });
 
-test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) => {
+test('it cannot sell an NFT into a trade pool incorrect cosigner', async (t) => {
   const { client, signers, asset, collection, testConfig, pool, whitelist } =
     await setupCoreTest({
       t,
@@ -606,14 +577,17 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     minPrice,
     creators: [nftUpdateAuthority.address],
   });
-  const BAD_COSIGNER_ERROR_CODE = 12025;
 
   const promiseNoCosigner = pipe(
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, BAD_COSIGNER_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__MISSING_COSIGNER
+  );
 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner =
@@ -634,7 +608,11 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     (tx) => appendTransactionMessageInstruction(sellNftIxIncorrectCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseIncorrectCosigner, BAD_COSIGNER_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promiseIncorrectCosigner,
+    TENSOR_AMM_ERROR__BAD_COSIGNER
+  );
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t) => {
@@ -822,8 +800,6 @@ test('it can sell a NFT into a trade pool and pay the correct amount of royaltie
     await client.rpc.getBalance(creator.address).send()
   ).value;
 
-  const exactBidPrice = await getCurrentBidPrice(client.rpc, poolAccount.data);
-
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
@@ -867,7 +843,9 @@ test('it can sell a NFT into a trade pool and pay the correct amount of royaltie
   t.assert(
     endingCreatorBalance ===
       startingCreatorBalance +
-        (BigInt(sellerFeeBasisPoints) * BigInt(exactBidPrice!)) / 100_00n
+        (BigInt(sellerFeeBasisPoints) *
+          BigInt(config.startingPrice - config.delta)) /
+          100_00n
   );
 });
 

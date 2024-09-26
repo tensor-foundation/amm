@@ -105,7 +105,6 @@ mod tests {
 
     use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
     use spl_math::precise_number::PreciseNumber;
-    use tensor_toolbox::NullableOption;
 
     impl Pool {
         pub fn new(
@@ -114,7 +113,7 @@ mod tests {
             starting_price: u64,
             delta: u64,
             price_offset: i32,
-            mm_fee_bps: NullableOption<u16>,
+            mm_fee_bps: u16,
         ) -> Self {
             Self {
                 version: 1,
@@ -123,8 +122,8 @@ mod tests {
                 updated_at: 0,
                 expiry: 0,
                 owner: Pubkey::default(),
-                cosigner: NullableOption::none(),
-                maker_broker: NullableOption::none(),
+                cosigner: Pubkey::default(),
+                maker_broker: Pubkey::default(),
                 rent_payer: Pubkey::default(),
                 whitelist: Pubkey::default(),
                 pool_id: [0; 32],
@@ -139,9 +138,9 @@ mod tests {
                 price_offset,
                 nfts_held: 0,
                 stats: PoolStats::default(),
-                currency: Currency::sol(),
+                currency: Pubkey::default(),
                 amount: 0,
-                shared_escrow: NullableOption::none(),
+                shared_escrow: Pubkey::default(),
                 max_taker_sell_count: 10,
                 _reserved: [0; 100],
             }
@@ -158,7 +157,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             LAMPORTS_PER_SOL,
             0,
-            NullableOption::new(1000), //10%
+            1000, //10%
         );
 
         assert_eq!(
@@ -166,20 +165,20 @@ mod tests {
             LAMPORTS_PER_SOL / 10
         );
 
-        p.config.mm_fee_bps = NullableOption::new(123);
+        p.config.mm_fee_bps = 123;
         assert_eq!(
             p.calc_mm_fee(LAMPORTS_PER_SOL).unwrap(),
             LAMPORTS_PER_SOL * 123 / 10000
         );
 
         //if price too small, fee will start to look weird, but who cares at these levels
-        p.config.mm_fee_bps = NullableOption::new(2499);
+        p.config.mm_fee_bps = 2499;
         assert_eq!(p.calc_mm_fee(10).unwrap(), 2); //2.499 floored
 
-        p.config.mm_fee_bps = NullableOption::new(2499);
+        p.config.mm_fee_bps = 2499;
         assert_eq!(p.calc_mm_fee(100).unwrap(), 24); //24.99 floored
 
-        p.config.mm_fee_bps = NullableOption::new(2499);
+        p.config.mm_fee_bps = 2499;
         assert_eq!(p.calc_mm_fee(1000).unwrap(), 249); //249.9 floored
     }
 
@@ -191,7 +190,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             LAMPORTS_PER_SOL,
             0,
-            NullableOption::none(),
+            0,
         );
 
         assert_eq!(
@@ -213,7 +212,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
@@ -255,7 +254,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             -11,
-            NullableOption::none(),
+            0,
         );
         // Should overflow when we calculate the current price
         // because the trade difference is more than the maximum
@@ -273,7 +272,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         // Token pools only buy NFTs (seller sells into them),
         // so the taker side cannot be buy.
@@ -291,7 +290,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
@@ -330,7 +329,7 @@ mod tests {
             LAMPORTS_PER_SOL * 100,
             delta,
             i32::MAX - 1, //get this to overflow
-            NullableOption::none(),
+            0,
         );
         // Cannot go higher
         p.current_price(TakerSide::Buy).unwrap();
@@ -346,7 +345,7 @@ mod tests {
             LAMPORTS_PER_SOL * 100,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         // NFT pools only sell NFTs (buyer buys from them).
         p.current_price(TakerSide::Sell).unwrap();
@@ -363,7 +362,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         // NB: selling into the pool is always 1 delta lower than buying.
 
@@ -449,7 +448,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             -11,
-            NullableOption::none(),
+            0,
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -464,7 +463,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             -10, //10+1 tick for selling = overflow
-            NullableOption::none(),
+            0,
         );
         p.current_price(TakerSide::Sell).unwrap();
     }
@@ -479,7 +478,7 @@ mod tests {
             delta,
             delta,
             1, //just enough to overflow
-            NullableOption::<u16>::none(),
+            0,
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -487,14 +486,7 @@ mod tests {
     #[test]
     fn test_linear_trade_pool_sell_side_upper() {
         let delta = LAMPORTS_PER_SOL * 10_000_000_000;
-        let p = Pool::new(
-            PoolType::Trade,
-            CurveType::Linear,
-            delta,
-            delta,
-            1,
-            NullableOption::none(),
-        );
+        let p = Pool::new(PoolType::Trade, CurveType::Linear, delta, delta, 1, 0);
         // This shouldn't oveflow for sell side (1 tick lower).
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), delta);
     }
@@ -503,18 +495,26 @@ mod tests {
 
     const MAX_BPS: u64 = HUNDRED_PCT_BPS as u64;
 
-    fn calc_price_frac(price: u64, numer: u64, denom: u64) -> u64 {
-        u64::try_from(
-            PreciseNumber::new(price.into())
-                .unwrap()
-                .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
-                .unwrap()
-                .checked_div(&PreciseNumber::new(denom.into()).unwrap())
-                .unwrap()
-                .to_imprecise()
-                .unwrap(),
-        )
-        .unwrap()
+    fn calc_price_frac(price: u64, numer: u64, denom: u64, price_offset: i32) -> u64 {
+        let direction = if price_offset > 0 {
+            Direction::Up
+        } else {
+            Direction::Down
+        };
+
+        let result = PreciseNumber::new(price.into())
+            .unwrap()
+            .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
+            .unwrap()
+            .checked_div(&PreciseNumber::new(denom.into()).unwrap())
+            .unwrap();
+
+        let rounded_result = match direction {
+            Direction::Up => result.ceiling().unwrap(),
+            Direction::Down => result.floor().unwrap(),
+        };
+
+        u64::try_from(rounded_result.to_imprecise().unwrap()).unwrap()
     }
 
     #[test]
@@ -526,7 +526,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), LAMPORTS_PER_SOL);
 
@@ -539,7 +539,7 @@ mod tests {
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
         );
 
         p.price_offset -= 7;
@@ -550,7 +550,7 @@ mod tests {
         p.price_offset -= 90;
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 137806123, p.price_offset)
         );
     }
 
@@ -565,7 +565,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
 
@@ -602,7 +602,7 @@ mod tests {
             LAMPORTS_PER_SOL * 100,
             delta,
             i32::MAX - 1, // this will overflow
-            NullableOption::none(),
+            0,
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -618,7 +618,7 @@ mod tests {
             LAMPORTS_PER_SOL,
             delta,
             0,
-            NullableOption::none(),
+            0,
         );
         assert_eq!(p.current_price(TakerSide::Buy).unwrap(), LAMPORTS_PER_SOL);
         assert_eq!(
@@ -634,12 +634,12 @@ mod tests {
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 12100, p.price_offset)
         );
         p.price_offset -= 2;
         assert_eq!(
             p.current_price(TakerSide::Buy).unwrap(),
-            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310)
+            calc_price_frac(LAMPORTS_PER_SOL, MAX_BPS, 13310, p.price_offset)
         );
         assert_eq!(
             p.current_price(TakerSide::Sell).unwrap(),
@@ -682,7 +682,7 @@ mod tests {
             u64::MAX - 1,
             delta,
             1,
-            NullableOption::none(),
+            0,
         );
         p.current_price(TakerSide::Buy).unwrap();
     }
@@ -696,9 +696,56 @@ mod tests {
             u64::MAX - 1,
             delta,
             1,
-            NullableOption::none(),
+            0,
         );
         // 1 tick lower, should not panic.
         assert_eq!(p.current_price(TakerSide::Sell).unwrap(), u64::MAX - 1);
+    }
+
+    #[test]
+    fn test_expo_rounding_token_pool() {
+        let delta = 123;
+        let mut p = Pool::new(
+            PoolType::Token,
+            CurveType::Exponential,
+            LAMPORTS_PER_SOL,
+            delta,
+            0,
+            0,
+        );
+
+        // Test rounding down for sell (Token pools only handle sells)
+        p.price_offset -= 1;
+        let price = p.current_price(TakerSide::Sell).unwrap();
+        assert_eq!(price, 987_849_451); // Rounded down from 987,849,451.743554282327...
+    }
+
+    #[test]
+    fn test_expo_rounding_nft_pool() {
+        let delta = 123;
+        let mut p = Pool::new(PoolType::NFT, CurveType::Exponential, 1_000, delta, 0, 0);
+
+        // Test rounding down for buy (NFT pools only handle buys)
+        p.price_offset += 1;
+        let price = p.current_price(TakerSide::Buy).unwrap();
+        assert_eq!(price, 1012); // Rounded down from 1012.3
+    }
+
+    #[test]
+    fn test_expo_rounding_trade_pool() {
+        let delta = 111;
+        let mut p = Pool::new(PoolType::Trade, CurveType::Exponential, 1_000, delta, 0, 0);
+
+        // Test rounding down for buy
+        p.price_offset += 1;
+        let buy_price = p.current_price(TakerSide::Buy).unwrap();
+        assert_eq!(buy_price, 1011); // Rounded down from 1011.1
+
+        // Test rounding down for sell
+        p.price_offset -= 1;
+        p.config.delta = 789;
+        p.config.starting_price = LAMPORTS_PER_SOL;
+        let sell_price = p.current_price(TakerSide::Sell).unwrap();
+        assert_eq!(sell_price, 926_869_960); // Rounded down from 926,869,960.144591713783...
     }
 }

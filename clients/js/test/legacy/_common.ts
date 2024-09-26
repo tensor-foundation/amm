@@ -16,6 +16,7 @@ import {
   Client,
   createDefaultSolanaClient,
   createDefaultTransaction,
+  ONE_SOL,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Condition, Mode, intoAddress } from '@tensor-foundation/whitelist';
@@ -56,7 +57,11 @@ export interface LegacyTest {
 }
 
 export async function setupLegacyTest(
-  params: SetupTestParams & { pNft?: boolean }
+  params: SetupTestParams & {
+    pNft?: boolean;
+    signerFunds?: bigint;
+    poolConfig?: PoolConfig | null;
+  }
 ): Promise<LegacyTest> {
   const {
     t,
@@ -65,14 +70,17 @@ export async function setupLegacyTest(
     whitelistMode = Mode.FVC,
     depositAmount: dA,
     pNft = false,
+    useMakerBroker = false,
     useSharedEscrow = false,
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
+    poolConfig,
+    signerFunds = 5n * ONE_SOL,
   } = params;
 
   const client = createDefaultSolanaClient();
-  const testSigners = await getTestSigners(client);
+  const testSigners = await getTestSigners(client, signerFunds);
 
   const { payer, poolOwner, nftUpdateAuthority, cosigner, makerBroker } =
     testSigners;
@@ -107,27 +115,32 @@ export async function setupLegacyTest(
 
   let startingPrice;
 
-  switch (poolType) {
-    case PoolType.Trade:
-      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-      // Sells on trade pools need to to have the price shifted down by 1 step.
-      if (action === TestAction.Sell) {
-        startingPrice = config.startingPrice - config.delta;
-      } else {
+  if (!poolConfig) {
+    switch (poolType) {
+      case PoolType.Trade:
+        config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+        // Sells on trade pools need to to have the price shifted down by 1 step.
+        if (action === TestAction.Sell) {
+          startingPrice = config.startingPrice - config.delta;
+        } else {
+          startingPrice = config.startingPrice;
+        }
+        mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
+        break;
+      case PoolType.Token:
+        config = tokenPoolConfig;
         startingPrice = config.startingPrice;
-      }
-      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
-      break;
-    case PoolType.Token:
-      config = tokenPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    case PoolType.NFT:
-      config = nftPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    default:
-      throw new Error('Invalid pool type');
+        break;
+      case PoolType.NFT:
+        config = nftPoolConfig;
+        startingPrice = config.startingPrice;
+        break;
+      default:
+        throw new Error('Invalid pool type');
+    }
+  } else {
+    config = poolConfig;
+    startingPrice = poolConfig.startingPrice;
   }
 
   const md = (await fetchMetadata(client.rpc, nft.metadata)).data;
@@ -185,7 +198,7 @@ export async function setupLegacyTest(
     client,
     payer: poolOwner,
     owner: poolOwner,
-    makerBroker: makerBroker.address,
+    makerBroker: useMakerBroker ? makerBroker.address : undefined,
     cosigner: useCosigner ? cosigner : undefined,
     sharedEscrow,
     config,

@@ -24,7 +24,10 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
   fetchPool,
   findNftDepositReceiptPda,
@@ -59,6 +62,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
       t,
       poolType: PoolType.Trade,
       action: TestAction.Buy,
+      useMakerBroker: false,
       useSharedEscrow: false,
       fundPool: false,
     });
@@ -127,6 +131,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     useSharedEscrow: false,
+    useMakerBroker: true,
     compoundFees: true,
     fundPool: false,
   });
@@ -150,8 +155,8 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     buyer,
     pool,
     mint,
-    takerBroker: takerBroker.address,
     makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     maxAmount,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
@@ -197,9 +202,10 @@ test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
+    useMakerBroker: true,
   });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker } = signers;
   const { price: maxAmount } = testConfig;
   const { mint } = nft;
 
@@ -210,6 +216,7 @@ test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
     pool,
     mint,
     maxAmount,
+    makerBroker: makerBroker.address,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
   });
@@ -236,9 +243,10 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
     t,
     poolType: PoolType.NFT,
     action: TestAction.Buy,
+    useMakerBroker: true,
   });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker } = signers;
   const { price: maxAmount } = testConfig;
   const { mint } = nft;
 
@@ -249,6 +257,7 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
     pool,
     mint,
     maxAmount,
+    makerBroker: makerBroker.address,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
   });
@@ -422,11 +431,13 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
       poolType: PoolType.Trade,
       action: TestAction.Buy,
       useSharedEscrow: true,
+      useMakerBroker: true,
       compoundFees: false,
       fundPool: false,
     });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
   const { poolConfig, price: maxAmount } = testConfig;
   const { mint } = nft;
 
@@ -442,6 +453,8 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
     mint,
     maxAmount,
     sharedEscrow,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
     creators: [nftUpdateAuthority.address],
   });
 
@@ -465,6 +478,7 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
+    useMakerBroker: false,
     useCosigner: true,
     fundPool: false,
   });
@@ -504,6 +518,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
+    useMakerBroker: false,
     useCosigner: true,
     fundPool: false,
   });
@@ -529,7 +544,11 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__MISSING_COSIGNER
+  );
 
   // Buy NFT from pool with fakeCosigner
   const buyNftIxIncorrectCosigner = await getBuyNftInstructionAsync({
@@ -560,6 +579,7 @@ test('it can buy a pNFT and pay the correct amount of royalties', async (t) => {
       t,
       poolType: PoolType.Trade,
       action: TestAction.Buy,
+      useMakerBroker: false,
       pNft: true,
     });
 
@@ -769,6 +789,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
+    useMakerBroker: false,
     useSharedEscrow: false,
     fundPool: false,
     pNft: true,
@@ -831,4 +852,63 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
 
   // Should still fail with a price mismatch error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+});
+
+test('pool with makerBroker set requires passing the account in; fails w/ incorrect makerBroker', async (t) => {
+  const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: true, // Maker broker set on pool
+    useSharedEscrow: false,
+    fundPool: false,
+    pNft: true,
+  });
+
+  const fakeMakerBroker = await generateKeyPairSigner();
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { price: maxAmount } = testConfig;
+  const { mint } = nft;
+
+  // Buy NFT from pool
+  let buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount, // Exact price + mm_fees + royalties
+    // no maker broker passed in
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+
+  // Buy NFT from pool
+  buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount, // Exact price + mm_fees + royalties
+    makerBroker: fakeMakerBroker.address, // incorrect makerBroker
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 });

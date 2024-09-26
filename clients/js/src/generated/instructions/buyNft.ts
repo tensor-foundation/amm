@@ -333,7 +333,7 @@ export type BuyNftAsyncInput<
   takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Checks are performed in the handler.
+   * Missing check is performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
@@ -736,7 +736,7 @@ export type BuyNftInput<
   takerBroker?: Address<TAccountTakerBroker>;
   /**
    * The optional cosigner account that must be passed in if the pool has a cosigner.
-   * Checks are performed in the handler.
+   * Missing check is performed in the handler.
    */
   cosigner?: TransactionSigner<TAccountCosigner>;
   /** The AMM program account, used for self-cpi logging. */
@@ -1071,7 +1071,7 @@ export type ParsedBuyNftInstruction<
     takerBroker?: TAccountMetas[22] | undefined;
     /**
      * The optional cosigner account that must be passed in if the pool has a cosigner.
-     * Checks are performed in the handler.
+     * Missing check is performed in the handler.
      */
 
     cosigner?: TAccountMetas[23] | undefined;
