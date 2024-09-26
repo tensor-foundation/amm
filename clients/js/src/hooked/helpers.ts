@@ -47,10 +47,13 @@ export function calculateAmountForQuantity({
         excludeMMFee,
       });
       if (quantity === 1) return currentPrice;
-      const maxPossibleBidsBeforeZero =
-        1 + Number(BigInt(currentPrice) / pool.config.delta);
       // override bidQuantity with max possible bid quantity or else needed amount of lamports will _decrease_
       // because of bids with negative lamports which aren't possible
+      // if delta is 0, there are infinite max possible bids => to avoid div by 0 we just set it to "quantity"
+      const maxPossibleBidsBeforeZero =
+        pool.config.delta <= 0n
+          ? quantity
+          : 1 + Number(BigInt(currentPrice) / pool.config.delta);
       quantity = Math.min(quantity, maxPossibleBidsBeforeZero);
 
       const bases = currentPrice * quantity;
