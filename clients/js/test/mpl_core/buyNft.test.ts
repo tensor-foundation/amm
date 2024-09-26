@@ -24,7 +24,9 @@ import {
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__MISSING_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
   fetchPool,
   findNftDepositReceiptPda,
@@ -987,4 +989,64 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
 
   // Should still fail with a price mismatch error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+});
+
+test('pool with makerBroker set requires passing the account in; fails w/ incorrect makerBroker', async (t) => {
+  const { client, signers, asset, collection, testConfig, pool } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: true, // Maker broker set on pool
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+  const fakeMakerBroker = await generateKeyPairSigner();
+  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { price: maxAmount } = testConfig;
+
+  // Buy NFT from pool
+  let buyNftIx = await getBuyNftCoreInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+    maxAmount, // Exact price + mm_fees + royalties
+    // no maker broker passed in
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+
+  // Buy NFT from pool
+  buyNftIx = await getBuyNftCoreInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+    maxAmount, // Exact price + mm_fees + royalties
+    makerBroker: fakeMakerBroker.address, // incorrect makerBroker
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 });

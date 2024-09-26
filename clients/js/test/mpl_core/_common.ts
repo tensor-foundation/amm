@@ -198,22 +198,22 @@ export async function setupCoreTest(
   // Derives fee vault from the pool and airdrops keep-alive rent to it.
   const feeVault = await getAndFundFeeVault(client, pool);
 
+  if (whitelistMode === Mode.MerkleTree) {
+    // Create the mint proof for the whitelist.
+    const mp = await upsertMintProof({
+      client,
+      payer,
+      mint: asset.address,
+      whitelist,
+      proof: proof!.proof,
+    });
+    mintProof = mp.mintProof;
+  }
+
   switch (action) {
     case TestAction.Buy: {
       // Max price needs to account for royalties and mm fees.
       price = startingPrice + royalties + mmFees;
-
-      if (whitelistMode === Mode.MerkleTree) {
-        // Create the mint proof for the whitelist.
-        const mp = await upsertMintProof({
-          client,
-          payer,
-          mint: asset.address,
-          whitelist,
-          proof: proof!.proof,
-        });
-        mintProof = mp.mintProof;
-      }
 
       // Deposit the NFT into the pool so it can be bought.
       const depositNftIx = await getDepositNftCoreInstructionAsync({

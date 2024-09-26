@@ -20,7 +20,9 @@ import {
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__MISSING_COSIGNER,
+  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
   fetchNftDepositReceipt,
   fetchPool,
@@ -917,4 +919,168 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
 
   // Should still fail with a price mismatch error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+});
+
+test('it can sell a NFT into a token pool w/ Merkle root whitelist', async (t) => {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    mintProof,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    whitelistMode: Mode.MerkleTree,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    whitelist,
+    mintProof,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice, // exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool owner.
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: poolOwner.address,
+    },
+  });
+});
+
+test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) => {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    mintProof,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    whitelistMode: Mode.MerkleTree,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    whitelist,
+    mintProof,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice, // exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool.
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
+});
+
+test('token pool with makerBroker set requires passing the account in & fails w/ incorrect makerBroker', async (t) => {
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    await setupCoreTest({
+      t,
+      poolType: PoolType.Token,
+      action: TestAction.Sell,
+      useSharedEscrow: false,
+      useMakerBroker: true, // MakerBroker is set
+      fundPool: true,
+    });
+
+  const fakeMakerBroker = await generateKeyPairSigner();
+  const { buyer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  let sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice,
+    whitelist,
+    // No maker broker passed in
+    creators: [nftUpdateAuthority.address],
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+
+  sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice,
+    whitelist,
+    makerBroker: fakeMakerBroker.address, // Fake maker broker!
+    creators: [nftUpdateAuthority.address],
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Should fail with a missing makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 });

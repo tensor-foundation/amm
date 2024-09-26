@@ -15,6 +15,7 @@ import {
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
+  assertTokenNftOwnedBy,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -1269,6 +1270,82 @@ test('trade pool with makerBroker set requires passing the account in & fails w/
 
   // Should fail with a missing makerBroker error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
+});
+
+test('it can sell a NFT into a token pool w/ Merkle root whitelist', async (t) => {
+  const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
+    await setupLegacyTest({
+      t,
+      poolType: PoolType.Token,
+      action: TestAction.Sell,
+      whitelistMode: Mode.MerkleTree,
+      useSharedEscrow: false,
+      fundPool: true,
+    });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint } = nft;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    whitelist,
+    mintProof,
+    mint,
+    minPrice, // exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool owner.
+  assertTokenNftOwnedBy({ t, client, mint, owner: poolOwner.address });
+});
+
+test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) => {
+  const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
+    await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      whitelistMode: Mode.MerkleTree,
+      useSharedEscrow: false,
+      fundPool: true,
+    });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint } = nft;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: poolOwner.address,
+    seller: nftOwner,
+    pool,
+    whitelist,
+    mintProof,
+    mint,
+    minPrice, // exact price + mm_fees + royalties
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool.
+  assertTokenNftOwnedBy({ t, client, mint, owner: pool });
 });
 
 test('token pool with makerBroker set requires passing the account in & fails w/ incorrect makerBroker', async (t) => {
