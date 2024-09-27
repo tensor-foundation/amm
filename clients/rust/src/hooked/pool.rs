@@ -78,8 +78,8 @@ impl Pool {
                 };
 
                 let rounded_result = match side {
-                    TakerSide::Buy => result.unwrap().ceiling(),
-                    TakerSide::Sell => result.unwrap().floor(),
+                    TakerSide::Buy => result.ok_or(TensorAmmError::ArithmeticError)?.ceiling(),
+                    TakerSide::Sell => result.ok_or(TensorAmmError::ArithmeticError)?.floor(),
                 };
 
                 let imprecise = rounded_result
