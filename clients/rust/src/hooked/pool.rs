@@ -5,6 +5,8 @@ use crate::errors::TensorAmmError;
 use crate::types::{CurveType, Direction, PoolStats, PoolType, TakerSide};
 use crate::HUNDRED_PCT_BPS;
 
+use spl_math::precise_number::PreciseNumber;
+
 #[allow(clippy::derivable_impls)]
 impl Default for PoolStats {
     fn default() -> Self {
@@ -76,8 +78,8 @@ impl Pool {
                 };
 
                 let rounded_result = match side {
-                    TakerSide::Buy => result.ceiling(),
-                    TakerSide::Sell => result.floor(),
+                    TakerSide::Buy => result.unwrap().ceiling(),
+                    TakerSide::Sell => result.unwrap().floor(),
                 };
 
                 let imprecise = rounded_result
