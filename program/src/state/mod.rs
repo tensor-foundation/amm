@@ -500,7 +500,6 @@ mod tests {
         _price_offset: i32,
         side: TakerSide,
     ) -> u64 {
-
         let result = PreciseNumber::new(price.into())
             .unwrap()
             .checked_mul(&PreciseNumber::new(numer.into()).unwrap())
