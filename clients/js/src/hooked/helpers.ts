@@ -11,62 +11,91 @@ const BASIS_POINTS_DECIMAL_OFFSET = 4;
 const BID_AMOUNT_LIMIT = 1000;
 
 /**
- * Returns the amount of lamports needed for a given quantity of bids
+ * Returns the amount of lamports needed for the given quantity of bids or
+ * the amount of lamports the pool would receive if the given quantity of NFTs would sell
  * @param pool Pool or PoolConfig with priceOffset
- * @param bidQuantity Amount of bids
+ * @param quantity Amount of bids or listings (depending on @param side)
+ * @param side TakerSide.Buy for Listings, TakerSide.Sell for Bids
  * @returns Amount of lamports needed
  */
-export function getNeededBalanceForBidQuantity({
+export function calculateAmountForQuantity({
   pool,
-  bidQuantity,
+  quantity,
+  side,
 }: {
   pool: Pick<Pool, 'config' | 'priceOffset'>;
-  bidQuantity: number;
+  quantity: number;
+  side: TakerSide;
 }): number {
-  if (bidQuantity < 1) return 0;
-  if (pool.config.poolType === PoolType.NFT) return 0;
+  if (quantity < 1) return 0;
 
-  // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
-  // Token pool / Trade pool that does not compound fees => exclude MM Fee
-  const excludeMMFee =
-    pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
+  // Retrieve the amount of needed lamports for "quantity" amount of bids
+  if (side === TakerSide.Sell) {
+    if (pool.config.poolType === PoolType.NFT) return 0;
 
-  if (pool.config.curveType === CurveType.Linear) {
-    const currentPrice = calculatePrice({
-      pool,
-      side: TakerSide.Sell,
-      royaltyFeeBps: 0,
-      extraOffset: 0,
-      excludeMMFee,
-    });
-    if (bidQuantity === 1) return currentPrice;
-    const maxPossibleBidsBeforeZero =
-      1 + Number(BigInt(currentPrice) / pool.config.delta);
-    // override bidQuantity with max possible bid quantity or else needed amount of lamports will _decrease_
-    // because of bids with negative lamports which aren't possible
-    bidQuantity = Math.min(bidQuantity, maxPossibleBidsBeforeZero);
+    // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
+    // Token pool / Trade pool that does not compound fees => exclude MM Fee
+    const excludeMMFee =
+      pool.config.poolType === PoolType.Trade && !pool.config.mmCompoundFees;
 
-    const bases = currentPrice * bidQuantity;
-    const deltas =
-      (Number(pool.config.delta) * (bidQuantity * (bidQuantity - 1))) / 2;
-    return bases - deltas;
-  }
-  // exp
-  else {
-    // calculatePrice is fast enough that we can just iterate over next prices
-    // instead of using geometric sum w/ potentially incorrect roundings
-    let totalPrice = 0;
-    let i = 0;
-    while (bidQuantity > 0) {
-      totalPrice += calculatePrice({
+    if (pool.config.curveType === CurveType.Linear) {
+      const currentPrice = calculatePrice({
         pool,
         side: TakerSide.Sell,
         royaltyFeeBps: 0,
-        extraOffset: i,
+        extraOffset: 0,
         excludeMMFee,
       });
-      bidQuantity -= 1;
-      if (totalPrice === 0) break;
+      if (quantity === 1) return currentPrice;
+      // override bidQuantity with max possible bid quantity or else needed amount of lamports will _decrease_
+      // because of bids with negative lamports which aren't possible
+      // if delta is 0, there are infinite max possible bids => to avoid div by 0 we just set it to "quantity"
+      const maxPossibleBidsBeforeZero =
+        pool.config.delta <= 0n
+          ? quantity
+          : 1 + Number(BigInt(currentPrice) / pool.config.delta);
+      quantity = Math.min(quantity, maxPossibleBidsBeforeZero);
+
+      const bases = currentPrice * quantity;
+      const deltas =
+        (Number(pool.config.delta) * (quantity * (quantity - 1))) / 2;
+      return bases - deltas;
+    }
+    // exp
+    else {
+      // calculatePrice is fast enough that we can just iterate over next prices
+      // instead of using geometric sum w/ potentially incorrect roundings
+      let totalPrice = 0;
+      let i = 0;
+      while (quantity > 0) {
+        totalPrice += calculatePrice({
+          pool,
+          side: TakerSide.Sell,
+          royaltyFeeBps: 0,
+          extraOffset: i,
+          excludeMMFee,
+        });
+        quantity -= 1;
+        if (totalPrice === 0) break;
+        i += 1;
+      }
+      return totalPrice;
+    }
+  }
+  // Retrieve the amount of lamports the pool/maker would receive after "quantity" amount of NFTs get bought out of the pool
+  else {
+    if (pool.config.poolType === PoolType.Token) return 0;
+    let totalPrice = 0;
+    let i = 0;
+    while (quantity > 0) {
+      totalPrice += calculatePrice({
+        pool,
+        side: TakerSide.Buy,
+        royaltyFeeBps: 0,
+        extraOffset: i,
+        excludeMMFee: false,
+      });
+      quantity -= 1;
       i += 1;
     }
     return totalPrice;
@@ -343,12 +372,14 @@ export function calculatePrice({
       const divident = startingPrice * 10n ** decimalOffset;
       const divisor = scaling;
       resultPriceIntermediate =
-        divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
+        divident / divisor +
+        BigInt(+needsRoundingAddedBack(divident, divisor, side));
     } else {
       const divident = startingPrice * scaling;
       const divisor = 10n ** decimalOffset;
       resultPriceIntermediate =
-        divident / divisor + BigInt(+needsRoundingAddedBack(divident, divisor));
+        divident / divisor +
+        BigInt(+needsRoundingAddedBack(divident, divisor, side));
     }
     resultPrice = Number(resultPriceIntermediate);
   } else {
@@ -421,12 +452,13 @@ function powerBpsAsBigInt_12DecimalMantissaPrecision(
   return [result, BigInt(resultDecimalOffset)];
 }
 
-// checks if bigint division would have gotten rounded up if floating division would've been applied instead
-// i.e.: a / b = c with c == e.m ==> m >= 0.5?
-// equivalent to a % b = r ==> b - r >= r ?
-const needsRoundingAddedBack = (divident: bigint, divisor: bigint): boolean => {
+const needsRoundingAddedBack = (
+  divident: bigint,
+  divisor: bigint,
+  side: TakerSide
+): boolean => {
   const remainder = divident % divisor;
-  return divisor - remainder <= remainder;
+  return remainder > 0 && side === TakerSide.Buy;
 };
 
 const cutTo12MantissaDecimals = (

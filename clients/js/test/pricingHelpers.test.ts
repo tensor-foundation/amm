@@ -26,7 +26,7 @@ import {
   getCurrentBidPrice,
   getDepositNftInstructionAsync,
   getDepositSolInstruction,
-  getNeededBalanceForBidQuantity,
+  calculateAmountForQuantity,
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync,
   PoolConfig,
@@ -273,7 +273,7 @@ test('getCurrentBidPrice takes rent exemption into account', async (t) => {
   t.is(calculatedBidPrice, Number(startingPrice));
 });
 
-test.skip('Linear pool pricing after 20 sells', async (t) => {
+test('Linear pool pricing after 20 sells', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Token,
@@ -289,6 +289,7 @@ test.skip('Linear pool pricing after 20 sells', async (t) => {
     action: TestAction.Sell,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
+    useMakerBroker: false,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
@@ -338,8 +339,7 @@ test.skip('Linear pool pricing after 20 sells', async (t) => {
   t.is(finalPoolAccount.data.stats.takerSellCount, 20);
 });
 
-// TODO: re-enable after pricing helpers are fixed.
-test.skip('Exponential pool pricing after 20 sells', async (t) => {
+test('Exponential pool pricing after 20 sells', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Trade,
@@ -356,6 +356,7 @@ test.skip('Exponential pool pricing after 20 sells', async (t) => {
     fundPool: false,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
+    useMakerBroker: false,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
@@ -422,6 +423,7 @@ test('Exponential pool pricing speed test', async (t) => {
     fundPool: false,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
+    useMakerBroker: false,
   });
 
   const { poolOwner } = signers;
@@ -458,7 +460,7 @@ test('Exponential pool pricing speed test', async (t) => {
   t.pass();
 });
 
-test.skip('Linear pool pricing after 30 buys', async (t) => {
+test('Linear pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.NFT,
@@ -474,6 +476,7 @@ test.skip('Linear pool pricing after 30 buys', async (t) => {
     action: TestAction.Buy,
     signerFunds: 1000n * ONE_SOL,
     poolConfig: config,
+    useMakerBroker: false,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
@@ -504,8 +507,7 @@ test.skip('Linear pool pricing after 30 buys', async (t) => {
   t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
 });
 
-// TODO: re-enable after pricing helpers are fixed.
-test.skip('Exponential pool pricing after 30 buys', async (t) => {
+test('Exponential pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Trade,
@@ -522,6 +524,7 @@ test.skip('Exponential pool pricing after 30 buys', async (t) => {
     fundPool: false,
     signerFunds: 5_000n * ONE_SOL,
     poolConfig: config,
+    useMakerBroker: false,
   });
 
   const { poolOwner, nftOwner: buyer, nftUpdateAuthority } = signers;
@@ -676,7 +679,7 @@ test('getAmountOfBids returns correct values for linear pools', async (t) => {
   t.true(amountOfBids === 23);
 });
 
-test('getNeededBalanceForBidQuantity returns correct values for exponential pools', (t) => {
+test('calculateAmountForQuantity returns correct values for exponential pools for sell side', (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Exponential,
@@ -685,15 +688,16 @@ test('getNeededBalanceForBidQuantity returns correct values for exponential pool
     mmCompoundFees: false,
     mmFeeBps: null,
   };
-  const lamportsNeeded = getNeededBalanceForBidQuantity({
+  const lamportsNeeded = calculateAmountForQuantity({
     pool: { config, priceOffset: 0 },
-    bidQuantity: 2,
+    quantity: 2,
+    side: TakerSide.Sell,
   });
-  const expectedLamports = 1_000_000_000 + Math.round(1_000_000_000 / 1.01);
+  const expectedLamports = 1_000_000_000 + Math.floor(1_000_000_000 / 1.01);
   t.true(lamportsNeeded === expectedLamports);
 });
 
-test('getNeededBalanceForBidQuantity returns correct values for linear pools', (t) => {
+test('calculateAmountForQuantity returns correct values for linear pools for sell side', (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Token,
     curveType: CurveType.Linear,
@@ -702,9 +706,10 @@ test('getNeededBalanceForBidQuantity returns correct values for linear pools', (
     mmCompoundFees: false,
     mmFeeBps: null,
   };
-  const lamportsNeeded = getNeededBalanceForBidQuantity({
+  const lamportsNeeded = calculateAmountForQuantity({
     pool: { config, priceOffset: 0 },
-    bidQuantity: 5,
+    quantity: 5,
+    side: TakerSide.Sell,
   });
   const expectedLamports = Number(
     5n * config.startingPrice - (4n * 5n * config.delta) / 2n
