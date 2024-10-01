@@ -137,7 +137,9 @@ export function getAmountOfBids({
     });
     if (currentPrice < 0) return 0;
     let maxPossibleBidsBeforeZero =
-      1 + Number(BigInt(currentPrice) / pool.config.delta);
+      pool.config.delta <= 0n
+        ? BID_AMOUNT_LIMIT
+        : 1 + Number(BigInt(currentPrice) / pool.config.delta);
     maxPossibleBidsBeforeZero = Math.min(
       maxPossibleBidsBeforeZero,
       BID_AMOUNT_LIMIT
