@@ -29,7 +29,7 @@ pub struct CreatePoolArgs {
 #[derive(Accounts)]
 #[instruction(args: CreatePoolArgs)]
 pub struct CreatePool<'info> {
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     #[account(mut)]
     pub rent_payer: Signer<'info>,

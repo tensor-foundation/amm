@@ -67,6 +67,8 @@ pub struct BuyNft<'info> {
         has_one = owner,
         // can only buy from NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
+        constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::BadCosigner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -158,11 +160,8 @@ pub struct BuyNft<'info> {
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the maker broker fee.
-    /// CHECK: Must match the pool's maker_broker
-    #[account(
-        mut,
-        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
-    )]
+    /// CHECK: Constraint checked on pool.
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
@@ -171,10 +170,6 @@ pub struct BuyNft<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
-    #[account(
-        constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
-    )]
     pub cosigner: Option<Signer<'info>>,
 
     /// The AMM program account, used for self-cpi logging.
@@ -224,19 +219,10 @@ impl<'info> BuyNft<'info> {
 impl<'info> Validate<'info> for BuyNft<'info> {
     /// Validates the BuyNft instruction.
     fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.pool.cosigner != Pubkey::default() {
-            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
-        }
-
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        if self.pool.maker_broker != Pubkey::default() {
-            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
-        }
-
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }
+
         Ok(())
     }
 }
@@ -341,13 +327,12 @@ pub fn process_buy_nft<'info, 'b>(
 
     */
 
-    // Determine the SOL destination: owner, pool or shared escrow account.
+    // Determine the SOL destination: owner, pool, or shared escrow account.
     //(!) this block has to come before royalties transfer due to remaining_accounts
     let destination = match pool.config.pool_type {
-        //send money direct to seller/owner
+        // Send money direct to seller/owner
         PoolType::NFT => ctx.accounts.owner.to_account_info(),
-        //send money to the pool
-        // NB: no explicit MM fees here: that's because it goes directly to the escrow anyways.
+        // Send money to the pool
         PoolType::Trade => {
             if pool.shared_escrow != Pubkey::default() {
                 let incoming_shared_escrow = unwrap_opt!(

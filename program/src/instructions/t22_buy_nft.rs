@@ -65,6 +65,8 @@ pub struct BuyNftT22<'info> {
         has_one = owner,
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
+        constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
+        constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::BadCosigner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -120,10 +122,7 @@ pub struct BuyNftT22<'info> {
 
     /// The account that receives the maker broker fee.
     /// CHECK: Must match the pool's maker_broker
-    #[account(
-        mut,
-        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
-    )]
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
@@ -132,10 +131,6 @@ pub struct BuyNftT22<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
-    #[account(
-        constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
-    )]
     pub cosigner: Option<Signer<'info>>,
 
     /// The AMM program account, used for self-cpi logging.

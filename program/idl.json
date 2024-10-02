@@ -93,7 +93,7 @@
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "The account pay for the rent to open the pool. This will be stored on the pool",
+            "The account that pays for the rent to open the pool. This will be stored on the pool",
             "so it can be refunded when the pool is closed."
           ]
         },
@@ -888,8 +888,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
