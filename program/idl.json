@@ -1157,8 +1157,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
@@ -1418,8 +1417,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
@@ -1601,8 +1599,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
@@ -1864,8 +1861,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
@@ -2038,8 +2034,7 @@
           "isSigner": true,
           "isOptional": true,
           "docs": [
-            "The optional cosigner account that must be passed in if the pool has a cosigner.",
-            "Missing check is performed in the handler."
+            "The optional cosigner account that must be passed in if the pool has a cosigner."
           ]
         },
         {
@@ -3030,6 +3025,11 @@
       "code": 12052,
       "name": "MissingCosigner",
       "msg": "Missing cosigner account"
+    },
+    {
+      "code": 12053,
+      "name": "WrongCosigner",
+      "msg": "Wrong cosigner account"
     }
   ],
   "metadata": {

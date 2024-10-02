@@ -109,7 +109,6 @@ pub struct BuyNftT22<'info> {
         // Check the receipt is for the correct pool and mint.
         has_one = mint @ ErrorCode::WrongMint,
         has_one = pool @ ErrorCode::WrongPool,
-        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
@@ -183,15 +182,11 @@ impl<'info> BuyNftT22<'info> {
 
 impl<'info> Validate<'info> for BuyNftT22<'info> {
     fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.pool.cosigner != Pubkey::default() {
-            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
-        }
-
         // If the pool has a maker broker set, the maker broker account must be passed in.
-        if self.pool.maker_broker != Pubkey::default() {
-            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
-        }
+        self.pool.validate_maker_broker(&self.maker_broker)?;
+
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        self.pool.validate_cosigner(&self.cosigner)?;
 
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
