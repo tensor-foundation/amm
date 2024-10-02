@@ -110,6 +110,10 @@ pub struct SellNftTokenPoolT22<'info> {
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT being sold.
+    #[account(
+        constraint = mint.key() == seller_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token 2022 program.

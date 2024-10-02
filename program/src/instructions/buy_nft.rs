@@ -90,6 +90,11 @@ pub struct BuyNft<'info> {
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT.
+    #[account(
+        constraint = mint.key() == buyer_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
@@ -106,10 +111,9 @@ pub struct BuyNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
+        // Check that the mint and pool match the nft receipt.
         has_one = mint @ ErrorCode::WrongMint,
         has_one = pool @ ErrorCode::WrongPool,
-        // Check that the mint and pool match the nft receipt.
-        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         close = buyer,
     )]

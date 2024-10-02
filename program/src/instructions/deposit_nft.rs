@@ -66,8 +66,8 @@ pub struct DepositNft<'info> {
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
