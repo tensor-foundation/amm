@@ -25,7 +25,7 @@ pub struct CloseExpiredPool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::BadOwner,
         // Must be expired
         constraint = Clock::get()?.unix_timestamp > pool.expiry @ ErrorCode::PoolNotExpired,
     )]

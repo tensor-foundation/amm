@@ -29,8 +29,8 @@ pub struct DepositNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist,
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
         // can only deposit to NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,

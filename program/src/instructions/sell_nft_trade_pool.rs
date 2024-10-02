@@ -60,6 +60,12 @@ pub struct SellNftTradePool<'info> {
     /// Any pool can be specified provided it is a Trade type and the NFT passes at least one
     /// whitelist condition.
     #[account(mut,
+        seeds = [
+            b"pool",
+            owner.key().as_ref(),
+            pool.pool_id.as_ref(),
+        ],
+        bump = pool.bump[0],
         has_one = owner @ ErrorCode::BadOwner,
         has_one = whitelist @ ErrorCode::BadWhitelist,
         constraint = pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,

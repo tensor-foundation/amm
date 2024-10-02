@@ -24,7 +24,7 @@ pub struct ClosePool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::BadOwner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 

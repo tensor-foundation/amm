@@ -26,7 +26,7 @@ pub struct WithdrawNftT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]

@@ -64,7 +64,7 @@ pub struct BuyNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         // can only buy from NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
@@ -106,10 +106,12 @@ pub struct BuyNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
+        has_one = mint @ ErrorCode::WrongMint,
+        has_one = pool @ ErrorCode::WrongPool,
         // Check that the mint and pool match the nft receipt.
         constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
-        close = owner,
+        close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
