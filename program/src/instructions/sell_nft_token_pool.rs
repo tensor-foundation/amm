@@ -96,7 +96,8 @@ pub struct SellNftTokenPool<'info> {
     #[account(
         mut,
         token::mint = mint,
-        token::authority = seller
+        token::authority = seller,
+        token::token_program = token_program,
     )]
     pub seller_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -106,6 +107,7 @@ pub struct SellNftTokenPool<'info> {
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = owner,
+        associated_token::token_program = token_program,
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -115,6 +117,7 @@ pub struct SellNftTokenPool<'info> {
         payer = seller,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 

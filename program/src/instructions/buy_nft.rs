@@ -79,6 +79,7 @@ pub struct BuyNft<'info> {
         payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
+        associated_token::token_program = token_program,
     )]
     pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -87,6 +88,7 @@ pub struct BuyNft<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
