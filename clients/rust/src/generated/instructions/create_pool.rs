@@ -12,7 +12,7 @@ use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 pub struct CreatePool {
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// The owner of the pool will be stored and used to control permissioned pool instructions.
@@ -135,7 +135,7 @@ impl CreatePoolBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     #[inline(always)]
     pub fn rent_payer(&mut self, rent_payer: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -266,7 +266,7 @@ impl CreatePoolBuilder {
 
 /// `create_pool` CPI accounts.
 pub struct CreatePoolCpiAccounts<'a, 'b> {
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool will be stored and used to control permissioned pool instructions.
@@ -283,7 +283,7 @@ pub struct CreatePoolCpiAccounts<'a, 'b> {
 pub struct CreatePoolCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool will be stored and used to control permissioned pool instructions.
@@ -439,7 +439,7 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         });
         Self { instruction }
     }
-    /// The account pay for the rent to open the pool. This will be stored on the pool
+    /// The account that pays for the rent to open the pool. This will be stored on the pool
     /// so it can be refunded when the pool is closed.
     #[inline(always)]
     pub fn rent_payer(

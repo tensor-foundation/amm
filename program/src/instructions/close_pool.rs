@@ -1,4 +1,5 @@
 //! Close a pool if it has no NFTs and is not attached to a shared escrow.
+use constants::CURRENT_POOL_VERSION;
 use tensor_vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
@@ -24,7 +25,7 @@ pub struct ClosePool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::BadOwner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -36,6 +37,9 @@ impl<'info> Validate<'info> for ClosePool<'info> {
     fn validate(&self) -> Result<()> {
         if self.pool.nfts_held > 0 {
             throw_err!(ErrorCode::ExistingNfts);
+        }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
         }
 
         Ok(())

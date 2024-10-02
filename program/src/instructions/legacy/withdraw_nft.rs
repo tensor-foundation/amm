@@ -28,7 +28,7 @@ pub struct WithdrawNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
@@ -48,6 +48,7 @@ pub struct WithdrawNft<'info> {
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = owner,
+        associated_token::token_program = token_program,
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -56,6 +57,7 @@ pub struct WithdrawNft<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -68,10 +70,10 @@ pub struct WithdrawNft<'info> {
             pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        close = owner,
         //can't withdraw an NFT that's associated with a different pool
-        // redundant but extra safety
-        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        has_one = mint @ ErrorCode::WrongMint,
+        has_one = pool @ ErrorCode::WrongPool,
+        close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -95,12 +97,32 @@ pub struct WithdrawNft<'info> {
 
     /// The Token Metadata owner's token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            owner_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata token record for the pool.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            pool_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata program account.
@@ -138,6 +160,12 @@ impl<'info> WithdrawNft<'info> {
 
 impl<'info> Validate<'info> for WithdrawNft<'info> {
     fn validate(&self) -> Result<()> {
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

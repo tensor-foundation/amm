@@ -31,7 +31,8 @@ pub struct DepositNftT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist, has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
         // can only deposit to NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
@@ -62,6 +63,7 @@ pub struct DepositNftT22<'info> {
     /// to the owner_ta and pool_ta.
     #[account(
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -139,6 +141,12 @@ impl<'info> DepositNftT22<'info> {
 
 impl<'info> Validate<'info> for DepositNftT22<'info> {
     fn validate(&self) -> Result<()> {
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

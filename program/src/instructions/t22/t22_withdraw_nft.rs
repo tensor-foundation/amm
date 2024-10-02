@@ -25,7 +25,7 @@ pub struct WithdrawNftT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         // can only withdraw from NFT or Trade pool (bought NFTs from Token goes directly to owner)
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
@@ -33,6 +33,7 @@ pub struct WithdrawNftT22<'info> {
 
     /// The mint of the NFT.
     #[account(
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
@@ -67,7 +68,8 @@ pub struct WithdrawNftT22<'info> {
         ],
         bump = nft_receipt.bump,
         // can't withdraw an NFT that's associated with a different pool
-        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
+        has_one = mint @ ErrorCode::WrongMint,
+        has_one = pool @ ErrorCode::WrongPool,
         close = owner,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
@@ -97,6 +99,12 @@ impl<'info> WithdrawNftT22<'info> {
 
 impl<'info> Validate<'info> for WithdrawNftT22<'info> {
     fn validate(&self) -> Result<()> {
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

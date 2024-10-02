@@ -1,4 +1,5 @@
 //! Permissionlessly close an expired pool.
+use constants::CURRENT_POOL_VERSION;
 use tensor_vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
@@ -25,7 +26,7 @@ pub struct CloseExpiredPool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::BadOwner,
         // Must be expired
         constraint = Clock::get()?.unix_timestamp > pool.expiry @ ErrorCode::PoolNotExpired,
     )]
@@ -39,6 +40,9 @@ impl<'info> Validate<'info> for CloseExpiredPool<'info> {
     fn validate(&self) -> Result<()> {
         if self.pool.nfts_held > 0 {
             throw_err!(ErrorCode::ExistingNfts);
+        }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
         }
 
         Ok(())

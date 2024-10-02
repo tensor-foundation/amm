@@ -25,7 +25,6 @@ import {
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__MISSING_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
@@ -888,8 +887,8 @@ test('pool with makerBroker set requires passing the account in; fails w/ incorr
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  // Should fail with a wrong makerBroker error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   // Buy NFT from pool
   buyNftIx = await getBuyNftInstructionAsync({

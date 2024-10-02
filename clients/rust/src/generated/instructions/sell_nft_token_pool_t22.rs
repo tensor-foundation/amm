@@ -47,7 +47,6 @@ pub struct SellNftTokenPoolT22 {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<solana_program::pubkey::Pubkey>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
@@ -395,7 +394,6 @@ impl SellNftTokenPoolT22Builder {
     }
     /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
     #[inline(always)]
     pub fn cosigner(&mut self, cosigner: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
         self.cosigner = cosigner;
@@ -519,7 +517,6 @@ pub struct SellNftTokenPoolT22CpiAccounts<'a, 'b> {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -568,7 +565,6 @@ pub struct SellNftTokenPoolT22Cpi<'a, 'b> {
     /// The account that receives the taker broker fee.
     pub taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
@@ -1024,7 +1020,6 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
     }
     /// `[optional account]`
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
     #[inline(always)]
     pub fn cosigner(
         &mut self,

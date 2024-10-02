@@ -181,7 +181,7 @@ export type CreatePoolAsyncInput<
   TAccountSystemProgram extends string = string,
 > = {
   /**
-   * The account pay for the rent to open the pool. This will be stored on the pool
+   * The account that pays for the rent to open the pool. This will be stored on the pool
    * so it can be refunded when the pool is closed.
    */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
@@ -301,7 +301,7 @@ export type CreatePoolInput<
   TAccountSystemProgram extends string = string,
 > = {
   /**
-   * The account pay for the rent to open the pool. This will be stored on the pool
+   * The account that pays for the rent to open the pool. This will be stored on the pool
    * so it can be refunded when the pool is closed.
    */
   rentPayer?: TransactionSigner<TAccountRentPayer>;
@@ -412,7 +412,7 @@ export type ParsedCreatePoolInstruction<
   programAddress: Address<TProgram>;
   accounts: {
     /**
-     * The account pay for the rent to open the pool. This will be stored on the pool
+     * The account that pays for the rent to open the pool. This will be stored on the pool
      * so it can be refunded when the pool is closed.
      */
 

@@ -20,7 +20,7 @@ impl Default for PoolStats {
 
 impl Pool {
     /// Shifts the price of a pool by a certain offset.
-    pub fn shift_price(&self, price_offset: i32) -> Result<u64, TensorAmmError> {
+    pub fn shift_price(&self, price_offset: i32, side: TakerSide) -> Result<u64, TensorAmmError> {
         let direction = if price_offset > 0 {
             Direction::Up
         } else {
@@ -77,7 +77,12 @@ impl Pool {
                     Direction::Down => base.checked_div(&factor),
                 };
 
-                let imprecise = result
+                let rounded_result = match side {
+                    TakerSide::Buy => result.ok_or(TensorAmmError::ArithmeticError)?.ceiling(),
+                    TakerSide::Sell => result.ok_or(TensorAmmError::ArithmeticError)?.floor(),
+                };
+
+                let imprecise = rounded_result
                     .ok_or(TensorAmmError::ArithmeticError)?
                     .to_imprecise()
                     .ok_or(TensorAmmError::ArithmeticError)?;
@@ -96,11 +101,11 @@ impl Pool {
         match (self.config.pool_type, side) {
             (PoolType::Trade, TakerSide::Buy)
             | (PoolType::Token, TakerSide::Sell)
-            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset),
+            | (PoolType::NFT, TakerSide::Buy) => self.shift_price(self.price_offset, side),
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
-            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1),
+            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1, side),
 
             // Invalid combinations of pool type and side.
             _ => Err(TensorAmmError::WrongPoolType),

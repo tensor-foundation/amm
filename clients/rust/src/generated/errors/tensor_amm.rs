@@ -169,6 +169,9 @@ pub enum TensorAmmError {
     /// 12052 - Missing cosigner account
     #[error("Missing cosigner account")]
     MissingCosigner = 0x2F14,
+    /// 12053 - Wrong cosigner account
+    #[error("Wrong cosigner account")]
+    WrongCosigner = 0x2F15,
 }
 
 impl solana_program::program_error::PrintProgramError for TensorAmmError {
