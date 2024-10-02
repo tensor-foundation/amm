@@ -121,13 +121,23 @@ pub struct DepositNft<'info> {
 
     /// The Token Metadata owner/buyer token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            owner_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata pool token record account of the NFT.
     /// CHECK: seeds checked here
     #[account(mut,
-            seeds=[
+        seeds=[
             mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
             mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
