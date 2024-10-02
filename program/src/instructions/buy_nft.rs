@@ -64,9 +64,10 @@ pub struct BuyNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         // can only buy from NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
         constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::BadCosigner,
     )]
@@ -78,6 +79,7 @@ pub struct BuyNft<'info> {
         payer = buyer,
         associated_token::mint = mint,
         associated_token::authority = buyer,
+        associated_token::token_program = token_program,
     )]
     pub buyer_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -86,10 +88,16 @@ pub struct BuyNft<'info> {
         mut,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT.
+    #[account(
+        constraint = mint.key() == buyer_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
@@ -107,9 +115,9 @@ pub struct BuyNft<'info> {
         ],
         bump = nft_receipt.bump,
         // Check that the mint and pool match the nft receipt.
-        constraint = nft_receipt.mint == mint.key() && nft_receipt.pool == pool.key() @ ErrorCode::WrongMint,
-        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
-        close = owner,
+        has_one = mint @ ErrorCode::WrongMint,
+        has_one = pool @ ErrorCode::WrongPool,
+        close = buyer,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -127,12 +135,32 @@ pub struct BuyNft<'info> {
 
     /// The Token Metadata token record for the pool.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            pool_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata token record for the buyer.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            buyer_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub buyer_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata program account.
@@ -170,6 +198,7 @@ pub struct BuyNft<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
+    /// CHECK: Constraint checked on pool.
     pub cosigner: Option<Signer<'info>>,
 
     /// The AMM program account, used for self-cpi logging.
@@ -219,6 +248,18 @@ impl<'info> BuyNft<'info> {
 impl<'info> Validate<'info> for BuyNft<'info> {
     /// Validates the BuyNft instruction.
     fn validate(&self) -> Result<()> {
+        // If the pool has a maker broker set, the maker broker account must be passed in.
+        self.pool.validate_maker_broker(&self.maker_broker)?;
+
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        self.pool.validate_cosigner(&self.cosigner)?;
+
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

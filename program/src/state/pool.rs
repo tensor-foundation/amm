@@ -319,6 +319,34 @@ impl Pool {
             &self.bump,
         ]
     }
+
+    pub fn validate_maker_broker(&self, maker_broker: &Option<UncheckedAccount>) -> Result<()> {
+        // If the pool has a maker broker, the maker broker account must be passed in.
+        if self.maker_broker == Pubkey::default() {
+            return Ok(());
+        }
+        require!(
+            maker_broker
+                .as_ref()
+                .ok_or(ErrorCode::MissingMakerBroker)?
+                .key()
+                == self.maker_broker,
+            ErrorCode::WrongMakerBroker
+        );
+        Ok(())
+    }
+
+    pub fn validate_cosigner(&self, cosigner: &Option<Signer>) -> Result<()> {
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        if self.cosigner == Pubkey::default() {
+            return Ok(());
+        }
+        require!(
+            cosigner.as_ref().ok_or(ErrorCode::MissingCosigner)?.key() == self.cosigner,
+            ErrorCode::WrongCosigner
+        );
+        Ok(())
+    }
 }
 
 /// Indicates the direction of a price shift.

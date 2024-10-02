@@ -68,9 +68,12 @@ pub struct SellNftTokenPoolT22<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner, has_one = whitelist @ ErrorCode::WrongAuthority,
+        has_one = owner @ ErrorCode::BadOwner,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
         constraint = pool.config.pool_type == PoolType::Token @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
+        constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
+        constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::BadCosigner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -109,6 +112,10 @@ pub struct SellNftTokenPoolT22<'info> {
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT being sold.
+    #[account(
+        constraint = mint.key() == seller_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+    )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token 2022 program.
@@ -125,10 +132,7 @@ pub struct SellNftTokenPoolT22<'info> {
 
     /// The account that receives the maker broker fee.
     /// CHECK: Must match the pool's maker_broker
-    #[account(
-        mut,
-        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
-    )]
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
@@ -137,10 +141,7 @@ pub struct SellNftTokenPoolT22<'info> {
     pub taker_broker: Option<UncheckedAccount<'info>>,
 
     /// The optional cosigner account that must be passed in if the pool has a cosigner.
-    /// Missing check is performed in the handler.
-    #[account(
-        constraint = cosigner.key() == pool.cosigner @ ErrorCode::BadCosigner,
-    )]
+    /// CHECK: Constraint checked on pool.
     pub cosigner: Option<Signer<'info>>,
 
     /// The AMM program account, used for self-cpi logging.
@@ -156,15 +157,11 @@ pub struct SellNftTokenPoolT22<'info> {
 
 impl<'info> Validate<'info> for SellNftTokenPoolT22<'info> {
     fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.pool.cosigner != Pubkey::default() {
-            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
-        }
-
         // If the pool has a maker broker set, the maker broker account must be passed in.
-        if self.pool.maker_broker != Pubkey::default() {
-            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
-        }
+        self.pool.validate_maker_broker(&self.maker_broker)?;
+
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        self.pool.validate_cosigner(&self.cosigner)?;
 
         match self.pool.config.pool_type {
             PoolType::Token => (),

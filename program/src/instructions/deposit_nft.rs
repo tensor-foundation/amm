@@ -29,8 +29,8 @@ pub struct DepositNft<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = whitelist,
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
+        has_one = whitelist @ ErrorCode::BadWhitelist,
         // can only deposit to NFT/Trade pool
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
@@ -51,6 +51,7 @@ pub struct DepositNft<'info> {
         mut,
         token::mint = mint,
         token::authority = owner,
+        token::token_program = token_program,
     )]
     pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -60,14 +61,15 @@ pub struct DepositNft<'info> {
         payer = owner,
         associated_token::mint = mint,
         associated_token::authority = pool,
+        associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
     #[account(
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -119,13 +121,23 @@ pub struct DepositNft<'info> {
 
     /// The Token Metadata owner/buyer token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
+    #[account(mut,
+        seeds=[
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            mpl_token_metadata::accounts::TokenRecord::PREFIX.1,
+            owner_ta.key().as_ref()
+        ],
+        seeds::program = mpl_token_metadata::ID,
+        bump
+    )]
     pub owner_token_record: Option<UncheckedAccount<'info>>,
 
     /// The Token Metadata pool token record account of the NFT.
     /// CHECK: seeds checked here
     #[account(mut,
-            seeds=[
+        seeds=[
             mpl_token_metadata::accounts::TokenRecord::PREFIX.0,
             mpl_token_metadata::ID.as_ref(),
             mint.key().as_ref(),
@@ -193,6 +205,12 @@ impl<'info> DepositNft<'info> {
 
 impl<'info> Validate<'info> for DepositNft<'info> {
     fn validate(&self) -> Result<()> {
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

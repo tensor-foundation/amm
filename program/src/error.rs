@@ -218,4 +218,8 @@ pub enum ErrorCode {
     // 6052 | 0x17a4
     #[msg("Missing cosigner account")]
     MissingCosigner,
+
+    // 6053 | 0x17a5
+    #[msg("Wrong cosigner account")]
+    WrongCosigner,
 }
