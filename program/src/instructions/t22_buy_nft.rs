@@ -127,7 +127,7 @@ pub struct BuyNftT22<'info> {
     pub shared_escrow: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the maker broker fee.
-    /// CHECK: Must match the pool's maker_broker
+    /// CHECK: Constraint checked on pool.
     #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 

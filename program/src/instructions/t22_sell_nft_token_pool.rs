@@ -72,6 +72,7 @@ pub struct SellNftTokenPoolT22<'info> {
         has_one = whitelist @ ErrorCode::BadWhitelist,
         constraint = pool.config.pool_type == PoolType::Token @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
+        constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -130,10 +131,7 @@ pub struct SellNftTokenPoolT22<'info> {
 
     /// The account that receives the maker broker fee.
     /// CHECK: Must match the pool's maker_broker
-    #[account(
-        mut,
-        constraint = pool.maker_broker != Pubkey::default() && maker_broker.key() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
-    )]
+    #[account(mut)]
     pub maker_broker: Option<UncheckedAccount<'info>>,
 
     /// The account that receives the taker broker fee.
