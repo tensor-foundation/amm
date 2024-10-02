@@ -188,6 +188,12 @@ impl<'info> Validate<'info> for BuyNftT22<'info> {
         // If the pool has a cosigner, the cosigner account must be passed in.
         self.pool.validate_cosigner(&self.cosigner)?;
 
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

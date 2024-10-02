@@ -1,4 +1,5 @@
 //! Withdraw SOL from a Trade or Token pool.
+use constants::CURRENT_POOL_VERSION;
 use tensor_toolbox::transfer_lamports_from_pda;
 use tensor_vipers::{throw_err, unwrap_checked};
 
@@ -36,9 +37,18 @@ impl<'info> WithdrawSol<'info> {
 }
 
 impl<'info> WithdrawSol<'info> {
-    fn validate_sol_transfer(&self) -> Result<()> {
+    fn validate(&self) -> Result<()> {
         if self.pool.shared_escrow != Pubkey::default() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
+        }
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
         }
         Ok(())
     }
@@ -56,7 +66,7 @@ impl<'info> WithdrawSol<'info> {
 }
 
 /// Withdraw SOL from a Token or Trade pool.
-#[access_control(ctx.accounts.validate_sol_transfer(); ctx.accounts.validate_mm_fee_transfer())]
+#[access_control(ctx.accounts.validate())]
 pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     lamports: u64,

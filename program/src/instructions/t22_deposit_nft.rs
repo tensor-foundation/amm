@@ -139,6 +139,12 @@ impl<'info> DepositNftT22<'info> {
 
 impl<'info> Validate<'info> for DepositNftT22<'info> {
     fn validate(&self) -> Result<()> {
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }

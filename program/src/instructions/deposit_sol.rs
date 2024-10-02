@@ -1,5 +1,6 @@
 //! Deposit SOL into a Token or Trade pool.
 use anchor_lang::solana_program::{program::invoke, system_instruction};
+use constants::CURRENT_POOL_VERSION;
 use tensor_vipers::{throw_err, unwrap_checked, Validate};
 
 use crate::{error::ErrorCode, *};
@@ -50,6 +51,15 @@ impl<'info> Validate<'info> for DepositSol<'info> {
     fn validate(&self) -> Result<()> {
         if self.pool.shared_escrow != Pubkey::default() {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
+        }
+        match self.pool.config.pool_type {
+            PoolType::NFT | PoolType::Trade => (),
+            _ => {
+                throw_err!(ErrorCode::WrongPoolType);
+            }
+        }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
         }
         Ok(())
     }

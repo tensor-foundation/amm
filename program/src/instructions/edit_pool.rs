@@ -77,6 +77,9 @@ impl<'info> EditPool<'info> {
                 }
             }
         }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
+        }
 
         //for exponential pool delta can't be above 99.99% and has to fit into a u16
         if new_config.curve_type == CurveType::Exponential {
