@@ -15,7 +15,11 @@ import {
   TOKEN22_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
-import { intoAddress, Mode } from '@tensor-foundation/whitelist';
+import {
+  intoAddress,
+  Mode,
+  TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF,
+} from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   fetchMaybePool,
@@ -27,7 +31,6 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__BAD_MINT_PROOF,
   TENSOR_AMM_ERROR__BAD_WHITELIST,
   TENSOR_AMM_ERROR__MISSING_COSIGNER,
   TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
@@ -45,14 +48,15 @@ import {
   findAtaPda,
   getTokenAmount,
   getTokenOwner,
-  setupT22Test,
   TAKER_FEE_BPS,
   TestAction,
   tokenPoolConfig,
   tradePoolConfig,
   upsertMintProof,
+  VIPER_ERROR__INTEGER_OVERFLOW,
 } from '../_common';
 import { generateTreeOfSize } from '../_merkle';
+import { setupT22Test } from './_common';
 
 test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const {
@@ -68,14 +72,20 @@ test('it can sell a T22 NFT into a Trade pool', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Sell,
+    useMakerBroker: true,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
     signers;
 
-  const { poolConfig, depositAmount, price: minPrice } = testConfig;
+  const {
+    poolConfig,
+    depositAmount,
+    price: minPrice,
+    sellerFeeBasisPoints,
+  } = testConfig;
 
-  const { mint, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, extraAccountMetas } = nft;
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
@@ -196,6 +206,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Sell,
     useSharedEscrow: true,
+    useMakerBroker: true,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
@@ -286,14 +297,20 @@ test('it can sell a T22 NFT into a Token pool', async (t) => {
     t,
     poolType: PoolType.Token,
     action: TestAction.Sell,
+    useMakerBroker: true,
   });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
     signers;
 
-  const { poolConfig, depositAmount, price: minPrice } = testConfig;
+  const {
+    poolConfig,
+    depositAmount,
+    price: minPrice,
+    sellerFeeBasisPoints,
+  } = testConfig;
 
-  const { mint, ownerAta, extraAccountMetas, sellerFeeBasisPoints } = nft;
+  const { mint, ownerAta, extraAccountMetas } = nft;
 
   // Balance of pool before any sales operations, but including the SOL deposit.
   const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
@@ -415,6 +432,7 @@ test('token pool autocloses when currency amount drops below current price', asy
       poolType: PoolType.Token,
       action: TestAction.Sell,
       depositAmount,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
@@ -482,8 +500,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
       action: TestAction.Sell,
     });
 
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    signers;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
 
   const { price: minPrice } = testConfig;
 
@@ -498,8 +515,6 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     whitelist,
     mint,
     mintProof,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
     minPrice,
     escrowProgram: TSWAP_PROGRAM_ID,
     tokenProgram: TOKEN22_PROGRAM_ID,
@@ -528,6 +543,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
@@ -576,6 +592,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
+      useMakerBroker: true,
       useCosigner: true,
     });
 
@@ -642,6 +659,7 @@ test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) 
       poolType: PoolType.Token,
       action: TestAction.Sell,
       useCosigner: true,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
@@ -724,6 +742,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
       poolType: PoolType.Trade,
       action: TestAction.Sell,
       useCosigner: true,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
@@ -904,7 +923,9 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(ix, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_MINT_PROOF);
+  // Error is thrown in a whitelist utility function so throws
+  // a whitelist error.
+  await expectCustomError(t, promise, TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF);
 
   // Specify the correct whitelist, and a valid mint proof for that whitelist
   // but the mint still isn't in the whitelist.
@@ -927,7 +948,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(ix, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_MINT_PROOF);
+  await expectCustomError(t, promise, TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF);
 
   // Finally, use the correct mint, with the correct mint proof, with the correct whitelist.
   ix = await getSellNftTradePoolT22InstructionAsync({
@@ -956,6 +977,7 @@ test('selling into a Trade pool fails when the wrong creator is passed in as a r
       t,
       poolType: PoolType.Trade,
       action: TestAction.Sell,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, makerBroker, takerBroker } = signers;
@@ -1005,6 +1027,7 @@ test('selling into a Token pool fails when the wrong creator is passed in as a r
       t,
       poolType: PoolType.Token,
       action: TestAction.Sell,
+      useMakerBroker: true,
     });
 
   const { poolOwner, nftOwner, makerBroker, takerBroker } = signers;
@@ -1096,8 +1119,8 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Should fail with a price mismatch error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
+  // Should fail with an integer overflow error.
+  await expectCustomError(t, promise, VIPER_ERROR__INTEGER_OVERFLOW);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.

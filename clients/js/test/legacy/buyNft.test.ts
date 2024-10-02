@@ -51,9 +51,9 @@ import {
   getTokenAmount,
   getTokenOwner,
   nftPoolConfig,
-  setupLegacyTest,
   tradePoolConfig,
 } from '../_common.js';
+import { setupLegacyTest } from './_common.js';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const { client, signers, nft, testConfig, pool, feeVault } =
@@ -130,6 +130,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
     poolType: PoolType.Trade,
     action: TestAction.Buy,
     useSharedEscrow: false,
+    useMakerBroker: true,
     compoundFees: true,
     fundPool: false,
   });
@@ -200,6 +201,7 @@ test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
     t,
     poolType: PoolType.Trade,
     action: TestAction.Buy,
+    useMakerBroker: true,
   });
 
   const { buyer, poolOwner, nftUpdateAuthority, makerBroker } = signers;
@@ -240,10 +242,10 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
     t,
     poolType: PoolType.NFT,
     action: TestAction.Buy,
-    useMakerBroker: false,
+    useMakerBroker: true,
   });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker } = signers;
   const { price: maxAmount } = testConfig;
   const { mint } = nft;
 
@@ -254,6 +256,7 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
     pool,
     mint,
     maxAmount,
+    makerBroker: makerBroker.address,
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
   });
@@ -427,6 +430,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
       poolType: PoolType.Trade,
       action: TestAction.Buy,
       useSharedEscrow: true,
+      useMakerBroker: true,
       compoundFees: false,
       fundPool: false,
     });

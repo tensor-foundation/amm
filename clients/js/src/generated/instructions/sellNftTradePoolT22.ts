@@ -34,14 +34,15 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
-import {
-  resolvePoolAta,
-  resolvePoolNftReceipt,
-  resolveSellerAta,
-} from '@tensor-foundation/resolvers';
+import { resolvePoolAta, resolveSellerAta } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
+import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
-import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
+import {
+  expectAddress,
+  getAccountMetaFactory,
+  type ResolvedAccount,
+} from '../shared';
 
 export type SellNftTradePoolT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -374,10 +375,10 @@ export async function getSellNftTradePoolT22InstructionAsync<
     };
   }
   if (!accounts.nftReceipt.value) {
-    accounts.nftReceipt = {
-      ...accounts.nftReceipt,
-      ...(await resolvePoolNftReceipt(resolverScope)),
-    };
+    accounts.nftReceipt.value = await findNftDepositReceiptPda({
+      mint: expectAddress(accounts.mint.value),
+      pool: expectAddress(accounts.pool.value),
+    });
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =

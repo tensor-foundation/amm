@@ -1,22 +1,28 @@
 //! Buy a Token22 NFT from a NFT or Trade pool.
-use anchor_lang::solana_program::{program::invoke, system_instruction};
+use crate::{
+    calc_taker_fees,
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    error::ErrorCode,
+    program::AmmProgram,
+    record_event, try_autoclose_pool, BuySellEvent, Fees, NftDepositReceipt, Pool, PoolType,
+    TAmmEvent, TakerSide, POOL_SIZE,
+};
+
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction},
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
+use escrow_program::instructions::assert_decode_margin_account;
 use tensor_toolbox::{
-    calc_creators_fee,
+    calc_creators_fee, shard_num,
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
-
-use self::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    program::AmmProgram,
-};
-use super::*;
-use crate::{error::ErrorCode, *};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -53,7 +59,7 @@ pub struct BuyNftT22<'info> {
 
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     #[account(
         mut,
         seeds = [

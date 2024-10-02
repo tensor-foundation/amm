@@ -1,24 +1,30 @@
 //! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-use anchor_lang::solana_program::{program::invoke, system_instruction};
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction},
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
+
+use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
+    shard_num,
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
-use crate::{error::ErrorCode, *};
-
-use self::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
+use crate::{
+    calc_taker_fees,
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    error::ErrorCode,
     program::AmmProgram,
+    record_event, try_autoclose_pool, AuthorizationDataLocal, BuySellEvent, Fees,
+    NftDepositReceipt, Pool, PoolType, TAmmEvent, TakerSide, MPL_TOKEN_AUTH_RULES_ID, POOL_SIZE,
 };
-
-use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -55,7 +61,7 @@ pub struct BuyNft<'info> {
 
     /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided it is a Trade or NFT type.
+    /// Any active pool can be specified provided if it is a Trade or NFT type.
     #[account(
         mut,
         seeds = [

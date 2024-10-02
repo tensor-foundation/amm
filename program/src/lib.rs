@@ -49,22 +49,6 @@ pub mod amm_program {
         instructions::close_expired_pool::process_close_expired_pool(ctx)
     }
 
-    /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-    pub fn deposit_nft<'info>(
-        ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
-        authorization_data: Option<AuthorizationDataLocal>,
-    ) -> Result<()> {
-        instructions::deposit_nft::process_deposit_nft(ctx, authorization_data)
-    }
-
-    /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-    pub fn withdraw_nft<'info>(
-        ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
-        authorization_data: Option<AuthorizationDataLocal>,
-    ) -> Result<()> {
-        instructions::withdraw_nft::process_withdraw_nft(ctx, authorization_data)
-    }
-
     /// Deposit SOL into a Token or Trade pool.
     pub fn deposit_sol<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
@@ -81,6 +65,26 @@ pub mod amm_program {
         instructions::withdraw_sol::process_withdraw_sol(ctx, lamports)
     }
 
+    //-------------------------------//
+    // Legacy and PNFT instructions  //
+    //-------------------------------//
+
+    /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
+    pub fn deposit_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositNft<'info>>,
+        authorization_data: Option<AuthorizationDataLocal>,
+    ) -> Result<()> {
+        instructions::legacy::deposit_nft::process_deposit_nft(ctx, authorization_data)
+    }
+
+    /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
+    pub fn withdraw_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
+        authorization_data: Option<AuthorizationDataLocal>,
+    ) -> Result<()> {
+        instructions::legacy::withdraw_nft::process_withdraw_nft(ctx, authorization_data)
+    }
+
     /// Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
     pub fn buy_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
@@ -88,7 +92,7 @@ pub mod amm_program {
         authorization_data: Option<AuthorizationDataLocal>,
         optional_royalty_pct: Option<u16>,
     ) -> Result<()> {
-        instructions::buy_nft::process_buy_nft(
+        instructions::legacy::buy_nft::process_buy_nft(
             ctx,
             max_amount,
             authorization_data,
@@ -103,7 +107,7 @@ pub mod amm_program {
         authorization_data: Option<AuthorizationDataLocal>,
         optional_royalty_pct: Option<u16>,
     ) -> Result<()> {
-        instructions::sell_nft_token_pool::process_sell_nft_token_pool(
+        instructions::legacy::sell_nft_token_pool::process_sell_nft_token_pool(
             ctx,
             min_price,
             authorization_data,
@@ -118,7 +122,7 @@ pub mod amm_program {
         authorization_data: Option<AuthorizationDataLocal>,
         optional_royalty_pct: Option<u16>,
     ) -> Result<()> {
-        instructions::sell_nft_trade_pool::process_sell_nft_trade_pool(
+        instructions::legacy::sell_nft_trade_pool::process_sell_nft_trade_pool(
             ctx,
             min_price,
             authorization_data,
@@ -127,8 +131,66 @@ pub mod amm_program {
     }
 
     //-------------------------------//
+    // MPL Core instructions         //
+    //-------------------------------//
+
+    /// Deposit a Token22 NFT into a NFT or Trade pool.
+    pub fn deposit_nft_core<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,
+    ) -> Result<()> {
+        instructions::mplx_core::process_deposit_nft_core(ctx)
+    }
+
+    /// Withdraw a Token22 NFT from a NFT or Trade pool.
+    pub fn withdraw_nft_core<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
+    ) -> Result<()> {
+        instructions::mplx_core::process_withdraw_nft_core(ctx)
+    }
+
+    /// Buy a Token22 NFT from a NFT or Trade pool.
+    pub fn buy_nft_core<'info>(
+        ctx: Context<'_, '_, '_, 'info, BuyNftCore<'info>>,
+        max_amount: u64,
+    ) -> Result<()> {
+        instructions::mplx_core::process_buy_nft_core(ctx, max_amount)
+    }
+
+    /// Sell a Token22 NFT into a Token pool.
+    pub fn sell_nft_token_pool_core<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolCore<'info>>,
+        min_price: u64,
+    ) -> Result<()> {
+        instructions::mplx_core::sell_nft_token_pool::process_sell_nft_token_pool_core(
+            ctx, min_price,
+        )
+    }
+
+    /// Sell a Token22 NFT into a Trade pool.
+    pub fn sell_nft_trade_pool_core<'info>(
+        ctx: Context<'_, '_, '_, 'info, SellNftTradePoolCore<'info>>,
+        min_price: u64,
+    ) -> Result<()> {
+        instructions::mplx_core::process_sell_nft_trade_pool_core(ctx, min_price)
+    }
+
+    //-------------------------------//
     // Token 2022 instructions       //
     //-------------------------------//
+
+    /// Deposit a Token22 NFT into a NFT or Trade pool.
+    pub fn deposit_nft_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
+    ) -> Result<()> {
+        instructions::t22_deposit_nft::process_t22_deposit_nft(ctx)
+    }
+
+    /// Withdraw a Token22 NFT from a NFT or Trade pool.
+    pub fn withdraw_nft_t22<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
+    ) -> Result<()> {
+        instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
+    }
 
     /// Buy a Token22 NFT from a NFT or Trade pool.
     pub fn buy_nft_t22<'info>(
@@ -136,13 +198,6 @@ pub mod amm_program {
         max_amount: u64,
     ) -> Result<()> {
         instructions::t22_buy_nft::process_t22_buy_nft(ctx, max_amount)
-    }
-
-    /// Deposit a Token22 NFT into a NFT or Trade pool.
-    pub fn deposit_nft_t22<'info>(
-        ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
-    ) -> Result<()> {
-        instructions::t22_deposit_nft::process_t22_deposit_nft(ctx)
     }
 
     /// Sell a Token22 NFT into a Token pool.
@@ -159,12 +214,5 @@ pub mod amm_program {
         min_price: u64,
     ) -> Result<()> {
         instructions::t22_sell_nft_trade_pool::process_sell_nft_trade_pool(ctx, min_price)
-    }
-
-    /// Withdraw a Token22 NFT from a NFT or Trade pool.
-    pub fn withdraw_nft_t22<'info>(
-        ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
-    ) -> Result<()> {
-        instructions::t22_withdraw_nft::process_t22_withdraw_nft(ctx)
     }
 }

@@ -1,5 +1,5 @@
 //! Withdraw a Token22 NFT from a NFT or Trade pool.
-
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
@@ -7,8 +7,7 @@ use anchor_spl::{
 use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
 use tensor_vipers::{throw_err, unwrap_int, Validate};
 
-use self::constants::CURRENT_POOL_VERSION;
-use crate::{error::ErrorCode, *};
+use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, NftDepositReceipt, Pool, PoolType};
 
 /// Instruction accounts.
 #[derive(Accounts)]

@@ -10,21 +10,22 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
+use constants::TFEE_PROGRAM_ID;
+use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    escrow,
+    escrow, shard_num,
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc,
 };
-use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use self::{constants::CURRENT_POOL_VERSION, program::AmmProgram};
-use super::*;
 use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /// Instruction accounts.
@@ -248,7 +249,8 @@ impl<'info> SellNftTokenPool<'info> {
         let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
-            let mint_proof = assert_decode_mint_proof_v2(&self.whitelist, &self.mint, mint_proof)?;
+            let mint_proof =
+                assert_decode_mint_proof_v2(&self.whitelist, &self.mint.key(), mint_proof)?;
 
             let leaf = keccak::hash(self.mint.key().as_ref());
             let proof = &mut mint_proof.proof.to_vec();

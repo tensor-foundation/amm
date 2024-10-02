@@ -33,12 +33,8 @@ import {
   PoolType,
   TakerSide,
 } from '../src';
-import {
-  expectCustomError,
-  ONE_SOL,
-  setupLegacyTest,
-  TestAction,
-} from './_common';
+import { expectCustomError, ONE_SOL, TestAction } from './_common';
+import { setupLegacyTest } from './legacy/_common';
 
 test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
   const { client, pool } = await setupLegacyTest({

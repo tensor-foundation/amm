@@ -1,5 +1,10 @@
 //! Deposit a Token22 NFT into a NFT or Trade pool.
+use crate::{
+    constants::CURRENT_POOL_VERSION, error::ErrorCode, NftDepositReceipt, Pool, PoolType,
+    DEPOSIT_RECEIPT_SIZE,
+};
 
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
@@ -7,10 +12,7 @@ use anchor_spl::{
 use solana_program::keccak;
 use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
 use tensor_vipers::{throw_err, unwrap_int, Validate};
-use whitelist_program::{self, FullMerkleProof, WhitelistV2};
-
-use self::constants::CURRENT_POOL_VERSION;
-use crate::{error::ErrorCode, *};
+use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof, WhitelistV2};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -111,7 +113,7 @@ pub struct DepositNftT22<'info> {
 impl<'info> DepositNftT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
         let mint_proof =
-            assert_decode_mint_proof_v2(&self.whitelist, &self.mint, &self.mint_proof)?;
+            assert_decode_mint_proof_v2(&self.whitelist.key(), &self.mint.key(), &self.mint_proof)?;
 
         let leaf = keccak::hash(self.mint.key().as_ref());
         let proof = &mut mint_proof.proof.to_vec();

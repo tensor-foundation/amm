@@ -1,5 +1,3 @@
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { Token, fetchToken } from '@solana-program/token';
 import {
   Account,
   Address,
@@ -26,23 +24,13 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
-import {
-  Nft,
-  TokenStandard,
-  createDefaultNftInCollection,
-  fetchMetadata,
-} from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
   Client,
-  T22NftReturn,
-  TOKEN22_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  createDefaultSolanaClient,
   createDefaultTransaction,
   createKeyPairSigner,
-  createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
@@ -53,7 +41,6 @@ import {
   findWhitelistV2Pda,
   getCreateWhitelistV2Instruction,
   getInitUpdateMintProofV2InstructionAsync,
-  intoAddress,
 } from '@tensor-foundation/whitelist';
 import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
@@ -65,15 +52,11 @@ import {
   PoolType,
   fetchMaybeNftDepositReceipt,
   fetchNftDepositReceipt,
-  fetchPool,
   findNftDepositReceiptPda,
   findPoolPda,
   getCreatePoolInstruction,
-  getDepositNftInstructionAsync,
-  getDepositNftT22InstructionAsync,
   getDepositSolInstruction,
 } from '../src/index.js';
-import { generateTreeOfSize } from './_merkle.js';
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
@@ -98,6 +81,7 @@ export const getAndFundOwner = async (client: Client) => {
 
 export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
 export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
+export const VIPER_ERROR__INTEGER_OVERFLOW = 1103;
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -750,33 +734,11 @@ export async function upsertMintProof({
   return { mintProof };
 }
 
-export interface T22Test {
-  client: Client;
-  signers: TestSigners;
-  nft: T22NftReturn & { sellerFeeBasisPoints: bigint };
-  testConfig: TestConfig;
-  whitelist: Address;
-  pool: Address;
-  feeVault: Address;
-  mintProof: Address;
-  sharedEscrow: Address | undefined;
-}
-
-export interface LegacyTest {
-  client: Client;
-  signers: TestSigners;
-  nft: Nft;
-  testConfig: TestConfig;
-  whitelist: Address;
-  pool: Address;
-  feeVault: Address;
-  sharedEscrow: Address | undefined;
-}
-
 export interface TestConfig {
   poolConfig: PoolConfig;
   depositAmount: bigint;
   price: bigint;
+  sellerFeeBasisPoints: bigint;
 }
 
 export interface SetupTestParams {
@@ -795,454 +757,6 @@ export interface SetupTestParams {
 export enum TestAction {
   Buy,
   Sell,
-}
-
-export async function setupLegacyTest(
-  params: SetupTestParams & {
-    pNft?: boolean;
-    signerFunds?: bigint;
-    poolConfig?: PoolConfig | null;
-  }
-): Promise<LegacyTest> {
-  const {
-    t,
-    poolType,
-    action,
-    whitelistMode = Mode.FVC,
-    depositAmount: dA,
-    pNft = false,
-    useSharedEscrow = false,
-    useMakerBroker = true,
-    useCosigner = false,
-    compoundFees = false,
-    fundPool = true,
-    signerFunds = 5n * ONE_SOL,
-    poolConfig,
-  } = params;
-
-  const client = createDefaultSolanaClient();
-  const testSigners = await getTestSigners(client, signerFunds);
-
-  const { payer, poolOwner, nftUpdateAuthority, cosigner, makerBroker } =
-    testSigners;
-
-  let { nftOwner } = testSigners;
-
-  // When buying, we mint the NFT to the poolOwner which then deposits it into the
-  // pool so it can be purchased by the buyer.
-  if (action == TestAction.Buy) {
-    nftOwner = poolOwner;
-  }
-
-  // Mint NFT
-  const { collection, item: nft } = await createDefaultNftInCollection({
-    client,
-    payer,
-    authority: nftUpdateAuthority,
-    owner: nftOwner,
-    standard: pNft
-      ? TokenStandard.ProgrammableNonFungible
-      : TokenStandard.NonFungible,
-  });
-
-  // Reset test timeout for long-running tests.
-  t.pass();
-
-  const { mint, token: ownerAta } = nft;
-
-  let config: PoolConfig;
-  let price: bigint;
-  let mmFees = 0n;
-
-  let startingPrice;
-  if (!poolConfig) {
-    switch (poolType) {
-      case PoolType.Trade:
-        config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-        // Sells on trade pools need to to have the price shifted down by 1 step.
-        if (action === TestAction.Sell) {
-          startingPrice = config.startingPrice - config.delta;
-        } else {
-          startingPrice = config.startingPrice;
-        }
-        mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
-        break;
-      case PoolType.Token:
-        config = tokenPoolConfig;
-        startingPrice = config.startingPrice;
-        break;
-      case PoolType.NFT:
-        config = nftPoolConfig;
-        startingPrice = config.startingPrice;
-        break;
-      default:
-        throw new Error('Invalid pool type');
-    }
-  } else {
-    config = poolConfig;
-    startingPrice = poolConfig.startingPrice;
-  }
-
-  const md = (await fetchMetadata(client.rpc, nft.metadata)).data;
-  const { sellerFeeBasisPoints } = md;
-
-  const royalties =
-    (startingPrice * BigInt(sellerFeeBasisPoints)) / BASIS_POINTS;
-
-  const depositAmount = dA ?? config.startingPrice * 10n;
-
-  // Check the token account has correct mint, amount and owner.
-  t.like(await fetchToken(client.rpc, ownerAta), <Account<Token>>{
-    address: ownerAta,
-    data: {
-      mint,
-      owner: nftOwner.address,
-      amount: 1n,
-    },
-  });
-
-  let sharedEscrow: Address | undefined;
-
-  if (useSharedEscrow) {
-    // Create a shared escrow account.
-    sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
-  }
-
-  let conditions: Condition[] = [];
-  let mintProof: Address | undefined;
-  let proof;
-
-  switch (whitelistMode) {
-    case Mode.FVC:
-      conditions = [{ mode: Mode.FVC, value: nftUpdateAuthority.address }];
-      break;
-    case Mode.VOC:
-      conditions = [{ mode: Mode.VOC, value: collection.mint }];
-      break;
-    case Mode.MerkleTree: {
-      // Setup a merkle tree with our mint as a leaf
-      const {
-        root,
-        proofs: [p],
-      } = await generateTreeOfSize(10, [mint]);
-      proof = p;
-      conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
-      break;
-    }
-    default:
-      throw new Error('Invalid whitelist mode');
-  }
-
-  // Create a whitelist and a funded pool.
-  const { whitelist, pool } = await createPoolAndWhitelist({
-    client,
-    payer: poolOwner,
-    owner: poolOwner,
-    makerBroker: useMakerBroker ? makerBroker.address : undefined,
-    cosigner: useCosigner ? cosigner : undefined,
-    sharedEscrow,
-    config,
-    depositAmount,
-    conditions,
-    funded: sharedEscrow ? false : fundPool, // Shared Escrow pools can't be funded directly.
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === poolType);
-  t.assert(
-    poolAccount.data.config.mmFeeBps ===
-      (poolType === PoolType.Trade ? config.mmFeeBps : null)
-  );
-
-  // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, pool);
-
-  switch (action) {
-    case TestAction.Buy: {
-      // Max price needs to account for royalties and mm fees.
-      price = startingPrice + royalties + mmFees;
-
-      if (whitelistMode === Mode.MerkleTree) {
-        // Create the mint proof for the whitelist.
-        const mp = await upsertMintProof({
-          client,
-          payer,
-          mint,
-          whitelist,
-          proof: proof!.proof,
-        });
-        mintProof = mp.mintProof;
-      }
-
-      // Deposit the NFT into the pool so it can be bought.
-      const depositNftIx = await getDepositNftInstructionAsync({
-        owner: nftOwner, // Same as poolOwner for Buy action
-        pool,
-        whitelist,
-        mint,
-        mintProof,
-        tokenStandard: pNft
-          ? TokenStandard.ProgrammableNonFungible
-          : TokenStandard.NonFungible,
-      });
-
-      await pipe(
-        await createDefaultTransaction(client, poolOwner),
-        (tx) =>
-          appendTransactionMessageInstruction(
-            getSetComputeUnitLimitInstruction({ units: 400_000 }),
-            tx
-          ),
-        (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
-        (tx) => signAndSendTransaction(client, tx)
-      );
-
-      await assertTokenNftOwnedBy({
-        t,
-        client,
-        mint,
-        owner: pool,
-      });
-
-      // Deposit Receipt should be created
-      await assertNftReceiptCreated({ t, client, pool, mint });
-
-      break;
-    }
-    case TestAction.Sell:
-      // Min price needs to account for royalties and mm fees.
-      price = startingPrice - royalties - mmFees;
-      break;
-    default:
-      throw new Error('Invalid action');
-  }
-
-  return {
-    client,
-    signers: testSigners,
-    nft,
-    testConfig: {
-      poolConfig: config,
-      depositAmount,
-      price,
-    },
-    whitelist,
-    pool,
-    feeVault,
-    sharedEscrow,
-  };
-}
-
-export async function setupT22Test(params: SetupTestParams): Promise<T22Test> {
-  const {
-    t,
-    poolType,
-    action,
-    depositAmount: dA,
-    useMakerBroker = true,
-    useSharedEscrow = false,
-    useCosigner = false,
-    compoundFees = false,
-    fundPool = true,
-  } = params;
-
-  const client = createDefaultSolanaClient();
-
-  const testSigners = await getTestSigners(client);
-
-  const { payer, poolOwner, nftUpdateAuthority, cosigner, makerBroker } =
-    testSigners;
-
-  let { nftOwner } = testSigners;
-
-  // When buying, we mint the NFT to the poolOwner which then deposits it into the
-  // pool so it can be purchased by the buyer.
-  if (action == TestAction.Buy) {
-    nftOwner = poolOwner;
-  }
-
-  const royaltyDestinationString = '_ro_' + nftUpdateAuthority.address;
-  const sellerFeeBasisPoints = 500n;
-
-  // Mint NFT
-  const t22Nft = await createT22NftWithRoyalties({
-    client,
-    payer: nftOwner,
-    owner: nftOwner.address,
-    mintAuthority: nftUpdateAuthority,
-    freezeAuthority: null,
-    decimals: 0,
-    data: {
-      name: 'Test Token',
-      symbol: 'TT',
-      uri: 'https://example.com',
-    },
-    royalties: {
-      key: royaltyDestinationString,
-      value: sellerFeeBasisPoints.toString(),
-    },
-  });
-
-  const { mint, ownerAta, extraAccountMetas } = t22Nft;
-
-  let config: PoolConfig;
-  let price: bigint;
-  let mmFees = 0n;
-  let startingPrice;
-
-  switch (poolType) {
-    case PoolType.Trade:
-      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-      // Sells on trade pools need to to have the price shifted down by 1 step.
-      if (action === TestAction.Sell) {
-        startingPrice = config.startingPrice - config.delta;
-      } else {
-        startingPrice = config.startingPrice;
-      }
-      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
-      break;
-    case PoolType.Token:
-      config = tokenPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    case PoolType.NFT:
-      config = nftPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    default:
-      throw new Error('Invalid pool type');
-  }
-
-  const royalties = (startingPrice * sellerFeeBasisPoints) / BASIS_POINTS;
-  const depositAmount = dA ?? startingPrice * 10n;
-
-  // Check the token account has correct mint, amount and owner.
-  t.like(await fetchToken(client.rpc, ownerAta), <Account<Token>>{
-    address: ownerAta,
-    data: {
-      mint,
-      owner: nftOwner.address,
-      amount: 1n,
-    },
-  });
-
-  let sharedEscrow: Address | undefined;
-
-  if (useSharedEscrow) {
-    // Create a shared escrow account.
-    sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
-  }
-
-  // Setup a merkle tree with our mint as a leaf
-  const {
-    root,
-    proofs: [p],
-  } = await generateTreeOfSize(10, [mint]);
-
-  // Create a whitelist and a funded pool.
-  const { whitelist, pool } = await createPoolAndWhitelist({
-    client,
-    payer: poolOwner,
-    owner: poolOwner,
-    makerBroker: useMakerBroker ? makerBroker.address : undefined,
-    cosigner: useCosigner ? cosigner : undefined,
-    sharedEscrow,
-    config,
-    depositAmount,
-    conditions: [{ mode: Mode.MerkleTree, value: intoAddress(root) }],
-    funded: sharedEscrow ? false : fundPool, // Shared Escrow pools can't be funded directly.
-  });
-
-  const poolAccount = await fetchPool(client.rpc, pool);
-
-  // Correct pool type.
-  t.assert(poolAccount.data.config.poolType === poolType);
-  t.assert(
-    poolAccount.data.config.mmFeeBps ===
-      (poolType === PoolType.Trade ? config.mmFeeBps : null)
-  );
-
-  // Derives fee vault from mint and airdrops keep-alive rent to it.
-  const feeVault = await getAndFundFeeVault(client, pool);
-
-  // Create the mint proof for the whitelist.
-  const { mintProof } = await upsertMintProof({
-    client,
-    payer,
-    mint,
-    whitelist,
-    proof: p.proof,
-  });
-
-  switch (action) {
-    case TestAction.Buy: {
-      // Max price needs to account for royalties and mm fees.
-      price = startingPrice + royalties + mmFees;
-
-      // Deposit the NFT into the pool so it can be bought.
-      const depositNftIx = await getDepositNftT22InstructionAsync({
-        owner: nftOwner, // Same as poolOwner for Buy action
-        pool,
-        whitelist,
-        mint,
-        mintProof,
-        tokenProgram: TOKEN22_PROGRAM_ID,
-        transferHookAccounts: extraAccountMetas.map((a) => a.address),
-      });
-
-      await pipe(
-        await createDefaultTransaction(client, poolOwner),
-        (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
-        (tx) => signAndSendTransaction(client, tx)
-      );
-
-      await assertTokenNftOwnedBy({
-        t,
-        client,
-        mint,
-        owner: pool,
-        tokenProgramAddress: TOKEN22_PROGRAM_ID,
-      });
-
-      // Deposit Receipt should be created
-      const [nftReceipt] = await findNftDepositReceiptPda({ mint, pool });
-      t.like(await fetchNftDepositReceipt(client.rpc, nftReceipt), <
-        Account<NftDepositReceipt, Address>
-      >{
-        address: nftReceipt,
-        data: {
-          mint,
-          pool,
-        },
-      });
-
-      break;
-    }
-    case TestAction.Sell:
-      // Min price needs to account for royalties and mm fees.
-      price = startingPrice - royalties - mmFees;
-      break;
-    default:
-      throw new Error('Invalid action');
-  }
-
-  return {
-    client,
-    signers: testSigners,
-    nft: { ...t22Nft, sellerFeeBasisPoints },
-    testConfig: {
-      poolConfig: config,
-      depositAmount,
-      price,
-    },
-    whitelist,
-    pool,
-    feeVault,
-    mintProof,
-    sharedEscrow,
-  };
 }
 
 export interface NftOwnedByPoolParams {

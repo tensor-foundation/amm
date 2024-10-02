@@ -13,20 +13,25 @@ import {
   type Address,
 } from '@solana/web3.js';
 import {
+  type ParsedBuyNftCoreInstruction,
   type ParsedBuyNftInstruction,
   type ParsedBuyNftT22Instruction,
   type ParsedCloseExpiredPoolInstruction,
   type ParsedClosePoolInstruction,
   type ParsedCreatePoolInstruction,
+  type ParsedDepositNftCoreInstruction,
   type ParsedDepositNftInstruction,
   type ParsedDepositNftT22Instruction,
   type ParsedDepositSolInstruction,
   type ParsedEditPoolInstruction,
+  type ParsedSellNftTokenPoolCoreInstruction,
   type ParsedSellNftTokenPoolInstruction,
   type ParsedSellNftTokenPoolT22Instruction,
+  type ParsedSellNftTradePoolCoreInstruction,
   type ParsedSellNftTradePoolInstruction,
   type ParsedSellNftTradePoolT22Instruction,
   type ParsedTammNoopInstruction,
+  type ParsedWithdrawNftCoreInstruction,
   type ParsedWithdrawNftInstruction,
   type ParsedWithdrawNftT22Instruction,
   type ParsedWithdrawSolInstruction,
@@ -36,6 +41,7 @@ export const TENSOR_AMM_PROGRAM_ADDRESS =
   'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
 
 export enum TensorAmmAccount {
+  AssetDepositReceipt,
   NftDepositReceipt,
   Pool,
 }
@@ -44,6 +50,17 @@ export function identifyTensorAmmAccount(
   account: { data: Uint8Array } | Uint8Array
 ): TensorAmmAccount {
   const data = account instanceof Uint8Array ? account : account.data;
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([147, 18, 99, 58, 249, 8, 196, 221])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmAccount.AssetDepositReceipt;
+  }
   if (
     containsBytes(
       data,
@@ -77,18 +94,23 @@ export enum TensorAmmInstruction {
   EditPool,
   ClosePool,
   CloseExpiredPool,
-  DepositNft,
-  WithdrawNft,
   DepositSol,
   WithdrawSol,
+  DepositNft,
+  WithdrawNft,
   BuyNft,
   SellNftTokenPool,
   SellNftTradePool,
-  BuyNftT22,
+  DepositNftCore,
+  WithdrawNftCore,
+  BuyNftCore,
+  SellNftTokenPoolCore,
+  SellNftTradePoolCore,
   DepositNftT22,
+  WithdrawNftT22,
+  BuyNftT22,
   SellNftTokenPoolT22,
   SellNftTradePoolT22,
-  WithdrawNftT22,
 }
 
 export function identifyTensorAmmInstruction(
@@ -155,28 +177,6 @@ export function identifyTensorAmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([93, 226, 132, 166, 141, 9, 48, 101])
-      ),
-      0
-    )
-  ) {
-    return TensorAmmInstruction.DepositNft;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([142, 181, 191, 149, 82, 175, 216, 100])
-      ),
-      0
-    )
-  ) {
-    return TensorAmmInstruction.WithdrawNft;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([108, 81, 78, 117, 125, 155, 56, 200])
       ),
       0
@@ -194,6 +194,28 @@ export function identifyTensorAmmInstruction(
     )
   ) {
     return TensorAmmInstruction.WithdrawSol;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([93, 226, 132, 166, 141, 9, 48, 101])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.DepositNft;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([142, 181, 191, 149, 82, 175, 216, 100])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.WithdrawNft;
   }
   if (
     containsBytes(
@@ -232,12 +254,56 @@ export function identifyTensorAmmInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([155, 219, 126, 245, 170, 199, 51, 79])
+        new Uint8Array([73, 21, 4, 64, 161, 214, 248, 77])
       ),
       0
     )
   ) {
-    return TensorAmmInstruction.BuyNftT22;
+    return TensorAmmInstruction.DepositNftCore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([112, 131, 239, 116, 187, 149, 114, 145])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.WithdrawNftCore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([163, 102, 58, 107, 184, 4, 169, 121])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.BuyNftCore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([137, 227, 197, 122, 245, 229, 56, 205])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.SellNftTokenPoolCore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([37, 205, 141, 53, 86, 245, 45, 78])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.SellNftTradePoolCore;
   }
   if (
     containsBytes(
@@ -249,6 +315,28 @@ export function identifyTensorAmmInstruction(
     )
   ) {
     return TensorAmmInstruction.DepositNftT22;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([112, 55, 80, 231, 181, 190, 92, 12])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.WithdrawNftT22;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([155, 219, 126, 245, 170, 199, 51, 79])
+      ),
+      0
+    )
+  ) {
+    return TensorAmmInstruction.BuyNftT22;
   }
   if (
     containsBytes(
@@ -271,17 +359,6 @@ export function identifyTensorAmmInstruction(
     )
   ) {
     return TensorAmmInstruction.SellNftTradePoolT22;
-  }
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([112, 55, 80, 231, 181, 190, 92, 12])
-      ),
-      0
-    )
-  ) {
-    return TensorAmmInstruction.WithdrawNftT22;
   }
   throw new Error(
     'The provided instruction could not be identified as a tensorAmm instruction.'
@@ -307,17 +384,17 @@ export type ParsedTensorAmmInstruction<
       instructionType: TensorAmmInstruction.CloseExpiredPool;
     } & ParsedCloseExpiredPoolInstruction<TProgram>)
   | ({
-      instructionType: TensorAmmInstruction.DepositNft;
-    } & ParsedDepositNftInstruction<TProgram>)
-  | ({
-      instructionType: TensorAmmInstruction.WithdrawNft;
-    } & ParsedWithdrawNftInstruction<TProgram>)
-  | ({
       instructionType: TensorAmmInstruction.DepositSol;
     } & ParsedDepositSolInstruction<TProgram>)
   | ({
       instructionType: TensorAmmInstruction.WithdrawSol;
     } & ParsedWithdrawSolInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.DepositNft;
+    } & ParsedDepositNftInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.WithdrawNft;
+    } & ParsedWithdrawNftInstruction<TProgram>)
   | ({
       instructionType: TensorAmmInstruction.BuyNft;
     } & ParsedBuyNftInstruction<TProgram>)
@@ -328,17 +405,32 @@ export type ParsedTensorAmmInstruction<
       instructionType: TensorAmmInstruction.SellNftTradePool;
     } & ParsedSellNftTradePoolInstruction<TProgram>)
   | ({
-      instructionType: TensorAmmInstruction.BuyNftT22;
-    } & ParsedBuyNftT22Instruction<TProgram>)
+      instructionType: TensorAmmInstruction.DepositNftCore;
+    } & ParsedDepositNftCoreInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.WithdrawNftCore;
+    } & ParsedWithdrawNftCoreInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.BuyNftCore;
+    } & ParsedBuyNftCoreInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.SellNftTokenPoolCore;
+    } & ParsedSellNftTokenPoolCoreInstruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.SellNftTradePoolCore;
+    } & ParsedSellNftTradePoolCoreInstruction<TProgram>)
   | ({
       instructionType: TensorAmmInstruction.DepositNftT22;
     } & ParsedDepositNftT22Instruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.WithdrawNftT22;
+    } & ParsedWithdrawNftT22Instruction<TProgram>)
+  | ({
+      instructionType: TensorAmmInstruction.BuyNftT22;
+    } & ParsedBuyNftT22Instruction<TProgram>)
   | ({
       instructionType: TensorAmmInstruction.SellNftTokenPoolT22;
     } & ParsedSellNftTokenPoolT22Instruction<TProgram>)
   | ({
       instructionType: TensorAmmInstruction.SellNftTradePoolT22;
-    } & ParsedSellNftTradePoolT22Instruction<TProgram>)
-  | ({
-      instructionType: TensorAmmInstruction.WithdrawNftT22;
-    } & ParsedWithdrawNftT22Instruction<TProgram>);
+    } & ParsedSellNftTradePoolT22Instruction<TProgram>);

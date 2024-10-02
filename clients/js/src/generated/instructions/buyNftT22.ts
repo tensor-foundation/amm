@@ -34,14 +34,12 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
-import {
-  resolveBuyerAta,
-  resolvePoolAta,
-  resolvePoolNftReceipt,
-} from '@tensor-foundation/resolvers';
+import { resolveBuyerAta, resolvePoolAta } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
+import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
+  expectAddress,
   expectSome,
   getAccountMetaFactory,
   type ResolvedAccount,
@@ -210,7 +208,7 @@ export type BuyNftT22AsyncInput<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
@@ -366,10 +364,10 @@ export async function getBuyNftT22InstructionAsync<
     };
   }
   if (!accounts.nftReceipt.value) {
-    accounts.nftReceipt = {
-      ...accounts.nftReceipt,
-      ...(await resolvePoolNftReceipt(resolverScope)),
-    };
+    accounts.nftReceipt.value = await findNftDepositReceiptPda({
+      mint: expectAddress(accounts.mint.value),
+      pool: expectAddress(accounts.pool.value),
+    });
   }
   if (!accounts.associatedTokenProgram.value) {
     accounts.associatedTokenProgram.value =
@@ -483,7 +481,7 @@ export type BuyNftT22Input<
   /**
    * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
    * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-   * Any active pool can be specified provided it is a Trade or NFT type.
+   * Any active pool can be specified provided if it is a Trade or NFT type.
    */
   pool: Address<TAccountPool>;
   /** The TA of the buyer, where the NFT will be transferred. */
@@ -716,7 +714,7 @@ export type ParsedBuyNftT22Instruction<
     /**
      * The Pool state account that holds the NFT to be purchased. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
-     * Any active pool can be specified provided it is a Trade or NFT type.
+     * Any active pool can be specified provided if it is a Trade or NFT type.
      */
 
     pool: TAccountMetas[4];

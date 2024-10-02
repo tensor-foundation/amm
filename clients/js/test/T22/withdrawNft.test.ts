@@ -9,9 +9,9 @@ import { getWithdrawNftT22InstructionAsync, PoolType } from '../../src';
 import {
   assertNftReceiptClosed,
   assertTokenNftOwnedBy,
-  setupT22Test,
   TestAction,
 } from '../_common';
+import { setupT22Test } from './_common';
 
 test('it can withdraw a T22 NFT from a Trade pool', async (t) => {
   const { client, signers, nft, pool } = await setupT22Test({

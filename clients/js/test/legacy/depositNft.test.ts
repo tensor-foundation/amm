@@ -29,9 +29,9 @@ import {
   findAtaPda,
   getTokenAmount,
   getTokenOwner,
-  setupLegacyTest,
   TestAction,
 } from '../_common.js';
+import { setupLegacyTest } from './_common.js';
 
 test('it can deposit a legacy Metaplex NFT into a Trade pool w/ FVC mode', async (t) => {
   await setupLegacyTest({
