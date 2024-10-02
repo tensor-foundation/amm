@@ -38,7 +38,7 @@ pub struct EditPool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner,
+        has_one = owner @ ErrorCode::BadOwner,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -76,6 +76,9 @@ impl<'info> EditPool<'info> {
                     throw_err!(ErrorCode::FeesTooHigh);
                 }
             }
+        }
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
         }
 
         //for exponential pool delta can't be above 99.99% and has to fit into a u16

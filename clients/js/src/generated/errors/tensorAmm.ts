@@ -112,6 +112,8 @@ export const TENSOR_AMM_ERROR__MINT_PROOF_NOT_SET = 0x2f12; // 12050
 export const TENSOR_AMM_ERROR__MISSING_MAKER_BROKER = 0x2f13; // 12051
 /** MissingCosigner: Missing cosigner account */
 export const TENSOR_AMM_ERROR__MISSING_COSIGNER = 0x2f14; // 12052
+/** WrongCosigner: Wrong cosigner account */
+export const TENSOR_AMM_ERROR__WRONG_COSIGNER = 0x2f15; // 12053
 
 export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__ARITHMETIC_ERROR
@@ -158,6 +160,7 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY
   | typeof TENSOR_AMM_ERROR__WHITELIST_NOT_VERIFIED
   | typeof TENSOR_AMM_ERROR__WRONG_AUTHORITY
+  | typeof TENSOR_AMM_ERROR__WRONG_COSIGNER
   | typeof TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS
   | typeof TENSOR_AMM_ERROR__WRONG_MAKER_BROKER
   | typeof TENSOR_AMM_ERROR__WRONG_MINT
@@ -215,6 +218,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY]: `Unsupported currency`,
     [TENSOR_AMM_ERROR__WHITELIST_NOT_VERIFIED]: `whitelist not verified -- currently only verified pools supported`,
     [TENSOR_AMM_ERROR__WRONG_AUTHORITY]: `wrong nft authority account provided`,
+    [TENSOR_AMM_ERROR__WRONG_COSIGNER]: `Wrong cosigner account`,
     [TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS]: `wrong frozen status`,
     [TENSOR_AMM_ERROR__WRONG_MAKER_BROKER]: `Wrong maker broker account`,
     [TENSOR_AMM_ERROR__WRONG_MINT]: `wrong mint passed for provided accounts`,
