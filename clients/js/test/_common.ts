@@ -97,14 +97,25 @@ export const ONE_SOL = 1_000_000_000n;
 export const POOL_SIZE = 447n;
 
 export const TAKER_FEE_BPS = 200n;
-export const BROKER_FEE_PCT = 80n;
+export const BROKER_FEE_PCT = 50n;
 export const BASIS_POINTS = 10_000n;
-
+export const HUNDRED_PERCENT = 100n;
+export const MAKER_BROKER_FEE_PCT = 80n;
 export const TRANSACTION_SIGNATURE_FEE = 5_000n;
 
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
+
+export const TENSOR_ERROR__BAD_ROYALTIES_PCT = 15001;
+export const TENSOR_ERROR__INSUFFICIENT_BALANCE = 15002;
+export const TENSOR_ERROR__CREATOR_MISMATCH = 15003;
+export const TENSOR_ERROR__FAILED_LEAF_VERIFICATION = 15004;
+export const TENSOR_ERROR__ARITHMETIC_ERROR = 15005;
+export const TENSOR_ERROR__BAD_METADATA = 15006;
+export const TENSOR_ERROR__BAD_RULE_SET = 15007;
+export const TENSOR_ERROR__INVALID_CORE_ASSET = 15008;
+export const TENSOR_ERROR__INVALID_FEE_ACCOUNT = 15009;
 
 export interface TestSigners {
   nftOwner: KeyPairSigner;
@@ -449,7 +460,9 @@ type CreatePoolAndWhitelistParams = Omit<
 type CreatePoolAndWhitelistThrowsParams = Omit<
   CreatePoolThrowsParams,
   'whitelist' | 'owner'
-> & { owner?: KeyPairSigner };
+> & {
+  owner?: KeyPairSigner;
+};
 
 export async function createPoolAndWhitelist({
   client,

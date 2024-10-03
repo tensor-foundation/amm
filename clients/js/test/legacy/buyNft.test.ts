@@ -1,7 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
-  Account,
-  Address,
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   generateKeyPairSigner,
@@ -21,7 +19,6 @@ import {
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
@@ -38,8 +35,8 @@ import {
 import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
   BASIS_POINTS,
+  TENSOR_ERROR__BAD_ROYALTIES_PCT,
   TestAction,
-  assertNftReceiptClosed,
   assertTammNoop,
   assertTokenNftOwnedBy,
   createPool,
@@ -52,75 +49,158 @@ import {
   nftPoolConfig,
   tradePoolConfig,
 } from '../_common.js';
-import { setupLegacyTest } from './_common.js';
+import { setupLegacyTest, testBuyNft } from './_common.js';
 
-test('it can buy an NFT from a Trade pool', async (t) => {
-  const { client, signers, nft, testConfig, pool, feeVault } =
-    await setupLegacyTest({
+// TODO: add tests for:
+// - insufficient royalties for rent exempt gets skipped on creators w/ too low balance
+// - buyNft works with 5 creators and large whitelist proofs
+// - buyNft at higher max price works
+// - buyNft at lower max price fails
+// - buyNft non-whitelisted NFT fails
+//   All:
+//    1) non-WL mint + bad ATA
+//    2) non-WL mint + good ATA
+//    3) WL mint + bad ATA
+//    should fail.
+// - buyNft from wrong pool fails
+// - buyNft alternate deposits and buys
+// - buyNft buy a ton with default exponential curve + tolerance
+// buy pNft from nft pool (no ruleset)
+// buy pNft from trade pool (1 ruleset) (should NOT require LUT)
+// MAX ACC CHECK: buy pNft from trade pool (1 ruleset) (should require LUT) (margin)
+
+test('buy from NFT pool', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+  });
+});
+
+test('buy from NFT pool, pay brokers', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: true,
+  });
+});
+
+test('buy from NFT pool, pay optional royalties', async (t) => {
+  t.timeout(20_000);
+  for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
+    const legacyTest = await setupLegacyTest({
       t,
-      poolType: PoolType.Trade,
+      poolType: PoolType.NFT,
       action: TestAction.Buy,
-      useMakerBroker: false,
+      useMakerBroker: true,
       useSharedEscrow: false,
       fundPool: false,
     });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
-  const { poolConfig } = testConfig;
-  const { mint } = nft;
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: true,
+      optionalRoyaltyPct: royaltyPct,
+    });
 
-  // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
-  const mmFee = poolConfig.startingPrice * BigInt(poolConfig.mmFeeBps ?? 0);
-  const royalties = (poolConfig.startingPrice * 500n) / 10000n;
-  // It should work with exact amount, but users might also pad this to allow for slippage.
-  const maxAmount = poolConfig.startingPrice + mmFee + royalties;
+    t.pass(); // reset timeout
+  }
 
-  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-
-  // Buy NFT from pool
-  const buyNftIx = await getBuyNftInstructionAsync({
-    owner: poolOwner.address,
-    buyer,
-    pool,
-    mint,
-    maxAmount,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  // NFT is now owned by the buyer.
-  await assertTokenNftOwnedBy({
+  // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.
+  const legacyTest = await setupLegacyTest({
     t,
-    client,
-    mint,
-    owner: buyer.address,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
   });
 
-  // Pool stats are updated
-  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
-    address: pool,
-    data: {
-      stats: {
-        takerBuyCount: 1,
-        takerSellCount: 0,
-      },
-    },
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: true,
+    optionalRoyaltyPct: 101,
+    expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
+  });
+});
+
+test('buy from Trade pool', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
   });
 
-  // Fee vault balance increases.
-  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-  t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+  });
+});
 
-  // Deposit Receipt is closed
-  await assertNftReceiptClosed({ t, client, pool, mint });
+test('buy from Trade pool, pay brokers', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: true,
+  });
+});
+
+test('buy from Trade pool, pay optional royalties', async (t) => {
+  t.timeout(20_000);
+  for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: true,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: true,
+      optionalRoyaltyPct: royaltyPct,
+    });
+
+    t.pass(); // reset timeout
+  }
+
+  // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: true,
+    optionalRoyaltyPct: 101,
+    expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
+  });
 });
 
 test('buying NFT from a trade pool increases currency amount', async (t) => {
@@ -848,7 +928,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 });
 
-test('pool with makerBroker set requires passing the account in; fails w/ incorrect makerBroker', async (t) => {
+test('pool with makerBroker set requires passing the account in; fails w/ wrong makerBroker', async (t) => {
   const { client, signers, nft, testConfig, pool } = await setupLegacyTest({
     t,
     poolType: PoolType.Trade,

@@ -7,6 +7,7 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  Creator,
   Nft,
   TokenStandard,
   createDefaultNftInCollection,
@@ -16,27 +17,37 @@ import {
   Client,
   createDefaultSolanaClient,
   createDefaultTransaction,
+  getBalance,
   ONE_SOL,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Condition, Mode, intoAddress } from '@tensor-foundation/whitelist';
 import {
+  Pool,
   PoolConfig,
   PoolType,
+  fetchMaybePool,
   fetchPool,
+  getBuyNftInstructionAsync,
   getDepositNftInstructionAsync,
 } from '../../src/index.js';
 import { generateTreeOfSize } from '../_merkle.js';
 import {
+  assertNftReceiptClosed,
   assertNftReceiptCreated,
   assertTokenNftOwnedBy,
   BASIS_POINTS,
+  BROKER_FEE_PCT,
   createAndFundEscrow,
   createPoolAndWhitelist,
+  expectCustomError,
   getAndFundFeeVault,
   getTestSigners,
+  HUNDRED_PERCENT,
+  MAKER_BROKER_FEE_PCT,
   nftPoolConfig,
   SetupTestParams,
+  TAKER_FEE_BPS,
   TestAction,
   TestConfig,
   TestSigners,
@@ -44,6 +55,7 @@ import {
   tradePoolConfig,
   upsertMintProof,
 } from '../_common.js';
+import { ExecutionContext } from 'ava';
 
 export interface LegacyTest {
   client: Client;
@@ -103,6 +115,13 @@ export async function setupLegacyTest(
     standard: pNft
       ? TokenStandard.ProgrammableNonFungible
       : TokenStandard.NonFungible,
+    creators: [
+      {
+        address: nftUpdateAuthority.address,
+        share: 100,
+        verified: true,
+      },
+    ],
   });
 
   // Reset test timeout for long-running tests.
@@ -296,4 +315,151 @@ export async function setupLegacyTest(
     sharedEscrow,
     mintProof,
   };
+}
+
+export interface BuyTests {
+  brokerPayments: boolean;
+  optionalRoyaltyPct?: number;
+  creators?: Creator[];
+  expectError?: number;
+}
+
+export async function testBuyNft(
+  t: ExecutionContext,
+  params: LegacyTest,
+  tests: BuyTests
+) {
+  const { client, signers, nft, testConfig, pool } = params;
+
+  const { buyer, poolOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
+  const { price: maxAmount, sellerFeeBasisPoints } = testConfig;
+  const { mint } = nft;
+
+  const feeVaultStartingBalance = await getBalance(client, params.feeVault);
+  const makerBrokerStartingBalance = await getBalance(
+    client,
+    makerBroker.address
+  );
+  const takerBrokerStartingBalance = await getBalance(
+    client,
+    takerBroker.address
+  );
+  const creatorStartingBalance = await getBalance(
+    client,
+    nftUpdateAuthority.address
+  );
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  const poolType = poolAccount.data.config.poolType;
+  const poolNftsHeld = poolAccount.data.nftsHeld;
+
+  const buyNftIx = await getBuyNftInstructionAsync({
+    owner: poolOwner.address,
+    buyer,
+    pool,
+    mint,
+    maxAmount,
+    makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
+    takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
+    optionalRoyaltyPct: tests.optionalRoyaltyPct,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  if (tests.expectError) {
+    const promise = pipe(
+      await createDefaultTransaction(client, buyer),
+      (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+
+    await expectCustomError(t, promise, tests.expectError);
+    return;
+  }
+
+  await pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the buyer.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: buyer.address,
+  });
+
+  if (poolType === PoolType.NFT) {
+    if (poolNftsHeld === 1) {
+      // Pool is now closed as there are no more NFTs left to buy.
+      const maybePool = await fetchMaybePool(client.rpc, pool);
+      t.assert(maybePool.exists === false);
+    }
+  }
+
+  if (poolType === PoolType.Trade) {
+    // Pool stats are updated
+    t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
+      address: pool,
+      data: {
+        stats: {
+          takerBuyCount: 1,
+          takerSellCount: 0,
+        },
+      },
+    });
+
+    // Deposit Receipt is closed
+    await assertNftReceiptClosed({ t, client, pool, mint });
+  }
+
+  const startingPrice = poolAccount.data.config.startingPrice;
+
+  const takerFee = (TAKER_FEE_BPS * startingPrice) / BASIS_POINTS;
+  const brokersFee = (BROKER_FEE_PCT * takerFee) / HUNDRED_PERCENT;
+  const makerBrokerFee = (brokersFee * MAKER_BROKER_FEE_PCT) / HUNDRED_PERCENT;
+  const takerBrokerFee = brokersFee - makerBrokerFee;
+  const royaltyFee = (sellerFeeBasisPoints * startingPrice) / BASIS_POINTS;
+  const appliedRoyaltyFee =
+    (royaltyFee * BigInt(tests.optionalRoyaltyPct ?? 0)) / HUNDRED_PERCENT;
+
+  if (tests.brokerPayments) {
+    const expectedMakerBrokerBalance =
+      makerBrokerStartingBalance + makerBrokerFee;
+    const expectedTakerBrokerBalance =
+      takerBrokerStartingBalance + takerBrokerFee;
+
+    const makerBrokerEndingBalance = await getBalance(
+      client,
+      makerBroker.address
+    );
+    const takerBrokerEndingBalance = await getBalance(
+      client,
+      takerBroker.address
+    );
+
+    t.assert(makerBrokerEndingBalance === expectedMakerBrokerBalance);
+    t.assert(takerBrokerEndingBalance === expectedTakerBrokerBalance);
+  }
+
+  // Always check creator balance
+  const expectedCreatorBalance = creatorStartingBalance + appliedRoyaltyFee;
+  const creatorEndingBalance = await getBalance(
+    client,
+    nftUpdateAuthority.address
+  );
+  t.assert(creatorEndingBalance === expectedCreatorBalance);
+
+  // Always check fee vault balance
+  // Fee vault gets fee split of taker fee + brokers fee if brokers are not passed in.
+  const expectedFeeVaultBalance =
+    feeVaultStartingBalance +
+    takerFee -
+    (tests.brokerPayments ? brokersFee : 0n);
+  const feeVaultEndingBalance = await getBalance(client, params.feeVault);
+
+  t.assert(feeVaultEndingBalance === expectedFeeVaultBalance);
 }
