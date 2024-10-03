@@ -30,8 +30,6 @@ import {
   PoolConfig,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
@@ -880,11 +878,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(
-    t,
-    promiseNoCosigner,
-    TENSOR_AMM_ERROR__MISSING_COSIGNER
-  );
+  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner = await getSellNftTradePoolInstructionAsync({
@@ -1249,7 +1243,7 @@ test('trade pool with makerBroker set requires passing the account in & fails w/
   );
 
   // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
@@ -1382,7 +1376,7 @@ test('token pool with makerBroker set requires passing the account in & fails w/
   );
 
   // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,

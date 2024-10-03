@@ -24,9 +24,9 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_MINT,
   fetchMaybePool,
   fetchPool,
   findNftDepositReceiptPda,
@@ -37,7 +37,6 @@ import {
 } from '../../src/index.js';
 import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
-  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   BASIS_POINTS,
   TestAction,
   assertNftReceiptClosed,
@@ -543,11 +542,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(
-    t,
-    promiseNoCosigner,
-    TENSOR_AMM_ERROR__MISSING_COSIGNER
-  );
+  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
 
   // Buy NFT from pool with fakeCosigner
   const buyNftIxIncorrectCosigner = await getBuyNftInstructionAsync({
@@ -780,7 +775,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
       appendTransactionMessageInstruction(buyNftIxWrongPoolNftReceipt, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseWrongPool, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+  await expectCustomError(t, promiseWrongPool, TENSOR_AMM_ERROR__WRONG_MINT);
 });
 
 test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool', async (t) => {

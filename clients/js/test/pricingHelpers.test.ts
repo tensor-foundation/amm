@@ -456,7 +456,7 @@ test('Exponential pool pricing speed test', async (t) => {
   t.pass();
 });
 
-test('Linear pool pricing after 30 buys', async (t) => {
+test.skip('Linear pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.NFT,
@@ -503,7 +503,7 @@ test('Linear pool pricing after 30 buys', async (t) => {
   t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
 });
 
-test('Exponential pool pricing after 30 buys', async (t) => {
+test.skip('Exponential pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Trade,

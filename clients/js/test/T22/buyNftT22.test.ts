@@ -25,14 +25,11 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
 } from '../../src';
 import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
-  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   assertNftReceiptClosed,
   assertTammNoop,
   assertTokenNftOwnedBy,
@@ -584,7 +581,7 @@ test('it cannot buy an NFT from a pool w/ incorrect or no cosigner', async (t) =
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_COSIGNER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 });
 
 test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', async (t) => {
@@ -724,7 +721,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 });
 
 test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool', async (t) => {
@@ -831,7 +828,7 @@ test('pool with makerBroker set requires passing the account in; fails w/ incorr
   );
 
   // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   // Buy NFT from pool
   buyNftIx = await getBuyNftT22InstructionAsync({

@@ -127,8 +127,6 @@ pub struct SellNftTradePoolT22<'info> {
         ],
         bump,
         space = DEPOSIT_RECEIPT_SIZE,
-        has_one = mint @ ErrorCode::WrongMint,
-        has_one = pool @ ErrorCode::WrongPool,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

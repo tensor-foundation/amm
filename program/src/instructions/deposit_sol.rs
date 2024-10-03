@@ -53,7 +53,7 @@ impl<'info> Validate<'info> for DepositSol<'info> {
             throw_err!(ErrorCode::PoolOnSharedEscrow);
         }
         match self.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
+            PoolType::Token | PoolType::Trade => (),
             _ => {
                 throw_err!(ErrorCode::WrongPoolType);
             }
