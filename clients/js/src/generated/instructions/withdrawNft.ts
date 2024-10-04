@@ -244,7 +244,7 @@ export type WithdrawNftAsyncInput<
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool to deposit the NFT into. */
+  /** The pool the asset is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -563,7 +563,7 @@ export type WithdrawNftInput<
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool to deposit the NFT into. */
+  /** The pool the asset is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -823,7 +823,7 @@ export type ParsedWithdrawNftInstruction<
     poolTokenRecord?: TAccountMetas[7] | undefined;
     /** The owner of the pool and the NFT. */
     owner: TAccountMetas[8];
-    /** The pool to deposit the NFT into. */
+    /** The pool the asset is being transferred to/from. */
     pool: TAccountMetas[9];
     /**
      * The whitelist that gatekeeps which NFTs can be deposited into the pool.

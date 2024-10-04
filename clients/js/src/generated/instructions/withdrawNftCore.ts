@@ -140,7 +140,7 @@ export type WithdrawNftCoreAsyncInput<
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool to deposit the NFT into. */
+  /** The pool the asset is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -279,7 +279,7 @@ export type WithdrawNftCoreInput<
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool to deposit the NFT into. */
+  /** The pool the asset is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -405,7 +405,7 @@ export type ParsedWithdrawNftCoreInstruction<
     mplCoreProgram: TAccountMetas[2];
     /** The owner of the pool and the NFT. */
     owner: TAccountMetas[3];
-    /** The pool to deposit the NFT into. */
+    /** The pool the asset is being transferred to/from. */
     pool: TAccountMetas[4];
     /**
      * The whitelist that gatekeeps which NFTs can be deposited into the pool.

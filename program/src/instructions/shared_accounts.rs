@@ -1,10 +1,4 @@
-use std::ops::{Deref, DerefMut};
-
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
-};
 use program::AmmProgram;
 use tensor_toolbox::{escrow, shard_num};
 use whitelist_program::WhitelistV2;
@@ -13,15 +7,18 @@ use crate::{error::ErrorCode, *};
 
 use super::constants::TFEE_PROGRAM_ID;
 
-/* Base shared account structs */
+/* AMM Protocol shared account structs*/
 
+/// Shared accounts for transfer instructions: deposit & withdraw
+/// Mint and token accounts are not included here as the AMM program supports multiple types of
+/// NFTs, not all of which are SPL token based.
 #[derive(Accounts)]
 pub struct TransferShared<'info> {
     /// The owner of the pool and the NFT.
     #[account(mut)]
     pub owner: Signer<'info>,
 
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     #[account(
         mut,
         seeds = [
@@ -31,7 +28,7 @@ pub struct TransferShared<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner @ ErrorCode::BadOwner,
-        // can only deposit to NFT/Trade pool
+        // can only trasnfer to/from NFT & Trade pools
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
@@ -147,69 +144,6 @@ pub struct TradeShared<'info> {
     pub escrow_program: Option<UncheckedAccount<'info>>,
 }
 
-#[derive(Accounts)]
-pub struct TokenTradeShared<'info> {
-    pub trade: TradeShared<'info>,
-
-    /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The token account of the NFT for the seller's wallet.
-    #[account(
-        mut,
-        token::mint = mint,
-        token::authority = trade.taker,
-        token::token_program = token_program,
-    )]
-    pub taker_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The TA of the owner, where the NFT will be transferred to as a result of this sale.
-    #[account(
-        init_if_needed,
-        payer = trade.taker,
-        associated_token::mint = mint,
-        associated_token::authority = trade.owner,
-        associated_token::token_program = token_program,
-    )]
-    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The TA of the pool, where the NFT token is temporarily escrowed as a result of this sale.
-    #[account(
-        init_if_needed,
-        payer = trade.taker,
-        associated_token::mint = mint,
-        associated_token::authority = trade.pool,
-        associated_token::token_program = token_program,
-    )]
-    pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// Either the legacy token program or token-2022.
-    pub token_program: Interface<'info, TokenInterface>,
-    /// The SPL associated token program.
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    /// The Solana system program.
-    pub system_program: Program<'info, System>,
-}
-
-impl<'info> Deref for TokenTradeShared<'info> {
-    type Target = TradeShared<'info>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.trade
-    }
-}
-
-impl<'info> DerefMut for TokenTradeShared<'info> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.trade
-    }
-}
-
 /* Shared account structs for different standards */
 
 /// Shared accounts for interacting with Metaplex legacy and pNFTs.
@@ -255,6 +189,7 @@ pub struct MplxShared<'info> {
     pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 }
 
+/// Additional accounts for Metaplex legacy & pNFT trade instructions
 #[derive(Accounts)]
 pub struct MplxTradeShared<'info> {
     /// The Token Metadata source token record account of the NFT.
@@ -268,6 +203,7 @@ pub struct MplxTradeShared<'info> {
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 }
 
+/// Additional accounts for Metaplex legacy & pNFT transfer instructions
 #[derive(Accounts)]
 pub struct MplxTransferShared<'info> {
     /// The Token Metadata source token record account of the NFT.
@@ -281,25 +217,7 @@ pub struct MplxTransferShared<'info> {
     pub pool_token_record: Option<UncheckedAccount<'info>>,
 }
 
-#[derive(Accounts)]
-pub struct T22Shared<'info> {
-    pub trade: TokenTradeShared<'info>,
-}
-
-impl<'info> Deref for T22Shared<'info> {
-    type Target = TokenTradeShared<'info>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.trade
-    }
-}
-
-impl<'info> DerefMut for T22Shared<'info> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.trade
-    }
-}
-
+/// Shared accounts for interacting with Metaplex core assets
 #[derive(Accounts)]
 pub struct MplCoreShared<'info> {
     /// The MPL core asset account.

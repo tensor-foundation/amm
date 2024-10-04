@@ -36,12 +36,6 @@ impl<'info> Deref for BuyNftCore<'info> {
     }
 }
 
-impl<'info> DerefMut for BuyNftCore<'info> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.core
-    }
-}
-
 impl<'info> Validate<'info> for BuyNftCore<'info> {
     fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner account must be passed in.

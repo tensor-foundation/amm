@@ -1,7 +1,5 @@
 //! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 
-use std::ops::Deref;
-
 use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction},
@@ -86,14 +84,6 @@ pub struct BuyNft<'info> {
     //
     // remaining accounts:
     // optional 0 to N creator accounts
-}
-
-impl<'info> Deref for BuyNft<'info> {
-    type Target = TradeShared<'info>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.trade
-    }
 }
 
 impl<'info> BuyNft<'info> {

@@ -440,7 +440,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool to deposit the NFT into."
+                "The pool the asset is being transferred to/from."
               ]
             },
             {
@@ -636,7 +636,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool to deposit the NFT into."
+                "The pool the asset is being transferred to/from."
               ]
             },
             {
@@ -1639,7 +1639,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool to deposit the NFT into."
+                "The pool the asset is being transferred to/from."
               ]
             },
             {
@@ -1732,7 +1732,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool to deposit the NFT into."
+                "The pool the asset is being transferred to/from."
               ]
             },
             {

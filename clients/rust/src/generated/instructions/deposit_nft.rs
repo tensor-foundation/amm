@@ -29,7 +29,7 @@ pub struct DepositNft {
     pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The owner of the pool and the NFT.
     pub owner: solana_program::pubkey::Pubkey,
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     pub pool: solana_program::pubkey::Pubkey,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     /// Must match the whitelist stored in the pool state.
@@ -357,7 +357,7 @@ impl DepositNftBuilder {
         self.owner = Some(owner);
         self
     }
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
@@ -508,7 +508,7 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     /// Must match the whitelist stored in the pool state.
@@ -555,7 +555,7 @@ pub struct DepositNftCpi<'a, 'b> {
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
     /// Must match the whitelist stored in the pool state.
@@ -974,7 +974,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self.instruction.owner = Some(owner);
         self
     }
-    /// The pool to deposit the NFT into.
+    /// The pool the asset is being transferred to/from.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);

@@ -1,5 +1,4 @@
 //! Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
