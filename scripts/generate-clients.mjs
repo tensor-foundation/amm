@@ -263,6 +263,31 @@ kinobi.update(
       })
     },
     {
+      account: "sourceTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveSourceAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("source"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+
+    {
+      account: "destinationTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveDestinationAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("destination"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+    {
       account: "ownerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveOwnerAta", {
@@ -299,6 +324,17 @@ kinobi.update(
       })
     },
     {
+      account: "takerTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveTakerAta", {
+        dependsOn: [
+          k.accountValueNode("taker"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+    {
       account: "poolTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolvePoolAta", {
@@ -309,6 +345,34 @@ kinobi.update(
           k.accountValueNode("tokenProgram")
         ]
       })
+    },
+    {
+      account: "sourceTokenRecord ",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveSourceTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("sourceTa")
+          ]
+        }
+      )
+    },
+    {
+      account: "destinationTokenRecord",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveDestinationTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("destinationTa")
+          ]
+        }
+      )
     },
     {
       account: "ownerTokenRecord",
@@ -343,6 +407,16 @@ kinobi.update(
             k.accountValueNode("mint"),
             k.accountValueNode("sellerTa")
           ]
+        }
+      )
+    },
+    {
+      account: "takerTokenRecord",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveTakerTokenRecordFromTokenStandard",
+        {
+          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("takerTa")]
         }
       )
     },
@@ -440,10 +514,16 @@ kinobi.accept(
       "resolveOwnerAta",
       "resolveBuyerAta",
       "resolveSellerAta",
+      "resolveTakerAta",
       "resolvePoolAta",
+      "resolveSourceAta",
+      "resolveDestinationAta",
+      "resolveSourceTokenRecordFromTokenStandard",
+      "resolveDestinationTokenRecordFromTokenStandard",
       "resolveOwnerTokenRecordFromTokenStandard",
       "resolveBuyerTokenRecordFromTokenStandard",
       "resolveSellerTokenRecordFromTokenStandard",
+      "resolveTakerTokenRecordFromTokenStandard",
       "resolvePoolTokenRecordFromTokenStandard",
       "resolvePoolNftReceipt",
       "resolveMetadata",

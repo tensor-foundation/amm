@@ -33,6 +33,11 @@ export default function visitor(options) {
           ]
         },
         depositNft: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -44,6 +49,11 @@ export default function visitor(options) {
           }
         },
         sellNftTokenPool: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -65,6 +75,11 @@ export default function visitor(options) {
           ]
         },
         sellNftTradePool: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),

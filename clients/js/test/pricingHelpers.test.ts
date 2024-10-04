@@ -127,7 +127,7 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   // Then we expect the sell ix to fail due to not enough funds
   let sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint: nft.mint,
     minPrice: BigInt(theoreticalBidPrice),
@@ -176,7 +176,7 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
   // And then we expect the transaction to succeed
   sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint: nft.mint,
     minPrice: BigInt(theoreticalBidPrice),
@@ -793,7 +793,7 @@ async function buyNftsFromPool(
 
     const buyNftIx = await getBuyNftInstructionAsync({
       owner: poolOwner.address,
-      buyer: buyer,
+      taker: buyer,
       pool,
       mint: nft.mint,
       maxAmount: BigInt(currentTakerPrice),
@@ -859,7 +859,7 @@ async function sellNftsIntoPool(
       poolType === PoolType.Trade
         ? await getSellNftTradePoolInstructionAsync({
             owner: poolOwner.address,
-            seller: nftOwner,
+            taker: nftOwner,
             pool,
             mint: nft.mint,
             minPrice: BigInt(calculatedTakerPrice),
@@ -868,7 +868,7 @@ async function sellNftsIntoPool(
           })
         : await getSellNftTokenPoolInstructionAsync({
             owner: poolOwner.address,
-            seller: nftOwner,
+            taker: nftOwner,
             pool,
             mint: nft.mint,
             minPrice: BigInt(calculatedTakerPrice),

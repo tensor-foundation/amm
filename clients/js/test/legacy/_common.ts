@@ -356,7 +356,7 @@ export async function testBuyNft(
 
   const buyNftIx = await getBuyNftInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     mint,
     maxAmount,

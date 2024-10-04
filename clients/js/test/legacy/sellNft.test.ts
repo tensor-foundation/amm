@@ -115,7 +115,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     mint,
@@ -255,7 +255,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     mint,
@@ -387,7 +387,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     mint,
@@ -519,7 +519,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     rentPayer: payer.address, // rent payer
     pool,
     whitelist,
@@ -622,7 +622,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     mint,
@@ -700,7 +700,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     mint,
@@ -780,7 +780,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     whitelist: whitelist,
@@ -865,7 +865,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   // Sell NFT into pool without specififying cosigner
   const sellNftIxNoCosigner = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     whitelist,
@@ -883,7 +883,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     whitelist,
@@ -965,7 +965,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   // Sell NFT into pool w/ specifying pool's whitelist & non-matching mint
   const sellNftIxPoolWL = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     whitelist: poolWhitelist,
@@ -985,7 +985,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     whitelist: mintWhitelist,
@@ -1081,7 +1081,7 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     minPrice,
@@ -1155,7 +1155,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     mint,
@@ -1227,7 +1227,7 @@ test('trade pool with makerBroker set requires passing the account in & fails w/
 
   let sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     minPrice,
@@ -1247,7 +1247,7 @@ test('trade pool with makerBroker set requires passing the account in & fails w/
 
   sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     minPrice,
@@ -1284,7 +1284,7 @@ test('it can sell a NFT into a token pool w/ Merkle root whitelist', async (t) =
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     mintProof,
@@ -1322,7 +1322,7 @@ test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) =
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     mintProof,
@@ -1360,7 +1360,7 @@ test('token pool with makerBroker set requires passing the account in & fails w/
 
   let sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     minPrice,
@@ -1380,7 +1380,7 @@ test('token pool with makerBroker set requires passing the account in & fails w/
 
   sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     mint,
     minPrice,

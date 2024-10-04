@@ -10,28 +10,32 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct BuyNftCore {
-    /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// escrowed NFT. In this transaction they are the seller, though the transfer
-    /// of the NFT is handled by the pool.
+    /// The MPL core asset account.
+    pub asset: solana_program::pubkey::Pubkey,
+
+    pub collection: Option<solana_program::pubkey::Pubkey>,
+    /// The MPL Core program.
+    pub mpl_core_program: solana_program::pubkey::Pubkey,
+    /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: solana_program::pubkey::Pubkey,
-    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
-    pub buyer: solana_program::pubkey::Pubkey,
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    pub taker: solana_program::pubkey::Pubkey,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
     pub rent_payer: solana_program::pubkey::Pubkey,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: solana_program::pubkey::Pubkey,
-    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided if it is a Trade or NFT type.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     pub pool: solana_program::pubkey::Pubkey,
-    /// The MPL core asset account.
-    pub asset: solana_program::pubkey::Pubkey,
-
-    pub collection: Option<solana_program::pubkey::Pubkey>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: solana_program::pubkey::Pubkey,
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
+    pub whitelist: Option<solana_program::pubkey::Pubkey>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<solana_program::pubkey::Pubkey>,
+    /// The shared escrow account for pools that have liquidity in a shared account.
     pub shared_escrow: Option<solana_program::pubkey::Pubkey>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<solana_program::pubkey::Pubkey>,
@@ -41,8 +45,10 @@ pub struct BuyNftCore {
     pub cosigner: Option<solana_program::pubkey::Pubkey>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: solana_program::pubkey::Pubkey,
-    /// The MPL Core program.
-    pub mpl_core_program: solana_program::pubkey::Pubkey,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<solana_program::pubkey::Pubkey>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: solana_program::pubkey::Pubkey,
     /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -60,24 +66,7 @@ impl BuyNftCore {
         args: BuyNftCoreInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.owner, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.buyer, true,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.rent_payer,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.fee_vault,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool, false,
-        ));
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.asset, false,
         ));
@@ -91,10 +80,47 @@ impl BuyNftCore {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_receipt,
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mpl_core_program,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.owner, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.taker, true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.rent_payer,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.fee_vault,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool, false,
+        ));
+        if let Some(whitelist) = self.whitelist {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                whitelist, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                mint_proof, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         if let Some(shared_escrow) = self.shared_escrow {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 shared_escrow,
@@ -142,8 +168,19 @@ impl BuyNftCore {
             self.amm_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mpl_core_program,
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                escrow_program,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.nft_receipt,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -192,37 +229,43 @@ pub struct BuyNftCoreInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` owner
-///   1. `[writable, signer]` buyer
-///   2. `[writable]` rent_payer
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[writable]` asset
-///   6. `[optional]` collection
-///   7. `[writable]` nft_receipt
-///   8. `[writable, optional]` shared_escrow
-///   9. `[writable, optional]` maker_broker
-///   10. `[writable, optional]` taker_broker
-///   11. `[signer, optional]` cosigner
-///   12. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
-///   13. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
-///   14. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   0. `[writable]` asset
+///   1. `[optional]` collection
+///   2. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
+///   3. `[writable]` owner
+///   4. `[writable, signer]` taker
+///   5. `[writable]` rent_payer
+///   6. `[writable]` fee_vault
+///   7. `[writable]` pool
+///   8. `[optional]` whitelist
+///   9. `[optional]` mint_proof
+///   10. `[writable, optional]` shared_escrow
+///   11. `[writable, optional]` maker_broker
+///   12. `[writable, optional]` taker_broker
+///   13. `[signer, optional]` cosigner
+///   14. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
+///   15. `[optional]` escrow_program
+///   16. `[writable]` nft_receipt
+///   17. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct BuyNftCoreBuilder {
+    asset: Option<solana_program::pubkey::Pubkey>,
+    collection: Option<solana_program::pubkey::Pubkey>,
+    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
-    buyer: Option<solana_program::pubkey::Pubkey>,
+    taker: Option<solana_program::pubkey::Pubkey>,
     rent_payer: Option<solana_program::pubkey::Pubkey>,
     fee_vault: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
-    asset: Option<solana_program::pubkey::Pubkey>,
-    collection: Option<solana_program::pubkey::Pubkey>,
-    nft_receipt: Option<solana_program::pubkey::Pubkey>,
+    whitelist: Option<solana_program::pubkey::Pubkey>,
+    mint_proof: Option<solana_program::pubkey::Pubkey>,
     shared_escrow: Option<solana_program::pubkey::Pubkey>,
     maker_broker: Option<solana_program::pubkey::Pubkey>,
     taker_broker: Option<solana_program::pubkey::Pubkey>,
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
-    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
+    escrow_program: Option<solana_program::pubkey::Pubkey>,
+    nft_receipt: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     max_amount: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -232,18 +275,38 @@ impl BuyNftCoreBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// escrowed NFT. In this transaction they are the seller, though the transfer
-    /// of the NFT is handled by the pool.
+    /// The MPL core asset account.
+    #[inline(always)]
+    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.asset = Some(asset);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.collection = collection;
+        self
+    }
+    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
+    /// The MPL Core program.
+    #[inline(always)]
+    pub fn mpl_core_program(
+        &mut self,
+        mpl_core_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.mpl_core_program = Some(mpl_core_program);
+        self
+    }
+    /// The owner of the pool and the buyer/recipient of the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
         self
     }
-    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
     #[inline(always)]
-    pub fn buyer(&mut self, buyer: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.buyer = Some(buyer);
+    pub fn taker(&mut self, taker: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.taker = Some(taker);
         self
     }
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -259,34 +322,32 @@ impl BuyNftCoreBuilder {
         self.fee_vault = Some(fee_vault);
         self
     }
-    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided if it is a Trade or NFT type.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
         self
     }
-    /// The MPL core asset account.
+    /// `[optional account]`
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
     #[inline(always)]
-    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.asset = Some(asset);
+    pub fn whitelist(&mut self, whitelist: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.whitelist = whitelist;
         self
     }
     /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     #[inline(always)]
-    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.collection = collection;
-        self
-    }
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    #[inline(always)]
-    pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_receipt = Some(nft_receipt);
+    pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.mint_proof = mint_proof;
         self
     }
     /// `[optional account]`
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The shared escrow account for pools that have liquidity in a shared account.
     #[inline(always)]
     pub fn shared_escrow(
         &mut self,
@@ -329,14 +390,20 @@ impl BuyNftCoreBuilder {
         self.amm_program = Some(amm_program);
         self
     }
-    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
-    /// The MPL Core program.
+    /// `[optional account]`
+    /// The escrow program account for shared liquidity pools.
     #[inline(always)]
-    pub fn mpl_core_program(
+    pub fn escrow_program(
         &mut self,
-        mpl_core_program: solana_program::pubkey::Pubkey,
+        escrow_program: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.mpl_core_program = Some(mpl_core_program);
+        self.escrow_program = escrow_program;
+        self
+    }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    #[inline(always)]
+    pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.nft_receipt = Some(nft_receipt);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -372,14 +439,18 @@ impl BuyNftCoreBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = BuyNftCore {
+            asset: self.asset.expect("asset is not set"),
+            collection: self.collection,
+            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
+                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+            )),
             owner: self.owner.expect("owner is not set"),
-            buyer: self.buyer.expect("buyer is not set"),
+            taker: self.taker.expect("taker is not set"),
             rent_payer: self.rent_payer.expect("rent_payer is not set"),
             fee_vault: self.fee_vault.expect("fee_vault is not set"),
             pool: self.pool.expect("pool is not set"),
-            asset: self.asset.expect("asset is not set"),
-            collection: self.collection,
-            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
+            whitelist: self.whitelist,
+            mint_proof: self.mint_proof,
             shared_escrow: self.shared_escrow,
             maker_broker: self.maker_broker,
             taker_broker: self.taker_broker,
@@ -387,9 +458,8 @@ impl BuyNftCoreBuilder {
             amm_program: self.amm_program.unwrap_or(solana_program::pubkey!(
                 "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
             )),
-            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
-                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-            )),
+            escrow_program: self.escrow_program,
+            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -404,28 +474,32 @@ impl BuyNftCoreBuilder {
 
 /// `buy_nft_core` CPI accounts.
 pub struct BuyNftCoreCpiAccounts<'a, 'b> {
-    /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// escrowed NFT. In this transaction they are the seller, though the transfer
-    /// of the NFT is handled by the pool.
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
-    pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    pub taker: &'b solana_program::account_info::AccountInfo<'a>,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided if it is a Trade or NFT type.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
+    pub whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The shared escrow account for pools that have liquidity in a shared account.
     pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -435,8 +509,10 @@ pub struct BuyNftCoreCpiAccounts<'a, 'b> {
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -445,28 +521,32 @@ pub struct BuyNftCoreCpiAccounts<'a, 'b> {
 pub struct BuyNftCoreCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// escrowed NFT. In this transaction they are the seller, though the transfer
-    /// of the NFT is handled by the pool.
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
-    pub buyer: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    pub taker: &'b solana_program::account_info::AccountInfo<'a>,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
     pub rent_payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Fee vault account owned by the TFEE program.
     pub fee_vault: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided if it is a Trade or NFT type.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
+    pub whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The shared escrow account for pools that have liquidity in a shared account.
     pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The account that receives the maker broker fee.
     pub maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -476,8 +556,10 @@ pub struct BuyNftCoreCpi<'a, 'b> {
     pub cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The AMM program account, used for self-cpi logging.
     pub amm_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The escrow program account for shared liquidity pools.
+    pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -492,20 +574,23 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
+            asset: accounts.asset,
+            collection: accounts.collection,
+            mpl_core_program: accounts.mpl_core_program,
             owner: accounts.owner,
-            buyer: accounts.buyer,
+            taker: accounts.taker,
             rent_payer: accounts.rent_payer,
             fee_vault: accounts.fee_vault,
             pool: accounts.pool,
-            asset: accounts.asset,
-            collection: accounts.collection,
-            nft_receipt: accounts.nft_receipt,
+            whitelist: accounts.whitelist,
+            mint_proof: accounts.mint_proof,
             shared_escrow: accounts.shared_escrow,
             maker_broker: accounts.maker_broker,
             taker_broker: accounts.taker_broker,
             cosigner: accounts.cosigner,
             amm_program: accounts.amm_program,
-            mpl_core_program: accounts.mpl_core_program,
+            escrow_program: accounts.escrow_program,
+            nft_receipt: accounts.nft_receipt,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -543,27 +628,7 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.owner.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.buyer.key,
-            true,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.rent_payer.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.fee_vault.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool.key,
-            false,
-        ));
+        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.asset.key,
             false,
@@ -579,10 +644,52 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
                 false,
             ));
         }
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_receipt.key,
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mpl_core_program.key,
             false,
         ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.owner.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.taker.key,
+            true,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.rent_payer.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.fee_vault.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool.key,
+            false,
+        ));
+        if let Some(whitelist) = self.whitelist {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *whitelist.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *mint_proof.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         if let Some(shared_escrow) = self.shared_escrow {
             accounts.push(solana_program::instruction::AccountMeta::new(
                 *shared_escrow.key,
@@ -631,8 +738,19 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
             *self.amm_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mpl_core_program.key,
+        if let Some(escrow_program) = self.escrow_program {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *escrow_program.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.nft_receipt.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -655,18 +773,24 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(15 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(18 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.owner.clone());
-        account_infos.push(self.buyer.clone());
-        account_infos.push(self.rent_payer.clone());
-        account_infos.push(self.fee_vault.clone());
-        account_infos.push(self.pool.clone());
         account_infos.push(self.asset.clone());
         if let Some(collection) = self.collection {
             account_infos.push(collection.clone());
         }
-        account_infos.push(self.nft_receipt.clone());
+        account_infos.push(self.mpl_core_program.clone());
+        account_infos.push(self.owner.clone());
+        account_infos.push(self.taker.clone());
+        account_infos.push(self.rent_payer.clone());
+        account_infos.push(self.fee_vault.clone());
+        account_infos.push(self.pool.clone());
+        if let Some(whitelist) = self.whitelist {
+            account_infos.push(whitelist.clone());
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            account_infos.push(mint_proof.clone());
+        }
         if let Some(shared_escrow) = self.shared_escrow {
             account_infos.push(shared_escrow.clone());
         }
@@ -680,7 +804,10 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
             account_infos.push(cosigner.clone());
         }
         account_infos.push(self.amm_program.clone());
-        account_infos.push(self.mpl_core_program.clone());
+        if let Some(escrow_program) = self.escrow_program {
+            account_infos.push(escrow_program.clone());
+        }
+        account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -698,21 +825,24 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[]` owner
-///   1. `[writable, signer]` buyer
-///   2. `[writable]` rent_payer
-///   3. `[writable]` fee_vault
-///   4. `[writable]` pool
-///   5. `[writable]` asset
-///   6. `[optional]` collection
-///   7. `[writable]` nft_receipt
-///   8. `[writable, optional]` shared_escrow
-///   9. `[writable, optional]` maker_broker
-///   10. `[writable, optional]` taker_broker
-///   11. `[signer, optional]` cosigner
-///   12. `[]` amm_program
-///   13. `[]` mpl_core_program
-///   14. `[]` system_program
+///   0. `[writable]` asset
+///   1. `[optional]` collection
+///   2. `[]` mpl_core_program
+///   3. `[writable]` owner
+///   4. `[writable, signer]` taker
+///   5. `[writable]` rent_payer
+///   6. `[writable]` fee_vault
+///   7. `[writable]` pool
+///   8. `[optional]` whitelist
+///   9. `[optional]` mint_proof
+///   10. `[writable, optional]` shared_escrow
+///   11. `[writable, optional]` maker_broker
+///   12. `[writable, optional]` taker_broker
+///   13. `[signer, optional]` cosigner
+///   14. `[]` amm_program
+///   15. `[optional]` escrow_program
+///   16. `[writable]` nft_receipt
+///   17. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct BuyNftCoreCpiBuilder<'a, 'b> {
     instruction: Box<BuyNftCoreCpiBuilderInstruction<'a, 'b>>,
@@ -722,38 +852,63 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(BuyNftCoreCpiBuilderInstruction {
             __program: program,
+            asset: None,
+            collection: None,
+            mpl_core_program: None,
             owner: None,
-            buyer: None,
+            taker: None,
             rent_payer: None,
             fee_vault: None,
             pool: None,
-            asset: None,
-            collection: None,
-            nft_receipt: None,
+            whitelist: None,
+            mint_proof: None,
             shared_escrow: None,
             maker_broker: None,
             taker_broker: None,
             cosigner: None,
             amm_program: None,
-            mpl_core_program: None,
+            escrow_program: None,
+            nft_receipt: None,
             system_program: None,
             max_amount: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
-    /// Owner is the pool owner who created the pool and the nominal owner of the
-    /// escrowed NFT. In this transaction they are the seller, though the transfer
-    /// of the NFT is handled by the pool.
+    /// The MPL core asset account.
+    #[inline(always)]
+    pub fn asset(&mut self, asset: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.asset = Some(asset);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn collection(
+        &mut self,
+        collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.collection = collection;
+        self
+    }
+    /// The MPL Core program.
+    #[inline(always)]
+    pub fn mpl_core_program(
+        &mut self,
+        mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.mpl_core_program = Some(mpl_core_program);
+        self
+    }
+    /// The owner of the pool and the buyer/recipient of the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
     }
-    /// Buyer is the external signer who sends SOL to the pool to purchase the escrowed NFT.
+    /// The seller is the owner of the NFT who is selling the NFT into the pool.
     #[inline(always)]
-    pub fn buyer(&mut self, buyer: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.buyer = Some(buyer);
+    pub fn taker(&mut self, taker: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.taker = Some(taker);
         self
     }
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -775,40 +930,38 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
         self.instruction.fee_vault = Some(fee_vault);
         self
     }
-    /// The Pool state account that holds the NFT to be purchased. Stores pool state and config,
+    /// The Pool state account that the NFT is being sold into. Stores pool state and config,
     /// but is also the owner of any NFTs in the pool, and also escrows any SOL.
-    /// Any active pool can be specified provided if it is a Trade or NFT type.
+    /// Any active pool can be specified provided it is a Token type and the NFT passes at least one
+    /// whitelist condition.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
         self
     }
-    /// The MPL core asset account.
+    /// `[optional account]`
+    /// The whitelist account that the pool uses to verify the NFTs being sold into it.
     #[inline(always)]
-    pub fn asset(&mut self, asset: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.asset = Some(asset);
+    pub fn whitelist(
+        &mut self,
+        whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.whitelist = whitelist;
         self
     }
     /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     #[inline(always)]
-    pub fn collection(
+    pub fn mint_proof(
         &mut self,
-        collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.collection = collection;
-        self
-    }
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    #[inline(always)]
-    pub fn nft_receipt(
-        &mut self,
-        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_receipt = Some(nft_receipt);
+        self.instruction.mint_proof = mint_proof;
         self
     }
     /// `[optional account]`
-    /// The shared escrow account for pools that pool liquidity in a shared account.
+    /// The shared escrow account for pools that have liquidity in a shared account.
     #[inline(always)]
     pub fn shared_escrow(
         &mut self,
@@ -856,13 +1009,23 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
         self.instruction.amm_program = Some(amm_program);
         self
     }
-    /// The MPL Core program.
+    /// `[optional account]`
+    /// The escrow program account for shared liquidity pools.
     #[inline(always)]
-    pub fn mpl_core_program(
+    pub fn escrow_program(
         &mut self,
-        mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+        escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.mpl_core_program = Some(mpl_core_program);
+        self.instruction.escrow_program = escrow_program;
+        self
+    }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    #[inline(always)]
+    pub fn nft_receipt(
+        &mut self,
+        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
     /// The Solana system program.
@@ -930,9 +1093,18 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
         let instruction = BuyNftCoreCpi {
             __program: self.instruction.__program,
 
+            asset: self.instruction.asset.expect("asset is not set"),
+
+            collection: self.instruction.collection,
+
+            mpl_core_program: self
+                .instruction
+                .mpl_core_program
+                .expect("mpl_core_program is not set"),
+
             owner: self.instruction.owner.expect("owner is not set"),
 
-            buyer: self.instruction.buyer.expect("buyer is not set"),
+            taker: self.instruction.taker.expect("taker is not set"),
 
             rent_payer: self.instruction.rent_payer.expect("rent_payer is not set"),
 
@@ -940,14 +1112,9 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
-            asset: self.instruction.asset.expect("asset is not set"),
+            whitelist: self.instruction.whitelist,
 
-            collection: self.instruction.collection,
-
-            nft_receipt: self
-                .instruction
-                .nft_receipt
-                .expect("nft_receipt is not set"),
+            mint_proof: self.instruction.mint_proof,
 
             shared_escrow: self.instruction.shared_escrow,
 
@@ -962,10 +1129,12 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
                 .amm_program
                 .expect("amm_program is not set"),
 
-            mpl_core_program: self
+            escrow_program: self.instruction.escrow_program,
+
+            nft_receipt: self
                 .instruction
-                .mpl_core_program
-                .expect("mpl_core_program is not set"),
+                .nft_receipt
+                .expect("nft_receipt is not set"),
 
             system_program: self
                 .instruction
@@ -983,20 +1152,23 @@ impl<'a, 'b> BuyNftCoreCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct BuyNftCoreCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
+    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    buyer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    taker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     fee_vault: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     maker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_broker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     max_amount: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

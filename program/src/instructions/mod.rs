@@ -7,6 +7,7 @@ pub mod deposit_sol;
 pub mod edit_pool;
 pub mod legacy;
 pub mod mplx_core;
+pub mod shared_accounts;
 pub mod t22;
 pub mod withdraw_sol;
 
@@ -19,6 +20,7 @@ pub use deposit_sol::*;
 pub use edit_pool::*;
 pub use legacy::*;
 pub use mplx_core::*;
+pub use shared_accounts::*;
 pub use t22::*;
 pub use withdraw_sol::*;
 

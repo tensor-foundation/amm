@@ -23,8 +23,6 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
@@ -78,7 +76,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -148,7 +146,7 @@ test('it can buy an NFT from a NFT pool', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -214,7 +212,7 @@ test('it can buy an NFT from a Trade pool w/ Merkle Root whitelist', async (t) =
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -288,7 +286,7 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -356,7 +354,7 @@ test('it can buy a NFT and pay the correct amount of royalties', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -420,7 +418,7 @@ test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -464,7 +462,7 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -590,7 +588,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   // Buy the first NFT from pool
   const buyNftIx1 = await getBuyNftCoreInstructionAsync({
     owner: owner.address,
-    buyer,
+    taker: buyer,
     rentPayer: rentPayer.address,
     pool,
     asset: asset1.address,
@@ -613,7 +611,7 @@ test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
   // Buy the second NFT from pool
   const buyNftIx2 = await getBuyNftCoreInstructionAsync({
     owner: owner.address,
-    buyer,
+    taker: buyer,
     rentPayer: rentPayer.address,
     pool,
     asset: asset2.address,
@@ -655,7 +653,7 @@ test('it can buy an NFT from a pool w/ shared escrow', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -695,7 +693,7 @@ test('it can buy an NFT from a pool w/ set cosigner', async (t) => {
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -739,7 +737,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
   // Buy NFT from pool without specififying cosigner
   const buyNftIxNoCosigner = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -752,16 +750,12 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(
-    t,
-    promiseNoCosigner,
-    TENSOR_AMM_ERROR__MISSING_COSIGNER
-  );
+  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
 
   // Buy NFT from pool with fakeCosigner
   const buyNftIxIncorrectCosigner = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -856,7 +850,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
   });
   const buyNftIxNotDepositedNft = await getBuyNftCoreInstructionAsync({
     owner: owner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: assetNotInPool.address,
     collection: collection.address,
@@ -904,7 +898,7 @@ test('it cannot buy an NFT from a trade pool w/ incorrect deposit receipt', asyn
   });
   const buyNftIxWrongPoolNftReceipt = await getBuyNftCoreInstructionAsync({
     owner: owner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -938,7 +932,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
   // Buy NFT from pool
   const buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -1009,7 +1003,7 @@ test('pool with makerBroker set requires passing the account in; fails w/ incorr
   // Buy NFT from pool
   let buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -1026,12 +1020,12 @@ test('pool with makerBroker set requires passing the account in; fails w/ incorr
   );
 
   // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   // Buy NFT from pool
   buyNftIx = await getBuyNftCoreInstructionAsync({
     owner: poolOwner.address,
-    buyer,
+    taker: buyer,
     pool,
     asset: asset.address,
     collection: collection.address,

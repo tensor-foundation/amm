@@ -10,22 +10,24 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct DepositNftCore {
+    /// The MPL core asset account.
+    pub asset: solana_program::pubkey::Pubkey,
+
+    pub collection: Option<solana_program::pubkey::Pubkey>,
+    /// The MPL Core program.
+    pub mpl_core_program: solana_program::pubkey::Pubkey,
     /// The owner of the pool and the NFT.
     pub owner: solana_program::pubkey::Pubkey,
     /// The pool to deposit the NFT into.
     pub pool: solana_program::pubkey::Pubkey,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: solana_program::pubkey::Pubkey,
-
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
-    /// The MPL core asset account.
-    pub asset: solana_program::pubkey::Pubkey,
-
-    pub collection: Option<solana_program::pubkey::Pubkey>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-    /// The MPL Core program.
-    pub mpl_core_program: solana_program::pubkey::Pubkey,
     /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -40,6 +42,23 @@ impl DepositNftCore {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.asset, false,
+        ));
+        if let Some(collection) = self.collection {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                collection, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mpl_core_program,
+            false,
+        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
@@ -61,24 +80,7 @@ impl DepositNftCore {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.asset, false,
-        ));
-        if let Some(collection) = self.collection {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                collection, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::TENSOR_AMM_ID,
-                false,
-            ));
-        }
-        accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_receipt,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mpl_core_program,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -119,25 +121,25 @@ impl Default for DepositNftCoreInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` pool
-///   2. `[]` whitelist
-///   3. `[optional]` mint_proof
-///   4. `[writable]` asset
-///   5. `[optional]` collection
-///   6. `[writable]` nft_receipt
-///   7. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
+///   0. `[writable]` asset
+///   1. `[optional]` collection
+///   2. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
+///   3. `[writable, signer]` owner
+///   4. `[writable]` pool
+///   5. `[]` whitelist
+///   6. `[optional]` mint_proof
+///   7. `[writable]` nft_receipt
 ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct DepositNftCoreBuilder {
+    asset: Option<solana_program::pubkey::Pubkey>,
+    collection: Option<solana_program::pubkey::Pubkey>,
+    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
-    asset: Option<solana_program::pubkey::Pubkey>,
-    collection: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
-    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -145,6 +147,28 @@ pub struct DepositNftCoreBuilder {
 impl DepositNftCoreBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+    /// The MPL core asset account.
+    #[inline(always)]
+    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.asset = Some(asset);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.collection = collection;
+        self
+    }
+    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
+    /// The MPL Core program.
+    #[inline(always)]
+    pub fn mpl_core_program(
+        &mut self,
+        mpl_core_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.mpl_core_program = Some(mpl_core_program);
+        self
     }
     /// The owner of the pool and the NFT.
     #[inline(always)]
@@ -159,43 +183,24 @@ impl DepositNftCoreBuilder {
         self
     }
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     #[inline(always)]
     pub fn whitelist(&mut self, whitelist: solana_program::pubkey::Pubkey) -> &mut Self {
         self.whitelist = Some(whitelist);
         self
     }
     /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     #[inline(always)]
     pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
         self.mint_proof = mint_proof;
-        self
-    }
-    /// The MPL core asset account.
-    #[inline(always)]
-    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.asset = Some(asset);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.collection = collection;
         self
     }
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
-        self
-    }
-    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
-    /// The MPL Core program.
-    #[inline(always)]
-    pub fn mpl_core_program(
-        &mut self,
-        mpl_core_program: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.mpl_core_program = Some(mpl_core_program);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -226,16 +231,16 @@ impl DepositNftCoreBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = DepositNftCore {
+            asset: self.asset.expect("asset is not set"),
+            collection: self.collection,
+            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
+                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+            )),
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
             mint_proof: self.mint_proof,
-            asset: self.asset.expect("asset is not set"),
-            collection: self.collection,
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
-                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-            )),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -247,22 +252,24 @@ impl DepositNftCoreBuilder {
 
 /// `deposit_nft_core` CPI accounts.
 pub struct DepositNftCoreCpiAccounts<'a, 'b> {
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -271,22 +278,24 @@ pub struct DepositNftCoreCpiAccounts<'a, 'b> {
 pub struct DepositNftCoreCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The pool to deposit the NFT into.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -298,14 +307,14 @@ impl<'a, 'b> DepositNftCoreCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
+            asset: accounts.asset,
+            collection: accounts.collection,
+            mpl_core_program: accounts.mpl_core_program,
             owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
             mint_proof: accounts.mint_proof,
-            asset: accounts.asset,
-            collection: accounts.collection,
             nft_receipt: accounts.nft_receipt,
-            mpl_core_program: accounts.mpl_core_program,
             system_program: accounts.system_program,
         }
     }
@@ -344,6 +353,25 @@ impl<'a, 'b> DepositNftCoreCpi<'a, 'b> {
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.asset.key,
+            false,
+        ));
+        if let Some(collection) = self.collection {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *collection.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mpl_core_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
         ));
@@ -367,26 +395,7 @@ impl<'a, 'b> DepositNftCoreCpi<'a, 'b> {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.asset.key,
-            false,
-        ));
-        if let Some(collection) = self.collection {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *collection.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::TENSOR_AMM_ID,
-                false,
-            ));
-        }
-        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.nft_receipt.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mpl_core_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -409,18 +418,18 @@ impl<'a, 'b> DepositNftCoreCpi<'a, 'b> {
         };
         let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
+        account_infos.push(self.asset.clone());
+        if let Some(collection) = self.collection {
+            account_infos.push(collection.clone());
+        }
+        account_infos.push(self.mpl_core_program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
         if let Some(mint_proof) = self.mint_proof {
             account_infos.push(mint_proof.clone());
         }
-        account_infos.push(self.asset.clone());
-        if let Some(collection) = self.collection {
-            account_infos.push(collection.clone());
-        }
         account_infos.push(self.nft_receipt.clone());
-        account_infos.push(self.mpl_core_program.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -438,14 +447,14 @@ impl<'a, 'b> DepositNftCoreCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` owner
-///   1. `[writable]` pool
-///   2. `[]` whitelist
-///   3. `[optional]` mint_proof
-///   4. `[writable]` asset
-///   5. `[optional]` collection
-///   6. `[writable]` nft_receipt
-///   7. `[]` mpl_core_program
+///   0. `[writable]` asset
+///   1. `[optional]` collection
+///   2. `[]` mpl_core_program
+///   3. `[writable, signer]` owner
+///   4. `[writable]` pool
+///   5. `[]` whitelist
+///   6. `[optional]` mint_proof
+///   7. `[writable]` nft_receipt
 ///   8. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct DepositNftCoreCpiBuilder<'a, 'b> {
@@ -456,48 +465,18 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(DepositNftCoreCpiBuilderInstruction {
             __program: program,
+            asset: None,
+            collection: None,
+            mpl_core_program: None,
             owner: None,
             pool: None,
             whitelist: None,
             mint_proof: None,
-            asset: None,
-            collection: None,
             nft_receipt: None,
-            mpl_core_program: None,
             system_program: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The owner of the pool and the NFT.
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    /// The pool to deposit the NFT into.
-    #[inline(always)]
-    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.pool = Some(pool);
-        self
-    }
-    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
-    #[inline(always)]
-    pub fn whitelist(
-        &mut self,
-        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.whitelist = Some(whitelist);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn mint_proof(
-        &mut self,
-        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.mint_proof = mint_proof;
-        self
     }
     /// The MPL core asset account.
     #[inline(always)]
@@ -514,15 +493,6 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
         self.instruction.collection = collection;
         self
     }
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
-    #[inline(always)]
-    pub fn nft_receipt(
-        &mut self,
-        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_receipt = Some(nft_receipt);
-        self
-    }
     /// The MPL Core program.
     #[inline(always)]
     pub fn mpl_core_program(
@@ -530,6 +500,48 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
         mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.mpl_core_program = Some(mpl_core_program);
+        self
+    }
+    /// The owner of the pool and the NFT.
+    #[inline(always)]
+    pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.owner = Some(owner);
+        self
+    }
+    /// The pool to deposit the NFT into.
+    #[inline(always)]
+    pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.pool = Some(pool);
+        self
+    }
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    #[inline(always)]
+    pub fn whitelist(
+        &mut self,
+        whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.whitelist = Some(whitelist);
+        self
+    }
+    /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    #[inline(always)]
+    pub fn mint_proof(
+        &mut self,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.mint_proof = mint_proof;
+        self
+    }
+    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    #[inline(always)]
+    pub fn nft_receipt(
+        &mut self,
+        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
     /// The Solana system program.
@@ -585,6 +597,15 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
         let instruction = DepositNftCoreCpi {
             __program: self.instruction.__program,
 
+            asset: self.instruction.asset.expect("asset is not set"),
+
+            collection: self.instruction.collection,
+
+            mpl_core_program: self
+                .instruction
+                .mpl_core_program
+                .expect("mpl_core_program is not set"),
+
             owner: self.instruction.owner.expect("owner is not set"),
 
             pool: self.instruction.pool.expect("pool is not set"),
@@ -593,19 +614,10 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
 
             mint_proof: self.instruction.mint_proof,
 
-            asset: self.instruction.asset.expect("asset is not set"),
-
-            collection: self.instruction.collection,
-
             nft_receipt: self
                 .instruction
                 .nft_receipt
                 .expect("nft_receipt is not set"),
-
-            mpl_core_program: self
-                .instruction
-                .mpl_core_program
-                .expect("mpl_core_program is not set"),
 
             system_program: self
                 .instruction
@@ -622,14 +634,14 @@ impl<'a, 'b> DepositNftCoreCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct DepositNftCoreCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
+    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

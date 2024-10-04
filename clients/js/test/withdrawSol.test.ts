@@ -87,7 +87,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: owner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     feeVault,
     pool,
     whitelist,

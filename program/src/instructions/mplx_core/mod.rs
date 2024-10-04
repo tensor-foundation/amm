@@ -10,25 +10,30 @@ pub use self::sell_nft_token_pool::*;
 pub use self::sell_nft_trade_pool::*;
 pub use self::withdraw_nft::*;
 
+use std::ops::{Deref, DerefMut};
+
 use crate::{
-    assert_decode_mint_proof_v2, calc_taker_fees,
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT, TFEE_PROGRAM_ID},
+    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
     error::ErrorCode,
-    program::AmmProgram,
-    record_event, try_autoclose_pool, BuySellEvent, Fees, NftDepositReceipt, Pool, PoolType,
-    TAmmEvent, TakerSide, DEPOSIT_RECEIPT_SIZE, POOL_SIZE,
+    MplCoreShared, MplCoreSharedBumps, NftDepositReceipt, *,
 };
 
 use anchor_lang::prelude::*;
 use escrow_program::instructions::assert_decode_margin_account;
-use mpl_core::{instructions::TransferV1CpiBuilder, types::Royalties};
+use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
+    instructions::TransferV1CpiBuilder,
+    types::{PluginType, Royalties, UpdateAuthority, VerifiedCreators},
+};
+use mpl_token_metadata::types::{Collection, Creator};
 use solana_program::{keccak, program::invoke, system_instruction};
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee, escrow, metaplex_core::validate_asset, shard_num, transfer_creators_fee,
+    calc_creators_fee, metaplex_core::validate_asset, transfer_creators_fee,
     transfer_lamports_from_pda, CreatorFeeMode, FromAcc, FromExternal,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
-use whitelist_program::{FullMerkleProof, WhitelistV2};
+use whitelist_program::FullMerkleProof;
