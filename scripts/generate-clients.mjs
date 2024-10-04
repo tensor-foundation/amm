@@ -513,7 +513,6 @@ kinobi.accept(
       "resolveOwnerTokenRecordFromTokenStandard",
       "resolveBuyerTokenRecordFromTokenStandard",
       "resolveSellerTokenRecordFromTokenStandard",
-      "resolveTakerTokenRecordFromTokenStandard",
       "resolveUserTokenRecordFromTokenStandard",
       "resolvePoolTokenRecordFromTokenStandard",
       "resolvePoolNftReceipt",

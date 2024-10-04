@@ -14,20 +14,6 @@ pub struct SellNftTokenPoolCore<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Deref for SellNftTokenPoolCore<'info> {
-    type Target = MplCoreShared<'info>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.core
-    }
-}
-
-impl<'info> DerefMut for SellNftTokenPoolCore<'info> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.core
-    }
-}
-
 impl<'info> Validate<'info> for SellNftTokenPoolCore<'info> {
     fn validate(&self) -> Result<()> {
         // Must be a token pool
@@ -70,18 +56,19 @@ impl<'info> SellNftTokenPoolCore<'info> {
         let whitelist = unwrap_opt!(self.trade.whitelist.as_ref(), ErrorCode::BadWhitelist);
 
         validate_asset(
-            &self.asset.to_account_info(),
-            self.collection
+            &self.core.asset.to_account_info(),
+            self.core
+                .collection
                 .as_ref()
                 .map(|a| a.to_account_info())
                 .as_ref(),
         )?;
 
-        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
+        let asset = BaseAssetV1::try_from(self.core.asset.as_ref())?;
 
         // Fetch the verified creators from the MPL Core asset and map into the expected type.
         let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
-            &self.asset.to_account_info(),
+            &self.core.asset.to_account_info(),
             PluginType::VerifiedCreators,
         )
         .map(|(_, verified_creators, _)| {
@@ -106,9 +93,10 @@ impl<'info> SellNftTokenPoolCore<'info> {
         };
 
         let full_merkle_proof = if let Some(mint_proof) = &self.trade.mint_proof {
-            let mint_proof = assert_decode_mint_proof_v2(whitelist, &self.asset.key(), mint_proof)?;
+            let mint_proof =
+                assert_decode_mint_proof_v2(whitelist, &self.core.asset.key(), mint_proof)?;
 
-            let leaf = keccak::hash(self.asset.key().as_ref());
+            let leaf = keccak::hash(self.core.asset.key().as_ref());
             let proof = &mut mint_proof.proof.to_vec();
             proof.truncate(mint_proof.proof_len as usize);
             Some(FullMerkleProof {
@@ -149,8 +137,9 @@ pub fn process_sell_nft_token_pool_core<'info>(
 
         // Validate asset account and determine if royalites need to be paid.
         let royalties = validate_asset(
-            &ctx.accounts.asset.to_account_info(),
+            &ctx.accounts.core.asset.to_account_info(),
             ctx.accounts
+                .core
                 .collection
                 .as_ref()
                 .map(|a| a.to_account_info())
@@ -198,12 +187,12 @@ pub fn process_sell_nft_token_pool_core<'info>(
         ]];
 
         // Transfer the NFT from the seller directly to the pool owner.
-        TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
-            .asset(&ctx.accounts.asset)
+        TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
+            .asset(&ctx.accounts.core.asset)
             .authority(Some(&ctx.accounts.trade.taker.to_account_info()))
             .new_owner(&ctx.accounts.trade.owner)
             .payer(&ctx.accounts.trade.taker)
-            .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
+            .collection(ctx.accounts.core.collection.as_ref().map(|c| c.as_ref()))
             .invoke()?;
 
         /*  **Transfer Fees**

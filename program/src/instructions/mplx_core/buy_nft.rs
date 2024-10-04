@@ -28,14 +28,6 @@ pub struct BuyNftCore<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Deref for BuyNftCore<'info> {
-    type Target = MplCoreShared<'info>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.core
-    }
-}
-
 impl<'info> Validate<'info> for BuyNftCore<'info> {
     fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner account must be passed in.
@@ -110,8 +102,9 @@ pub fn process_buy_nft_core<'info, 'b>(
 
     // Validate asset account and determine if royalites need to be paid.
     let royalties = validate_asset(
-        &ctx.accounts.asset.to_account_info(),
+        &ctx.accounts.core.asset.to_account_info(),
         ctx.accounts
+            .core
             .collection
             .as_ref()
             .map(|a| a.to_account_info())
@@ -160,12 +153,12 @@ pub fn process_buy_nft_core<'info, 'b>(
         &[pool.bump[0]],
     ]];
 
-    TransferV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
-        .asset(&ctx.accounts.asset)
+    TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
+        .asset(&ctx.accounts.core.asset)
         .authority(Some(&ctx.accounts.trade.pool.to_account_info()))
         .new_owner(&ctx.accounts.trade.taker)
         .payer(&ctx.accounts.trade.taker)
-        .collection(ctx.accounts.collection.as_ref().map(|c| c.as_ref()))
+        .collection(ctx.accounts.core.collection.as_ref().map(|c| c.as_ref()))
         .invoke_signed(signer_seeds)?;
 
     /*  **Transfer Fees**

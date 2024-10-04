@@ -10,8 +10,6 @@ pub use self::sell_nft_token_pool::*;
 pub use self::sell_nft_trade_pool::*;
 pub use self::withdraw_nft::*;
 
-use std::ops::{Deref, DerefMut};
-
 use crate::{
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
     error::ErrorCode,
