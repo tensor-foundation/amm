@@ -17,8 +17,6 @@ use crate::{error::ErrorCode, *};
 pub struct DepositNft<'info> {
     pub mplx: MplxShared<'info>,
 
-    pub mplx_transfer: MplxTransferShared<'info>,
-
     pub transfer: TransferShared<'info>,
 
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
@@ -140,8 +138,8 @@ pub fn process_deposit_nft(
             spl_ata_program: &ctx.accounts.associated_token_program,
             token_metadata_program: ctx.accounts.mplx.token_metadata_program.as_ref(),
             sysvar_instructions: ctx.accounts.mplx.sysvar_instructions.as_ref(),
-            source_token_record: ctx.accounts.mplx_transfer.owner_token_record.as_ref(),
-            destination_token_record: ctx.accounts.mplx_transfer.pool_token_record.as_ref(),
+            source_token_record: ctx.accounts.mplx.user_token_record.as_ref(),
+            destination_token_record: ctx.accounts.mplx.pool_token_record.as_ref(),
             authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
             authorization_rules_program: ctx.accounts.mplx.authorization_rules_program.as_ref(),
             authorization_data: authorization_data.map(AuthorizationData::from),

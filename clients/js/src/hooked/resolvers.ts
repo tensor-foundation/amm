@@ -78,3 +78,23 @@ export const resolveTakerTokenRecordFromTokenStandard = async ({
       }
     : { value: null };
 };
+
+export const resolveUserTokenRecordFromTokenStandard = async ({
+  accounts,
+  args,
+}: {
+  accounts: Record<string, ResolvedAccount>;
+  args: { tokenStandard?: TokenStandard | undefined };
+}): Promise<Partial<{ value: ProgramDerivedAddress | null }>> => {
+  return args.tokenStandard === TokenStandard.ProgrammableNonFungible ||
+    args.tokenStandard === TokenStandard.ProgrammableNonFungibleEdition
+    ? {
+        value: await findTokenRecordPda({
+          mint: expectAddress(accounts.mint?.value),
+          token: expectAddress(
+            accounts.takerTa?.value ?? accounts.ownerTa?.value
+          ),
+        }),
+      }
+    : { value: null };
+};

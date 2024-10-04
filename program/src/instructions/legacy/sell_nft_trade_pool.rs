@@ -31,8 +31,6 @@ pub struct SellNftTradePool<'info> {
     // NFT Standard shared accounts
     pub mplx: MplxShared<'info>,
 
-    pub mplx_trade: MplxTradeShared<'info>,
-
     // Trade shared accounts
     pub trade: TradeShared<'info>,
 
@@ -222,8 +220,8 @@ pub fn process_sell_nft_trade_pool<'info>(
             spl_ata_program: &ctx.accounts.associated_token_program,
             token_metadata_program: ctx.accounts.mplx.token_metadata_program.as_ref(),
             sysvar_instructions: ctx.accounts.mplx.sysvar_instructions.as_ref(),
-            source_token_record: ctx.accounts.mplx_trade.taker_token_record.as_ref(),
-            destination_token_record: ctx.accounts.mplx_trade.pool_token_record.as_ref(),
+            source_token_record: ctx.accounts.mplx.user_token_record.as_ref(),
+            destination_token_record: ctx.accounts.mplx.pool_token_record.as_ref(),
             authorization_rules_program: ctx.accounts.mplx.authorization_rules_program.as_ref(),
             authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
             authorization_data: authorization_data.clone().map(AuthorizationData::from),

@@ -411,16 +411,6 @@ kinobi.update(
       )
     },
     {
-      account: "takerTokenRecord",
-      ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
-        "resolveTakerTokenRecordFromTokenStandard",
-        {
-          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("takerTa")]
-        }
-      )
-    },
-    {
       account: "poolTokenRecord",
       ignoreIfOptional: false,
       defaultValue: k.resolverValueNode(
@@ -524,6 +514,7 @@ kinobi.accept(
       "resolveBuyerTokenRecordFromTokenStandard",
       "resolveSellerTokenRecordFromTokenStandard",
       "resolveTakerTokenRecordFromTokenStandard",
+      "resolveUserTokenRecordFromTokenStandard",
       "resolvePoolTokenRecordFromTokenStandard",
       "resolvePoolNftReceipt",
       "resolveMetadata",

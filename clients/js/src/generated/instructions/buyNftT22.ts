@@ -207,7 +207,7 @@ export type BuyNftT22AsyncInput<
 > = {
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -507,7 +507,7 @@ export type BuyNftT22Input<
 > = {
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -762,7 +762,7 @@ export type ParsedBuyNftT22Instruction<
   accounts: {
     /** The owner of the pool and the buyer/recipient of the NFT. */
     owner: TAccountMetas[0];
-    /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+    /** The taker is the user buying or selling the NFT. */
     taker: TAccountMetas[1];
     /**
      * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool

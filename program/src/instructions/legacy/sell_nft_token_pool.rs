@@ -35,8 +35,6 @@ use crate::{
 pub struct SellNftTokenPool<'info> {
     pub mplx: MplxShared<'info>,
 
-    pub mplx_trade: MplxTradeShared<'info>,
-
     pub trade: TradeShared<'info>,
 
     /// The mint account of the NFT being sold.
@@ -234,8 +232,8 @@ pub fn process_sell_nft_token_pool<'info>(
         spl_ata_program: &ctx.accounts.associated_token_program,
         token_metadata_program: ctx.accounts.mplx.token_metadata_program.as_ref(),
         sysvar_instructions: ctx.accounts.mplx.sysvar_instructions.as_ref(),
-        source_token_record: ctx.accounts.mplx_trade.taker_token_record.as_ref(),
-        destination_token_record: ctx.accounts.mplx_trade.pool_token_record.as_ref(),
+        source_token_record: ctx.accounts.mplx.user_token_record.as_ref(),
+        destination_token_record: ctx.accounts.mplx.pool_token_record.as_ref(),
         authorization_rules_program: ctx.accounts.mplx.authorization_rules_program.as_ref(),
         authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
         authorization_data: authorization_data.clone().map(AuthorizationData::from),
@@ -270,7 +268,7 @@ pub fn process_sell_nft_token_pool<'info>(
             spl_ata_program: &ctx.accounts.associated_token_program,
             token_metadata_program: ctx.accounts.mplx.token_metadata_program.as_ref(),
             sysvar_instructions: ctx.accounts.mplx.sysvar_instructions.as_ref(),
-            source_token_record: ctx.accounts.mplx_trade.pool_token_record.as_ref(),
+            source_token_record: ctx.accounts.mplx.pool_token_record.as_ref(),
             destination_token_record: ctx.accounts.owner_token_record.as_ref(),
             authorization_rules_program: ctx.accounts.mplx.authorization_rules_program.as_ref(),
             authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),

@@ -55,7 +55,7 @@ import {
 import {
   resolveFeeVaultPdaFromPool,
   resolveTakerAta,
-  resolveTakerTokenRecordFromTokenStandard,
+  resolveUserTokenRecordFromTokenStandard,
 } from '../../hooked';
 import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -76,14 +76,14 @@ export type BuyNftInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetadata extends string | IAccountMeta<string> = string,
   TAccountEdition extends string | IAccountMeta<string> = string,
+  TAccountUserTokenRecord extends string | IAccountMeta<string> = string,
+  TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
   TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
   TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
   TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
   TAccountAuthorizationRulesProgram extends
     | string
     | IAccountMeta<string> = string,
-  TAccountTakerTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountTaker extends string | IAccountMeta<string> = string,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
@@ -123,6 +123,12 @@ export type BuyNftInstruction<
       TAccountEdition extends string
         ? ReadonlyAccount<TAccountEdition>
         : TAccountEdition,
+      TAccountUserTokenRecord extends string
+        ? WritableAccount<TAccountUserTokenRecord>
+        : TAccountUserTokenRecord,
+      TAccountPoolTokenRecord extends string
+        ? WritableAccount<TAccountPoolTokenRecord>
+        : TAccountPoolTokenRecord,
       TAccountTokenMetadataProgram extends string
         ? ReadonlyAccount<TAccountTokenMetadataProgram>
         : TAccountTokenMetadataProgram,
@@ -135,12 +141,6 @@ export type BuyNftInstruction<
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
-      TAccountTakerTokenRecord extends string
-        ? WritableAccount<TAccountTakerTokenRecord>
-        : TAccountTakerTokenRecord,
-      TAccountPoolTokenRecord extends string
-        ? WritableAccount<TAccountPoolTokenRecord>
-        : TAccountPoolTokenRecord,
       TAccountOwner extends string
         ? WritableAccount<TAccountOwner>
         : TAccountOwner,
@@ -264,12 +264,12 @@ export type BuyNftInstructionExtraArgs = { tokenStandard?: TokenStandardArgs };
 export type BuyNftAsyncInput<
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
+  TAccountUserTokenRecord extends string = string,
+  TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountTakerTokenRecord extends string = string,
-  TAccountPoolTokenRecord extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -295,6 +295,10 @@ export type BuyNftAsyncInput<
   metadata?: Address<TAccountMetadata>;
   /** The Token Metadata edition account of the NFT. */
   edition?: Address<TAccountEdition>;
+  /** The Token Metadata source token record account of the NFT. */
+  userTokenRecord?: Address<TAccountUserTokenRecord>;
+  /** The Token Metadata token record for the destination. */
+  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
   /** The sysvar instructions account. */
@@ -303,13 +307,9 @@ export type BuyNftAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The Token Metadata source token record account of the NFT. */
-  takerTokenRecord?: Address<TAccountTakerTokenRecord>;
-  /** The Token Metadata token record for the pool. */
-  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -368,12 +368,12 @@ export type BuyNftAsyncInput<
 export async function getBuyNftInstructionAsync<
   TAccountMetadata extends string,
   TAccountEdition extends string,
+  TAccountUserTokenRecord extends string,
+  TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountTakerTokenRecord extends string,
-  TAccountPoolTokenRecord extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -398,12 +398,12 @@ export async function getBuyNftInstructionAsync<
   input: BuyNftAsyncInput<
     TAccountMetadata,
     TAccountEdition,
+    TAccountUserTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountTakerTokenRecord,
-    TAccountPoolTokenRecord,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -430,12 +430,12 @@ export async function getBuyNftInstructionAsync<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountMetadata,
     TAccountEdition,
+    TAccountUserTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountTakerTokenRecord,
-    TAccountPoolTokenRecord,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -465,6 +465,8 @@ export async function getBuyNftInstructionAsync<
   const originalAccounts = {
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
+    userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
+    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
       value: input.tokenMetadataProgram ?? null,
       isWritable: false,
@@ -481,11 +483,6 @@ export async function getBuyNftInstructionAsync<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    takerTokenRecord: {
-      value: input.takerTokenRecord ?? null,
-      isWritable: true,
-    },
-    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -534,6 +531,34 @@ export async function getBuyNftInstructionAsync<
       ...(await resolveEditionFromTokenStandard(resolverScope)),
     };
   }
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.takerTa.value) {
+    accounts.takerTa = {
+      ...accounts.takerTa,
+      ...(await resolveTakerAta(resolverScope)),
+    };
+  }
+  if (!accounts.userTokenRecord.value) {
+    accounts.userTokenRecord = {
+      ...accounts.userTokenRecord,
+      ...(await resolveUserTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
+    };
+  }
+  if (!accounts.poolTokenRecord.value) {
+    accounts.poolTokenRecord = {
+      ...accounts.poolTokenRecord,
+      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
   if (!args.tokenStandard) {
     args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
@@ -553,34 +578,6 @@ export async function getBuyNftInstructionAsync<
     accounts.authorizationRulesProgram = {
       ...accounts.authorizationRulesProgram,
       ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
-    };
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-  if (!accounts.takerTa.value) {
-    accounts.takerTa = {
-      ...accounts.takerTa,
-      ...(await resolveTakerAta(resolverScope)),
-    };
-  }
-  if (!accounts.takerTokenRecord.value) {
-    accounts.takerTokenRecord = {
-      ...accounts.takerTokenRecord,
-      ...(await resolveTakerTokenRecordFromTokenStandard(resolverScope)),
-    };
-  }
-  if (!accounts.poolTa.value) {
-    accounts.poolTa = {
-      ...accounts.poolTa,
-      ...(await resolvePoolAta(resolverScope)),
-    };
-  }
-  if (!accounts.poolTokenRecord.value) {
-    accounts.poolTokenRecord = {
-      ...accounts.poolTokenRecord,
-      ...(await resolvePoolTokenRecordFromTokenStandard(resolverScope)),
     };
   }
   if (!accounts.rentPayer.value) {
@@ -621,12 +618,12 @@ export async function getBuyNftInstructionAsync<
     accounts: [
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
+      getAccountMeta(accounts.userTokenRecord),
+      getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.takerTokenRecord),
-      getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -657,12 +654,12 @@ export async function getBuyNftInstructionAsync<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountMetadata,
     TAccountEdition,
+    TAccountUserTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountTakerTokenRecord,
-    TAccountPoolTokenRecord,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -691,12 +688,12 @@ export async function getBuyNftInstructionAsync<
 export type BuyNftInput<
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
+  TAccountUserTokenRecord extends string = string,
+  TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountTakerTokenRecord extends string = string,
-  TAccountPoolTokenRecord extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -722,6 +719,10 @@ export type BuyNftInput<
   metadata: Address<TAccountMetadata>;
   /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
+  /** The Token Metadata source token record account of the NFT. */
+  userTokenRecord?: Address<TAccountUserTokenRecord>;
+  /** The Token Metadata token record for the destination. */
+  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
   /** The sysvar instructions account. */
@@ -730,13 +731,9 @@ export type BuyNftInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The Token Metadata source token record account of the NFT. */
-  takerTokenRecord?: Address<TAccountTakerTokenRecord>;
-  /** The Token Metadata token record for the pool. */
-  poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -795,12 +792,12 @@ export type BuyNftInput<
 export function getBuyNftInstruction<
   TAccountMetadata extends string,
   TAccountEdition extends string,
+  TAccountUserTokenRecord extends string,
+  TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountTakerTokenRecord extends string,
-  TAccountPoolTokenRecord extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -825,12 +822,12 @@ export function getBuyNftInstruction<
   input: BuyNftInput<
     TAccountMetadata,
     TAccountEdition,
+    TAccountUserTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountTakerTokenRecord,
-    TAccountPoolTokenRecord,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -856,12 +853,12 @@ export function getBuyNftInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountMetadata,
   TAccountEdition,
+  TAccountUserTokenRecord,
+  TAccountPoolTokenRecord,
   TAccountTokenMetadataProgram,
   TAccountSysvarInstructions,
   TAccountAuthorizationRules,
   TAccountAuthorizationRulesProgram,
-  TAccountTakerTokenRecord,
-  TAccountPoolTokenRecord,
   TAccountOwner,
   TAccountTaker,
   TAccountRentPayer,
@@ -890,6 +887,8 @@ export function getBuyNftInstruction<
   const originalAccounts = {
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
+    userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
+    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
       value: input.tokenMetadataProgram ?? null,
       isWritable: false,
@@ -906,11 +905,6 @@ export function getBuyNftInstruction<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    takerTokenRecord: {
-      value: input.takerTokenRecord ?? null,
-      isWritable: true,
-    },
-    poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -947,6 +941,10 @@ export function getBuyNftInstruction<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
   if (!args.tokenStandard) {
     args.tokenStandard = TokenStandard.ProgrammableNonFungible;
   }
@@ -967,10 +965,6 @@ export function getBuyNftInstruction<
       ...accounts.authorizationRulesProgram,
       ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
     };
-  }
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
   }
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
@@ -998,12 +992,12 @@ export function getBuyNftInstruction<
     accounts: [
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
+      getAccountMeta(accounts.userTokenRecord),
+      getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.takerTokenRecord),
-      getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -1034,12 +1028,12 @@ export function getBuyNftInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountMetadata,
     TAccountEdition,
+    TAccountUserTokenRecord,
+    TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountTakerTokenRecord,
-    TAccountPoolTokenRecord,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -1075,21 +1069,21 @@ export type ParsedBuyNftInstruction<
     metadata: TAccountMetas[0];
     /** The Token Metadata edition account of the NFT. */
     edition: TAccountMetas[1];
-    /** The Token Metadata program account. */
-    tokenMetadataProgram?: TAccountMetas[2] | undefined;
-    /** The sysvar instructions account. */
-    sysvarInstructions?: TAccountMetas[3] | undefined;
-    /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authorizationRules?: TAccountMetas[4] | undefined;
-    /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram?: TAccountMetas[5] | undefined;
     /** The Token Metadata source token record account of the NFT. */
-    takerTokenRecord?: TAccountMetas[6] | undefined;
-    /** The Token Metadata token record for the pool. */
-    poolTokenRecord?: TAccountMetas[7] | undefined;
+    userTokenRecord?: TAccountMetas[2] | undefined;
+    /** The Token Metadata token record for the destination. */
+    poolTokenRecord?: TAccountMetas[3] | undefined;
+    /** The Token Metadata program account. */
+    tokenMetadataProgram?: TAccountMetas[4] | undefined;
+    /** The sysvar instructions account. */
+    sysvarInstructions?: TAccountMetas[5] | undefined;
+    /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
+    authorizationRules?: TAccountMetas[6] | undefined;
+    /** The Metaplex Token Authority Rules program account. */
+    authorizationRulesProgram?: TAccountMetas[7] | undefined;
     /** The owner of the pool and the buyer/recipient of the NFT. */
     owner: TAccountMetas[8];
-    /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+    /** The taker is the user buying or selling the NFT. */
     taker: TAccountMetas[9];
     /**
      * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -1174,12 +1168,12 @@ export function parseBuyNftInstruction<
     accounts: {
       metadata: getNextAccount(),
       edition: getNextAccount(),
+      userTokenRecord: getNextOptionalAccount(),
+      poolTokenRecord: getNextOptionalAccount(),
       tokenMetadataProgram: getNextOptionalAccount(),
       sysvarInstructions: getNextOptionalAccount(),
       authorizationRules: getNextOptionalAccount(),
       authorizationRulesProgram: getNextOptionalAccount(),
-      takerTokenRecord: getNextOptionalAccount(),
-      poolTokenRecord: getNextOptionalAccount(),
       owner: getNextAccount(),
       taker: getNextAccount(),
       rentPayer: getNextAccount(),

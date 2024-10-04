@@ -364,6 +364,24 @@
               ]
             },
             {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
               "name": "tokenMetadataProgram",
               "isMut": false,
               "isSigner": false,
@@ -397,29 +415,6 @@
               "isOptional": true,
               "docs": [
                 "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
-          "name": "mplxTransfer",
-          "accounts": [
-            {
-              "name": "ownerTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the destination."
               ]
             }
           ]
@@ -560,6 +555,24 @@
               ]
             },
             {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
               "name": "tokenMetadataProgram",
               "isMut": false,
               "isSigner": false,
@@ -593,29 +606,6 @@
               "isOptional": true,
               "docs": [
                 "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
-          "name": "mplxTransfer",
-          "accounts": [
-            {
-              "name": "ownerTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the destination."
               ]
             }
           ]
@@ -755,6 +745,24 @@
               ]
             },
             {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
               "name": "tokenMetadataProgram",
               "isMut": false,
               "isSigner": false,
@@ -793,29 +801,6 @@
           ]
         },
         {
-          "name": "mplxTrade",
-          "accounts": [
-            {
-              "name": "takerTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the pool."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -831,7 +816,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -1040,6 +1025,24 @@
               ]
             },
             {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
               "name": "tokenMetadataProgram",
               "isMut": false,
               "isSigner": false,
@@ -1078,29 +1081,6 @@
           ]
         },
         {
-          "name": "mplxTrade",
-          "accounts": [
-            {
-              "name": "takerTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the pool."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -1116,7 +1096,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -1334,6 +1314,24 @@
               ]
             },
             {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
               "name": "tokenMetadataProgram",
               "isMut": false,
               "isSigner": false,
@@ -1372,29 +1370,6 @@
           ]
         },
         {
-          "name": "mplxTrade",
-          "accounts": [
-            {
-              "name": "takerTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the pool."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -1410,7 +1385,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -1825,7 +1800,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -2003,7 +1978,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -2173,7 +2148,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -2534,7 +2509,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -2725,7 +2700,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {
@@ -2908,7 +2883,7 @@
               "isMut": true,
               "isSigner": true,
               "docs": [
-                "The seller is the owner of the NFT who is selling the NFT into the pool."
+                "The taker is the user buying or selling the NFT."
               ]
             },
             {

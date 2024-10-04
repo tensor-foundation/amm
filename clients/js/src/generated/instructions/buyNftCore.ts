@@ -199,7 +199,7 @@ export type BuyNftCoreAsyncInput<
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -453,7 +453,7 @@ export type BuyNftCoreInput<
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
-  /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+  /** The taker is the user buying or selling the NFT. */
   taker: TransactionSigner<TAccountTaker>;
   /**
    * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
@@ -676,7 +676,7 @@ export type ParsedBuyNftCoreInstruction<
     mplCoreProgram: TAccountMetas[2];
     /** The owner of the pool and the buyer/recipient of the NFT. */
     owner: TAccountMetas[3];
-    /** The seller is the owner of the NFT who is selling the NFT into the pool. */
+    /** The taker is the user buying or selling the NFT. */
     taker: TAccountMetas[4];
     /**
      * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool

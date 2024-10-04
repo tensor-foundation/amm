@@ -18,7 +18,7 @@ pub struct SellNftTokenPoolCore {
     pub mpl_core_program: solana_program::pubkey::Pubkey,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: solana_program::pubkey::Pubkey,
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     pub taker: solana_program::pubkey::Pubkey,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
@@ -291,7 +291,7 @@ impl SellNftTokenPoolCoreBuilder {
         self.owner = Some(owner);
         self
     }
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     #[inline(always)]
     pub fn taker(&mut self, taker: solana_program::pubkey::Pubkey) -> &mut Self {
         self.taker = Some(taker);
@@ -462,7 +462,7 @@ pub struct SellNftTokenPoolCoreCpiAccounts<'a, 'b> {
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     pub taker: &'b solana_program::account_info::AccountInfo<'a>,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
@@ -507,7 +507,7 @@ pub struct SellNftTokenPoolCoreCpi<'a, 'b> {
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     pub taker: &'b solana_program::account_info::AccountInfo<'a>,
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
@@ -866,7 +866,7 @@ impl<'a, 'b> SellNftTokenPoolCoreCpiBuilder<'a, 'b> {
         self.instruction.owner = Some(owner);
         self
     }
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     #[inline(always)]
     pub fn taker(&mut self, taker: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.taker = Some(taker);

@@ -30,7 +30,6 @@ pub struct TransferShared<'info> {
         has_one = owner @ ErrorCode::BadOwner,
         // can only trasnfer to/from NFT & Trade pools
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
-        constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -60,7 +59,7 @@ pub struct TradeShared<'info> {
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
-    /// The seller is the owner of the NFT who is selling the NFT into the pool.
+    /// The taker is the user buying or selling the NFT.
     #[account(mut)]
     pub taker: Signer<'info>,
 
@@ -154,21 +153,22 @@ pub struct MplxShared<'info> {
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
-    // /// Either the legacy token program or token-2022.
-    // pub token_program: Interface<'info, TokenInterface>,
-    // /// The SPL associated token program.
-    // pub associated_token_program: Program<'info, AssociatedToken>,
-    // /// The Solana system program.
-    // pub system_program: Program<'info, System>,
-
     // --------------------------------------- pNft
     /// The Token Metadata edition account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
     pub edition: UncheckedAccount<'info>,
 
-    // Todo: add ProgNftShared back in, if possible
-    // pub pnft_shared: ProgNftShared<'info>,
+    /// The Token Metadata source token record account of the NFT.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
+    pub user_token_record: Option<UncheckedAccount<'info>>,
+
+    /// The Token Metadata token record for the destination.
+    /// CHECK: seeds checked on Token Metadata CPI
+    #[account(mut)]
+    pub pool_token_record: Option<UncheckedAccount<'info>>,
+
     /// The Token Metadata program account.
     /// CHECK: address constraint is checked here
     #[account(address = mpl_token_metadata::ID)]
@@ -187,34 +187,6 @@ pub struct MplxShared<'info> {
     /// CHECK: address constraint is checked here
     #[account(address = MPL_TOKEN_AUTH_RULES_ID)]
     pub authorization_rules_program: Option<UncheckedAccount<'info>>,
-}
-
-/// Additional accounts for Metaplex legacy & pNFT trade instructions
-#[derive(Accounts)]
-pub struct MplxTradeShared<'info> {
-    /// The Token Metadata source token record account of the NFT.
-    /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
-    pub taker_token_record: Option<UncheckedAccount<'info>>,
-
-    /// The Token Metadata token record for the pool.
-    /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
-    pub pool_token_record: Option<UncheckedAccount<'info>>,
-}
-
-/// Additional accounts for Metaplex legacy & pNFT transfer instructions
-#[derive(Accounts)]
-pub struct MplxTransferShared<'info> {
-    /// The Token Metadata source token record account of the NFT.
-    /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
-    pub owner_token_record: Option<UncheckedAccount<'info>>,
-
-    /// The Token Metadata token record for the destination.
-    /// CHECK: seeds checked on Token Metadata CPI
-    #[account(mut)]
-    pub pool_token_record: Option<UncheckedAccount<'info>>,
 }
 
 /// Shared accounts for interacting with Metaplex core assets
