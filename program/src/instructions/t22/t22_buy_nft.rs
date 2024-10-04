@@ -3,8 +3,7 @@ use crate::{
     calc_taker_fees,
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
     error::ErrorCode,
-    record_event, try_autoclose_pool, BuySellEvent, Fees, NftDepositReceipt, PoolType, TAmmEvent,
-    TakerSide, TradeShared, POOL_SIZE, *,
+    *,
 };
 
 use anchor_lang::{
@@ -26,6 +25,7 @@ use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate}
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct BuyNftT22<'info> {
+    /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.

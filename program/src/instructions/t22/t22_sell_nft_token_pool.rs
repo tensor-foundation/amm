@@ -22,16 +22,15 @@ use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate}
 use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
 
 use crate::{
-    calc_taker_fees,
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
     error::ErrorCode,
-    record_event, try_autoclose_pool, BuySellEvent, Fees, PoolType, TAmmEvent, TakerSide,
-    POOL_SIZE, *,
+    *,
 };
 
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
+    /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
     /// The mint account of the NFT being sold.

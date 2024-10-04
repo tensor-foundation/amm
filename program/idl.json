@@ -465,7 +465,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The NFT receipt account denoting that an NFT has been deposited into this pool."
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {
@@ -1738,14 +1738,6 @@
           "isSigner": false,
           "docs": [
             "The NFT receipt account denoting that an NFT has been deposited into this pool."
-          ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The Solana system program."
           ]
         }
       ],

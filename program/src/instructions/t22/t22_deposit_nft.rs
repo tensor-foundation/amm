@@ -1,5 +1,5 @@
 //! Deposit a Token22 NFT into a NFT or Trade pool.
-use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, NftDepositReceipt, PoolType, *};
+use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, *};
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -14,6 +14,7 @@ use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNftT22<'info> {
+    /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.

@@ -28,7 +28,7 @@ use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTradePool<'info> {
-    // NFT Standard shared accounts
+    /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
     // Trade shared accounts

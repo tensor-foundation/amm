@@ -37,7 +37,7 @@ pub struct DepositNft {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -378,7 +378,7 @@ impl DepositNftBuilder {
         self.mint_proof = mint_proof;
         self
     }
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
@@ -516,7 +516,7 @@ pub struct DepositNftCpiAccounts<'a, 'b> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -563,7 +563,7 @@ pub struct DepositNftCpi<'a, 'b> {
     /// Optional account which must be passed in if the NFT must be verified against a
     /// merkle proof condition in the whitelist.
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT. It should be the mint account common
     /// to the owner_ta and pool_ta.
@@ -1001,7 +1001,7 @@ impl<'a, 'b> DepositNftCpiBuilder<'a, 'b> {
         self.instruction.mint_proof = mint_proof;
         self
     }
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(
         &mut self,

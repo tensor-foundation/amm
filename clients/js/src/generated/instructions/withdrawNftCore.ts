@@ -50,9 +50,6 @@ export type WithdrawNftCoreInstruction<
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -83,9 +80,6 @@ export type WithdrawNftCoreInstruction<
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -131,7 +125,6 @@ export type WithdrawNftCoreAsyncInput<
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
   TAccountNftReceipt extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
   /** The MPL core asset account. */
   asset: Address<TAccountAsset>;
@@ -154,8 +147,6 @@ export type WithdrawNftCoreAsyncInput<
   mintProof?: Address<TAccountMintProof>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt?: Address<TAccountNftReceipt>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
 };
 
 export async function getWithdrawNftCoreInstructionAsync<
@@ -167,7 +158,6 @@ export async function getWithdrawNftCoreInstructionAsync<
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
   TAccountNftReceipt extends string,
-  TAccountSystemProgram extends string,
 >(
   input: WithdrawNftCoreAsyncInput<
     TAccountAsset,
@@ -177,8 +167,7 @@ export async function getWithdrawNftCoreInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftReceipt,
-    TAccountSystemProgram
+    TAccountNftReceipt
   >
 ): Promise<
   WithdrawNftCoreInstruction<
@@ -190,8 +179,7 @@ export async function getWithdrawNftCoreInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftReceipt,
-    TAccountSystemProgram
+    TAccountNftReceipt
   >
 > {
   // Program address.
@@ -207,7 +195,6 @@ export async function getWithdrawNftCoreInstructionAsync<
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -225,10 +212,6 @@ export async function getWithdrawNftCoreInstructionAsync<
       pool: expectAddress(accounts.pool.value),
     });
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
@@ -241,7 +224,6 @@ export async function getWithdrawNftCoreInstructionAsync<
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.nftReceipt),
-      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getWithdrawNftCoreInstructionDataEncoder().encode({}),
@@ -254,8 +236,7 @@ export async function getWithdrawNftCoreInstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftReceipt,
-    TAccountSystemProgram
+    TAccountNftReceipt
   >;
 
   return instruction;
@@ -270,7 +251,6 @@ export type WithdrawNftCoreInput<
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
   TAccountNftReceipt extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
   /** The MPL core asset account. */
   asset: Address<TAccountAsset>;
@@ -293,8 +273,6 @@ export type WithdrawNftCoreInput<
   mintProof?: Address<TAccountMintProof>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt: Address<TAccountNftReceipt>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
 };
 
 export function getWithdrawNftCoreInstruction<
@@ -306,7 +284,6 @@ export function getWithdrawNftCoreInstruction<
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
   TAccountNftReceipt extends string,
-  TAccountSystemProgram extends string,
 >(
   input: WithdrawNftCoreInput<
     TAccountAsset,
@@ -316,8 +293,7 @@ export function getWithdrawNftCoreInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftReceipt,
-    TAccountSystemProgram
+    TAccountNftReceipt
   >
 ): WithdrawNftCoreInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -328,8 +304,7 @@ export function getWithdrawNftCoreInstruction<
   TAccountPool,
   TAccountWhitelist,
   TAccountMintProof,
-  TAccountNftReceipt,
-  TAccountSystemProgram
+  TAccountNftReceipt
 > {
   // Program address.
   const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
@@ -344,7 +319,6 @@ export function getWithdrawNftCoreInstruction<
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -355,10 +329,6 @@ export function getWithdrawNftCoreInstruction<
   if (!accounts.mplCoreProgram.value) {
     accounts.mplCoreProgram.value =
       'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
@@ -372,7 +342,6 @@ export function getWithdrawNftCoreInstruction<
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.nftReceipt),
-      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getWithdrawNftCoreInstructionDataEncoder().encode({}),
@@ -385,8 +354,7 @@ export function getWithdrawNftCoreInstruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountNftReceipt,
-    TAccountSystemProgram
+    TAccountNftReceipt
   >;
 
   return instruction;
@@ -421,8 +389,6 @@ export type ParsedWithdrawNftCoreInstruction<
     mintProof?: TAccountMetas[6] | undefined;
     /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
     nftReceipt: TAccountMetas[7];
-    /** The Solana system program. */
-    systemProgram: TAccountMetas[8];
   };
   data: WithdrawNftCoreInstructionData;
 };
@@ -435,7 +401,7 @@ export function parseWithdrawNftCoreInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftCoreInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
+  if (instruction.accounts.length < 8) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -462,7 +428,6 @@ export function parseWithdrawNftCoreInstruction<
       whitelist: getNextOptionalAccount(),
       mintProof: getNextOptionalAccount(),
       nftReceipt: getNextAccount(),
-      systemProgram: getNextAccount(),
     },
     data: getWithdrawNftCoreInstructionDataDecoder().decode(instruction.data),
   };

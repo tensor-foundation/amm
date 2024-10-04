@@ -6,8 +6,10 @@ use super::*;
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNftCore<'info> {
+    /// Metaplex core shared accounts.
     pub core: MplCoreShared<'info>,
 
+    /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
@@ -22,9 +24,6 @@ pub struct WithdrawNftCore<'info> {
         constraint = core.asset.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// The Solana system program.
-    pub system_program: Program<'info, System>,
 }
 
 impl<'info> Validate<'info> for WithdrawNftCore<'info> {

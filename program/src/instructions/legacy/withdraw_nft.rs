@@ -18,8 +18,10 @@ use self::constants::CURRENT_POOL_VERSION;
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNft<'info> {
+    /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
+    /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
     /// The mint of the NFT.

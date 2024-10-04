@@ -1,5 +1,4 @@
 //! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-
 use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke, system_instruction},
@@ -8,7 +7,6 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
-
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
@@ -19,18 +17,18 @@ use tensor_toolbox::{
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 
 use crate::{
-    calc_taker_fees,
     constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
     error::ErrorCode,
-    record_event, try_autoclose_pool, AuthorizationDataLocal, BuySellEvent, Fees, PoolType,
-    TAmmEvent, TakerSide, POOL_SIZE, *,
+    *,
 };
 
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
+    /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
+    /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.

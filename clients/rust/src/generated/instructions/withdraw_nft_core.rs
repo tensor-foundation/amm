@@ -28,8 +28,6 @@ pub struct WithdrawNftCore {
     pub mint_proof: Option<solana_program::pubkey::Pubkey>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-    /// The Solana system program.
-    pub system_program: solana_program::pubkey::Pubkey,
 }
 
 impl WithdrawNftCore {
@@ -41,7 +39,7 @@ impl WithdrawNftCore {
         &self,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.asset, false,
         ));
@@ -89,10 +87,6 @@ impl WithdrawNftCore {
             self.nft_receipt,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.system_program,
-            false,
-        ));
         accounts.extend_from_slice(remaining_accounts);
         let data = WithdrawNftCoreInstructionData::new().try_to_vec().unwrap();
 
@@ -135,7 +129,6 @@ impl Default for WithdrawNftCoreInstructionData {
 ///   5. `[optional]` whitelist
 ///   6. `[optional]` mint_proof
 ///   7. `[writable]` nft_receipt
-///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct WithdrawNftCoreBuilder {
     asset: Option<solana_program::pubkey::Pubkey>,
@@ -146,7 +139,6 @@ pub struct WithdrawNftCoreBuilder {
     whitelist: Option<solana_program::pubkey::Pubkey>,
     mint_proof: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
-    system_program: Option<solana_program::pubkey::Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
@@ -210,13 +202,6 @@ impl WithdrawNftCoreBuilder {
         self.nft_receipt = Some(nft_receipt);
         self
     }
-    /// `[optional account, default to '11111111111111111111111111111111']`
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.system_program = Some(system_program);
-        self
-    }
     /// Add an aditional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -248,9 +233,6 @@ impl WithdrawNftCoreBuilder {
             whitelist: self.whitelist,
             mint_proof: self.mint_proof,
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -277,8 +259,6 @@ pub struct WithdrawNftCoreCpiAccounts<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `withdraw_nft_core` CPI instruction.
@@ -303,8 +283,6 @@ pub struct WithdrawNftCoreCpi<'a, 'b> {
     pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The NFT receipt account denoting that an NFT has been deposited into this pool.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
@@ -322,7 +300,6 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
             whitelist: accounts.whitelist,
             mint_proof: accounts.mint_proof,
             nft_receipt: accounts.nft_receipt,
-            system_program: accounts.system_program,
         }
     }
     #[inline(always)]
@@ -358,7 +335,7 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.asset.key,
             false,
@@ -412,10 +389,6 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
             *self.nft_receipt.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.system_program.key,
-            false,
-        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -430,7 +403,7 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(9 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(8 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.asset.clone());
         if let Some(collection) = self.collection {
@@ -446,7 +419,6 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
             account_infos.push(mint_proof.clone());
         }
         account_infos.push(self.nft_receipt.clone());
-        account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -471,7 +443,6 @@ impl<'a, 'b> WithdrawNftCoreCpi<'a, 'b> {
 ///   5. `[optional]` whitelist
 ///   6. `[optional]` mint_proof
 ///   7. `[writable]` nft_receipt
-///   8. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct WithdrawNftCoreCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftCoreCpiBuilderInstruction<'a, 'b>>,
@@ -489,7 +460,6 @@ impl<'a, 'b> WithdrawNftCoreCpiBuilder<'a, 'b> {
             whitelist: None,
             mint_proof: None,
             nft_receipt: None,
-            system_program: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
@@ -561,15 +531,6 @@ impl<'a, 'b> WithdrawNftCoreCpiBuilder<'a, 'b> {
         self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -635,11 +596,6 @@ impl<'a, 'b> WithdrawNftCoreCpiBuilder<'a, 'b> {
                 .instruction
                 .nft_receipt
                 .expect("nft_receipt is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -659,7 +615,6 @@ struct WithdrawNftCoreCpiBuilderInstruction<'a, 'b> {
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

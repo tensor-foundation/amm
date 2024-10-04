@@ -256,7 +256,7 @@ export type DepositNftAsyncInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /**
    * The mint account of the NFT. It should be the mint account common
@@ -575,7 +575,7 @@ export type DepositNftInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   /**
    * The mint account of the NFT. It should be the mint account common
@@ -837,7 +837,7 @@ export type ParsedDepositNftInstruction<
      */
 
     mintProof?: TAccountMetas[11] | undefined;
-    /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[12];
     /**
      * The mint account of the NFT. It should be the mint account common

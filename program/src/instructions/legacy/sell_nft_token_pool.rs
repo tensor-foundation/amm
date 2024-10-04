@@ -33,8 +33,10 @@ use crate::{
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTokenPool<'info> {
+    /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
+    /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
     /// The mint account of the NFT being sold.

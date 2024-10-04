@@ -10,11 +10,12 @@ use tensor_toolbox::{
 };
 use tensor_vipers::{throw_err, unwrap_int, Validate};
 
-use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, NftDepositReceipt, PoolType, *};
+use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, *};
 
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNftT22<'info> {
+    /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.

@@ -15,11 +15,13 @@ use crate::{error::ErrorCode, *};
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNft<'info> {
+    /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
+    /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         init,
         payer = transfer.owner,
