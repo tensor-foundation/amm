@@ -57,6 +57,7 @@ import {
   getCreatePoolInstruction,
   getDepositSolInstruction,
 } from '../src/index.js';
+import { Creator } from '@tensor-foundation/mpl-token-metadata';
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
@@ -759,6 +760,8 @@ export interface SetupTestParams {
   poolType: PoolType;
   action: TestAction;
   whitelistMode?: Mode;
+  treeSize?: number;
+  creators?: Creator[] & { signers?: KeyPairSigner[] };
   depositAmount?: bigint;
   useMakerBroker?: boolean;
   useSharedEscrow?: boolean;

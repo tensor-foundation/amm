@@ -6,6 +6,7 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  Creator,
   TokenStandard,
   createDefaultNft,
   fetchMetadata,
@@ -52,10 +53,7 @@ import {
 import { setupLegacyTest, testBuyNft } from './_common.js';
 
 // TODO: add tests for:
-// - insufficient royalties for rent exempt gets skipped on creators w/ too low balance
-// - buyNft works with 5 creators and large whitelist proofs
-// - buyNft at higher max price works
-// - buyNft at lower max price fails
+// - insufficient royalties for rent exempt, gets skipped on creators w/ too low balance
 // - buyNft non-whitelisted NFT fails
 //   All:
 //    1) non-WL mint + bad ATA
@@ -100,7 +98,7 @@ test('buy from NFT pool, pay brokers', async (t) => {
 });
 
 test('buy from NFT pool, pay optional royalties', async (t) => {
-  t.timeout(20_000);
+  t.timeout(25_000);
   for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
     const legacyTest = await setupLegacyTest({
       t,
@@ -134,6 +132,79 @@ test('buy from NFT pool, pay optional royalties', async (t) => {
     optionalRoyaltyPct: 101,
     expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
   });
+});
+
+test('buy from NFT pool, max creators large proof', async (t) => {
+  const creatorSigners = await Promise.all(
+    Array.from({ length: 5 }, () => generateKeyPairSigner())
+  );
+
+  const creators: Creator[] = creatorSigners.map(({ address }) => ({
+    address,
+    verified: false, // not verified here but we're checking max length issues
+    share: 20,
+  }));
+
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    creators,
+    treeSize: 10_000,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+    creators,
+  });
+});
+
+test('buy from NFT pool, max price higher than current price succeeds', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [101n, 10000n]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.NFT,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the pre-configured maxPrice which includes the royalties.
+    legacyTest.testConfig.price = (legacyTest.testConfig.price * adjust) / 100n;
+
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: false,
+    });
+  }
+});
+
+test('buy from NFT pool, max price lower than current price fails', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [99n, 50n]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.NFT,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the starting price which does not have royalties added, so we can test the price mismatch logic.
+    legacyTest.testConfig.price =
+      (legacyTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
+
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: false,
+      expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
+    });
+  }
 });
 
 test('buy from Trade pool', async (t) => {
@@ -201,6 +272,50 @@ test('buy from Trade pool, pay optional royalties', async (t) => {
     optionalRoyaltyPct: 101,
     expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
   });
+});
+
+test('buy from Trade pool, max price higher than current price succeeds', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [101n, 10000n]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the pre-configured maxPrice which includes the mm fee and royalties.
+    legacyTest.testConfig.price = (legacyTest.testConfig.price * adjust) / 100n;
+
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: false,
+    });
+  }
+});
+
+test('buy from Trade pool, max price lower than current price fails', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [99n, 50n]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the starting price which does not have mm fee androyalties added, so we can test the price mismatch logic.
+    legacyTest.testConfig.price =
+      (legacyTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
+
+    await testBuyNft(t, legacyTest, {
+      brokerPayments: false,
+      expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
+    });
+  }
 });
 
 test('buying NFT from a trade pool increases currency amount', async (t) => {

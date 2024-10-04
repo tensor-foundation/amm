@@ -4,14 +4,18 @@ import {
   Account,
   Address,
   appendTransactionMessageInstruction,
+  appendTransactionMessageInstructions,
+  IInstruction,
   pipe,
 } from '@solana/web3.js';
 import {
   Creator,
   Nft,
   TokenStandard,
+  VerificationArgs,
   createDefaultNftInCollection,
   fetchMetadata,
+  getVerifyInstruction,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   Client,
@@ -82,6 +86,7 @@ export async function setupLegacyTest(
     action,
     whitelistMode = Mode.FVC,
     depositAmount: dA,
+    treeSize = 10,
     pNft = false,
     useMakerBroker = false,
     useSharedEscrow = false,
@@ -115,7 +120,7 @@ export async function setupLegacyTest(
     standard: pNft
       ? TokenStandard.ProgrammableNonFungible
       : TokenStandard.NonFungible,
-    creators: [
+    creators: params.creators ?? [
       {
         address: nftUpdateAuthority.address,
         share: 100,
@@ -123,6 +128,26 @@ export async function setupLegacyTest(
       },
     ],
   });
+
+  const verifyCreatorIxs: IInstruction[] = [];
+
+  // Verify creators, if necessary.
+  for (const creator of params.creators?.signers ?? []) {
+    // If verified and not the update authority which is already signing, verify.
+    verifyCreatorIxs.push(
+      getVerifyInstruction({
+        authority: creator,
+        metadata: nft.metadata,
+        verificationArgs: VerificationArgs.CreatorV1,
+      })
+    );
+
+    await pipe(
+      await createDefaultTransaction(client, creator),
+      (tx) => appendTransactionMessageInstructions(verifyCreatorIxs, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
 
   // Reset test timeout for long-running tests.
   t.pass();
@@ -204,7 +229,7 @@ export async function setupLegacyTest(
       const {
         root,
         proofs: [p],
-      } = await generateTreeOfSize(10, [mint]);
+      } = await generateTreeOfSize(treeSize, [mint]);
       proof = p;
       conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
       break;
@@ -317,17 +342,18 @@ export async function setupLegacyTest(
   };
 }
 
-export interface BuyTests {
+export interface BuyLegacyTests {
   brokerPayments: boolean;
   optionalRoyaltyPct?: number;
   creators?: Creator[];
   expectError?: number;
+  pNft?: boolean;
 }
 
 export async function testBuyNft(
   t: ExecutionContext,
   params: LegacyTest,
-  tests: BuyTests
+  tests: BuyLegacyTests
 ) {
   const { client, signers, nft, testConfig, pool } = params;
 
@@ -335,6 +361,10 @@ export async function testBuyNft(
     signers;
   const { price: maxAmount, sellerFeeBasisPoints } = testConfig;
   const { mint } = nft;
+
+  const creators = tests.creators ?? [
+    { address: nftUpdateAuthority.address, share: 100, verified: true },
+  ];
 
   const makerBrokerStartingBalance = await getBalance(
     client,
@@ -355,6 +385,10 @@ export async function testBuyNft(
 
   const feeVaultStartingBalance = await getBalance(client, params.feeVault);
 
+  const optionalRoyaltyPct = tests.pNft
+    ? 100
+    : (tests.optionalRoyaltyPct ?? undefined);
+
   const buyNftIx = await getBuyNftInstructionAsync({
     owner: poolOwner.address,
     taker: buyer,
@@ -363,9 +397,9 @@ export async function testBuyNft(
     maxAmount,
     makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
     takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
-    optionalRoyaltyPct: tests.optionalRoyaltyPct,
+    optionalRoyaltyPct,
     // Remaining accounts
-    creators: [nftUpdateAuthority.address],
+    creators: creators.map(({ address }) => address),
   });
 
   if (tests.expectError) {
@@ -427,7 +461,7 @@ export async function testBuyNft(
   const takerBrokerFee = brokersFee - makerBrokerFee;
   const royaltyFee = (sellerFeeBasisPoints * startingPrice) / BASIS_POINTS;
   const appliedRoyaltyFee =
-    (royaltyFee * BigInt(tests.optionalRoyaltyPct ?? 0)) / HUNDRED_PERCENT;
+    (royaltyFee * BigInt(optionalRoyaltyPct ?? 0)) / HUNDRED_PERCENT;
 
   if (tests.brokerPayments) {
     const expectedMakerBrokerBalance =
@@ -448,13 +482,16 @@ export async function testBuyNft(
     t.assert(takerBrokerEndingBalance === expectedTakerBrokerBalance);
   }
 
-  // Always check creator balance
-  const expectedCreatorBalance = creatorStartingBalance + appliedRoyaltyFee;
-  const creatorEndingBalance = await getBalance(
-    client,
-    nftUpdateAuthority.address
-  );
-  t.assert(creatorEndingBalance === expectedCreatorBalance);
+  // Always check verified creator balances for royalty payments.
+  for (const creator of creators) {
+    if (creator.verified) {
+      const expectedCreatorBalance =
+        creatorStartingBalance +
+        (appliedRoyaltyFee * BigInt(creator.share)) / HUNDRED_PERCENT;
+      const creatorEndingBalance = await getBalance(client, creator.address);
+      t.assert(creatorEndingBalance === expectedCreatorBalance);
+    }
+  }
 
   // Always check fee vault balance
   // Fee vault gets fee split of taker fee + brokers fee if brokers are not passed in.
