@@ -15,6 +15,9 @@ use crate::{error::ErrorCode, *};
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct WithdrawNftT22<'info> {
+    /// T22 shared accounts.
+    pub t22: T22<'info>,
+
     /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
@@ -70,6 +73,10 @@ pub struct WithdrawNftT22<'info> {
 }
 
 impl<'info> WithdrawNftT22<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()
+    }
+
     fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -83,7 +90,7 @@ impl<'info> WithdrawNftT22<'info> {
 }
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
 ) -> Result<()> {

@@ -26,8 +26,14 @@ pub struct WithdrawNftCore<'info> {
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 }
 
+impl<'info> WithdrawNftCore<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()
+    }
+}
+
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_withdraw_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
 ) -> Result<()> {

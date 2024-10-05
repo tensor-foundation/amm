@@ -9,7 +9,6 @@ use anchor_spl::{
     token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use escrow_program::instructions::assert_decode_margin_account;
-use solana_program::keccak;
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
@@ -19,7 +18,6 @@ use tensor_toolbox::{
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
-use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
 
 use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
@@ -28,6 +26,8 @@ use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 pub struct SellNftTokenPoolT22<'info> {
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
+
+    pub t22: T22<'info>,
 
     /// The mint account of the NFT being sold.
     #[account(
@@ -66,27 +66,10 @@ pub struct SellNftTokenPoolT22<'info> {
 }
 
 impl<'info> SellNftTokenPoolT22<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        let whitelist = unwrap_opt!(self.trade.whitelist.as_ref(), ErrorCode::BadWhitelist);
-
-        let full_merkle_proof = if let Some(mint_proof) = &self.trade.mint_proof {
-            let mint_proof =
-                assert_decode_mint_proof_v2(&whitelist.key(), &self.mint.key(), mint_proof)?;
-
-            let leaf = keccak::hash(self.mint.key().as_ref());
-            let proof = &mut mint_proof.proof.to_vec();
-            proof.truncate(mint_proof.proof_len as usize);
-            Some(FullMerkleProof {
-                leaf: leaf.0,
-                proof: proof.clone(),
-            })
-        } else {
-            // Requires a mint proof unless other Whitelist modes are supported for T22.
-            return Err(ErrorCode::MintProofNotSet.into());
-        };
-
-        // Only supporting Merkle proof for now.
-        whitelist.verify(&None, &None, &full_merkle_proof)
+    fn pre_process_checks(&self) -> Result<()> {
+        self.trade.validate_sell(&PoolType::Token)?;
+        self.trade
+            .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
     }
 
     fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
@@ -102,7 +85,7 @@ impl<'info> SellNftTokenPoolT22<'info> {
 }
 
 /// Sell a Token22 NFT into a Token pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.trade.validate_sell(&PoolType::Token))]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
     // Min vs exact so we can add slippage later.

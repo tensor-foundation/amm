@@ -29,67 +29,14 @@ pub struct DepositNftCore<'info> {
 }
 
 impl<'info> DepositNftCore<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        let whitelist = unwrap_opt!(self.transfer.whitelist.as_ref(), ErrorCode::BadWhitelist);
-
-        validate_asset(
-            &self.core.asset.to_account_info(),
-            self.core
-                .collection
-                .as_ref()
-                .map(|a| a.to_account_info())
-                .as_ref(),
-        )?;
-
-        let asset = BaseAssetV1::try_from(self.core.asset.as_ref())?;
-
-        // Fetch the verified creators from the MPL Core asset and map into the expected type.
-        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
-            &self.core.asset.to_account_info(),
-            PluginType::VerifiedCreators,
-        )
-        .map(|(_, verified_creators, _)| {
-            verified_creators
-                .signatures
-                .into_iter()
-                .map(|c| Creator {
-                    address: c.address,
-                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
-                    verified: c.verified,
-                })
-                .collect()
-        })
-        .ok();
-
-        let collection = match asset.update_authority {
-            UpdateAuthority::Collection(address) => Some(Collection {
-                key: address,
-                verified: true, // Only the collection update authority can set a collection, so this is always verified.
-            }),
-            _ => None,
-        };
-
-        let full_merkle_proof = if let Some(mint_proof) = &self.transfer.mint_proof {
-            let mint_proof =
-                assert_decode_mint_proof_v2(whitelist, &self.core.asset.key(), mint_proof)?;
-
-            let leaf = keccak::hash(self.core.asset.key().as_ref());
-            let proof = &mut mint_proof.proof.to_vec();
-            proof.truncate(mint_proof.proof_len as usize);
-            Some(FullMerkleProof {
-                leaf: leaf.0,
-                proof: proof.clone(),
-            })
-        } else {
-            None
-        };
-
-        whitelist.verify(&collection, &creators, &full_merkle_proof)
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()?;
+        self.transfer.verify_whitelist(&self.core, None)
     }
 }
 
 /// Deposit a MPL Core asset into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_deposit_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,
 ) -> Result<()> {

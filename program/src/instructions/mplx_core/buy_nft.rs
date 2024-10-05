@@ -31,6 +31,10 @@ pub struct BuyNftCore<'info> {
 }
 
 impl<'info> BuyNftCore<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.trade.validate_buy()
+    }
+
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
         invoke(
             &system_instruction::transfer(self.trade.taker.key, to.key, lamports),
@@ -56,7 +60,7 @@ impl<'info> BuyNftCore<'info> {
 }
 
 /// Buy a MPL Core asset from a NFT or Trade pool.
-#[access_control(ctx.accounts.trade.validate_buy())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_buy_nft_core<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftCore<'info>>,
     // Max vs exact so we can add slippage later.

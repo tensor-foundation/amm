@@ -2273,6 +2273,16 @@
       ],
       "accounts": [
         {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
           "name": "transfer",
           "accounts": [
             {
@@ -2379,6 +2389,16 @@
         "Withdraw a Token22 NFT from a NFT or Trade pool."
       ],
       "accounts": [
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
         {
           "name": "transfer",
           "accounts": [
@@ -2798,6 +2818,16 @@
           ]
         },
         {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
           "name": "mint",
           "isMut": false,
           "isSigner": false,
@@ -2859,6 +2889,16 @@
         "Sell a Token22 NFT into a Trade pool."
       ],
       "accounts": [
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
         {
           "name": "trade",
           "accounts": [

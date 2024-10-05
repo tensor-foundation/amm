@@ -75,6 +75,10 @@ pub struct BuyNftT22<'info> {
 }
 
 impl<'info> BuyNftT22<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.trade.validate_buy()
+    }
+
     fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -111,7 +115,7 @@ impl<'info> BuyNftT22<'info> {
 }
 
 /// Buy a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.trade.validate_buy())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftT22<'info>>,
     // Max vs exact so we can add slippage later.

@@ -42,6 +42,9 @@ import {
 
 export type WithdrawNftT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
+  TAccountSysProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
@@ -64,6 +67,9 @@ export type WithdrawNftT22Instruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
+      TAccountSysProgram extends string
+        ? ReadonlyAccount<TAccountSysProgram>
+        : TAccountSysProgram,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
@@ -135,6 +141,7 @@ export function getWithdrawNftT22InstructionDataCodec(): Codec<
 }
 
 export type WithdrawNftT22AsyncInput<
+  TAccountSysProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
@@ -147,6 +154,7 @@ export type WithdrawNftT22AsyncInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  sysProgram?: Address<TAccountSysProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool the asset is being transferred to/from. */
@@ -179,6 +187,7 @@ export type WithdrawNftT22AsyncInput<
 };
 
 export async function getWithdrawNftT22InstructionAsync<
+  TAccountSysProgram extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
@@ -192,6 +201,7 @@ export async function getWithdrawNftT22InstructionAsync<
   TAccountSystemProgram extends string,
 >(
   input: WithdrawNftT22AsyncInput<
+    TAccountSysProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -207,6 +217,7 @@ export async function getWithdrawNftT22InstructionAsync<
 ): Promise<
   WithdrawNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -225,6 +236,7 @@ export async function getWithdrawNftT22InstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
+    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
@@ -252,6 +264,10 @@ export async function getWithdrawNftT22InstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.sysProgram.value) {
+    accounts.sysProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt.value = await findNftDepositReceiptPda({
       mint: expectAddress(accounts.mint.value),
@@ -291,6 +307,7 @@ export async function getWithdrawNftT22InstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.sysProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -308,6 +325,7 @@ export async function getWithdrawNftT22InstructionAsync<
     data: getWithdrawNftT22InstructionDataEncoder().encode({}),
   } as WithdrawNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -325,6 +343,7 @@ export async function getWithdrawNftT22InstructionAsync<
 }
 
 export type WithdrawNftT22Input<
+  TAccountSysProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
@@ -337,6 +356,7 @@ export type WithdrawNftT22Input<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  sysProgram?: Address<TAccountSysProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
   /** The pool the asset is being transferred to/from. */
@@ -369,6 +389,7 @@ export type WithdrawNftT22Input<
 };
 
 export function getWithdrawNftT22Instruction<
+  TAccountSysProgram extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
@@ -382,6 +403,7 @@ export function getWithdrawNftT22Instruction<
   TAccountSystemProgram extends string,
 >(
   input: WithdrawNftT22Input<
+    TAccountSysProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -396,6 +418,7 @@ export function getWithdrawNftT22Instruction<
   >
 ): WithdrawNftT22Instruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
+  TAccountSysProgram,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
@@ -413,6 +436,7 @@ export function getWithdrawNftT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
+    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
@@ -437,6 +461,10 @@ export function getWithdrawNftT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.sysProgram.value) {
+    accounts.sysProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
@@ -458,6 +486,7 @@ export function getWithdrawNftT22Instruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.sysProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
@@ -475,6 +504,7 @@ export function getWithdrawNftT22Instruction<
     data: getWithdrawNftT22InstructionDataEncoder().encode({}),
   } as WithdrawNftT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
@@ -497,36 +527,37 @@ export type ParsedWithdrawNftT22Instruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    sysProgram: TAccountMetas[0];
     /** The owner of the pool and the NFT. */
-    owner: TAccountMetas[0];
+    owner: TAccountMetas[1];
     /** The pool the asset is being transferred to/from. */
-    pool: TAccountMetas[1];
+    pool: TAccountMetas[2];
     /**
      * The whitelist that gatekeeps which NFTs can be deposited into the pool.
      * Must match the whitelist stored in the pool state.
      */
 
-    whitelist?: TAccountMetas[2] | undefined;
+    whitelist?: TAccountMetas[3] | undefined;
     /**
      * Optional account which must be passed in if the NFT must be verified against a
      * merkle proof condition in the whitelist.
      */
 
-    mintProof?: TAccountMetas[3] | undefined;
+    mintProof?: TAccountMetas[4] | undefined;
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-    nftReceipt: TAccountMetas[4];
+    nftReceipt: TAccountMetas[5];
     /** The mint of the NFT. */
-    mint: TAccountMetas[5];
+    mint: TAccountMetas[6];
     /** The TA of the owner where the NFT will be withdrawn to. */
-    ownerTa: TAccountMetas[6];
+    ownerTa: TAccountMetas[7];
     /** The TA of the pool, where the NFT token is escrowed. */
-    poolTa: TAccountMetas[7];
+    poolTa: TAccountMetas[8];
     /** The SPL Token program for the Mint and ATAs. */
-    tokenProgram: TAccountMetas[8];
+    tokenProgram: TAccountMetas[9];
     /** The SPL associated token program. */
-    associatedTokenProgram: TAccountMetas[9];
+    associatedTokenProgram: TAccountMetas[10];
     /** The Solana system program. */
-    systemProgram: TAccountMetas[10];
+    systemProgram: TAccountMetas[11];
   };
   data: WithdrawNftT22InstructionData;
 };
@@ -539,7 +570,7 @@ export function parseWithdrawNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 12) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -558,6 +589,7 @@ export function parseWithdrawNftT22Instruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      sysProgram: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextOptionalAccount(),

@@ -31,6 +31,7 @@ import {
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
+  TENSOR_AMM_ERROR__BAD_MINT_PROOF,
   TENSOR_AMM_ERROR__BAD_WHITELIST,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
@@ -916,7 +917,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   );
   // Error is thrown in a whitelist utility function so throws
   // a whitelist error.
-  await expectCustomError(t, promise, TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_MINT_PROOF);
 
   // Specify the correct whitelist, and a valid mint proof for that whitelist
   // but the mint still isn't in the whitelist.
@@ -939,7 +940,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(ix, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promise, TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_MINT_PROOF);
 
   // Finally, use the correct mint, with the correct mint proof, with the correct whitelist.
   ix = await getSellNftTradePoolT22InstructionAsync({

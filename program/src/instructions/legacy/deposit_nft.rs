@@ -4,10 +4,8 @@ use anchor_spl::{
     token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
-use solana_program::keccak;
-use tensor_toolbox::token_metadata::{assert_decode_metadata, transfer, TransferArgs};
-use tensor_vipers::{unwrap_int, unwrap_opt, Validate};
-use whitelist_program::{self, FullMerkleProof};
+use tensor_toolbox::token_metadata::{transfer, TransferArgs};
+use tensor_vipers::{unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
 
@@ -70,25 +68,10 @@ pub struct DepositNft<'info> {
 }
 
 impl<'info> DepositNft<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        let whitelist = unwrap_opt!(self.transfer.whitelist.as_ref(), ErrorCode::BadWhitelist);
-        let metadata = assert_decode_metadata(&self.mint.key(), &self.mplx.metadata)?;
-
-        let full_merkle_proof = if let Some(mint_proof) = &self.transfer.mint_proof {
-            let mint_proof = assert_decode_mint_proof_v2(whitelist, &self.mint.key(), mint_proof)?;
-
-            let leaf = keccak::hash(self.mint.key().as_ref());
-            let proof = &mut mint_proof.proof.to_vec();
-            proof.truncate(mint_proof.proof_len as usize);
-            Some(FullMerkleProof {
-                leaf: leaf.0,
-                proof: proof.clone(),
-            })
-        } else {
-            None
-        };
-
-        whitelist.verify(&metadata.collection, &metadata.creators, &full_merkle_proof)
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()?;
+        self.transfer
+            .verify_whitelist(&self.mplx, Some(self.mint.to_account_info()))
     }
 
     fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
@@ -104,7 +87,7 @@ impl<'info> DepositNft<'info> {
 }
 
 /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_deposit_nft(
     ctx: Context<DepositNft>,
     authorization_data: Option<AuthorizationDataLocal>,

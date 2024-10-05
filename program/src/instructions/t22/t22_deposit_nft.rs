@@ -6,14 +6,15 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
 };
-use solana_program::keccak;
 use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
-use tensor_vipers::{unwrap_int, unwrap_opt, Validate};
-use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
+use tensor_vipers::{unwrap_int, Validate};
 
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNftT22<'info> {
+    /// T22 shared accounts.
+    pub t22: T22<'info>,
+
     /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
@@ -69,27 +70,10 @@ pub struct DepositNftT22<'info> {
 }
 
 impl<'info> DepositNftT22<'info> {
-    pub fn verify_whitelist(&self) -> Result<()> {
-        let whitelist = unwrap_opt!(self.transfer.whitelist.as_ref(), ErrorCode::BadWhitelist);
-
-        let mint_proof = unwrap_opt!(self.transfer.mint_proof.as_ref(), ErrorCode::BadMintProof);
-
-        let mint_proof = assert_decode_mint_proof_v2(
-            &whitelist.key(),
-            &self.mint.key(),
-            &mint_proof.to_account_info(),
-        )?;
-
-        let leaf = keccak::hash(self.mint.key().as_ref());
-        let proof = &mut mint_proof.proof.to_vec();
-        proof.truncate(mint_proof.proof_len as usize);
-        let full_merkle_proof = Some(FullMerkleProof {
-            leaf: leaf.0,
-            proof: proof.clone(),
-        });
-
-        // Only supporting Merkle proof for now; what Metadata types do we support for Token22?
-        whitelist.verify(&None, &None, &full_merkle_proof)
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()?;
+        self.transfer
+            .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
     }
 
     fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
@@ -105,7 +89,7 @@ impl<'info> DepositNftT22<'info> {
 }
 
 /// Deposit a Token22 NFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_deposit_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
 ) -> Result<()> {

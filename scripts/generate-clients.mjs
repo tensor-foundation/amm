@@ -223,6 +223,14 @@ kinobi.update(
         "systemProgram"
       )
     },
+    {
+      account: "sysProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "11111111111111111111111111111111",
+        "systemProgram"
+      )
+    },
     // pNFT specific accounts
     {
       account: "tokenMetadataProgram",

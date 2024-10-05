@@ -47,6 +47,9 @@ import {
 
 export type SellNftTradePoolT22Instruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
+  TAccountSysProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountTaker extends string | IAccountMeta<string> = string,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
@@ -81,6 +84,9 @@ export type SellNftTradePoolT22Instruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
+      TAccountSysProgram extends string
+        ? ReadonlyAccount<TAccountSysProgram>
+        : TAccountSysProgram,
       TAccountOwner extends string
         ? WritableAccount<TAccountOwner>
         : TAccountOwner,
@@ -190,6 +196,7 @@ export function getSellNftTradePoolT22InstructionDataCodec(): Codec<
 }
 
 export type SellNftTradePoolT22AsyncInput<
+  TAccountSysProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -212,6 +219,7 @@ export type SellNftTradePoolT22AsyncInput<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  sysProgram?: Address<TAccountSysProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
   /** The taker is the user buying or selling the NFT. */
@@ -271,6 +279,7 @@ export type SellNftTradePoolT22AsyncInput<
 };
 
 export async function getSellNftTradePoolT22InstructionAsync<
+  TAccountSysProgram extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -294,6 +303,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
   TAccountSystemProgram extends string,
 >(
   input: SellNftTradePoolT22AsyncInput<
+    TAccountSysProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -319,6 +329,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
 ): Promise<
   SellNftTradePoolT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -347,6 +358,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
+    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -384,6 +396,10 @@ export async function getSellNftTradePoolT22InstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
+  if (!accounts.sysProgram.value) {
+    accounts.sysProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
   }
@@ -449,6 +465,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.sysProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -478,6 +495,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
     ),
   } as SellNftTradePoolT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -505,6 +523,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
 }
 
 export type SellNftTradePoolT22Input<
+  TAccountSysProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -527,6 +546,7 @@ export type SellNftTradePoolT22Input<
   TAccountAssociatedTokenProgram extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  sysProgram?: Address<TAccountSysProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
   /** The taker is the user buying or selling the NFT. */
@@ -586,6 +606,7 @@ export type SellNftTradePoolT22Input<
 };
 
 export function getSellNftTradePoolT22Instruction<
+  TAccountSysProgram extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -609,6 +630,7 @@ export function getSellNftTradePoolT22Instruction<
   TAccountSystemProgram extends string,
 >(
   input: SellNftTradePoolT22Input<
+    TAccountSysProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -633,6 +655,7 @@ export function getSellNftTradePoolT22Instruction<
   >
 ): SellNftTradePoolT22Instruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
+  TAccountSysProgram,
   TAccountOwner,
   TAccountTaker,
   TAccountRentPayer,
@@ -660,6 +683,7 @@ export function getSellNftTradePoolT22Instruction<
 
   // Original accounts.
   const originalAccounts = {
+    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -694,6 +718,10 @@ export function getSellNftTradePoolT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
+  if (!accounts.sysProgram.value) {
+    accounts.sysProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
   }
@@ -729,6 +757,7 @@ export function getSellNftTradePoolT22Instruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
+      getAccountMeta(accounts.sysProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -758,6 +787,7 @@ export function getSellNftTradePoolT22Instruction<
     ),
   } as SellNftTradePoolT22Instruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
+    TAccountSysProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -790,18 +820,19 @@ export type ParsedSellNftTradePoolT22Instruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    sysProgram: TAccountMetas[0];
     /** The owner of the pool and the buyer/recipient of the NFT. */
-    owner: TAccountMetas[0];
+    owner: TAccountMetas[1];
     /** The taker is the user buying or selling the NFT. */
-    taker: TAccountMetas[1];
+    taker: TAccountMetas[2];
     /**
      * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
      * is auto-closed.
      */
 
-    rentPayer: TAccountMetas[2];
+    rentPayer: TAccountMetas[3];
     /** Fee vault account owned by the TFEE program. */
-    feeVault: TAccountMetas[3];
+    feeVault: TAccountMetas[4];
     /**
      * The Pool state account that the NFT is being sold into. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
@@ -809,43 +840,43 @@ export type ParsedSellNftTradePoolT22Instruction<
      * whitelist condition.
      */
 
-    pool: TAccountMetas[4];
+    pool: TAccountMetas[5];
     /** The whitelist account that the pool uses to verify the NFTs being sold into it. */
-    whitelist: TAccountMetas[5];
+    whitelist: TAccountMetas[6];
     /**
      * Optional account which must be passed in if the NFT must be verified against a
      * merkle proof condition in the whitelist.
      */
 
-    mintProof?: TAccountMetas[6] | undefined;
+    mintProof?: TAccountMetas[7] | undefined;
     /** The shared escrow account for pools that have liquidity in a shared account. */
-    sharedEscrow?: TAccountMetas[7] | undefined;
+    sharedEscrow?: TAccountMetas[8] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[8] | undefined;
+    makerBroker?: TAccountMetas[9] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[9] | undefined;
+    takerBroker?: TAccountMetas[10] | undefined;
     /** The optional cosigner account that must be passed in if the pool has a cosigner. */
-    cosigner?: TAccountMetas[10] | undefined;
+    cosigner?: TAccountMetas[11] | undefined;
     /** The AMM program account, used for self-cpi logging. */
-    ammProgram: TAccountMetas[11];
+    ammProgram: TAccountMetas[12];
     /** The escrow program account for shared liquidity pools. */
-    escrowProgram?: TAccountMetas[12] | undefined;
+    escrowProgram?: TAccountMetas[13] | undefined;
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-    nftReceipt: TAccountMetas[13];
+    nftReceipt: TAccountMetas[14];
     /** The mint account of the NFT being sold. */
-    mint: TAccountMetas[14];
+    mint: TAccountMetas[15];
     /** The token account of the NFT for the seller's wallet. */
-    takerTa: TAccountMetas[15];
+    takerTa: TAccountMetas[16];
     /** The ATA of the pool, where the NFT will be transferred to. */
-    poolTa: TAccountMetas[16];
+    poolTa: TAccountMetas[17];
     /** The ATA of the owner, where the NFT will be transferred to as a result of this sale. */
-    ownerTa: TAccountMetas[17];
+    ownerTa: TAccountMetas[18];
     /** The Token 2022 program. */
-    tokenProgram: TAccountMetas[18];
+    tokenProgram: TAccountMetas[19];
     /** The SPL associated token program. */
-    associatedTokenProgram: TAccountMetas[19];
+    associatedTokenProgram: TAccountMetas[20];
     /** The Solana system program. */
-    systemProgram: TAccountMetas[20];
+    systemProgram: TAccountMetas[21];
   };
   data: SellNftTradePoolT22InstructionData;
 };
@@ -858,7 +889,7 @@ export function parseSellNftTradePoolT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTradePoolT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 21) {
+  if (instruction.accounts.length < 22) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -877,6 +908,7 @@ export function parseSellNftTradePoolT22Instruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
+      sysProgram: getNextAccount(),
       owner: getNextAccount(),
       taker: getNextAccount(),
       rentPayer: getNextAccount(),

@@ -1,13 +1,22 @@
 use anchor_lang::prelude::*;
 use constants::CURRENT_POOL_VERSION;
+use mpl_token_metadata::types::{Collection, Creator};
 use program::AmmProgram;
-use tensor_toolbox::{escrow, shard_num};
-use tensor_vipers::{throw_err, Validate};
-use whitelist_program::WhitelistV2;
+use solana_program::keccak;
+use tensor_toolbox::{escrow, shard_num, token_metadata::assert_decode_metadata};
+use tensor_vipers::{throw_err, unwrap_opt, Validate};
+use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use crate::{error::ErrorCode, *};
 
 use super::constants::TFEE_PROGRAM_ID;
+
+use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
+    types::{PluginType, UpdateAuthority, VerifiedCreators},
+};
+use tensor_toolbox::metaplex_core::validate_asset;
 
 /* AMM Protocol shared account structs*/
 
@@ -270,4 +279,147 @@ pub struct MplCoreShared<'info> {
     /// CHECK: address constraint is checked here
     #[account(address = mpl_core::ID)]
     pub mpl_core_program: UncheckedAccount<'info>,
+}
+
+#[derive(Accounts)]
+pub struct T22<'info> {
+    pub sys_program: Program<'info, System>,
+}
+
+pub trait ValidateAsset<'info> {
+    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset>;
+}
+
+impl<'info> ValidateAsset<'info> for T22<'info> {
+    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
+        let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
+
+        Ok(AmmAsset {
+            pubkey: mint.key(),
+            collection: None,
+            creators: None,
+        })
+    }
+}
+
+impl<'info> ValidateAsset<'info> for MplxShared<'info> {
+    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
+        let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
+
+        let metadata = assert_decode_metadata(&mint.key(), &self.metadata)?;
+
+        Ok(AmmAsset {
+            pubkey: mint.key(),
+            collection: metadata.collection,
+            creators: metadata.creators,
+        })
+    }
+}
+
+impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
+    fn validate_asset(&self, _mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
+        validate_asset(
+            &self.asset.to_account_info(),
+            self.collection
+                .as_ref()
+                .map(|a| a.to_account_info())
+                .as_ref(),
+        )?;
+
+        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
+
+        // Fetch the verified creators from the MPL Core asset and map into the expected type.
+        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
+            &self.asset.to_account_info(),
+            PluginType::VerifiedCreators,
+        )
+        .map(|(_, verified_creators, _)| {
+            verified_creators
+                .signatures
+                .into_iter()
+                .map(|c| Creator {
+                    address: c.address,
+                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
+                    verified: c.verified,
+                })
+                .collect()
+        })
+        .ok();
+
+        let collection = match asset.update_authority {
+            UpdateAuthority::Collection(address) => Some(Collection {
+                key: address,
+                verified: true, // Only the collection update authority can set a collection, so this is always verified.
+            }),
+            _ => None,
+        };
+
+        Ok(AmmAsset {
+            pubkey: self.asset.key(),
+            collection,
+            creators,
+        })
+    }
+}
+
+pub struct AmmAsset {
+    pub pubkey: Pubkey,
+    pub collection: Option<Collection>,
+    pub creators: Option<Vec<Creator>>,
+}
+
+impl<'info> TradeShared<'info> {
+    pub fn verify_whitelist(
+        &self,
+        standard: &impl ValidateAsset<'info>,
+        mint: Option<AccountInfo<'info>>,
+    ) -> Result<()> {
+        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
+
+        let asset = standard.validate_asset(mint)?;
+
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;
+
+            let leaf = keccak::hash(asset.pubkey.as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            None
+        };
+
+        whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+    }
+}
+
+impl<'info> TransferShared<'info> {
+    pub fn verify_whitelist(
+        &self,
+        standard: &impl ValidateAsset<'info>,
+        mint: Option<AccountInfo<'info>>,
+    ) -> Result<()> {
+        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
+
+        let asset = standard.validate_asset(mint)?;
+
+        let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
+            let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;
+
+            let leaf = keccak::hash(asset.pubkey.as_ref());
+            let proof = &mut mint_proof.proof.to_vec();
+            proof.truncate(mint_proof.proof_len as usize);
+            Some(FullMerkleProof {
+                leaf: leaf.0,
+                proof: proof.clone(),
+            })
+        } else {
+            None
+        };
+
+        whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+    }
 }

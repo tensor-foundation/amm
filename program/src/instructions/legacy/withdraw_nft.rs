@@ -72,6 +72,10 @@ pub struct WithdrawNft<'info> {
 }
 
 impl<'info> WithdrawNft<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.transfer.validate()
+    }
+
     fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -85,7 +89,7 @@ impl<'info> WithdrawNft<'info> {
 }
 
 /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.transfer.validate())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
     authorization_data: Option<AuthorizationDataLocal>,

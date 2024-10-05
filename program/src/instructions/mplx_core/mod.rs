@@ -17,14 +17,8 @@ use crate::{
 
 use anchor_lang::prelude::*;
 use escrow_program::instructions::assert_decode_margin_account;
-use mpl_core::{
-    accounts::BaseAssetV1,
-    fetch_plugin,
-    instructions::TransferV1CpiBuilder,
-    types::{PluginType, Royalties, UpdateAuthority, VerifiedCreators},
-};
-use mpl_token_metadata::types::{Collection, Creator};
-use solana_program::{keccak, program::invoke, system_instruction};
+use mpl_core::{instructions::TransferV1CpiBuilder, types::Royalties};
+use solana_program::{program::invoke, system_instruction};
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
@@ -33,4 +27,3 @@ use tensor_toolbox::{
     transfer_lamports_from_pda, CreatorFeeMode, FromAcc, FromExternal,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
-use whitelist_program::FullMerkleProof;

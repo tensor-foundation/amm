@@ -79,6 +79,10 @@ pub struct BuyNft<'info> {
 }
 
 impl<'info> BuyNft<'info> {
+    fn pre_process_checks(&self) -> Result<()> {
+        self.trade.validate_buy()
+    }
+
     /// Closes the pool's token account.
     fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
         CpiContext::new(
@@ -117,7 +121,7 @@ impl<'info> BuyNft<'info> {
 }
 
 /// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
-#[access_control(ctx.accounts.trade.validate_buy())]
+#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,
     max_amount: u64,
