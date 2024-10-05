@@ -38,7 +38,7 @@ pub fn process_sell_nft_token_pool_core<'info>(
         // Calculate fees from the current price.
         let current_price = pool.current_price(TakerSide::Sell)?;
 
-        let Fees {
+        let AmmFees {
             taker_fee,
             tamm_fee,
             maker_broker_fee,
@@ -65,7 +65,7 @@ pub fn process_sell_nft_token_pool_core<'info>(
         };
 
         // No optional royalties.
-        let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
+        let creators_fee = calc_creators_fee(royalty_fee, current_price, Some(100))?;
 
         // For keeping track of current price + fees charged (computed dynamically)
         // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage

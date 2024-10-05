@@ -13,7 +13,6 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee,
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
@@ -87,7 +86,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
     // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
 
-    let Fees {
+    let AmmFees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
@@ -144,7 +143,7 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         });
 
         // No optional royalties.
-        let creators_fee = calc_creators_fee(*seller_fee, current_price, None, Some(100))?;
+        let creators_fee = calc_creators_fee(*seller_fee, current_price, Some(100))?;
 
         (creator_data, creator_infos, creators_fee)
     } else {

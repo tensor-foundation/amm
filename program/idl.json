@@ -918,6 +918,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -1198,6 +1203,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -1487,6 +1497,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -1894,6 +1909,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2072,6 +2092,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2242,6 +2267,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2623,6 +2653,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2814,6 +2849,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -3017,6 +3057,11 @@
               "docs": [
                 "The escrow program account for shared liquidity pools."
               ]
+            },
+            {
+              "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -3594,6 +3639,20 @@
                 ]
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TransferDirection",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "IntoPool"
+          },
+          {
+            "name": "OutOfPool"
           }
         ]
       }

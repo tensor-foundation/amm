@@ -90,13 +90,19 @@ pub fn assert_decode_mint_proof_v2(
 }
 
 pub struct Fees {
+    amm_fees: AmmFees,
+    creators_fee: u64,
+    current_price: u64,
+}
+
+pub struct AmmFees {
     pub taker_fee: u64,
     pub tamm_fee: u64,
     pub maker_broker_fee: u64,
     pub taker_broker_fee: u64,
 }
 
-pub fn calc_taker_fees(amount: u64, maker_broker_pct: u8) -> Result<Fees> {
+pub fn calc_taker_fees(amount: u64, maker_broker_pct: u8) -> Result<AmmFees> {
     // Taker fee: protocol and broker fees.
     let taker_fee = unwrap_checked!({
         (TAKER_FEE_BPS as u64)
@@ -124,7 +130,7 @@ pub fn calc_taker_fees(amount: u64, maker_broker_pct: u8) -> Result<Fees> {
     // Remaining broker fee is the taker broker fee.
     let taker_broker_fee = unwrap_int!(broker_fees.checked_sub(maker_broker_fee));
 
-    Ok(Fees {
+    Ok(AmmFees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,

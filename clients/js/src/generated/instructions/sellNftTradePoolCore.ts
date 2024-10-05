@@ -66,6 +66,9 @@ export type SellNftTradePoolCoreInstruction<
     | string
     | IAccountMeta<string> = 'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg',
   TAccountEscrowProgram extends string | IAccountMeta<string> = string,
+  TAccountNativeProgram extends
+    | string
+    | IAccountMeta<string> = '11111111111111111111111111111111',
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -125,6 +128,9 @@ export type SellNftTradePoolCoreInstruction<
       TAccountEscrowProgram extends string
         ? ReadonlyAccount<TAccountEscrowProgram>
         : TAccountEscrowProgram,
+      TAccountNativeProgram extends string
+        ? ReadonlyAccount<TAccountNativeProgram>
+        : TAccountNativeProgram,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -191,6 +197,7 @@ export type SellNftTradePoolCoreAsyncInput<
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
+  TAccountNativeProgram extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
@@ -236,6 +243,7 @@ export type SellNftTradePoolCoreAsyncInput<
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
+  nativeProgram?: Address<TAccountNativeProgram>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -260,6 +268,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
   TAccountCosigner extends string,
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
+  TAccountNativeProgram extends string,
   TAccountNftReceipt extends string,
   TAccountSystemProgram extends string,
 >(
@@ -280,6 +289,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram,
+    TAccountNativeProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
@@ -302,6 +312,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram,
+    TAccountNativeProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
@@ -327,6 +338,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
+    nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -358,6 +370,10 @@ export async function getSellNftTradePoolCoreInstructionAsync<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
+  }
+  if (!accounts.nativeProgram.value) {
+    accounts.nativeProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt.value = await findAssetDepositReceiptPda({
@@ -394,6 +410,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
+      getAccountMeta(accounts.nativeProgram),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
@@ -420,6 +437,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram,
+    TAccountNativeProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >;
@@ -444,6 +462,7 @@ export type SellNftTradePoolCoreInput<
   TAccountCosigner extends string = string,
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
+  TAccountNativeProgram extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
@@ -489,6 +508,7 @@ export type SellNftTradePoolCoreInput<
   ammProgram?: Address<TAccountAmmProgram>;
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
+  nativeProgram?: Address<TAccountNativeProgram>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   systemProgram?: Address<TAccountSystemProgram>;
@@ -513,6 +533,7 @@ export function getSellNftTradePoolCoreInstruction<
   TAccountCosigner extends string,
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
+  TAccountNativeProgram extends string,
   TAccountNftReceipt extends string,
   TAccountSystemProgram extends string,
 >(
@@ -533,6 +554,7 @@ export function getSellNftTradePoolCoreInstruction<
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram,
+    TAccountNativeProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
@@ -554,6 +576,7 @@ export function getSellNftTradePoolCoreInstruction<
   TAccountCosigner,
   TAccountAmmProgram,
   TAccountEscrowProgram,
+  TAccountNativeProgram,
   TAccountNftReceipt,
   TAccountSystemProgram
 > {
@@ -578,6 +601,7 @@ export function getSellNftTradePoolCoreInstruction<
     cosigner: { value: input.cosigner ?? null, isWritable: false },
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
+    nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -600,6 +624,10 @@ export function getSellNftTradePoolCoreInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
+  }
+  if (!accounts.nativeProgram.value) {
+    accounts.nativeProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -630,6 +658,7 @@ export function getSellNftTradePoolCoreInstruction<
       getAccountMeta(accounts.cosigner),
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
+      getAccountMeta(accounts.nativeProgram),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
@@ -656,6 +685,7 @@ export function getSellNftTradePoolCoreInstruction<
     TAccountCosigner,
     TAccountAmmProgram,
     TAccountEscrowProgram,
+    TAccountNativeProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >;
@@ -714,9 +744,10 @@ export type ParsedSellNftTradePoolCoreInstruction<
     ammProgram: TAccountMetas[14];
     /** The escrow program account for shared liquidity pools. */
     escrowProgram?: TAccountMetas[15] | undefined;
+    nativeProgram: TAccountMetas[16];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-    nftReceipt: TAccountMetas[16];
-    systemProgram: TAccountMetas[17];
+    nftReceipt: TAccountMetas[17];
+    systemProgram: TAccountMetas[18];
   };
   data: SellNftTradePoolCoreInstructionData;
 };
@@ -729,7 +760,7 @@ export function parseSellNftTradePoolCoreInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTradePoolCoreInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 19) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -764,6 +795,7 @@ export function parseSellNftTradePoolCoreInstruction<
       cosigner: getNextOptionalAccount(),
       ammProgram: getNextAccount(),
       escrowProgram: getNextOptionalAccount(),
+      nativeProgram: getNextAccount(),
       nftReceipt: getNextAccount(),
       systemProgram: getNextAccount(),
     },

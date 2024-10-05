@@ -76,11 +76,12 @@ impl<'info> DepositNft<'info> {
 }
 
 /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_deposit_nft(
     ctx: Context<DepositNft>,
     authorization_data: Option<AuthorizationDataLocal>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     transfer(
         TransferArgs {
             payer: &ctx.accounts.transfer.owner.to_account_info(),

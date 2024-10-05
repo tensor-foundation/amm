@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::{calc_creators_fee, transfer_lamports_checked};
+use tensor_toolbox::transfer_lamports_checked;
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 
-use crate::{constants::*, error::ErrorCode};
+use crate::{calc_creators_fee, constants::*, error::ErrorCode};
 
 /// Size of the Pool account, inclusive of the 8-byte discriminator.
 #[constant]
@@ -232,7 +232,6 @@ impl Pool {
         calc_creators_fee(
             metadata.seller_fee_basis_points,
             current_price,
-            metadata.token_standard,
             optional_royalty_pct,
         )
     }
@@ -417,4 +416,81 @@ pub fn close_pool<'info>(
 
     // Rent goes back to the rent payer.
     pool.close(rent_payer)
+}
+
+pub fn update_pool_accounting(
+    pool: &mut Account<'_, Pool>,
+    pool_initial_balance: u64,
+    taker_side: TakerSide,
+) -> Result<()> {
+    pool.updated_at = Clock::get()?.unix_timestamp;
+
+    // Calculate fees from the current price.
+    let current_price = pool.current_price(taker_side)?;
+
+    // This resolves to 0 for Token & NFT pools.
+    let mm_fee = pool.calc_mm_fee(current_price)?;
+
+    match taker_side {
+        TakerSide::Buy => {
+            // Taker has bought an NFT from the pool, so we decrement the NFT counter.
+            pool.nfts_held = unwrap_int!(pool.nfts_held.checked_sub(1));
+
+            // Pool has sold an NFT, so we increment the trade counter.
+            pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
+
+            pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
+            pool.updated_at = Clock::get()?.unix_timestamp;
+
+            if pool.config.pool_type == PoolType::Trade {
+                pool.stats.accumulated_mm_profit =
+                    unwrap_checked!({ pool.stats.accumulated_mm_profit.checked_add(mm_fee) });
+            }
+
+            // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+            // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
+            if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
+                let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_final_balance = pool.get_lamports();
+                let lamports_added =
+                    unwrap_checked!({ pool_final_balance.checked_sub(pool_initial_balance) });
+                pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports_added) });
+
+                // Sanity check to avoid edge cases:
+                require!(
+                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
+                    ErrorCode::InvalidPoolAmount
+                );
+            }
+        }
+        TakerSide::Sell => {
+            if pool.config.pool_type == PoolType::Trade {
+                pool.nfts_held = unwrap_int!(pool.nfts_held.checked_add(1));
+
+                pool.stats.accumulated_mm_profit =
+                    unwrap_int!(pool.stats.accumulated_mm_profit.checked_add(mm_fee));
+            }
+
+            // Pool has bought an NFT, so we decrement the trade counter.
+            pool.price_offset = unwrap_int!(pool.price_offset.checked_sub(1));
+            pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
+
+            // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
+            if pool.currency == Pubkey::default() {
+                let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_final_balance = pool.get_lamports();
+                let lamports_taken =
+                    unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
+                pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
+
+                // Sanity check to avoid edge cases:
+                require!(
+                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
+                    ErrorCode::InvalidPoolAmount
+                );
+            }
+        }
+    }
+
+    Ok(())
 }

@@ -42,6 +42,8 @@ pub struct SellNftTokenPoolT22 {
     /// The escrow program account for shared liquidity pools.
     pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 
+    pub native_program: solana_program::pubkey::Pubkey,
+
     pub sys_program: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT being sold.
     pub mint: solana_program::pubkey::Pubkey,
@@ -70,7 +72,7 @@ impl SellNftTokenPoolT22 {
         args: SellNftTokenPoolT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(21 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -161,6 +163,10 @@ impl SellNftTokenPoolT22 {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.native_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.sys_program,
             false,
         ));
@@ -244,13 +250,14 @@ pub struct SellNftTokenPoolT22InstructionArgs {
 ///   10. `[signer, optional]` cosigner
 ///   11. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
 ///   12. `[optional]` escrow_program
-///   13. `[optional]` sys_program (default to `11111111111111111111111111111111`)
-///   14. `[]` mint
-///   15. `[writable]` taker_ta
-///   16. `[writable]` owner_ta
-///   17. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
-///   18. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   19. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   13. `[optional]` native_program (default to `11111111111111111111111111111111`)
+///   14. `[optional]` sys_program (default to `11111111111111111111111111111111`)
+///   15. `[]` mint
+///   16. `[writable]` taker_ta
+///   17. `[writable]` owner_ta
+///   18. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
+///   19. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   20. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct SellNftTokenPoolT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -266,6 +273,7 @@ pub struct SellNftTokenPoolT22Builder {
     cosigner: Option<solana_program::pubkey::Pubkey>,
     amm_program: Option<solana_program::pubkey::Pubkey>,
     escrow_program: Option<solana_program::pubkey::Pubkey>,
+    native_program: Option<solana_program::pubkey::Pubkey>,
     sys_program: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
     taker_ta: Option<solana_program::pubkey::Pubkey>,
@@ -385,6 +393,12 @@ impl SellNftTokenPoolT22Builder {
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
+    pub fn native_program(&mut self, native_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.native_program = Some(native_program);
+        self
+    }
+    /// `[optional account, default to '11111111111111111111111111111111']`
+    #[inline(always)]
     pub fn sys_program(&mut self, sys_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.sys_program = Some(sys_program);
         self
@@ -472,6 +486,9 @@ impl SellNftTokenPoolT22Builder {
                 "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg"
             )),
             escrow_program: self.escrow_program,
+            native_program: self
+                .native_program
+                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
             sys_program: self
                 .sys_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -530,6 +547,8 @@ pub struct SellNftTokenPoolT22CpiAccounts<'a, 'b> {
     /// The escrow program account for shared liquidity pools.
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
+    pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub sys_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -581,6 +600,8 @@ pub struct SellNftTokenPoolT22Cpi<'a, 'b> {
     /// The escrow program account for shared liquidity pools.
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
+    pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
+
     pub sys_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT being sold.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
@@ -619,6 +640,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             cosigner: accounts.cosigner,
             amm_program: accounts.amm_program,
             escrow_program: accounts.escrow_program,
+            native_program: accounts.native_program,
             sys_program: accounts.sys_program,
             mint: accounts.mint,
             taker_ta: accounts.taker_ta,
@@ -662,7 +684,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(21 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -758,6 +780,10 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             ));
         }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.native_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.sys_program.key,
             false,
         ));
@@ -803,7 +829,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(20 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(21 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.taker.clone());
@@ -830,6 +856,7 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
         if let Some(escrow_program) = self.escrow_program {
             account_infos.push(escrow_program.clone());
         }
+        account_infos.push(self.native_program.clone());
         account_infos.push(self.sys_program.clone());
         account_infos.push(self.mint.clone());
         account_infos.push(self.taker_ta.clone());
@@ -866,13 +893,14 @@ impl<'a, 'b> SellNftTokenPoolT22Cpi<'a, 'b> {
 ///   10. `[signer, optional]` cosigner
 ///   11. `[]` amm_program
 ///   12. `[optional]` escrow_program
-///   13. `[]` sys_program
-///   14. `[]` mint
-///   15. `[writable]` taker_ta
-///   16. `[writable]` owner_ta
-///   17. `[]` token_program
-///   18. `[]` associated_token_program
-///   19. `[]` system_program
+///   13. `[]` native_program
+///   14. `[]` sys_program
+///   15. `[]` mint
+///   16. `[writable]` taker_ta
+///   17. `[writable]` owner_ta
+///   18. `[]` token_program
+///   19. `[]` associated_token_program
+///   20. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct SellNftTokenPoolT22CpiBuilder<'a, 'b> {
     instruction: Box<SellNftTokenPoolT22CpiBuilderInstruction<'a, 'b>>,
@@ -895,6 +923,7 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
             cosigner: None,
             amm_program: None,
             escrow_program: None,
+            native_program: None,
             sys_program: None,
             mint: None,
             taker_ta: None,
@@ -1024,6 +1053,14 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
         escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.escrow_program = escrow_program;
+        self
+    }
+    #[inline(always)]
+    pub fn native_program(
+        &mut self,
+        native_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.native_program = Some(native_program);
         self
     }
     #[inline(always)]
@@ -1170,6 +1207,11 @@ impl<'a, 'b> SellNftTokenPoolT22CpiBuilder<'a, 'b> {
 
             escrow_program: self.instruction.escrow_program,
 
+            native_program: self
+                .instruction
+                .native_program
+                .expect("native_program is not set"),
+
             sys_program: self
                 .instruction
                 .sys_program
@@ -1220,6 +1262,7 @@ struct SellNftTokenPoolT22CpiBuilderInstruction<'a, 'b> {
     cosigner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    native_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     sys_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,

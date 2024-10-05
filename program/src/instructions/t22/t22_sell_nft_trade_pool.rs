@@ -114,7 +114,7 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Sell)?;
 
-    let Fees {
+    let AmmFees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,

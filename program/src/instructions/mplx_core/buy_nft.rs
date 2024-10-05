@@ -1,5 +1,3 @@
-use tensor_toolbox::{close_account, transfer_lamports, transfer_lamports_checked};
-
 use super::*;
 
 /// Instruction accounts.
@@ -56,14 +54,14 @@ pub fn process_buy_nft_core<'info, 'b>(
     let current_price = pool.current_price(TakerSide::Buy)?;
 
     // Protocol and broker fees.
-    let Fees {
+    let AmmFees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
         taker_broker_fee,
     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
-    // This resolves to 0 for NFT pools.
+    // This resolves to 0 for Token & NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
 
     // Validate asset account and determine if royalites need to be paid.
@@ -84,7 +82,7 @@ pub fn process_buy_nft_core<'info, 'b>(
     };
 
     // No optional royalties.
-    let creators_fee = calc_creators_fee(royalty_fee, current_price, None, Some(100))?;
+    let creators_fee = calc_creators_fee(royalty_fee, current_price, Some(100))?;
 
     // For keeping track of current price + fees charged (computed dynamically)
     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage

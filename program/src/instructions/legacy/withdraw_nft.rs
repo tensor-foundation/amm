@@ -78,11 +78,12 @@ impl<'info> WithdrawNft<'info> {
 }
 
 /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
     authorization_data: Option<AuthorizationDataLocal>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     let pool = &ctx.accounts.transfer.pool;
 
     let owner_pubkey = ctx.accounts.transfer.owner.key();

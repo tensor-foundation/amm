@@ -1,11 +1,19 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::CloseAccount;
-use constants::CURRENT_POOL_VERSION;
-use mpl_token_metadata::types::{Collection, Creator};
+use constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT};
+use escrow_program::instructions::assert_decode_margin_account;
+use mpl_token_metadata::types::{Collection, Creator, TokenStandard};
 use program::AmmProgram;
 use solana_program::keccak;
-use tensor_toolbox::{escrow, shard_num, token_metadata::assert_decode_metadata};
-use tensor_vipers::{throw_err, unwrap_opt, Validate};
+use tensor_escrow::instructions::{
+    WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
+};
+use tensor_toolbox::{
+    escrow, shard_num, token_metadata::assert_decode_metadata, transfer_creators_fee,
+    transfer_lamports, transfer_lamports_checked, transfer_lamports_from_pda, CreatorFeeMode,
+    FromAcc, FromExternal, TensorError, HUNDRED_PCT_BPS,
+};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use super::constants::TFEE_PROGRAM_ID;
@@ -13,11 +21,11 @@ use super::constants::TFEE_PROGRAM_ID;
 use mpl_core::{
     accounts::BaseAssetV1,
     fetch_plugin,
-    types::{PluginType, UpdateAuthority, VerifiedCreators},
+    types::{PluginType, Royalties, UpdateAuthority, VerifiedCreators},
 };
 use tensor_toolbox::metaplex_core::validate_asset;
 
-use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
+use crate::{error::ErrorCode, *};
 
 /* AMM Protocol shared account structs*/
 
@@ -162,6 +170,8 @@ pub struct TradeShared<'info> {
     /// CHECK: address constraint is checked here
     #[account(address = escrow::ID)]
     pub escrow_program: Option<UncheckedAccount<'info>>,
+
+    pub native_program: Program<'info, System>,
 }
 
 impl<'info> Validate<'info> for TradeShared<'info> {
@@ -184,11 +194,17 @@ impl<'info> Validate<'info> for TradeShared<'info> {
     }
 }
 
-pub trait Sell {
+pub trait Sell<'info> {
     fn validate_sell(&self, pool_type: &PoolType) -> Result<()>;
+    fn pay_seller_fees(
+        &self,
+        amm_asset: AmmAsset,
+        fees: Fees,
+        remaining_accounts: &[AccountInfo<'info>],
+    ) -> Result<()>;
 }
 
-impl<'info> Sell for TradeShared<'info> {
+impl<'info> Sell<'info> for TradeShared<'info> {
     fn validate_sell(&self, pool_type: &PoolType) -> Result<()> {
         // Ensure correct pool type
         require!(
@@ -200,13 +216,181 @@ impl<'info> Sell for TradeShared<'info> {
 
         self.validate()
     }
+
+    fn pay_seller_fees(
+        &self,
+        amm_asset: AmmAsset,
+        fees: Fees,
+        remaining_accounts: &[AccountInfo<'info>],
+    ) -> Result<()> {
+        let Fees {
+            amm_fees:
+                AmmFees {
+                    taker_fee: _,
+                    tamm_fee,
+                    maker_broker_fee,
+                    taker_broker_fee,
+                },
+            creators_fee,
+            current_price: _,
+        } = fees;
+
+        let pool = &self.pool;
+        let owner_pubkey = self.owner.key();
+        let current_price = pool.current_price(TakerSide::Sell)?;
+
+        let mm_fee = pool.calc_mm_fee(current_price)?;
+
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            b"pool",
+            owner_pubkey.as_ref(),
+            pool.pool_id.as_ref(),
+            &[pool.bump[0]],
+        ]];
+
+        /*  **Transfer Fees**
+        The sell price is the total price the seller receives for selling the NFT into the pool.
+
+        sell_price = current_price - taker_fee - creators_fee
+
+        taker_fee = tamm_fee + maker_broker_fee + taker_broker_fee
+
+        No mm_fee for token pools.
+
+        Fees are paid by deducting them from the current price, with the final remainder
+        then being sent to the seller.
+        */
+
+        // If the source funds are from a shared escrow account, we first transfer from there
+        // to the pool, to avoid multiple, expensive CPI calls.
+        if pool.shared_escrow != Pubkey::default() {
+            let incoming_shared_escrow =
+                unwrap_opt!(self.shared_escrow.as_ref(), ErrorCode::BadSharedEscrow)
+                    .to_account_info();
+
+            let escrow_program =
+                unwrap_opt!(self.escrow_program.as_ref(), ErrorCode::EscrowProgramNotSet)
+                    .to_account_info();
+
+            // Validate it's a valid escrow account.
+            assert_decode_margin_account(&incoming_shared_escrow, &self.owner.to_account_info())?;
+
+            // Validate it's the correct account: the stored escrow account matches the one passed in.
+            if incoming_shared_escrow.key != &pool.shared_escrow {
+                throw_err!(ErrorCode::BadSharedEscrow);
+            }
+
+            // Withdraw from escrow account to pool.
+            WithdrawMarginAccountCpiTammCpi {
+                __program: &escrow_program,
+                margin_account: &incoming_shared_escrow,
+                pool: &self.pool.to_account_info(),
+                owner: &self.owner.to_account_info(),
+                destination: &self.pool.to_account_info(),
+                system_program: &self.native_program,
+                __args: WithdrawMarginAccountCpiTammInstructionArgs {
+                    bump: pool.bump[0],
+                    pool_id: pool.pool_id,
+                    lamports: current_price,
+                },
+            }
+            .invoke_signed(signer_seeds)?;
+        }
+
+        let mut left_for_seller = current_price;
+
+        // TAmm contract fee.
+        transfer_lamports_from_pda(&self.pool.to_account_info(), &self.fee_vault, tamm_fee)?;
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
+
+        // Broker fees. Transfer if accounts are specified, otherwise the funds go to the fee_vault.
+        transfer_lamports_from_pda(
+            &self.pool.to_account_info(),
+            self.maker_broker.as_ref().unwrap_or(&self.fee_vault),
+            maker_broker_fee,
+        )?;
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(maker_broker_fee));
+
+        transfer_lamports_from_pda(
+            &self.pool.to_account_info(),
+            self.taker_broker.as_ref().unwrap_or(&self.fee_vault),
+            taker_broker_fee,
+        )?;
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
+
+        let remaining_accounts = &mut remaining_accounts.iter();
+
+        // transfer royalties
+        let actual_creators_fee = transfer_creators_fee(
+            &amm_asset
+                .creators
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            remaining_accounts,
+            creators_fee,
+            &CreatorFeeMode::Sol {
+                from: &FromAcc::Pda(&self.pool.to_account_info()),
+            },
+        )?;
+
+        // Deduct royalties from the remaining amount left for the seller.
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(actual_creators_fee));
+
+        // Taker pays MM fee, so we subtract it from the amount left for the seller.
+        left_for_seller = unwrap_int!(left_for_seller.checked_sub(mm_fee));
+
+        // Finally, transfer remainder to seller
+        transfer_lamports_from_pda(
+            &self.pool.to_account_info(),
+            &self.taker.to_account_info(),
+            left_for_seller,
+        )?;
+
+        // If MM fees are compounded they go to the pool or shared escrow, otherwise to the owner.
+        if pool.config.mm_compound_fees {
+            msg!("Compounding MM fees");
+            // Send back to shared escrow
+            if pool.shared_escrow != Pubkey::default() {
+                let incoming_shared_escrow =
+                    unwrap_opt!(self.shared_escrow.as_ref(), ErrorCode::BadSharedEscrow)
+                        .to_account_info();
+
+                transfer_lamports_from_pda(
+                    &self.pool.to_account_info(),
+                    &incoming_shared_escrow,
+                    mm_fee,
+                )?;
+            }
+            // Otherwise, already in the pool so no transfer needed.
+        } else {
+            msg!("Sending mm fees to the owner");
+            // Send to owner
+            transfer_lamports_from_pda(
+                &self.pool.to_account_info(),
+                &self.owner.to_account_info(),
+                mm_fee,
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
-pub trait Buy {
+pub trait Buy<'info> {
     fn validate_buy(&self) -> Result<()>;
+
+    fn pay_buyer_fees(
+        &self,
+        amm_asset: AmmAsset,
+        fees: Fees,
+        remaining_accounts: &[AccountInfo<'info>],
+    ) -> Result<()>;
 }
 
-impl<'info> Buy for TradeShared<'info> {
+impl<'info> Buy<'info> for TradeShared<'info> {
     fn validate_buy(&self) -> Result<()> {
         // Ensure correct pool type
         require!(
@@ -216,6 +400,132 @@ impl<'info> Buy for TradeShared<'info> {
         );
 
         self.validate()
+    }
+
+    fn pay_buyer_fees(
+        &self,
+        amm_asset: AmmAsset,
+        fees: Fees,
+        remaining_accounts: &[AccountInfo<'info>],
+    ) -> Result<()> {
+        let Fees {
+            amm_fees:
+                AmmFees {
+                    taker_fee: _,
+                    tamm_fee,
+                    maker_broker_fee,
+                    taker_broker_fee,
+                },
+            creators_fee,
+            current_price: _,
+        } = fees;
+
+        let pool = &self.pool;
+        let current_price = pool.current_price(TakerSide::Buy)?;
+
+        let mm_fee = pool.calc_mm_fee(current_price)?;
+
+        /*  **Transfer Fees**
+        The buy price is the total price the buyer pays for buying the NFT from the pool.
+
+        buy_price = current_price + taker_fee + mm_fee + creators_fee
+
+        taker_fee = tamm_fee + broker_fee + maker_rebate
+
+        Fees are paid by individual transfers as they go to various accounts depending on the pool type
+        and configuration.
+
+        */
+
+        // Determine the SOL destination: owner, pool, or shared escrow account.
+        //(!) this block has to come before royalties transfer due to remaining_accounts
+        let destination = match pool.config.pool_type {
+            // Send money direct to seller/owner
+            PoolType::NFT => self.owner.to_account_info(),
+            // Send money to the pool
+            PoolType::Trade => {
+                if pool.shared_escrow != Pubkey::default() {
+                    let incoming_shared_escrow =
+                        unwrap_opt!(self.shared_escrow.as_ref(), ErrorCode::BadSharedEscrow)
+                            .to_account_info();
+
+                    assert_decode_margin_account(
+                        &incoming_shared_escrow,
+                        &self.owner.to_account_info(),
+                    )?;
+
+                    if incoming_shared_escrow.key != &pool.shared_escrow {
+                        throw_err!(ErrorCode::BadSharedEscrow);
+                    }
+                    incoming_shared_escrow
+                } else {
+                    self.pool.to_account_info()
+                }
+            }
+
+            PoolType::Token => unreachable!(),
+        };
+
+        // Buyer is the taker and pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
+        transfer_lamports(&self.taker, &self.fee_vault, tamm_fee)?;
+
+        transfer_lamports_checked(
+            &self.taker,
+            self.maker_broker
+                .as_ref()
+                .map(|acc| acc.to_account_info())
+                .as_ref()
+                .unwrap_or(&self.fee_vault),
+            maker_broker_fee,
+        )?;
+
+        transfer_lamports_checked(
+            &self.taker,
+            self.taker_broker
+                .as_ref()
+                .map(|acc| acc.to_account_info())
+                .as_ref()
+                .unwrap_or(&self.fee_vault),
+            taker_broker_fee,
+        )?;
+
+        // transfer royalties (on top of current price)
+        // Buyer pays the royalty fee.
+        let remaining_accounts = &mut remaining_accounts.iter();
+        transfer_creators_fee(
+            &amm_asset
+                .creators
+                .clone()
+                .unwrap_or_default()
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+            remaining_accounts,
+            creators_fee,
+            &CreatorFeeMode::Sol {
+                from: &FromAcc::External(&FromExternal {
+                    from: &self.taker,
+                    sys_prog: &self.native_program,
+                }),
+            },
+        )?;
+
+        // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
+        transfer_lamports(&self.taker, &destination, current_price)?;
+
+        // Trade pools need to check compounding fees
+        if matches!(pool.config.pool_type, PoolType::Trade) {
+            // If MM fees are compounded they go to the destination to remain
+            // in the pool or escrow.
+            if pool.config.mm_compound_fees {
+                transfer_lamports(&self.taker, &destination, mm_fee)?;
+            } else {
+                // If MM fees are not compounded they go to the owner.
+                transfer_lamports(&self.taker, &self.owner, mm_fee)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -265,6 +575,48 @@ pub struct MplxShared<'info> {
     pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 }
 
+impl<'info> MplxShared<'info> {
+    // pub fn transfer_asset(&self, direction: TransferDirection) -> Result<()> {
+    //     match direction {
+    //         TransferDirection::IntoPool => {
+    //             let seller = &self.taker.to_account_info();
+    //             let destination = &ctx.accounts.trade.pool.to_account_info();
+
+    //             let transfer_args = Box::new(TransferArgs {
+    //                 payer: seller,
+    //                 source: seller,
+    //                 source_ata: &ctx.accounts.taker_ta,
+    //                 destination,
+    //                 destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
+    //                 mint: &ctx.accounts.mint,
+    //                 metadata: &self.metadata,
+    //                 edition: &self.edition,
+    //                 system_program: &ctx.accounts.system_program,
+    //                 spl_token_program: &ctx.accounts.token_program,
+    //                 spl_ata_program: &ctx.accounts.associated_token_program,
+    //                 token_metadata_program: self.token_metadata_program.as_ref(),
+    //                 sysvar_instructions: self.sysvar_instructions.as_ref(),
+    //                 source_token_record: self.user_token_record.as_ref(),
+    //                 destination_token_record: self.pool_token_record.as_ref(),
+    //                 authorization_rules_program: ctx
+    //                     .accounts
+    //                     .mplx
+    //                     .authorization_rules_program
+    //                     .as_ref(),
+    //                 authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
+    //                 authorization_data: authorization_data.clone().map(AuthorizationData::from),
+    //                 delegate: None,
+    //             });
+    //         }
+    //         TransferDirection::OutOfPool => {
+    //             let seller = &ctx.accounts.trade.taker.to_account_info();
+    //             let destination = &ctx.accounts.trade.pool.to_account_info();
+    //         }
+    //     }
+    //     Ok(())
+    // }
+}
+
 /// Shared accounts for interacting with Metaplex core assets
 #[derive(Accounts)]
 pub struct MplCoreShared<'info> {
@@ -291,6 +643,8 @@ pub struct AmmAsset {
     pub pubkey: Pubkey,
     pub collection: Option<Collection>,
     pub creators: Option<Vec<Creator>>,
+    pub seller_fee_basis_points: u16,
+    pub royalty_enforced: bool,
 }
 
 pub trait ValidateAsset<'info> {
@@ -305,6 +659,8 @@ impl<'info> ValidateAsset<'info> for T22<'info> {
             pubkey: mint.key(),
             collection: None,
             creators: None,
+            seller_fee_basis_points: u16::MAX, // TODO
+            royalty_enforced: false,
         })
     }
 }
@@ -315,17 +671,26 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
 
         let metadata = assert_decode_metadata(&mint.key(), &self.metadata)?;
 
+        // Programmable NFTs enforce royalties on transfers.
+        let royalty_enforced = matches!(
+            metadata.token_standard,
+            Some(TokenStandard::ProgrammableNonFungible)
+                | Some(TokenStandard::ProgrammableNonFungibleEdition)
+        );
+
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: metadata.collection,
             creators: metadata.creators,
+            seller_fee_basis_points: metadata.seller_fee_basis_points,
+            royalty_enforced,
         })
     }
 }
 
 impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
     fn validate_asset(&self, _mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
-        validate_asset(
+        let royalties = validate_asset(
             &self.asset.to_account_info(),
             self.collection
                 .as_ref()
@@ -361,56 +726,94 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
             _ => None,
         };
 
+        let royalty_fee = if let Some(Royalties { basis_points, .. }) = royalties {
+            basis_points
+        } else {
+            0
+        };
+
         Ok(AmmAsset {
             pubkey: self.asset.key(),
             collection,
             creators,
+            seller_fee_basis_points: royalty_fee,
+            royalty_enforced: true,
         })
     }
 }
 
 impl<'info> TradeShared<'info> {
-    // pub fn calculate_fees(&self, current_price: u64) -> Result<Fees> {
-    //     let pool = &self.pool;
-    //     let pool_initial_balance = pool.get_lamports();
-    //     let owner_pubkey = self.owner.key();
+    pub fn calculate_fees(
+        &self,
+        seller_fee_basis_points: u16,
+        user_price: u64,
+        taker_side: TakerSide,
+        optional_royalty_pct: Option<u16>,
+    ) -> Result<Fees> {
+        let pool = &self.pool;
 
-    //     // Calculate fees from the current price.
-    //     let current_price = pool.current_price(TakerSide::Sell)?;
+        // Calculate fees from the current price.
+        let current_price = pool.current_price(taker_side)?;
 
-    //     let Fees {
-    //         taker_fee,
-    //         tamm_fee,
-    //         maker_broker_fee,
-    //         taker_broker_fee,
-    //     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+        // This resolves to 0 for Token & NFT pools.
+        let mm_fee = pool.calc_mm_fee(current_price)?;
 
-    //     // for keeping track of current price + fees charged (computed dynamically)
-    //     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    //     let event = TAmmEvent::BuySellEvent(BuySellEvent {
-    //         current_price,
-    //         taker_fee,
-    //         mm_fee: 0, // no MM fee for token pool
-    //         creators_fee,
-    //     });
+        let AmmFees {
+            taker_fee,
+            tamm_fee,
+            maker_broker_fee,
+            taker_broker_fee,
+        } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
 
-    //     // Self-CPI log the event before price check for easier debugging.
-    //     record_event(event, &ctx.accounts.trade.amm_program, pool)?;
+        let creators_fee =
+            calc_creators_fee(seller_fee_basis_points, current_price, optional_royalty_pct)?;
 
-    //     // Check that the total price the seller receives isn't lower than the min price the user specified.
-    //     let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
+        // for keeping track of current price + fees charged (computed dynamically)
+        // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+        let event = TAmmEvent::BuySellEvent(BuySellEvent {
+            current_price,
+            taker_fee,
+            mm_fee,
+            creators_fee,
+        });
 
-    //     if price < min_price {
-    //         throw_err!(ErrorCode::PriceMismatch);
-    //     }
+        // Self-CPI log the event before price check for easier debugging.
+        record_event(event, &self.amm_program, pool)?;
 
-    //     Ok(Fees {
-    //         taker_fee,
-    //         tamm_fee,
-    //         maker_broker_fee,
-    //         taker_broker_fee,
-    //     })
-    // }
+        match taker_side {
+            TakerSide::Buy => {
+                // Check that the  price + royalties + mm_fee doesn't exceed the max amount the user specified to prevent sandwich attacks.
+                let price = unwrap_checked!({
+                    current_price.checked_add(mm_fee)?.checked_add(creators_fee)
+                });
+
+                if price > user_price {
+                    throw_err!(ErrorCode::PriceMismatch);
+                }
+            }
+            TakerSide::Sell => {
+                // Check that the total price the seller receives isn't lower than the min price the user specified.
+                let price = unwrap_checked!({
+                    current_price.checked_sub(mm_fee)?.checked_sub(creators_fee)
+                });
+
+                if price < user_price {
+                    throw_err!(ErrorCode::PriceMismatch);
+                }
+            }
+        }
+
+        Ok(Fees {
+            current_price,
+            amm_fees: AmmFees {
+                taker_fee,
+                tamm_fee,
+                maker_broker_fee,
+                taker_broker_fee,
+            },
+            creators_fee,
+        })
+    }
 
     pub fn verify_whitelist(
         &self,
@@ -525,4 +928,36 @@ impl<'info> TransferShared<'info> {
             },
         )
     }
+}
+
+pub enum TransferDirection {
+    IntoPool,
+    OutOfPool,
+}
+
+pub fn calc_creators_fee(
+    seller_fee_basis_points: u16,
+    amount: u64,
+    optional_royalty_pct: Option<u16>,
+) -> Result<u64> {
+    let creator_fee_bps = if let Some(royalty_pct) = optional_royalty_pct {
+        require!(royalty_pct <= 100, TensorError::BadRoyaltiesPct);
+
+        // If optional passed, pay optional royalties
+        unwrap_checked!({
+            (seller_fee_basis_points as u64)
+                .checked_mul(royalty_pct as u64)?
+                .checked_div(100_u64)
+        })
+    } else {
+        // Else pay 0
+        0_u64
+    };
+    let fee = unwrap_checked!({
+        creator_fee_bps
+            .checked_mul(amount)?
+            .checked_div(HUNDRED_PCT_BPS)
+    });
+
+    Ok(fee)
 }

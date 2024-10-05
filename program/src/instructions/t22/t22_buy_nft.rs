@@ -97,7 +97,7 @@ pub fn process_t22_buy_nft<'info, 'b>(
     // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
 
-    let Fees {
+    let AmmFees {
         taker_fee,
         tamm_fee,
         maker_broker_fee,
