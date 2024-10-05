@@ -19,10 +19,9 @@ use tensor_toolbox::{
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc,
 };
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::FullMerkleProof;
 
-use self::constants::CURRENT_POOL_VERSION;
 use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /// Instruction accounts.
@@ -117,40 +116,8 @@ impl<'info> SellNftTradePool<'info> {
     }
 }
 
-impl<'info> Validate<'info> for SellNftTradePool<'info> {
-    fn validate(&self) -> Result<()> {
-        // Must be a trade pool
-        require!(
-            self.trade.pool.config.pool_type == PoolType::Trade,
-            ErrorCode::WrongPoolType
-        );
-
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        self.trade
-            .pool
-            .validate_maker_broker(&self.trade.maker_broker)?;
-
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        self.trade.pool.validate_cosigner(&self.trade.cosigner)?;
-
-        match self.trade.pool.config.pool_type {
-            PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        self.trade.pool.taker_allowed_to_sell()?;
-
-        Ok(())
-    }
-}
-
 /// Sell a Metaplex legacy NFT or pNFT into a Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.trade.validate_sell(&PoolType::Trade))]
 pub fn process_sell_nft_trade_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTradePool<'info>>,
     // Min vs exact so we can add slippage later.
@@ -200,7 +167,7 @@ pub fn process_sell_nft_trade_pool<'info>(
         return Err(ErrorCode::PriceMismatch.into());
     }
 
-    // transfer nft to escrow
+    // transfer nft to pool
     // has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
     let seller = &ctx.accounts.trade.taker.to_account_info();
     let destination = &ctx.accounts.trade.pool.to_account_info();

@@ -30,28 +30,6 @@ pub struct BuyNftCore<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for BuyNftCore<'info> {
-    fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.trade.pool.cosigner != Pubkey::default() {
-            require!(self.trade.cosigner.is_some(), ErrorCode::MissingCosigner);
-        }
-
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        if self.trade.pool.maker_broker != Pubkey::default() {
-            require!(
-                self.trade.maker_broker.is_some(),
-                ErrorCode::MissingMakerBroker
-            );
-        }
-
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 impl<'info> BuyNftCore<'info> {
     fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
         invoke(
@@ -78,7 +56,7 @@ impl<'info> BuyNftCore<'info> {
 }
 
 /// Buy a MPL Core asset from a NFT or Trade pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.trade.validate_buy())]
 pub fn process_buy_nft_core<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftCore<'info>>,
     // Max vs exact so we can add slippage later.

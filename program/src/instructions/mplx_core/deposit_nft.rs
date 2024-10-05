@@ -88,17 +88,8 @@ impl<'info> DepositNftCore<'info> {
     }
 }
 
-impl<'info> Validate<'info> for DepositNftCore<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Deposit a MPL Core asset into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
 pub fn process_deposit_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,
 ) -> Result<()> {

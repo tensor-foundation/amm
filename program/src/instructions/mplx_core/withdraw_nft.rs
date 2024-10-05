@@ -26,17 +26,8 @@ pub struct WithdrawNftCore<'info> {
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 }
 
-impl<'info> Validate<'info> for WithdrawNftCore<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.transfer.validate())]
 pub fn process_withdraw_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
 ) -> Result<()> {

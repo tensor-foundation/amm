@@ -9,11 +9,9 @@ use tensor_toolbox::{
     close_account,
     token_metadata::{transfer, TransferArgs},
 };
-use tensor_vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{unwrap_int, Validate};
 
 use crate::{error::ErrorCode, *};
-
-use self::constants::CURRENT_POOL_VERSION;
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -86,23 +84,8 @@ impl<'info> WithdrawNft<'info> {
     }
 }
 
-impl<'info> Validate<'info> for WithdrawNft<'info> {
-    fn validate(&self) -> Result<()> {
-        match self.transfer.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.transfer.validate())]
 pub fn process_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNft<'info>>,
     authorization_data: Option<AuthorizationDataLocal>,

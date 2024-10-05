@@ -20,14 +20,10 @@ use tensor_toolbox::{
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
 };
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
 
-use crate::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    error::ErrorCode,
-    *,
-};
+use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -95,32 +91,6 @@ pub struct SellNftTradePoolT22<'info> {
     // ---- [0..n] remaining accounts for royalties transfer hook
 }
 
-impl<'info> Validate<'info> for SellNftTradePoolT22<'info> {
-    fn validate(&self) -> Result<()> {
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        self.trade
-            .pool
-            .validate_maker_broker(&self.trade.maker_broker)?;
-
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        self.trade.pool.validate_cosigner(&self.trade.cosigner)?;
-
-        match self.trade.pool.config.pool_type {
-            PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        self.trade.pool.taker_allowed_to_sell()?;
-
-        Ok(())
-    }
-}
-
 impl<'info> SellNftTradePoolT22<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
         let whitelist = unwrap_opt!(self.trade.whitelist.as_ref(), ErrorCode::BadWhitelist);
@@ -157,7 +127,7 @@ impl<'info> SellNftTradePoolT22<'info> {
 }
 
 /// Sell a Token22 NFT into a Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.trade.validate_sell(&PoolType::Trade))]
 pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, SellNftTradePoolT22<'info>>,
     // Min vs exact so we can add slippage later.

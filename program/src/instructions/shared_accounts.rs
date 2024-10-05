@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
+use constants::CURRENT_POOL_VERSION;
 use program::AmmProgram;
 use tensor_toolbox::{escrow, shard_num};
+use tensor_vipers::{throw_err, Validate};
 use whitelist_program::WhitelistV2;
 
 use crate::{error::ErrorCode, *};
@@ -28,7 +30,7 @@ pub struct TransferShared<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner @ ErrorCode::BadOwner,
-        // can only trasnfer to/from NFT & Trade pools
+        // can only transfer to/from NFT & Trade pools
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -47,6 +49,15 @@ pub struct TransferShared<'info> {
     /// merkle proof condition in the whitelist.
     /// CHECK: seeds and ownership are checked in assert_decode_mint_proof_v2.
     pub mint_proof: Option<UncheckedAccount<'info>>,
+}
+
+impl<'info> Validate<'info> for TransferShared<'info> {
+    fn validate(&self) -> Result<()> {
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
+        }
+        Ok(())
+    }
 }
 
 /// Shared accounts for trade instructions: buy & sell
@@ -141,6 +152,61 @@ pub struct TradeShared<'info> {
     /// CHECK: address constraint is checked here
     #[account(address = escrow::ID)]
     pub escrow_program: Option<UncheckedAccount<'info>>,
+}
+
+impl<'info> Validate<'info> for TradeShared<'info> {
+    fn validate(&self) -> Result<()> {
+        // If the pool has a cosigner, the cosigner account must be passed in.
+        if self.pool.cosigner != Pubkey::default() {
+            require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
+        }
+
+        // If the pool has a maker broker set, the maker broker account must be passed in.
+        if self.pool.maker_broker != Pubkey::default() {
+            require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
+        }
+
+        if self.pool.version != CURRENT_POOL_VERSION {
+            throw_err!(ErrorCode::WrongPoolVersion);
+        }
+
+        Ok(())
+    }
+}
+
+pub trait Sell {
+    fn validate_sell(&self, pool_type: &PoolType) -> Result<()>;
+}
+
+impl<'info> Sell for TradeShared<'info> {
+    fn validate_sell(&self, pool_type: &PoolType) -> Result<()> {
+        // Ensure correct pool type
+        require!(
+            self.pool.config.pool_type == *pool_type,
+            ErrorCode::WrongPoolType
+        );
+
+        self.pool.taker_allowed_to_sell()?;
+
+        self.validate()
+    }
+}
+
+pub trait Buy {
+    fn validate_buy(&self) -> Result<()>;
+}
+
+impl<'info> Buy for TradeShared<'info> {
+    fn validate_buy(&self) -> Result<()> {
+        // Ensure correct pool type
+        require!(
+            self.pool.config.pool_type == PoolType::Trade
+                || self.pool.config.pool_type == PoolType::NFT,
+            ErrorCode::WrongPoolType
+        );
+
+        self.validate()
+    }
 }
 
 /* Shared account structs for different standards */

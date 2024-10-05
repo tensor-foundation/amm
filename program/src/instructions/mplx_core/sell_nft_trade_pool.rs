@@ -31,37 +31,6 @@ pub struct SellNftTradePoolCore<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for SellNftTradePoolCore<'info> {
-    fn validate(&self) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.trade.pool.cosigner != Pubkey::default() {
-            require!(self.trade.cosigner.is_some(), ErrorCode::MissingCosigner);
-        }
-
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        if self.trade.pool.maker_broker != Pubkey::default() {
-            require!(
-                self.trade.maker_broker.is_some(),
-                ErrorCode::MissingMakerBroker
-            );
-        }
-
-        match self.trade.pool.config.pool_type {
-            PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        self.trade.pool.taker_allowed_to_sell()?;
-
-        Ok(())
-    }
-}
-
 impl<'info> SellNftTradePoolCore<'info> {
     pub fn verify_whitelist(&self) -> Result<()> {
         let whitelist = unwrap_opt!(self.trade.whitelist.as_ref(), ErrorCode::BadWhitelist);
@@ -123,7 +92,7 @@ impl<'info> SellNftTradePoolCore<'info> {
 }
 
 /// Sell a MPL Core asset into a Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.trade.validate_sell(&PoolType::Trade))]
 pub fn process_sell_nft_trade_pool_core<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, SellNftTradePoolCore<'info>>,
     // Min vs exact so we can add slippage later.

@@ -11,9 +11,8 @@ pub use self::sell_nft_trade_pool::*;
 pub use self::withdraw_nft::*;
 
 use crate::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    error::ErrorCode,
-    MplCoreShared, MplCoreSharedBumps, NftDepositReceipt, *,
+    constants::MAKER_BROKER_PCT, error::ErrorCode, MplCoreShared, MplCoreSharedBumps,
+    NftDepositReceipt, *,
 };
 
 use anchor_lang::prelude::*;

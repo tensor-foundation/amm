@@ -1,5 +1,5 @@
 //! Deposit a Token22 NFT into a NFT or Trade pool.
-use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, *};
+use crate::{error::ErrorCode, *};
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 use solana_program::keccak;
 use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
-use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{assert_decode_mint_proof_v2, FullMerkleProof};
 
 /// Instruction accounts.
@@ -104,23 +104,8 @@ impl<'info> DepositNftT22<'info> {
     }
 }
 
-impl<'info> Validate<'info> for DepositNftT22<'info> {
-    fn validate(&self) -> Result<()> {
-        match self.transfer.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Deposit a Token22 NFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
 pub fn process_t22_deposit_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
 ) -> Result<()> {

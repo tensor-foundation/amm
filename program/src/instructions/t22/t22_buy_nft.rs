@@ -1,10 +1,5 @@
 //! Buy a Token22 NFT from a NFT or Trade pool.
-use crate::{
-    calc_taker_fees,
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    error::ErrorCode,
-    *,
-};
+use crate::{calc_taker_fees, constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 use anchor_lang::{
     prelude::*,
@@ -20,7 +15,7 @@ use tensor_toolbox::{
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
 };
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -115,31 +110,8 @@ impl<'info> BuyNftT22<'info> {
     }
 }
 
-impl<'info> Validate<'info> for BuyNftT22<'info> {
-    fn validate(&self) -> Result<()> {
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        self.trade
-            .pool
-            .validate_maker_broker(&self.trade.maker_broker)?;
-
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        self.trade.pool.validate_cosigner(&self.trade.cosigner)?;
-
-        match self.trade.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Buy a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.trade.validate_buy())]
 pub fn process_t22_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNftT22<'info>>,
     // Max vs exact so we can add slippage later.

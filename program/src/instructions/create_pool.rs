@@ -1,6 +1,6 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
-use tensor_vipers::{throw_err, try_or_err, Validate};
+use tensor_vipers::{throw_err, try_or_err};
 use whitelist_program::{self, WhitelistV2};
 
 use crate::{
@@ -90,14 +90,8 @@ impl<'info> CreatePool<'info> {
     }
 }
 
-impl<'info> Validate<'info> for CreatePool<'info> {
-    fn validate(&self) -> Result<()> {
-        Ok(())
-    }
-}
-
 /// Create a new pool.
-#[access_control(ctx.accounts.validate_pool_type(args.config); ctx.accounts.validate())]
+#[access_control(ctx.accounts.validate_pool_type(args.config))]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 

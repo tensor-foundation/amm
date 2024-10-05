@@ -8,9 +8,9 @@ use tensor_toolbox::{
     close_account,
     token_2022::{transfer::transfer_checked, validate_mint},
 };
-use tensor_vipers::{throw_err, unwrap_int, Validate};
+use tensor_vipers::{unwrap_int, Validate};
 
-use crate::{constants::CURRENT_POOL_VERSION, error::ErrorCode, *};
+use crate::{error::ErrorCode, *};
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -82,23 +82,8 @@ impl<'info> WithdrawNftT22<'info> {
     }
 }
 
-impl<'info> Validate<'info> for WithdrawNftT22<'info> {
-    fn validate(&self) -> Result<()> {
-        match self.transfer.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.transfer.validate())]
 pub fn process_t22_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
 ) -> Result<()> {

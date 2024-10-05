@@ -6,10 +6,9 @@ use anchor_spl::{
 use mpl_token_metadata::types::AuthorizationData;
 use solana_program::keccak;
 use tensor_toolbox::token_metadata::{assert_decode_metadata, transfer, TransferArgs};
-use tensor_vipers::{throw_err, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{self, FullMerkleProof};
 
-use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
 
 /// Instruction accounts.
@@ -104,23 +103,8 @@ impl<'info> DepositNft<'info> {
     }
 }
 
-impl<'info> Validate<'info> for DepositNft<'info> {
-    fn validate(&self) -> Result<()> {
-        match self.transfer.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.transfer.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.validate())]
+#[access_control(ctx.accounts.verify_whitelist(); ctx.accounts.transfer.validate())]
 pub fn process_deposit_nft(
     ctx: Context<DepositNft>,
     authorization_data: Option<AuthorizationDataLocal>,

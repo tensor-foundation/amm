@@ -14,13 +14,9 @@ use tensor_toolbox::{
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
     transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal,
 };
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 
-use crate::{
-    constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT},
-    error::ErrorCode,
-    *,
-};
+use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -120,33 +116,8 @@ impl<'info> BuyNft<'info> {
     }
 }
 
-impl<'info> Validate<'info> for BuyNft<'info> {
-    /// Validates the BuyNft instruction.
-    fn validate(&self) -> Result<()> {
-        // If the pool has a maker broker set, the maker broker account must be passed in.
-        self.trade
-            .pool
-            .validate_maker_broker(&self.trade.maker_broker)?;
-
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        self.trade.pool.validate_cosigner(&self.trade.cosigner)?;
-
-        match self.trade.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.trade.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        Ok(())
-    }
-}
-
 /// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
-#[access_control(ctx.accounts.validate())]
+#[access_control(ctx.accounts.trade.validate_buy())]
 pub fn process_buy_nft<'info, 'b>(
     ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,
     max_amount: u64,
