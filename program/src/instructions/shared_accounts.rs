@@ -8,8 +8,6 @@ use tensor_toolbox::{escrow, shard_num, token_metadata::assert_decode_metadata};
 use tensor_vipers::{throw_err, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
-use crate::{error::ErrorCode, *};
-
 use super::constants::TFEE_PROGRAM_ID;
 
 use mpl_core::{
@@ -18,6 +16,8 @@ use mpl_core::{
     types::{PluginType, UpdateAuthority, VerifiedCreators},
 };
 use tensor_toolbox::metaplex_core::validate_asset;
+
+use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
 /* AMM Protocol shared account structs*/
 
@@ -370,6 +370,48 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
 }
 
 impl<'info> TradeShared<'info> {
+    // pub fn calculate_fees(&self, current_price: u64) -> Result<Fees> {
+    //     let pool = &self.pool;
+    //     let pool_initial_balance = pool.get_lamports();
+    //     let owner_pubkey = self.owner.key();
+
+    //     // Calculate fees from the current price.
+    //     let current_price = pool.current_price(TakerSide::Sell)?;
+
+    //     let Fees {
+    //         taker_fee,
+    //         tamm_fee,
+    //         maker_broker_fee,
+    //         taker_broker_fee,
+    //     } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+
+    //     // for keeping track of current price + fees charged (computed dynamically)
+    //     // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
+    //     let event = TAmmEvent::BuySellEvent(BuySellEvent {
+    //         current_price,
+    //         taker_fee,
+    //         mm_fee: 0, // no MM fee for token pool
+    //         creators_fee,
+    //     });
+
+    //     // Self-CPI log the event before price check for easier debugging.
+    //     record_event(event, &ctx.accounts.trade.amm_program, pool)?;
+
+    //     // Check that the total price the seller receives isn't lower than the min price the user specified.
+    //     let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
+
+    //     if price < min_price {
+    //         throw_err!(ErrorCode::PriceMismatch);
+    //     }
+
+    //     Ok(Fees {
+    //         taker_fee,
+    //         tamm_fee,
+    //         maker_broker_fee,
+    //         taker_broker_fee,
+    //     })
+    // }
+
     pub fn verify_whitelist(
         &self,
         standard: &impl ValidateAsset<'info>,

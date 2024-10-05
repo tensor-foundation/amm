@@ -94,7 +94,7 @@ impl<'info> SellNftTokenPool<'info> {
 }
 
 /// Sell a Metaplex legacy NFT or pNFT into a Token pool.
-#[access_control(ctx.accounts.pre_process_checks())]
+// #[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPool<'info>>,
     // Min vs exact so we can add slippage later.
@@ -102,6 +102,8 @@ pub fn process_sell_nft_token_pool<'info>(
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     let pool = &ctx.accounts.trade.pool;
     let pool_initial_balance = pool.get_lamports();
     let owner_pubkey = ctx.accounts.trade.owner.key();

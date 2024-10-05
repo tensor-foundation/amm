@@ -1,10 +1,7 @@
 //! Buy a Token22 NFT from a NFT or Trade pool.
 use crate::{calc_taker_fees, constants::MAKER_BROKER_PCT, error::ErrorCode, *};
 
-use anchor_lang::{
-    prelude::*,
-    solana_program::{program::invoke, system_instruction},
-};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
@@ -13,7 +10,8 @@ use escrow_program::instructions::assert_decode_margin_account;
 use tensor_toolbox::{
     calc_creators_fee, close_account,
     token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
-    transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal, TCreator,
+    transfer_creators_fee, transfer_lamports, transfer_lamports_checked, CreatorFeeMode, FromAcc,
+    FromExternal, TCreator,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 
@@ -78,29 +76,6 @@ impl<'info> BuyNftT22<'info> {
     fn pre_process_checks(&self) -> Result<()> {
         self.trade.validate_buy()
     }
-
-    fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        invoke(
-            &system_instruction::transfer(self.trade.taker.key, to.key, lamports),
-            &[
-                self.trade.taker.to_account_info(),
-                to.clone(),
-                self.system_program.to_account_info(),
-            ],
-        )
-        .map_err(Into::into)
-    }
-
-    /// transfers lamports, skipping the transfer if not rent exempt
-    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        let rent = Rent::get()?.minimum_balance(to.data_len());
-        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
-            //skip current creator, we can't pay them
-            return Ok(());
-        }
-        self.transfer_lamports(to, lamports)?;
-        Ok(())
-    }
 }
 
 /// Buy a Token22 NFT from a NFT or Trade pool.
@@ -112,7 +87,12 @@ pub fn process_t22_buy_nft<'info, 'b>(
 ) -> Result<()> {
     let pool = &ctx.accounts.trade.pool;
     let pool_initial_balance = pool.get_lamports();
+
+    let owner = ctx.accounts.trade.owner.to_account_info();
     let owner_pubkey = ctx.accounts.trade.owner.key();
+
+    let taker = ctx.accounts.trade.taker.to_account_info();
+    let fee_vault = ctx.accounts.trade.fee_vault.to_account_info();
 
     // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
@@ -278,29 +258,30 @@ pub fn process_t22_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.trade.fee_vault.to_account_info(), tamm_fee)?;
+    // Buyer is the taker and pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
+    transfer_lamports(&taker, &fee_vault, tamm_fee)?;
 
-    ctx.accounts.transfer_lamports_min_balance(
+    transfer_lamports_checked(
+        &taker,
         ctx.accounts
             .trade
             .maker_broker
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
+            .unwrap_or(&fee_vault),
         maker_broker_fee,
     )?;
 
-    ctx.accounts.transfer_lamports_min_balance(
+    transfer_lamports_checked(
+        &taker,
         ctx.accounts
             .trade
             .taker_broker
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
+            .unwrap_or(&fee_vault),
         taker_broker_fee,
     )?;
 
@@ -320,20 +301,17 @@ pub fn process_t22_buy_nft<'info, 'b>(
     }
 
     // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
-    ctx.accounts
-        .transfer_lamports(&destination, current_price)?;
+    transfer_lamports(&taker, &destination, current_price)?;
 
     // Trade pools need to check compounding fees
     if matches!(pool.config.pool_type, PoolType::Trade) {
         // If MM fees are compounded they go to the destination to remain
         // in the pool or escrow.
         if pool.config.mm_compound_fees {
-            ctx.accounts
-                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+            transfer_lamports(&taker, &destination, mm_fee)?;
         } else {
             // If MM fees are not compounded they go to the owner.
-            ctx.accounts
-                .transfer_lamports(&ctx.accounts.trade.owner.to_account_info(), mm_fee)?;
+            transfer_lamports(&taker, &owner, mm_fee)?;
         }
     }
 

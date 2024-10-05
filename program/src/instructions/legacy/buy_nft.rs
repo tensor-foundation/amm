@@ -1,8 +1,5 @@
 //! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-use anchor_lang::{
-    prelude::*,
-    solana_program::{program::invoke, system_instruction},
-};
+use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, Mint, TokenAccount, TokenInterface},
@@ -12,7 +9,8 @@ use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
     close_account,
     token_metadata::{assert_decode_metadata, transfer, TransferArgs},
-    transfer_creators_fee, CreatorFeeMode, FromAcc, FromExternal,
+    transfer_creators_fee, transfer_lamports, transfer_lamports_checked, CreatorFeeMode, FromAcc,
+    FromExternal,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 
@@ -82,30 +80,6 @@ impl<'info> BuyNft<'info> {
     fn pre_process_checks(&self) -> Result<()> {
         self.trade.validate_buy()
     }
-
-    /// Transfer lamports from the buyer to the specified address.
-    fn transfer_lamports(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        invoke(
-            &system_instruction::transfer(self.trade.taker.key, to.key, lamports),
-            &[
-                self.trade.taker.to_account_info(),
-                to.clone(),
-                self.system_program.to_account_info(),
-            ],
-        )
-        .map_err(Into::into)
-    }
-
-    /// Transfers lamports, skipping the transfer if not rent exempt
-    fn transfer_lamports_min_balance(&self, to: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        let rent = Rent::get()?.minimum_balance(to.data_len());
-        if unwrap_int!(to.lamports().checked_add(lamports)) < rent {
-            //skip current creator, we can't pay them
-            return Ok(());
-        }
-        self.transfer_lamports(to, lamports)?;
-        Ok(())
-    }
 }
 
 /// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
@@ -118,7 +92,12 @@ pub fn process_buy_nft<'info, 'b>(
 ) -> Result<()> {
     let pool = &ctx.accounts.trade.pool;
     let pool_initial_balance = pool.get_lamports();
+
+    let owner = ctx.accounts.trade.owner.to_account_info();
     let owner_pubkey = ctx.accounts.trade.owner.key();
+
+    let taker = ctx.accounts.trade.taker.to_account_info();
+    let fee_vault = ctx.accounts.trade.fee_vault.to_account_info();
 
     // Calculate fees from the current price.
     let current_price = pool.current_price(TakerSide::Buy)?;
@@ -171,10 +150,10 @@ pub fn process_buy_nft<'info, 'b>(
     // Has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
     transfer(
         TransferArgs {
-            payer: &ctx.accounts.trade.taker.to_account_info(),
+            payer: &taker,
             source: &ctx.accounts.trade.pool.to_account_info(),
             source_ata: &ctx.accounts.pool_ta,
-            destination: &ctx.accounts.trade.taker,
+            destination: &taker,
             destination_ata: &ctx.accounts.taker_ta,
             mint: &ctx.accounts.mint,
             metadata: &ctx.accounts.mplx.metadata,
@@ -234,10 +213,7 @@ pub fn process_buy_nft<'info, 'b>(
                 )
                 .to_account_info();
 
-                assert_decode_margin_account(
-                    &incoming_shared_escrow,
-                    &ctx.accounts.trade.owner.to_account_info(),
-                )?;
+                assert_decode_margin_account(&incoming_shared_escrow, &owner)?;
 
                 if incoming_shared_escrow.key != &pool.shared_escrow {
                     throw_err!(ErrorCode::BadSharedEscrow);
@@ -251,29 +227,30 @@ pub fn process_buy_nft<'info, 'b>(
         PoolType::Token => unreachable!(),
     };
 
-    // Buyer pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.trade.fee_vault.to_account_info(), tamm_fee)?;
+    // Buyer is the taker and pays the taker fee: tamm_fee + maker_broker_fee + taker_broker_fee.
+    transfer_lamports(&taker, &fee_vault, tamm_fee)?;
 
-    ctx.accounts.transfer_lamports_min_balance(
+    transfer_lamports_checked(
+        &taker,
         ctx.accounts
             .trade
             .maker_broker
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
+            .unwrap_or(&fee_vault),
         maker_broker_fee,
     )?;
 
-    ctx.accounts.transfer_lamports_min_balance(
+    transfer_lamports_checked(
+        &taker,
         ctx.accounts
             .trade
             .taker_broker
             .as_ref()
             .map(|acc| acc.to_account_info())
             .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
+            .unwrap_or(&fee_vault),
         taker_broker_fee,
     )?;
 
@@ -292,27 +269,24 @@ pub fn process_buy_nft<'info, 'b>(
         creators_fee,
         &CreatorFeeMode::Sol {
             from: &FromAcc::External(&FromExternal {
-                from: &ctx.accounts.trade.taker.to_account_info(),
+                from: &taker,
                 sys_prog: &ctx.accounts.system_program,
             }),
         },
     )?;
 
     // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
-    ctx.accounts
-        .transfer_lamports(&destination, current_price)?;
+    transfer_lamports(&taker, &destination, current_price)?;
 
     // Trade pools need to check compounding fees
     if matches!(pool.config.pool_type, PoolType::Trade) {
         // If MM fees are compounded they go to the destination to remain
         // in the pool or escrow.
         if pool.config.mm_compound_fees {
-            ctx.accounts
-                .transfer_lamports(&destination.to_account_info(), mm_fee)?;
+            transfer_lamports(&taker, &destination, mm_fee)?;
         } else {
             // If MM fees are not compounded they go to the owner.
-            ctx.accounts
-                .transfer_lamports(&ctx.accounts.trade.owner.to_account_info(), mm_fee)?;
+            transfer_lamports(&taker, &owner, mm_fee)?;
         }
     }
 
@@ -356,9 +330,5 @@ pub fn process_buy_nft<'info, 'b>(
     )?;
 
     // If the pool is an NFT pool, and no remaining NFTs held, we can close it.
-    try_autoclose_pool(
-        pool,
-        ctx.accounts.trade.rent_payer.to_account_info(),
-        ctx.accounts.trade.owner.to_account_info(),
-    )
+    try_autoclose_pool(pool, ctx.accounts.trade.rent_payer.to_account_info(), owner)
 }
