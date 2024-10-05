@@ -15,11 +15,7 @@ import {
   TOKEN22_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
-import {
-  intoAddress,
-  Mode,
-  TENSOR_WHITELIST_ERROR__BAD_MINT_PROOF,
-} from '@tensor-foundation/whitelist';
+import { intoAddress, Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   fetchMaybePool,

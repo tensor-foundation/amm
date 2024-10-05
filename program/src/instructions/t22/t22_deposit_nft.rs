@@ -4,7 +4,7 @@ use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use tensor_toolbox::token_2022::{transfer::transfer_checked, validate_mint};
 use tensor_vipers::{unwrap_int, Validate};
@@ -75,17 +75,6 @@ impl<'info> DepositNftT22<'info> {
         self.transfer
             .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
     }
-
-    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.owner_ta.to_account_info(),
-                destination: self.transfer.owner.to_account_info(),
-                authority: self.transfer.owner.to_account_info(),
-            },
-        )
-    }
 }
 
 /// Deposit a Token22 NFT into a NFT or Trade pool.
@@ -118,7 +107,10 @@ pub fn process_t22_deposit_nft<'info>(
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 
     // Close owner ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
+    token_interface::close_account(ctx.accounts.transfer.close_owner_ata_ctx(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.owner_ta.to_account_info(),
+    ))?;
 
     //update pool
     let pool = &mut ctx.accounts.transfer.pool;

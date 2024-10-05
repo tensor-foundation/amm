@@ -5,7 +5,7 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, Mint, TokenAccount, TokenInterface},
 };
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::AuthorizationData;
@@ -81,18 +81,6 @@ pub struct BuyNft<'info> {
 impl<'info> BuyNft<'info> {
     fn pre_process_checks(&self) -> Result<()> {
         self.trade.validate_buy()
-    }
-
-    /// Closes the pool's token account.
-    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.pool_ta.to_account_info(),
-                destination: self.trade.taker.to_account_info(),
-                authority: self.trade.pool.to_account_info(),
-            },
-        )
     }
 
     /// Transfer lamports from the buyer to the specified address.
@@ -210,7 +198,15 @@ pub fn process_buy_nft<'info, 'b>(
     // don't have the context of manual lamport balance changes so need to come before.
 
     // close nft escrow account
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+    token_interface::close_account(
+        ctx.accounts
+            .trade
+            .close_pool_ata_ctx(
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.pool_ta.to_account_info(),
+            )
+            .with_signer(signer_seeds),
+    )?;
 
     /*  **Transfer Fees**
     The buy price is the total price the buyer pays for buying the NFT from the pool.

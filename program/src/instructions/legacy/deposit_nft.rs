@@ -1,7 +1,7 @@
 //! Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::token_metadata::{transfer, TransferArgs};
@@ -73,17 +73,6 @@ impl<'info> DepositNft<'info> {
         self.transfer
             .verify_whitelist(&self.mplx, Some(self.mint.to_account_info()))
     }
-
-    fn close_owner_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.owner_ta.to_account_info(),
-                destination: self.transfer.owner.to_account_info(),
-                authority: self.transfer.owner.to_account_info(),
-            },
-        )
-    }
 }
 
 /// Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
@@ -118,7 +107,10 @@ pub fn process_deposit_nft(
     )?;
 
     // Close owner ATA to return rent to the owner.
-    token_interface::close_account(ctx.accounts.close_owner_ata_ctx())?;
+    token_interface::close_account(ctx.accounts.transfer.close_owner_ata_ctx(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.owner_ta.to_account_info(),
+    ))?;
 
     //update pool
     let pool = &mut ctx.accounts.transfer.pool;

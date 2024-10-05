@@ -8,7 +8,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use escrow_program::instructions::assert_decode_margin_account;
 use tensor_escrow::instructions::{
@@ -97,17 +97,6 @@ impl<'info> SellNftTradePoolT22<'info> {
         self.trade.validate_sell(&PoolType::Trade)?;
         self.trade
             .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
-    }
-
-    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.taker_ta.to_account_info(),
-                destination: self.trade.taker.to_account_info(),
-                authority: self.trade.taker.to_account_info(),
-            },
-        )
     }
 }
 
@@ -219,7 +208,10 @@ pub fn process_sell_nft_trade_pool<'a, 'b, 'c, 'info>(
     // don't have the context of manual lamport balance changes so need to come before.
 
     // Close seller ATA to return rent to the rent payer.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
+    token_interface::close_account(ctx.accounts.trade.close_taker_ata_ctx(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.taker_ta.to_account_info(),
+    ))?;
 
     // Signer seeds for the pool account.
     let signer_seeds: &[&[&[u8]]] = &[&[

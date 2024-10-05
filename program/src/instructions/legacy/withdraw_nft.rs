@@ -2,7 +2,7 @@
 
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, Mint, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
@@ -75,17 +75,6 @@ impl<'info> WithdrawNft<'info> {
     fn pre_process_checks(&self) -> Result<()> {
         self.transfer.validate()
     }
-
-    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.pool_ta.to_account_info(),
-                destination: self.transfer.owner.to_account_info(),
-                authority: self.transfer.pool.to_account_info(),
-            },
-        )
-    }
 }
 
 /// Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
@@ -131,7 +120,15 @@ pub fn process_withdraw_nft<'info>(
     )?;
 
     // close pool ATA
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+    token_interface::close_account(
+        ctx.accounts
+            .transfer
+            .close_pool_ata_ctx(
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.pool_ta.to_account_info(),
+            )
+            .with_signer(signer_seeds),
+    )?;
 
     //update pool
     let pool = &mut ctx.accounts.transfer.pool;

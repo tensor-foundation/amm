@@ -2,7 +2,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
 };
 use tensor_toolbox::{
     close_account,
@@ -76,17 +76,6 @@ impl<'info> WithdrawNftT22<'info> {
     fn pre_process_checks(&self) -> Result<()> {
         self.transfer.validate()
     }
-
-    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.pool_ta.to_account_info(),
-                destination: self.transfer.owner.to_account_info(),
-                authority: self.transfer.pool.to_account_info(),
-            },
-        )
-    }
 }
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
@@ -133,7 +122,15 @@ pub fn process_t22_withdraw_nft<'info>(
     )?;
 
     // close pool ATA
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+    token_interface::close_account(
+        ctx.accounts
+            .transfer
+            .close_pool_ata_ctx(
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.pool_ta.to_account_info(),
+            )
+            .with_signer(signer_seeds),
+    )?;
 
     //update pool
     let pool = &mut ctx.accounts.transfer.pool;

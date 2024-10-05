@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token_interface::CloseAccount;
 use constants::CURRENT_POOL_VERSION;
 use mpl_token_metadata::types::{Collection, Creator};
 use program::AmmProgram;
@@ -286,6 +287,12 @@ pub struct T22<'info> {
     pub sys_program: Program<'info, System>,
 }
 
+pub struct AmmAsset {
+    pub pubkey: Pubkey,
+    pub collection: Option<Collection>,
+    pub creators: Option<Vec<Creator>>,
+}
+
 pub trait ValidateAsset<'info> {
     fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset>;
 }
@@ -362,12 +369,6 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
     }
 }
 
-pub struct AmmAsset {
-    pub pubkey: Pubkey,
-    pub collection: Option<Collection>,
-    pub creators: Option<Vec<Creator>>,
-}
-
 impl<'info> TradeShared<'info> {
     pub fn verify_whitelist(
         &self,
@@ -393,6 +394,36 @@ impl<'info> TradeShared<'info> {
         };
 
         whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+    }
+
+    pub fn close_pool_ata_ctx(
+        &self,
+        token_program: AccountInfo<'info>,
+        pool_ta: AccountInfo<'info>,
+    ) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            token_program,
+            CloseAccount {
+                account: pool_ta,
+                destination: self.taker.to_account_info(),
+                authority: self.pool.to_account_info(),
+            },
+        )
+    }
+
+    pub fn close_taker_ata_ctx(
+        &self,
+        token_program: AccountInfo<'info>,
+        taker_ta: AccountInfo<'info>,
+    ) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            token_program,
+            CloseAccount {
+                account: taker_ta,
+                destination: self.taker.to_account_info(),
+                authority: self.taker.to_account_info(),
+            },
+        )
     }
 }
 
@@ -421,5 +452,35 @@ impl<'info> TransferShared<'info> {
         };
 
         whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+    }
+
+    pub fn close_pool_ata_ctx(
+        &self,
+        token_program: AccountInfo<'info>,
+        pool_ta: AccountInfo<'info>,
+    ) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            token_program,
+            CloseAccount {
+                account: pool_ta,
+                destination: self.owner.to_account_info(),
+                authority: self.pool.to_account_info(),
+            },
+        )
+    }
+
+    pub fn close_owner_ata_ctx(
+        &self,
+        token_program: AccountInfo<'info>,
+        owner_ta: AccountInfo<'info>,
+    ) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
+        CpiContext::new(
+            token_program,
+            CloseAccount {
+                account: owner_ta,
+                destination: self.owner.to_account_info(),
+                authority: self.owner.to_account_info(),
+            },
+        )
     }
 }

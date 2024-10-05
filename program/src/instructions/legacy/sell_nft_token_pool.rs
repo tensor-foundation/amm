@@ -8,7 +8,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, CloseAccount, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, Mint, TokenAccount, TokenInterface},
 };
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::AuthorizationData;
@@ -90,30 +90,6 @@ impl<'info> SellNftTokenPool<'info> {
         self.trade.validate_sell(&PoolType::Token)?;
         self.trade
             .verify_whitelist(&self.mplx, Some(self.mint.to_account_info()))
-    }
-
-    fn close_seller_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.taker_ta.to_account_info(),
-                destination: self.trade.taker.to_account_info(),
-                authority: self.trade.taker.to_account_info(),
-            },
-        )
-    }
-}
-
-impl<'info> SellNftTokenPool<'info> {
-    fn close_pool_ata_ctx(&self) -> CpiContext<'_, '_, '_, 'info, CloseAccount<'info>> {
-        CpiContext::new(
-            self.token_program.to_account_info(),
-            CloseAccount {
-                account: self.pool_ta.to_account_info(),
-                destination: self.trade.taker.to_account_info(),
-                authority: self.trade.pool.to_account_info(),
-            },
-        )
     }
 }
 
@@ -237,10 +213,21 @@ pub fn process_sell_nft_token_pool<'info>(
     // manual lamport transfers.
 
     // close temp pool ata account, so it's not dangling
-    token_interface::close_account(ctx.accounts.close_pool_ata_ctx().with_signer(signer_seeds))?;
+    token_interface::close_account(
+        ctx.accounts
+            .trade
+            .close_pool_ata_ctx(
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.pool_ta.to_account_info(),
+            )
+            .with_signer(signer_seeds),
+    )?;
 
     // Close seller ATA to return rent to seller.
-    token_interface::close_account(ctx.accounts.close_seller_ata_ctx())?;
+    token_interface::close_account(ctx.accounts.trade.close_taker_ata_ctx(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.taker_ta.to_account_info(),
+    ))?;
 
     // --------------------------------------- end pnft
 
