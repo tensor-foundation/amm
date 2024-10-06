@@ -10,12 +10,6 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct SellNftTradePoolCore {
-    /// The MPL core asset account.
-    pub asset: solana_program::pubkey::Pubkey,
-
-    pub collection: Option<solana_program::pubkey::Pubkey>,
-    /// The MPL Core program.
-    pub mpl_core_program: solana_program::pubkey::Pubkey,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: solana_program::pubkey::Pubkey,
     /// The taker is the user buying or selling the NFT.
@@ -49,9 +43,15 @@ pub struct SellNftTradePoolCore {
     pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 
     pub native_program: solana_program::pubkey::Pubkey,
+    /// The MPL core asset account.
+    pub asset: solana_program::pubkey::Pubkey,
+
+    pub collection: Option<solana_program::pubkey::Pubkey>,
+    /// The MPL Core program.
+    pub mpl_core_program: solana_program::pubkey::Pubkey,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: solana_program::pubkey::Pubkey,
-
+    /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
@@ -69,23 +69,6 @@ impl SellNftTradePoolCore {
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
         let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.asset, false,
-        ));
-        if let Some(collection) = self.collection {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                collection, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::TENSOR_AMM_ID,
-                false,
-            ));
-        }
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mpl_core_program,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -180,6 +163,23 @@ impl SellNftTradePoolCore {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
+            self.asset, false,
+        ));
+        if let Some(collection) = self.collection {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                collection, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.mpl_core_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_receipt,
             false,
         ));
@@ -231,30 +231,27 @@ pub struct SellNftTradePoolCoreInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` asset
-///   1. `[optional]` collection
-///   2. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
-///   3. `[writable]` owner
-///   4. `[writable, signer]` taker
-///   5. `[writable]` rent_payer
-///   6. `[writable]` fee_vault
-///   7. `[writable]` pool
-///   8. `[]` whitelist
-///   9. `[optional]` mint_proof
-///   10. `[writable, optional]` shared_escrow
-///   11. `[writable, optional]` maker_broker
-///   12. `[writable, optional]` taker_broker
-///   13. `[signer, optional]` cosigner
-///   14. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
-///   15. `[optional]` escrow_program
-///   16. `[optional]` native_program (default to `11111111111111111111111111111111`)
+///   0. `[writable]` owner
+///   1. `[writable, signer]` taker
+///   2. `[writable]` rent_payer
+///   3. `[writable]` fee_vault
+///   4. `[writable]` pool
+///   5. `[]` whitelist
+///   6. `[optional]` mint_proof
+///   7. `[writable, optional]` shared_escrow
+///   8. `[writable, optional]` maker_broker
+///   9. `[writable, optional]` taker_broker
+///   10. `[signer, optional]` cosigner
+///   11. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
+///   12. `[optional]` escrow_program
+///   13. `[optional]` native_program (default to `11111111111111111111111111111111`)
+///   14. `[writable]` asset
+///   15. `[optional]` collection
+///   16. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
 ///   17. `[writable]` nft_receipt
 ///   18. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct SellNftTradePoolCoreBuilder {
-    asset: Option<solana_program::pubkey::Pubkey>,
-    collection: Option<solana_program::pubkey::Pubkey>,
-    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     taker: Option<solana_program::pubkey::Pubkey>,
     rent_payer: Option<solana_program::pubkey::Pubkey>,
@@ -269,6 +266,9 @@ pub struct SellNftTradePoolCoreBuilder {
     amm_program: Option<solana_program::pubkey::Pubkey>,
     escrow_program: Option<solana_program::pubkey::Pubkey>,
     native_program: Option<solana_program::pubkey::Pubkey>,
+    asset: Option<solana_program::pubkey::Pubkey>,
+    collection: Option<solana_program::pubkey::Pubkey>,
+    mpl_core_program: Option<solana_program::pubkey::Pubkey>,
     nft_receipt: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     min_price: Option<u64>,
@@ -278,28 +278,6 @@ pub struct SellNftTradePoolCoreBuilder {
 impl SellNftTradePoolCoreBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-    /// The MPL core asset account.
-    #[inline(always)]
-    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.asset = Some(asset);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.collection = collection;
-        self
-    }
-    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
-    /// The MPL Core program.
-    #[inline(always)]
-    pub fn mpl_core_program(
-        &mut self,
-        mpl_core_program: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.mpl_core_program = Some(mpl_core_program);
-        self
     }
     /// The owner of the pool and the buyer/recipient of the NFT.
     #[inline(always)]
@@ -409,6 +387,28 @@ impl SellNftTradePoolCoreBuilder {
         self.native_program = Some(native_program);
         self
     }
+    /// The MPL core asset account.
+    #[inline(always)]
+    pub fn asset(&mut self, asset: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.asset = Some(asset);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn collection(&mut self, collection: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.collection = collection;
+        self
+    }
+    /// `[optional account, default to 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d']`
+    /// The MPL Core program.
+    #[inline(always)]
+    pub fn mpl_core_program(
+        &mut self,
+        mpl_core_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.mpl_core_program = Some(mpl_core_program);
+        self
+    }
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
@@ -416,6 +416,7 @@ impl SellNftTradePoolCoreBuilder {
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
@@ -447,11 +448,6 @@ impl SellNftTradePoolCoreBuilder {
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
         let accounts = SellNftTradePoolCore {
-            asset: self.asset.expect("asset is not set"),
-            collection: self.collection,
-            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
-                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-            )),
             owner: self.owner.expect("owner is not set"),
             taker: self.taker.expect("taker is not set"),
             rent_payer: self.rent_payer.expect("rent_payer is not set"),
@@ -470,6 +466,11 @@ impl SellNftTradePoolCoreBuilder {
             native_program: self
                 .native_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
+            asset: self.asset.expect("asset is not set"),
+            collection: self.collection,
+            mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
+                "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+            )),
             nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             system_program: self
                 .system_program
@@ -485,12 +486,6 @@ impl SellNftTradePoolCoreBuilder {
 
 /// `sell_nft_trade_pool_core` CPI accounts.
 pub struct SellNftTradePoolCoreCpiAccounts<'a, 'b> {
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The taker is the user buying or selling the NFT.
@@ -524,9 +519,15 @@ pub struct SellNftTradePoolCoreCpiAccounts<'a, 'b> {
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
@@ -534,12 +535,6 @@ pub struct SellNftTradePoolCoreCpiAccounts<'a, 'b> {
 pub struct SellNftTradePoolCoreCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The MPL core asset account.
-    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The MPL Core program.
-    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The owner of the pool and the buyer/recipient of the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
     /// The taker is the user buying or selling the NFT.
@@ -573,9 +568,15 @@ pub struct SellNftTradePoolCoreCpi<'a, 'b> {
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The MPL core asset account.
+    pub asset: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The MPL Core program.
+    pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-
+    /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: SellNftTradePoolCoreInstructionArgs,
@@ -589,9 +590,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
     ) -> Self {
         Self {
             __program: program,
-            asset: accounts.asset,
-            collection: accounts.collection,
-            mpl_core_program: accounts.mpl_core_program,
             owner: accounts.owner,
             taker: accounts.taker,
             rent_payer: accounts.rent_payer,
@@ -606,6 +604,9 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
             amm_program: accounts.amm_program,
             escrow_program: accounts.escrow_program,
             native_program: accounts.native_program,
+            asset: accounts.asset,
+            collection: accounts.collection,
+            mpl_core_program: accounts.mpl_core_program,
             nft_receipt: accounts.nft_receipt,
             system_program: accounts.system_program,
             __args: args,
@@ -645,25 +646,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
         )],
     ) -> solana_program::entrypoint::ProgramResult {
         let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.asset.key,
-            false,
-        ));
-        if let Some(collection) = self.collection {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *collection.key,
-                false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::TENSOR_AMM_ID,
-                false,
-            ));
-        }
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mpl_core_program.key,
-            false,
-        ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -763,6 +745,25 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.asset.key,
+            false,
+        ));
+        if let Some(collection) = self.collection {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *collection.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.mpl_core_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
             *self.nft_receipt.key,
             false,
         ));
@@ -790,11 +791,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
         };
         let mut account_infos = Vec::with_capacity(19 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.asset.clone());
-        if let Some(collection) = self.collection {
-            account_infos.push(collection.clone());
-        }
-        account_infos.push(self.mpl_core_program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.taker.clone());
         account_infos.push(self.rent_payer.clone());
@@ -821,6 +817,11 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
             account_infos.push(escrow_program.clone());
         }
         account_infos.push(self.native_program.clone());
+        account_infos.push(self.asset.clone());
+        if let Some(collection) = self.collection {
+            account_infos.push(collection.clone());
+        }
+        account_infos.push(self.mpl_core_program.clone());
         account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -839,23 +840,23 @@ impl<'a, 'b> SellNftTradePoolCoreCpi<'a, 'b> {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` asset
-///   1. `[optional]` collection
-///   2. `[]` mpl_core_program
-///   3. `[writable]` owner
-///   4. `[writable, signer]` taker
-///   5. `[writable]` rent_payer
-///   6. `[writable]` fee_vault
-///   7. `[writable]` pool
-///   8. `[]` whitelist
-///   9. `[optional]` mint_proof
-///   10. `[writable, optional]` shared_escrow
-///   11. `[writable, optional]` maker_broker
-///   12. `[writable, optional]` taker_broker
-///   13. `[signer, optional]` cosigner
-///   14. `[]` amm_program
-///   15. `[optional]` escrow_program
-///   16. `[]` native_program
+///   0. `[writable]` owner
+///   1. `[writable, signer]` taker
+///   2. `[writable]` rent_payer
+///   3. `[writable]` fee_vault
+///   4. `[writable]` pool
+///   5. `[]` whitelist
+///   6. `[optional]` mint_proof
+///   7. `[writable, optional]` shared_escrow
+///   8. `[writable, optional]` maker_broker
+///   9. `[writable, optional]` taker_broker
+///   10. `[signer, optional]` cosigner
+///   11. `[]` amm_program
+///   12. `[optional]` escrow_program
+///   13. `[]` native_program
+///   14. `[writable]` asset
+///   15. `[optional]` collection
+///   16. `[]` mpl_core_program
 ///   17. `[writable]` nft_receipt
 ///   18. `[]` system_program
 #[derive(Clone, Debug)]
@@ -867,9 +868,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(SellNftTradePoolCoreCpiBuilderInstruction {
             __program: program,
-            asset: None,
-            collection: None,
-            mpl_core_program: None,
             owner: None,
             taker: None,
             rent_payer: None,
@@ -884,36 +882,15 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
             amm_program: None,
             escrow_program: None,
             native_program: None,
+            asset: None,
+            collection: None,
+            mpl_core_program: None,
             nft_receipt: None,
             system_program: None,
             min_price: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The MPL core asset account.
-    #[inline(always)]
-    pub fn asset(&mut self, asset: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.asset = Some(asset);
-        self
-    }
-    /// `[optional account]`
-    #[inline(always)]
-    pub fn collection(
-        &mut self,
-        collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.collection = collection;
-        self
-    }
-    /// The MPL Core program.
-    #[inline(always)]
-    pub fn mpl_core_program(
-        &mut self,
-        mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.mpl_core_program = Some(mpl_core_program);
-        self
     }
     /// The owner of the pool and the buyer/recipient of the NFT.
     #[inline(always)]
@@ -1042,6 +1019,30 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
         self.instruction.native_program = Some(native_program);
         self
     }
+    /// The MPL core asset account.
+    #[inline(always)]
+    pub fn asset(&mut self, asset: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.asset = Some(asset);
+        self
+    }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn collection(
+        &mut self,
+        collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.collection = collection;
+        self
+    }
+    /// The MPL Core program.
+    #[inline(always)]
+    pub fn mpl_core_program(
+        &mut self,
+        mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.mpl_core_program = Some(mpl_core_program);
+        self
+    }
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(
@@ -1051,6 +1052,7 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
         self.instruction.nft_receipt = Some(nft_receipt);
         self
     }
+    /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -1115,15 +1117,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
         let instruction = SellNftTradePoolCoreCpi {
             __program: self.instruction.__program,
 
-            asset: self.instruction.asset.expect("asset is not set"),
-
-            collection: self.instruction.collection,
-
-            mpl_core_program: self
-                .instruction
-                .mpl_core_program
-                .expect("mpl_core_program is not set"),
-
             owner: self.instruction.owner.expect("owner is not set"),
 
             taker: self.instruction.taker.expect("taker is not set"),
@@ -1158,6 +1151,15 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
                 .native_program
                 .expect("native_program is not set"),
 
+            asset: self.instruction.asset.expect("asset is not set"),
+
+            collection: self.instruction.collection,
+
+            mpl_core_program: self
+                .instruction
+                .mpl_core_program
+                .expect("mpl_core_program is not set"),
+
             nft_receipt: self
                 .instruction
                 .nft_receipt
@@ -1179,9 +1181,6 @@ impl<'a, 'b> SellNftTradePoolCoreCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct SellNftTradePoolCoreCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
-    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     rent_payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -1196,6 +1195,9 @@ struct SellNftTradePoolCoreCpiBuilderInstruction<'a, 'b> {
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     native_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     min_price: Option<u64>,

@@ -7,10 +7,11 @@ use super::*;
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct SellNftTokenPoolT22<'info> {
+    /// T22 shared accounts.
+    pub t22: T22Shared<'info>,
+
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
-
-    pub t22: T22Shared<'info>,
 
     /// The mint account of the NFT being sold.
     #[account(

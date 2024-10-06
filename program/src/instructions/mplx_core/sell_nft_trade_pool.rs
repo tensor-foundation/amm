@@ -10,11 +10,11 @@ use super::*;
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTradePoolCore<'info> {
-    /// Metaplex core shared accounts.
-    pub core: MplCoreShared<'info>,
-
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
+
+    /// Metaplex core shared accounts.
+    pub core: MplCoreShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
@@ -30,6 +30,7 @@ pub struct SellNftTradePoolCore<'info> {
         )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
+    /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 

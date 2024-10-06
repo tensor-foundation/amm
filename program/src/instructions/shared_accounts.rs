@@ -39,7 +39,7 @@ pub struct TransferShared<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
-    /// The pool the asset is being transferred to/from.
+    /// The pool the NFT is being transferred to/from.
     #[account(
         mut,
         seeds = [
@@ -49,7 +49,6 @@ pub struct TransferShared<'info> {
         ],
         bump = pool.bump[0],
         has_one = owner @ ErrorCode::BadOwner,
-        // can only transfer to/from NFT & Trade pools
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -704,7 +703,7 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
         let collection = match asset.update_authority {
             UpdateAuthority::Collection(address) => Some(Collection {
                 key: address,
-                verified: true,
+                verified: true, // mpl-core collections are always verified
             }),
             _ => None,
         };

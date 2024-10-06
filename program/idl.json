@@ -345,6 +345,47 @@
       ],
       "accounts": [
         {
+          "name": "transfer",
+          "accounts": [
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": true,
+              "docs": [
+                "The owner of the pool and the NFT."
+              ]
+            },
+            {
+              "name": "pool",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The pool the NFT is being transferred to/from."
+              ]
+            },
+            {
+              "name": "whitelist",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
+                "Must match the whitelist stored in the pool state."
+              ]
+            },
+            {
+              "name": "mintProof",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "Optional account which must be passed in if the NFT must be verified against a",
+                "merkle proof condition in the whitelist."
+              ]
+            }
+          ]
+        },
+        {
           "name": "mplx",
           "accounts": [
             {
@@ -415,47 +456,6 @@
               "isOptional": true,
               "docs": [
                 "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
-          "name": "transfer",
-          "accounts": [
-            {
-              "name": "owner",
-              "isMut": true,
-              "isSigner": true,
-              "docs": [
-                "The owner of the pool and the NFT."
-              ]
-            },
-            {
-              "name": "pool",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The pool the asset is being transferred to/from."
-              ]
-            },
-            {
-              "name": "whitelist",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
-                "Must match the whitelist stored in the pool state."
-              ]
-            },
-            {
-              "name": "mintProof",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "Optional account which must be passed in if the NFT must be verified against a",
-                "merkle proof condition in the whitelist."
               ]
             }
           ]
@@ -536,6 +536,47 @@
       ],
       "accounts": [
         {
+          "name": "transfer",
+          "accounts": [
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": true,
+              "docs": [
+                "The owner of the pool and the NFT."
+              ]
+            },
+            {
+              "name": "pool",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The pool the NFT is being transferred to/from."
+              ]
+            },
+            {
+              "name": "whitelist",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
+                "Must match the whitelist stored in the pool state."
+              ]
+            },
+            {
+              "name": "mintProof",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "Optional account which must be passed in if the NFT must be verified against a",
+                "merkle proof condition in the whitelist."
+              ]
+            }
+          ]
+        },
+        {
           "name": "mplx",
           "accounts": [
             {
@@ -606,47 +647,6 @@
               "isOptional": true,
               "docs": [
                 "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
-          "name": "transfer",
-          "accounts": [
-            {
-              "name": "owner",
-              "isMut": true,
-              "isSigner": true,
-              "docs": [
-                "The owner of the pool and the NFT."
-              ]
-            },
-            {
-              "name": "pool",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The pool the asset is being transferred to/from."
-              ]
-            },
-            {
-              "name": "whitelist",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
-                "Must match the whitelist stored in the pool state."
-              ]
-            },
-            {
-              "name": "mintProof",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "Optional account which must be passed in if the NFT must be verified against a",
-                "merkle proof condition in the whitelist."
               ]
             }
           ]
@@ -725,81 +725,6 @@
         "Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool."
       ],
       "accounts": [
-        {
-          "name": "mplx",
-          "accounts": [
-            {
-              "name": "metadata",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata metadata account of the NFT."
-              ]
-            },
-            {
-              "name": "edition",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata edition account of the NFT."
-              ]
-            },
-            {
-              "name": "userTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the destination."
-              ]
-            },
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata program account."
-              ]
-            },
-            {
-              "name": "sysvarInstructions",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The sysvar instructions account."
-              ]
-            },
-            {
-              "name": "authorizationRules",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
-              ]
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
         {
           "name": "trade",
           "accounts": [
@@ -923,6 +848,81 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "mplx",
+          "accounts": [
+            {
+              "name": "metadata",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata metadata account of the NFT."
+              ]
+            },
+            {
+              "name": "edition",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata edition account of the NFT."
+              ]
+            },
+            {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
+              "name": "tokenMetadataProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata program account."
+              ]
+            },
+            {
+              "name": "sysvarInstructions",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The sysvar instructions account."
+              ]
+            },
+            {
+              "name": "authorizationRules",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+              ]
+            },
+            {
+              "name": "authorizationRulesProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules program account."
+              ]
             }
           ]
         },
@@ -1011,81 +1011,6 @@
       ],
       "accounts": [
         {
-          "name": "mplx",
-          "accounts": [
-            {
-              "name": "metadata",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata metadata account of the NFT."
-              ]
-            },
-            {
-              "name": "edition",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata edition account of the NFT."
-              ]
-            },
-            {
-              "name": "userTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the destination."
-              ]
-            },
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata program account."
-              ]
-            },
-            {
-              "name": "sysvarInstructions",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The sysvar instructions account."
-              ]
-            },
-            {
-              "name": "authorizationRules",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
-              ]
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -1208,6 +1133,81 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "mplx",
+          "accounts": [
+            {
+              "name": "metadata",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata metadata account of the NFT."
+              ]
+            },
+            {
+              "name": "edition",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata edition account of the NFT."
+              ]
+            },
+            {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
+              "name": "tokenMetadataProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata program account."
+              ]
+            },
+            {
+              "name": "sysvarInstructions",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The sysvar instructions account."
+              ]
+            },
+            {
+              "name": "authorizationRules",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+              ]
+            },
+            {
+              "name": "authorizationRulesProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules program account."
+              ]
             }
           ]
         },
@@ -1305,81 +1305,6 @@
       ],
       "accounts": [
         {
-          "name": "mplx",
-          "accounts": [
-            {
-              "name": "metadata",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata metadata account of the NFT."
-              ]
-            },
-            {
-              "name": "edition",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The Token Metadata edition account of the NFT."
-              ]
-            },
-            {
-              "name": "userTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata source token record account of the NFT."
-              ]
-            },
-            {
-              "name": "poolTokenRecord",
-              "isMut": true,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata token record for the destination."
-              ]
-            },
-            {
-              "name": "tokenMetadataProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Token Metadata program account."
-              ]
-            },
-            {
-              "name": "sysvarInstructions",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The sysvar instructions account."
-              ]
-            },
-            {
-              "name": "authorizationRules",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
-              ]
-            },
-            {
-              "name": "authorizationRulesProgram",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The Metaplex Token Authority Rules program account."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -1502,6 +1427,81 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "mplx",
+          "accounts": [
+            {
+              "name": "metadata",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata metadata account of the NFT."
+              ]
+            },
+            {
+              "name": "edition",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The Token Metadata edition account of the NFT."
+              ]
+            },
+            {
+              "name": "userTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata source token record account of the NFT."
+              ]
+            },
+            {
+              "name": "poolTokenRecord",
+              "isMut": true,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata token record for the destination."
+              ]
+            },
+            {
+              "name": "tokenMetadataProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Token Metadata program account."
+              ]
+            },
+            {
+              "name": "sysvarInstructions",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The sysvar instructions account."
+              ]
+            },
+            {
+              "name": "authorizationRules",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules account that stores royalty enforcement rules."
+              ]
+            },
+            {
+              "name": "authorizationRulesProgram",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The Metaplex Token Authority Rules program account."
+              ]
             }
           ]
         },
@@ -1587,6 +1587,47 @@
       ],
       "accounts": [
         {
+          "name": "transfer",
+          "accounts": [
+            {
+              "name": "owner",
+              "isMut": true,
+              "isSigner": true,
+              "docs": [
+                "The owner of the pool and the NFT."
+              ]
+            },
+            {
+              "name": "pool",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The pool the NFT is being transferred to/from."
+              ]
+            },
+            {
+              "name": "whitelist",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
+                "Must match the whitelist stored in the pool state."
+              ]
+            },
+            {
+              "name": "mintProof",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true,
+              "docs": [
+                "Optional account which must be passed in if the NFT must be verified against a",
+                "merkle proof condition in the whitelist."
+              ]
+            }
+          ]
+        },
+        {
           "name": "core",
           "accounts": [
             {
@@ -1609,47 +1650,6 @@
               "isSigner": false,
               "docs": [
                 "The MPL Core program."
-              ]
-            }
-          ]
-        },
-        {
-          "name": "transfer",
-          "accounts": [
-            {
-              "name": "owner",
-              "isMut": true,
-              "isSigner": true,
-              "docs": [
-                "The owner of the pool and the NFT."
-              ]
-            },
-            {
-              "name": "pool",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The pool the asset is being transferred to/from."
-              ]
-            },
-            {
-              "name": "whitelist",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "The whitelist that gatekeeps which NFTs can be deposited into the pool.",
-                "Must match the whitelist stored in the pool state."
-              ]
-            },
-            {
-              "name": "mintProof",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true,
-              "docs": [
-                "Optional account which must be passed in if the NFT must be verified against a",
-                "merkle proof condition in the whitelist."
               ]
             }
           ]
@@ -1680,33 +1680,6 @@
       ],
       "accounts": [
         {
-          "name": "core",
-          "accounts": [
-            {
-              "name": "asset",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The MPL core asset account."
-              ]
-            },
-            {
-              "name": "collection",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true
-            },
-            {
-              "name": "mplCoreProgram",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The MPL Core program."
-              ]
-            }
-          ]
-        },
-        {
           "name": "transfer",
           "accounts": [
             {
@@ -1722,7 +1695,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool the asset is being transferred to/from."
+                "The pool the NFT is being transferred to/from."
               ]
             },
             {
@@ -1748,23 +1721,6 @@
           ]
         },
         {
-          "name": "nftReceipt",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The NFT receipt account denoting that an NFT has been deposited into this pool."
-          ]
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "buyNftCore",
-      "docs": [
-        "Buy a Token22 NFT from a NFT or Trade pool."
-      ],
-      "accounts": [
-        {
           "name": "core",
           "accounts": [
             {
@@ -1791,6 +1747,23 @@
             }
           ]
         },
+        {
+          "name": "nftReceipt",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The NFT receipt account denoting that an NFT has been deposited into this pool."
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "buyNftCore",
+      "docs": [
+        "Buy a Token22 NFT from a NFT or Trade pool."
+      ],
+      "accounts": [
         {
           "name": "trade",
           "accounts": [
@@ -1914,6 +1887,33 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "core",
+          "accounts": [
+            {
+              "name": "asset",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The MPL core asset account."
+              ]
+            },
+            {
+              "name": "collection",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true
+            },
+            {
+              "name": "mplCoreProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The MPL Core program."
+              ]
             }
           ]
         },
@@ -1948,33 +1948,6 @@
       ],
       "accounts": [
         {
-          "name": "core",
-          "accounts": [
-            {
-              "name": "asset",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The MPL core asset account."
-              ]
-            },
-            {
-              "name": "collection",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true
-            },
-            {
-              "name": "mplCoreProgram",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The MPL Core program."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -2097,6 +2070,33 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "core",
+          "accounts": [
+            {
+              "name": "asset",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The MPL core asset account."
+              ]
+            },
+            {
+              "name": "collection",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true
+            },
+            {
+              "name": "mplCoreProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The MPL Core program."
+              ]
             }
           ]
         },
@@ -2123,33 +2123,6 @@
       ],
       "accounts": [
         {
-          "name": "core",
-          "accounts": [
-            {
-              "name": "asset",
-              "isMut": true,
-              "isSigner": false,
-              "docs": [
-                "The MPL core asset account."
-              ]
-            },
-            {
-              "name": "collection",
-              "isMut": false,
-              "isSigner": false,
-              "isOptional": true
-            },
-            {
-              "name": "mplCoreProgram",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The MPL Core program."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -2276,6 +2249,33 @@
           ]
         },
         {
+          "name": "core",
+          "accounts": [
+            {
+              "name": "asset",
+              "isMut": true,
+              "isSigner": false,
+              "docs": [
+                "The MPL core asset account."
+              ]
+            },
+            {
+              "name": "collection",
+              "isMut": false,
+              "isSigner": false,
+              "isOptional": true
+            },
+            {
+              "name": "mplCoreProgram",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The MPL Core program."
+              ]
+            }
+          ]
+        },
+        {
           "name": "nftReceipt",
           "isMut": true,
           "isSigner": false,
@@ -2286,7 +2286,10 @@
         {
           "name": "systemProgram",
           "isMut": false,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "The Solana system program."
+          ]
         }
       ],
       "args": [
@@ -2303,16 +2306,6 @@
       ],
       "accounts": [
         {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "sysProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
-        },
-        {
           "name": "transfer",
           "accounts": [
             {
@@ -2328,7 +2321,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool the asset is being transferred to/from."
+                "The pool the NFT is being transferred to/from."
               ]
             },
             {
@@ -2350,6 +2343,16 @@
                 "Optional account which must be passed in if the NFT must be verified against a",
                 "merkle proof condition in the whitelist."
               ]
+            }
+          ]
+        },
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2420,16 +2423,6 @@
       ],
       "accounts": [
         {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "sysProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
-        },
-        {
           "name": "transfer",
           "accounts": [
             {
@@ -2445,7 +2438,7 @@
               "isMut": true,
               "isSigner": false,
               "docs": [
-                "The pool the asset is being transferred to/from."
+                "The pool the NFT is being transferred to/from."
               ]
             },
             {
@@ -2467,6 +2460,16 @@
                 "Optional account which must be passed in if the NFT must be verified against a",
                 "merkle proof condition in the whitelist."
               ]
+            }
+          ]
+        },
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
             }
           ]
         },
@@ -2535,16 +2538,6 @@
         "Buy a Token22 NFT from a NFT or Trade pool."
       ],
       "accounts": [
-        {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "sysProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
-        },
         {
           "name": "trade",
           "accounts": [
@@ -2666,6 +2659,16 @@
             },
             {
               "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
               "isMut": false,
               "isSigner": false
             }
@@ -2742,6 +2745,16 @@
       ],
       "accounts": [
         {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
           "name": "trade",
           "accounts": [
             {
@@ -2862,16 +2875,6 @@
             },
             {
               "name": "nativeProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
-        },
-        {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "sysProgram",
               "isMut": false,
               "isSigner": false
             }
@@ -2940,16 +2943,6 @@
       ],
       "accounts": [
         {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "sysProgram",
-              "isMut": false,
-              "isSigner": false
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -3070,6 +3063,16 @@
             },
             {
               "name": "nativeProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
               "isMut": false,
               "isSigner": false
             }

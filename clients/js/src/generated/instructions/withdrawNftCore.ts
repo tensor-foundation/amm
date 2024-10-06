@@ -40,30 +40,21 @@ import {
 
 export type WithdrawNftCoreInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
+  TAccountOwner extends string | IAccountMeta<string> = string,
+  TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountAsset extends string | IAccountMeta<string> = string,
   TAccountCollection extends string | IAccountMeta<string> = string,
   TAccountMplCoreProgram extends
     | string
     | IAccountMeta<string> = 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d',
-  TAccountOwner extends string | IAccountMeta<string> = string,
-  TAccountPool extends string | IAccountMeta<string> = string,
-  TAccountWhitelist extends string | IAccountMeta<string> = string,
-  TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountAsset extends string
-        ? WritableAccount<TAccountAsset>
-        : TAccountAsset,
-      TAccountCollection extends string
-        ? ReadonlyAccount<TAccountCollection>
-        : TAccountCollection,
-      TAccountMplCoreProgram extends string
-        ? ReadonlyAccount<TAccountMplCoreProgram>
-        : TAccountMplCoreProgram,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             IAccountSignerMeta<TAccountOwner>
@@ -77,6 +68,15 @@ export type WithdrawNftCoreInstruction<
       TAccountMintProof extends string
         ? ReadonlyAccount<TAccountMintProof>
         : TAccountMintProof,
+      TAccountAsset extends string
+        ? WritableAccount<TAccountAsset>
+        : TAccountAsset,
+      TAccountCollection extends string
+        ? ReadonlyAccount<TAccountCollection>
+        : TAccountCollection,
+      TAccountMplCoreProgram extends string
+        ? ReadonlyAccount<TAccountMplCoreProgram>
+        : TAccountMplCoreProgram,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -117,23 +117,18 @@ export function getWithdrawNftCoreInstructionDataCodec(): Codec<
 }
 
 export type WithdrawNftCoreAsyncInput<
-  TAccountAsset extends string = string,
-  TAccountCollection extends string = string,
-  TAccountMplCoreProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
+  TAccountAsset extends string = string,
+  TAccountCollection extends string = string,
+  TAccountMplCoreProgram extends string = string,
   TAccountNftReceipt extends string = string,
 > = {
-  /** The MPL core asset account. */
-  asset: Address<TAccountAsset>;
-  collection?: Address<TAccountCollection>;
-  /** The MPL Core program. */
-  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool the asset is being transferred to/from. */
+  /** The pool the NFT is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -145,40 +140,45 @@ export type WithdrawNftCoreAsyncInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
+  /** The MPL core asset account. */
+  asset: Address<TAccountAsset>;
+  collection?: Address<TAccountCollection>;
+  /** The MPL Core program. */
+  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt?: Address<TAccountNftReceipt>;
 };
 
 export async function getWithdrawNftCoreInstructionAsync<
-  TAccountAsset extends string,
-  TAccountCollection extends string,
-  TAccountMplCoreProgram extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
+  TAccountAsset extends string,
+  TAccountCollection extends string,
+  TAccountMplCoreProgram extends string,
   TAccountNftReceipt extends string,
 >(
   input: WithdrawNftCoreAsyncInput<
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt
   >
 ): Promise<
   WithdrawNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt
   >
 > {
@@ -187,13 +187,13 @@ export async function getWithdrawNftCoreInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    asset: { value: input.asset ?? null, isWritable: true },
-    collection: { value: input.collection ?? null, isWritable: false },
-    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
+    asset: { value: input.asset ?? null, isWritable: true },
+    collection: { value: input.collection ?? null, isWritable: false },
+    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -216,26 +216,26 @@ export async function getWithdrawNftCoreInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.asset),
-      getAccountMeta(accounts.collection),
-      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
+      getAccountMeta(accounts.asset),
+      getAccountMeta(accounts.collection),
+      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.nftReceipt),
     ],
     programAddress,
     data: getWithdrawNftCoreInstructionDataEncoder().encode({}),
   } as WithdrawNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt
   >;
 
@@ -243,23 +243,18 @@ export async function getWithdrawNftCoreInstructionAsync<
 }
 
 export type WithdrawNftCoreInput<
-  TAccountAsset extends string = string,
-  TAccountCollection extends string = string,
-  TAccountMplCoreProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
+  TAccountAsset extends string = string,
+  TAccountCollection extends string = string,
+  TAccountMplCoreProgram extends string = string,
   TAccountNftReceipt extends string = string,
 > = {
-  /** The MPL core asset account. */
-  asset: Address<TAccountAsset>;
-  collection?: Address<TAccountCollection>;
-  /** The MPL Core program. */
-  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool the asset is being transferred to/from. */
+  /** The pool the NFT is being transferred to/from. */
   pool: Address<TAccountPool>;
   /**
    * The whitelist that gatekeeps which NFTs can be deposited into the pool.
@@ -271,39 +266,44 @@ export type WithdrawNftCoreInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
+  /** The MPL core asset account. */
+  asset: Address<TAccountAsset>;
+  collection?: Address<TAccountCollection>;
+  /** The MPL Core program. */
+  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
   nftReceipt: Address<TAccountNftReceipt>;
 };
 
 export function getWithdrawNftCoreInstruction<
-  TAccountAsset extends string,
-  TAccountCollection extends string,
-  TAccountMplCoreProgram extends string,
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
+  TAccountAsset extends string,
+  TAccountCollection extends string,
+  TAccountMplCoreProgram extends string,
   TAccountNftReceipt extends string,
 >(
   input: WithdrawNftCoreInput<
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt
   >
 ): WithdrawNftCoreInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
-  TAccountAsset,
-  TAccountCollection,
-  TAccountMplCoreProgram,
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
   TAccountMintProof,
+  TAccountAsset,
+  TAccountCollection,
+  TAccountMplCoreProgram,
   TAccountNftReceipt
 > {
   // Program address.
@@ -311,13 +311,13 @@ export function getWithdrawNftCoreInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    asset: { value: input.asset ?? null, isWritable: true },
-    collection: { value: input.collection ?? null, isWritable: false },
-    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
+    asset: { value: input.asset ?? null, isWritable: true },
+    collection: { value: input.collection ?? null, isWritable: false },
+    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
   };
   const accounts = originalAccounts as Record<
@@ -334,26 +334,26 @@ export function getWithdrawNftCoreInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.asset),
-      getAccountMeta(accounts.collection),
-      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
+      getAccountMeta(accounts.asset),
+      getAccountMeta(accounts.collection),
+      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.nftReceipt),
     ],
     programAddress,
     data: getWithdrawNftCoreInstructionDataEncoder().encode({}),
   } as WithdrawNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt
   >;
 
@@ -366,27 +366,27 @@ export type ParsedWithdrawNftCoreInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** The MPL core asset account. */
-    asset: TAccountMetas[0];
-    collection?: TAccountMetas[1] | undefined;
-    /** The MPL Core program. */
-    mplCoreProgram: TAccountMetas[2];
     /** The owner of the pool and the NFT. */
-    owner: TAccountMetas[3];
-    /** The pool the asset is being transferred to/from. */
-    pool: TAccountMetas[4];
+    owner: TAccountMetas[0];
+    /** The pool the NFT is being transferred to/from. */
+    pool: TAccountMetas[1];
     /**
      * The whitelist that gatekeeps which NFTs can be deposited into the pool.
      * Must match the whitelist stored in the pool state.
      */
 
-    whitelist?: TAccountMetas[5] | undefined;
+    whitelist?: TAccountMetas[2] | undefined;
     /**
      * Optional account which must be passed in if the NFT must be verified against a
      * merkle proof condition in the whitelist.
      */
 
-    mintProof?: TAccountMetas[6] | undefined;
+    mintProof?: TAccountMetas[3] | undefined;
+    /** The MPL core asset account. */
+    asset: TAccountMetas[4];
+    collection?: TAccountMetas[5] | undefined;
+    /** The MPL Core program. */
+    mplCoreProgram: TAccountMetas[6];
     /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
     nftReceipt: TAccountMetas[7];
   };
@@ -420,13 +420,13 @@ export function parseWithdrawNftCoreInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      asset: getNextAccount(),
-      collection: getNextOptionalAccount(),
-      mplCoreProgram: getNextAccount(),
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextOptionalAccount(),
       mintProof: getNextOptionalAccount(),
+      asset: getNextAccount(),
+      collection: getNextOptionalAccount(),
+      mplCoreProgram: getNextAccount(),
       nftReceipt: getNextAccount(),
     },
     data: getWithdrawNftCoreInstructionDataDecoder().decode(instruction.data),

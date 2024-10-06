@@ -5,11 +5,11 @@ use super::*;
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct DepositNftCore<'info> {
-    /// Metaplex core shared accounts.
-    pub core: MplCoreShared<'info>,
-
     /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
+
+    /// Metaplex core shared accounts.
+    pub core: MplCoreShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(

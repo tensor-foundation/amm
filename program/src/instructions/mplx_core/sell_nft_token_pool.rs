@@ -7,11 +7,11 @@ use super::*;
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct SellNftTokenPoolCore<'info> {
-    /// Metaplex core shared accounts.
-    pub core: MplCoreShared<'info>,
-
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
+
+    /// Metaplex core shared accounts.
+    pub core: MplCoreShared<'info>,
 
     /// The Solana system program.
     pub system_program: Program<'info, System>,

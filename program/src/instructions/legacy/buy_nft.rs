@@ -5,11 +5,11 @@ use super::*;
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct BuyNft<'info> {
-    /// Metaplex legacy and pNFT shared accounts.
-    pub mplx: MplxShared<'info>,
-
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
+
+    /// Metaplex legacy and pNFT shared accounts.
+    pub mplx: MplxShared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(

@@ -46,11 +46,6 @@ import {
 
 export type BuyNftCoreInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
-  TAccountAsset extends string | IAccountMeta<string> = string,
-  TAccountCollection extends string | IAccountMeta<string> = string,
-  TAccountMplCoreProgram extends
-    | string
-    | IAccountMeta<string> = 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d',
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountTaker extends string | IAccountMeta<string> = string,
   TAccountRentPayer extends string | IAccountMeta<string> = string,
@@ -69,6 +64,11 @@ export type BuyNftCoreInstruction<
   TAccountNativeProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
+  TAccountAsset extends string | IAccountMeta<string> = string,
+  TAccountCollection extends string | IAccountMeta<string> = string,
+  TAccountMplCoreProgram extends
+    | string
+    | IAccountMeta<string> = 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d',
   TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
@@ -78,15 +78,6 @@ export type BuyNftCoreInstruction<
   IInstructionWithData<Uint8Array> &
   IInstructionWithAccounts<
     [
-      TAccountAsset extends string
-        ? WritableAccount<TAccountAsset>
-        : TAccountAsset,
-      TAccountCollection extends string
-        ? ReadonlyAccount<TAccountCollection>
-        : TAccountCollection,
-      TAccountMplCoreProgram extends string
-        ? ReadonlyAccount<TAccountMplCoreProgram>
-        : TAccountMplCoreProgram,
       TAccountOwner extends string
         ? WritableAccount<TAccountOwner>
         : TAccountOwner,
@@ -131,6 +122,15 @@ export type BuyNftCoreInstruction<
       TAccountNativeProgram extends string
         ? ReadonlyAccount<TAccountNativeProgram>
         : TAccountNativeProgram,
+      TAccountAsset extends string
+        ? WritableAccount<TAccountAsset>
+        : TAccountAsset,
+      TAccountCollection extends string
+        ? ReadonlyAccount<TAccountCollection>
+        : TAccountCollection,
+      TAccountMplCoreProgram extends string
+        ? ReadonlyAccount<TAccountMplCoreProgram>
+        : TAccountMplCoreProgram,
       TAccountNftReceipt extends string
         ? WritableAccount<TAccountNftReceipt>
         : TAccountNftReceipt,
@@ -179,9 +179,6 @@ export function getBuyNftCoreInstructionDataCodec(): Codec<
 }
 
 export type BuyNftCoreAsyncInput<
-  TAccountAsset extends string = string,
-  TAccountCollection extends string = string,
-  TAccountMplCoreProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -196,14 +193,12 @@ export type BuyNftCoreAsyncInput<
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
   TAccountNativeProgram extends string = string,
+  TAccountAsset extends string = string,
+  TAccountCollection extends string = string,
+  TAccountMplCoreProgram extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** The MPL core asset account. */
-  asset: Address<TAccountAsset>;
-  collection?: Address<TAccountCollection>;
-  /** The MPL Core program. */
-  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
   /** The taker is the user buying or selling the NFT. */
@@ -242,6 +237,11 @@ export type BuyNftCoreAsyncInput<
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
   nativeProgram?: Address<TAccountNativeProgram>;
+  /** The MPL core asset account. */
+  asset: Address<TAccountAsset>;
+  collection?: Address<TAccountCollection>;
+  /** The MPL Core program. */
+  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The Solana system program. */
@@ -251,9 +251,6 @@ export type BuyNftCoreAsyncInput<
 };
 
 export async function getBuyNftCoreInstructionAsync<
-  TAccountAsset extends string,
-  TAccountCollection extends string,
-  TAccountMplCoreProgram extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -268,13 +265,13 @@ export async function getBuyNftCoreInstructionAsync<
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
   TAccountNativeProgram extends string,
+  TAccountAsset extends string,
+  TAccountCollection extends string,
+  TAccountMplCoreProgram extends string,
   TAccountNftReceipt extends string,
   TAccountSystemProgram extends string,
 >(
   input: BuyNftCoreAsyncInput<
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -289,15 +286,15 @@ export async function getBuyNftCoreInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
 ): Promise<
   BuyNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -312,6 +309,9 @@ export async function getBuyNftCoreInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
@@ -321,9 +321,6 @@ export async function getBuyNftCoreInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
-    asset: { value: input.asset ?? null, isWritable: true },
-    collection: { value: input.collection ?? null, isWritable: false },
-    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -338,6 +335,9 @@ export async function getBuyNftCoreInstructionAsync<
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
     nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
+    asset: { value: input.asset ?? null, isWritable: true },
+    collection: { value: input.collection ?? null, isWritable: false },
+    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -353,10 +353,6 @@ export async function getBuyNftCoreInstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
-  if (!accounts.mplCoreProgram.value) {
-    accounts.mplCoreProgram.value =
-      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
-  }
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
   }
@@ -373,6 +369,10 @@ export async function getBuyNftCoreInstructionAsync<
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!accounts.mplCoreProgram.value) {
+    accounts.mplCoreProgram.value =
+      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
   }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt.value = await findAssetDepositReceiptPda({
@@ -393,9 +393,6 @@ export async function getBuyNftCoreInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.asset),
-      getAccountMeta(accounts.collection),
-      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -410,6 +407,9 @@ export async function getBuyNftCoreInstructionAsync<
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
       getAccountMeta(accounts.nativeProgram),
+      getAccountMeta(accounts.asset),
+      getAccountMeta(accounts.collection),
+      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
@@ -420,9 +420,6 @@ export async function getBuyNftCoreInstructionAsync<
     ),
   } as BuyNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -437,6 +434,9 @@ export async function getBuyNftCoreInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >;
@@ -445,9 +445,6 @@ export async function getBuyNftCoreInstructionAsync<
 }
 
 export type BuyNftCoreInput<
-  TAccountAsset extends string = string,
-  TAccountCollection extends string = string,
-  TAccountMplCoreProgram extends string = string,
   TAccountOwner extends string = string,
   TAccountTaker extends string = string,
   TAccountRentPayer extends string = string,
@@ -462,14 +459,12 @@ export type BuyNftCoreInput<
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
   TAccountNativeProgram extends string = string,
+  TAccountAsset extends string = string,
+  TAccountCollection extends string = string,
+  TAccountMplCoreProgram extends string = string,
   TAccountNftReceipt extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  /** The MPL core asset account. */
-  asset: Address<TAccountAsset>;
-  collection?: Address<TAccountCollection>;
-  /** The MPL Core program. */
-  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
   /** The taker is the user buying or selling the NFT. */
@@ -508,6 +503,11 @@ export type BuyNftCoreInput<
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
   nativeProgram?: Address<TAccountNativeProgram>;
+  /** The MPL core asset account. */
+  asset: Address<TAccountAsset>;
+  collection?: Address<TAccountCollection>;
+  /** The MPL Core program. */
+  mplCoreProgram?: Address<TAccountMplCoreProgram>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   /** The Solana system program. */
@@ -517,9 +517,6 @@ export type BuyNftCoreInput<
 };
 
 export function getBuyNftCoreInstruction<
-  TAccountAsset extends string,
-  TAccountCollection extends string,
-  TAccountMplCoreProgram extends string,
   TAccountOwner extends string,
   TAccountTaker extends string,
   TAccountRentPayer extends string,
@@ -534,13 +531,13 @@ export function getBuyNftCoreInstruction<
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
   TAccountNativeProgram extends string,
+  TAccountAsset extends string,
+  TAccountCollection extends string,
+  TAccountMplCoreProgram extends string,
   TAccountNftReceipt extends string,
   TAccountSystemProgram extends string,
 >(
   input: BuyNftCoreInput<
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -555,14 +552,14 @@ export function getBuyNftCoreInstruction<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >
 ): BuyNftCoreInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
-  TAccountAsset,
-  TAccountCollection,
-  TAccountMplCoreProgram,
   TAccountOwner,
   TAccountTaker,
   TAccountRentPayer,
@@ -577,6 +574,9 @@ export function getBuyNftCoreInstruction<
   TAccountAmmProgram,
   TAccountEscrowProgram,
   TAccountNativeProgram,
+  TAccountAsset,
+  TAccountCollection,
+  TAccountMplCoreProgram,
   TAccountNftReceipt,
   TAccountSystemProgram
 > {
@@ -585,9 +585,6 @@ export function getBuyNftCoreInstruction<
 
   // Original accounts.
   const originalAccounts = {
-    asset: { value: input.asset ?? null, isWritable: true },
-    collection: { value: input.collection ?? null, isWritable: false },
-    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
@@ -602,6 +599,9 @@ export function getBuyNftCoreInstruction<
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
     nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
+    asset: { value: input.asset ?? null, isWritable: true },
+    collection: { value: input.collection ?? null, isWritable: false },
+    mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
     nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -614,10 +614,6 @@ export function getBuyNftCoreInstruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.mplCoreProgram.value) {
-    accounts.mplCoreProgram.value =
-      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
-  }
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
   }
@@ -628,6 +624,10 @@ export function getBuyNftCoreInstruction<
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
+  if (!accounts.mplCoreProgram.value) {
+    accounts.mplCoreProgram.value =
+      'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
   }
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -642,9 +642,6 @@ export function getBuyNftCoreInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
-      getAccountMeta(accounts.asset),
-      getAccountMeta(accounts.collection),
-      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.taker),
       getAccountMeta(accounts.rentPayer),
@@ -659,6 +656,9 @@ export function getBuyNftCoreInstruction<
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
       getAccountMeta(accounts.nativeProgram),
+      getAccountMeta(accounts.asset),
+      getAccountMeta(accounts.collection),
+      getAccountMeta(accounts.mplCoreProgram),
       getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
@@ -669,9 +669,6 @@ export function getBuyNftCoreInstruction<
     ),
   } as BuyNftCoreInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
-    TAccountAsset,
-    TAccountCollection,
-    TAccountMplCoreProgram,
     TAccountOwner,
     TAccountTaker,
     TAccountRentPayer,
@@ -686,6 +683,9 @@ export function getBuyNftCoreInstruction<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountAsset,
+    TAccountCollection,
+    TAccountMplCoreProgram,
     TAccountNftReceipt,
     TAccountSystemProgram
   >;
@@ -699,23 +699,18 @@ export type ParsedBuyNftCoreInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** The MPL core asset account. */
-    asset: TAccountMetas[0];
-    collection?: TAccountMetas[1] | undefined;
-    /** The MPL Core program. */
-    mplCoreProgram: TAccountMetas[2];
     /** The owner of the pool and the buyer/recipient of the NFT. */
-    owner: TAccountMetas[3];
+    owner: TAccountMetas[0];
     /** The taker is the user buying or selling the NFT. */
-    taker: TAccountMetas[4];
+    taker: TAccountMetas[1];
     /**
      * The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
      * is auto-closed.
      */
 
-    rentPayer: TAccountMetas[5];
+    rentPayer: TAccountMetas[2];
     /** Fee vault account owned by the TFEE program. */
-    feeVault: TAccountMetas[6];
+    feeVault: TAccountMetas[3];
     /**
      * The Pool state account that the NFT is being sold into. Stores pool state and config,
      * but is also the owner of any NFTs in the pool, and also escrows any SOL.
@@ -723,28 +718,33 @@ export type ParsedBuyNftCoreInstruction<
      * whitelist condition.
      */
 
-    pool: TAccountMetas[7];
+    pool: TAccountMetas[4];
     /** The whitelist account that the pool uses to verify the NFTs being sold into it. */
-    whitelist?: TAccountMetas[8] | undefined;
+    whitelist?: TAccountMetas[5] | undefined;
     /**
      * Optional account which must be passed in if the NFT must be verified against a
      * merkle proof condition in the whitelist.
      */
 
-    mintProof?: TAccountMetas[9] | undefined;
+    mintProof?: TAccountMetas[6] | undefined;
     /** The shared escrow account for pools that have liquidity in a shared account. */
-    sharedEscrow?: TAccountMetas[10] | undefined;
+    sharedEscrow?: TAccountMetas[7] | undefined;
     /** The account that receives the maker broker fee. */
-    makerBroker?: TAccountMetas[11] | undefined;
+    makerBroker?: TAccountMetas[8] | undefined;
     /** The account that receives the taker broker fee. */
-    takerBroker?: TAccountMetas[12] | undefined;
+    takerBroker?: TAccountMetas[9] | undefined;
     /** The optional cosigner account that must be passed in if the pool has a cosigner. */
-    cosigner?: TAccountMetas[13] | undefined;
+    cosigner?: TAccountMetas[10] | undefined;
     /** The AMM program account, used for self-cpi logging. */
-    ammProgram: TAccountMetas[14];
+    ammProgram: TAccountMetas[11];
     /** The escrow program account for shared liquidity pools. */
-    escrowProgram?: TAccountMetas[15] | undefined;
-    nativeProgram: TAccountMetas[16];
+    escrowProgram?: TAccountMetas[12] | undefined;
+    nativeProgram: TAccountMetas[13];
+    /** The MPL core asset account. */
+    asset: TAccountMetas[14];
+    collection?: TAccountMetas[15] | undefined;
+    /** The MPL Core program. */
+    mplCoreProgram: TAccountMetas[16];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[17];
     /** The Solana system program. */
@@ -780,9 +780,6 @@ export function parseBuyNftCoreInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      asset: getNextAccount(),
-      collection: getNextOptionalAccount(),
-      mplCoreProgram: getNextAccount(),
       owner: getNextAccount(),
       taker: getNextAccount(),
       rentPayer: getNextAccount(),
@@ -797,6 +794,9 @@ export function parseBuyNftCoreInstruction<
       ammProgram: getNextAccount(),
       escrowProgram: getNextOptionalAccount(),
       nativeProgram: getNextAccount(),
+      asset: getNextAccount(),
+      collection: getNextOptionalAccount(),
+      mplCoreProgram: getNextAccount(),
       nftReceipt: getNextAccount(),
       systemProgram: getNextAccount(),
     },
