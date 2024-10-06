@@ -95,6 +95,10 @@ export default function visitor(options) {
         },
         sellNftTokenPoolT22: {
           accounts: {
+            // Owner needs to be writable in case we auto-close token pool.
+            owner: {
+              isWritable: true
+            },
             whitelist: {
               isOptional: false
             },

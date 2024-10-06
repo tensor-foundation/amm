@@ -10,7 +10,7 @@ pub struct SellNftTokenPoolT22<'info> {
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
-    pub t22: T22<'info>,
+    pub t22: T22Shared<'info>,
 
     /// The mint account of the NFT being sold.
     #[account(

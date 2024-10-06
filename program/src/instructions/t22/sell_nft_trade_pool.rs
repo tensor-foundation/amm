@@ -11,7 +11,7 @@ use super::*;
 #[derive(Accounts)]
 pub struct SellNftTradePoolT22<'info> {
     /// T22 shared accounts.
-    pub t22: T22<'info>,
+    pub t22: T22Shared<'info>,
 
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,

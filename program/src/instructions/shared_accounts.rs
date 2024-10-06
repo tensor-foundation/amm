@@ -86,7 +86,6 @@ impl<'info> Validate<'info> for TransferShared<'info> {
 pub struct TradeShared<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
-    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The taker is the user buying or selling the NFT.
@@ -573,48 +572,6 @@ pub struct MplxShared<'info> {
     pub authorization_rules_program: Option<UncheckedAccount<'info>>,
 }
 
-impl<'info> MplxShared<'info> {
-    // pub fn transfer_asset(&self, direction: TransferDirection) -> Result<()> {
-    //     match direction {
-    //         TransferDirection::IntoPool => {
-    //             let seller = &self.taker.to_account_info();
-    //             let destination = &ctx.accounts.trade.pool.to_account_info();
-
-    //             let transfer_args = Box::new(TransferArgs {
-    //                 payer: seller,
-    //                 source: seller,
-    //                 source_ata: &ctx.accounts.taker_ta,
-    //                 destination,
-    //                 destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
-    //                 mint: &ctx.accounts.mint,
-    //                 metadata: &self.metadata,
-    //                 edition: &self.edition,
-    //                 system_program: &ctx.accounts.system_program,
-    //                 spl_token_program: &ctx.accounts.token_program,
-    //                 spl_ata_program: &ctx.accounts.associated_token_program,
-    //                 token_metadata_program: self.token_metadata_program.as_ref(),
-    //                 sysvar_instructions: self.sysvar_instructions.as_ref(),
-    //                 source_token_record: self.user_token_record.as_ref(),
-    //                 destination_token_record: self.pool_token_record.as_ref(),
-    //                 authorization_rules_program: ctx
-    //                     .accounts
-    //                     .mplx
-    //                     .authorization_rules_program
-    //                     .as_ref(),
-    //                 authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
-    //                 authorization_data: authorization_data.clone().map(AuthorizationData::from),
-    //                 delegate: None,
-    //             });
-    //         }
-    //         TransferDirection::OutOfPool => {
-    //             let seller = &ctx.accounts.trade.taker.to_account_info();
-    //             let destination = &ctx.accounts.trade.pool.to_account_info();
-    //         }
-    //     }
-    //     Ok(())
-    // }
-}
-
 /// Shared accounts for interacting with Metaplex core assets
 #[derive(Accounts)]
 pub struct MplCoreShared<'info> {
@@ -633,7 +590,7 @@ pub struct MplCoreShared<'info> {
 }
 
 #[derive(Accounts)]
-pub struct T22<'info> {
+pub struct T22Shared<'info> {
     pub sys_program: Program<'info, System>,
 }
 
@@ -650,7 +607,7 @@ pub trait ValidateAsset<'info> {
     fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset>;
 }
 
-impl<'info> ValidateAsset<'info> for T22<'info> {
+impl<'info> ValidateAsset<'info> for T22Shared<'info> {
     fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
         let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
 

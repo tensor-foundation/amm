@@ -22,6 +22,7 @@ pub struct BuyNft<'info> {
         bump = nft_receipt.bump,
         // Check that the mint and pool match the nft receipt.
         has_one = mint @ ErrorCode::WrongMint,
+        constraint = nft_receipt.pool == trade.pool.key() @ ErrorCode::WrongPool,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -29,6 +30,7 @@ pub struct BuyNft<'info> {
     #[account(
         constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
+        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 

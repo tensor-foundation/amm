@@ -145,7 +145,7 @@ export type BuyNftInstruction<
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountTaker extends string
         ? WritableSignerAccount<TAccountTaker> &
@@ -494,7 +494,7 @@ export async function getBuyNftInstructionAsync<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -928,7 +928,7 @@ export function getBuyNftInstruction<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },

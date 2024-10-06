@@ -88,7 +88,7 @@ export type SellNftTradePoolCoreInstruction<
         ? ReadonlyAccount<TAccountMplCoreProgram>
         : TAccountMplCoreProgram,
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountTaker extends string
         ? WritableSignerAccount<TAccountTaker> &
@@ -325,7 +325,7 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -588,7 +588,7 @@ export function getSellNftTradePoolCoreInstruction<
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },

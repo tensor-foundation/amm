@@ -86,7 +86,7 @@ impl BuyNftCore {
             self.mpl_core_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -238,7 +238,7 @@ pub struct BuyNftCoreInstructionArgs {
 ///   0. `[writable]` asset
 ///   1. `[optional]` collection
 ///   2. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
-///   3. `[writable]` owner
+///   3. `[]` owner
 ///   4. `[writable, signer]` taker
 ///   5. `[writable]` rent_payer
 ///   6. `[writable]` fee_vault
@@ -670,7 +670,7 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
             *self.mpl_core_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
         ));
@@ -855,7 +855,7 @@ impl<'a, 'b> BuyNftCoreCpi<'a, 'b> {
 ///   0. `[writable]` asset
 ///   1. `[optional]` collection
 ///   2. `[]` mpl_core_program
-///   3. `[writable]` owner
+///   3. `[]` owner
 ///   4. `[writable, signer]` taker
 ///   5. `[writable]` rent_payer
 ///   6. `[writable]` fee_vault

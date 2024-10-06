@@ -90,7 +90,7 @@ export type BuyNftT22Instruction<
         ? ReadonlyAccount<TAccountSysProgram>
         : TAccountSysProgram,
       TAccountOwner extends string
-        ? WritableAccount<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
       TAccountTaker extends string
         ? WritableSignerAccount<TAccountTaker> &
@@ -358,7 +358,7 @@ export async function getBuyNftT22InstructionAsync<
   // Original accounts.
   const originalAccounts = {
     sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -680,7 +680,7 @@ export function getBuyNftT22Instruction<
   // Original accounts.
   const originalAccounts = {
     sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: true },
+    owner: { value: input.owner ?? null, isWritable: false },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
