@@ -348,6 +348,11 @@ impl<'info> Sell<'info> for TradeShared<'info> {
             left_for_seller,
         )?;
 
+        // No compounding fees.
+        if pool.config.pool_type == PoolType::Token {
+            return Ok(());
+        }
+
         // If MM fees are compounded they go to the pool or shared escrow, otherwise to the owner.
         if pool.config.mm_compound_fees {
             msg!("Compounding MM fees");

@@ -476,7 +476,7 @@ pub fn update_pool_accounting(
             pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
 
             // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
-            if pool.currency == Pubkey::default() {
+            if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
                 let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
                 let pool_final_balance = pool.get_lamports();
                 let lamports_taken =
