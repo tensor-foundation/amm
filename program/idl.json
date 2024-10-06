@@ -805,7 +805,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -1090,7 +1090,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -1384,7 +1384,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -1796,7 +1796,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -1979,7 +1979,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -2154,7 +2154,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -2550,7 +2550,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -2746,7 +2746,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."
@@ -2954,7 +2954,7 @@
           "accounts": [
             {
               "name": "owner",
-              "isMut": false,
+              "isMut": true,
               "isSigner": false,
               "docs": [
                 "The owner of the pool and the buyer/recipient of the NFT."

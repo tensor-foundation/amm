@@ -17,9 +17,67 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
 };
+use mpl_token_metadata::types::Creator;
 use tensor_toolbox::{
     close_account,
     token_2022::{transfer::transfer_checked, validate_mint},
     TCreator,
 };
 use tensor_vipers::{unwrap_int, Validate};
+
+struct TransferArgs<'info> {
+    from: AccountInfo<'info>,
+    to: AccountInfo<'info>,
+    authority: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
+    token_program: AccountInfo<'info>,
+}
+
+fn transfer<'info>(
+    args: &TransferArgs<'info>,
+    remaining_accounts: &[AccountInfo<'info>],
+    royalty_creators: &Option<Vec<Creator>>,
+    signer_seeds: Option<&[&[&[u8]]]>,
+) -> Result<Vec<AccountInfo<'info>>> {
+    // Setup the transfer CPI
+    let mut transfer_cpi: CpiContext<'_, '_, '_, '_, TransferChecked<'_>> = CpiContext::new(
+        args.token_program.to_account_info(),
+        TransferChecked {
+            from: args.from.to_account_info(),
+            to: args.to.to_account_info(),
+            authority: args.authority.to_account_info(),
+            mint: args.mint.to_account_info(),
+        },
+    );
+
+    let creator_accounts = if let Some(ref creators) = royalty_creators {
+        transfer_cpi = transfer_cpi.with_remaining_accounts(remaining_accounts.to_vec());
+
+        creators
+            .iter()
+            .filter_map(|c| {
+                let creator = TCreator {
+                    address: c.address,
+                    share: c.share,
+                    verified: c.verified,
+                };
+
+                remaining_accounts
+                    .iter()
+                    .find(|account| &creator.address == account.key)
+                    .cloned()
+            })
+            .collect()
+    } else {
+        vec![]
+    };
+
+    // Perform the transfer
+    transfer_checked(
+        transfer_cpi.with_signer(signer_seeds.unwrap_or_default()),
+        1, // supply = 1
+        0, // decimals = 0
+    )?;
+
+    Ok(creator_accounts)
+}

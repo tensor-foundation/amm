@@ -86,6 +86,7 @@ impl<'info> Validate<'info> for TransferShared<'info> {
 pub struct TradeShared<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
     /// CHECK: has_one = owner in pool
+    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The taker is the user buying or selling the NFT.

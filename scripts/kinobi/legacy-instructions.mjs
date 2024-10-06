@@ -76,10 +76,6 @@ export default function visitor(options) {
         },
         sellNftTokenPool: {
           accounts: {
-            // Owner needs to be writable in case we auto-close token pool.
-            owner: {
-              isWritable: true
-            },
             whitelist: {
               isOptional: false
             },

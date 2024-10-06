@@ -77,50 +77,19 @@ pub fn process_sell_nft_token_pool_t22<'info>(
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
 
-    // transfer the NFT
-    let mut transfer_cpi = CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        TransferChecked {
+    // Transfer directly to the owner.
+    let creator_accounts = transfer(
+        &TransferArgs {
             from: ctx.accounts.taker_ta.to_account_info(),
             to: ctx.accounts.owner_ta.to_account_info(),
             authority: ctx.accounts.trade.taker.to_account_info(),
             mint: ctx.accounts.mint.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
         },
-    );
-
-    // this will only add the remaining accounts required by a transfer hook if we
-    // recognize the hook as a royalty one
-    let creator_accounts = if let Some(ref creators) = asset.royalty_creators {
-        // add remaining accounts to the transfer cpi
-        transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
-
-        let mut creator_infos = Vec::with_capacity(creators.len());
-
-        // filter out the creators accounts; the transfer will fail if there
-        // are missing creator accounts – i.e., the creator is on the `creator_data`
-        // but the account is not in the `creator_infos`
-        creators.iter().for_each(|c| {
-            let creator = TCreator {
-                address: c.address,
-                share: c.share,
-                verified: c.verified,
-            };
-
-            if let Some(account) = ctx
-                .remaining_accounts
-                .iter()
-                .find(|account| &creator.address == account.key)
-            {
-                creator_infos.push(account.clone());
-            }
-        });
-
-        creator_infos
-    } else {
-        vec![]
-    };
-
-    transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
+        ctx.remaining_accounts,
+        &asset.royalty_creators,
+        None,
+    )?;
 
     // Close ATA accounts before fee transfers to avoid unbalanced accounts error. CPIs
     // don't have the context of manual lamport balance changes so need to come before.

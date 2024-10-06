@@ -91,7 +91,7 @@ export type SellNftTradePoolT22Instruction<
         ? ReadonlyAccount<TAccountSysProgram>
         : TAccountSysProgram,
       TAccountOwner extends string
-        ? ReadonlyAccount<TAccountOwner>
+        ? WritableAccount<TAccountOwner>
         : TAccountOwner,
       TAccountTaker extends string
         ? WritableSignerAccount<TAccountTaker> &
@@ -370,7 +370,7 @@ export async function getSellNftTradePoolT22InstructionAsync<
   // Original accounts.
   const originalAccounts = {
     sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
@@ -707,7 +707,7 @@ export function getSellNftTradePoolT22Instruction<
   // Original accounts.
   const originalAccounts = {
     sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    owner: { value: input.owner ?? null, isWritable: false },
+    owner: { value: input.owner ?? null, isWritable: true },
     taker: { value: input.taker ?? null, isWritable: true },
     rentPayer: { value: input.rentPayer ?? null, isWritable: true },
     feeVault: { value: input.feeVault ?? null, isWritable: true },
