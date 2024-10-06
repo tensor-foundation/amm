@@ -154,7 +154,7 @@ pub fn process_buy_nft<'info>(
     // Close the NFT receipt account.
     close_account(
         &mut ctx.accounts.nft_receipt.to_account_info(),
-        &mut ctx.accounts.trade.taker.to_account_info(),
+        &mut ctx.accounts.trade.owner.to_account_info(),
     )?;
 
     update_pool_accounting(
