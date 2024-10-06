@@ -92,7 +92,6 @@ pub fn assert_decode_mint_proof_v2(
 pub struct Fees {
     amm_fees: AmmFees,
     creators_fee: u64,
-    current_price: u64,
 }
 
 pub struct AmmFees {

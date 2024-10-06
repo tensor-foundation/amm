@@ -33,10 +33,11 @@ impl<'info> WithdrawNftCore<'info> {
 }
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_withdraw_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     let pool = &ctx.accounts.transfer.pool;
     let owner_pubkey = ctx.accounts.transfer.owner.key();
 

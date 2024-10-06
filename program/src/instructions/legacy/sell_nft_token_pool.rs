@@ -95,7 +95,6 @@ pub fn process_sell_nft_token_pool<'info>(
 ) -> Result<()> {
     ctx.accounts.pre_process_checks()?;
 
-    let taker = ctx.accounts.trade.taker.to_account_info();
     let owner = ctx.accounts.trade.owner.to_account_info();
 
     let asset = ctx
@@ -201,11 +200,10 @@ pub fn process_sell_nft_token_pool<'info>(
     )?;
 
     // Close seller ATA to return rent to seller.
-    token_interface::close_account(
-        ctx.accounts
-            .trade
-            .close_taker_ata_ctx(ctx.accounts.token_program.to_account_info(), taker),
-    )?;
+    token_interface::close_account(ctx.accounts.trade.close_taker_ata_ctx(
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.taker_ta.to_account_info(),
+    ))?;
     // --------------------------------------- end pnft
 
     ctx.accounts

@@ -79,11 +79,10 @@ impl<'info> WithdrawNftT22<'info> {
 }
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_withdraw_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
 ) -> Result<()> {
-    // validate mint account
+    ctx.accounts.pre_process_checks()?;
 
     let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
 

@@ -9,9 +9,10 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    escrow, shard_num, token_metadata::assert_decode_metadata, transfer_creators_fee,
-    transfer_lamports, transfer_lamports_checked, transfer_lamports_from_pda, CreatorFeeMode,
-    FromAcc, FromExternal, TensorError, HUNDRED_PCT_BPS,
+    escrow, shard_num, token_2022::validate_mint, token_metadata::assert_decode_metadata,
+    transfer_creators_fee, transfer_lamports, transfer_lamports_checked,
+    transfer_lamports_from_pda, CreatorFeeMode, FromAcc, FromExternal, TensorError,
+    HUNDRED_PCT_BPS,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
@@ -232,7 +233,6 @@ impl<'info> Sell<'info> for TradeShared<'info> {
                     taker_broker_fee,
                 },
             creators_fee,
-            current_price: _,
         } = fees;
 
         let pool = &self.pool;
@@ -323,7 +323,7 @@ impl<'info> Sell<'info> for TradeShared<'info> {
         // transfer royalties
         let actual_creators_fee = transfer_creators_fee(
             &amm_asset
-                .creators
+                .royalty_creators
                 .clone()
                 .unwrap_or_default()
                 .into_iter()
@@ -406,7 +406,7 @@ impl<'info> Buy<'info> for TradeShared<'info> {
         &self,
         amm_asset: AmmAsset,
         fees: Fees,
-        remaining_accounts: &[AccountInfo<'info>],
+        creator_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
         let Fees {
             amm_fees:
@@ -417,7 +417,6 @@ impl<'info> Buy<'info> for TradeShared<'info> {
                     taker_broker_fee,
                 },
             creators_fee,
-            current_price: _,
         } = fees;
 
         let pool = &self.pool;
@@ -491,16 +490,15 @@ impl<'info> Buy<'info> for TradeShared<'info> {
 
         // transfer royalties (on top of current price)
         // Buyer pays the royalty fee.
-        let remaining_accounts = &mut remaining_accounts.iter();
         transfer_creators_fee(
             &amm_asset
-                .creators
+                .royalty_creators
                 .clone()
                 .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            remaining_accounts,
+            &mut creator_accounts.iter(),
             creators_fee,
             &CreatorFeeMode::Sol {
                 from: &FromAcc::External(&FromExternal {
@@ -642,7 +640,8 @@ pub struct T22<'info> {
 pub struct AmmAsset {
     pub pubkey: Pubkey,
     pub collection: Option<Collection>,
-    pub creators: Option<Vec<Creator>>,
+    pub verified_creators: Option<Vec<Creator>>,
+    pub royalty_creators: Option<Vec<Creator>>,
     pub seller_fee_basis_points: u16,
     pub royalty_enforced: bool,
 }
@@ -655,11 +654,28 @@ impl<'info> ValidateAsset<'info> for T22<'info> {
     fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
         let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
 
+        // Validate mint account and determine if royalites need to be paid.
+        let royalties = validate_mint(&mint)?;
+
+        let seller_fee_basis_points = royalties.clone().map(|ref r| r.seller_fee).unwrap_or(0);
+
+        let creators = royalties.map(|r| {
+            r.creators
+                .into_iter()
+                .map(|c| Creator {
+                    address: c.0,
+                    share: c.1,
+                    verified: true,
+                })
+                .collect()
+        });
+
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: None,
-            creators: None,
-            seller_fee_basis_points: u16::MAX, // TODO
+            verified_creators: creators.clone(),
+            royalty_creators: creators,
+            seller_fee_basis_points,
             royalty_enforced: false,
         })
     }
@@ -678,10 +694,14 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
                 | Some(TokenStandard::ProgrammableNonFungibleEdition)
         );
 
+        let verified_creators = metadata.creators.clone();
+        // .map(|c| c.into_iter().filter(|c| c.verified).collect::<Vec<_>>());
+
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: metadata.collection,
-            creators: metadata.creators,
+            verified_creators,
+            royalty_creators: metadata.creators,
             seller_fee_basis_points: metadata.seller_fee_basis_points,
             royalty_enforced,
         })
@@ -698,44 +718,57 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
                 .as_ref(),
         )?;
 
-        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
-
-        // Fetch the verified creators from the MPL Core asset and map into the expected type.
-        let creators: Option<Vec<Creator>> = fetch_plugin::<BaseAssetV1, VerifiedCreators>(
-            &self.asset.to_account_info(),
-            PluginType::VerifiedCreators,
-        )
-        .map(|(_, verified_creators, _)| {
-            verified_creators
-                .signatures
-                .into_iter()
-                .map(|c| Creator {
-                    address: c.address,
-                    share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
-                    verified: c.verified,
-                })
-                .collect()
-        })
-        .ok();
-
-        let collection = match asset.update_authority {
-            UpdateAuthority::Collection(address) => Some(Collection {
-                key: address,
-                verified: true, // Only the collection update authority can set a collection, so this is always verified.
-            }),
-            _ => None,
-        };
-
         let royalty_fee = if let Some(Royalties { basis_points, .. }) = royalties {
             basis_points
         } else {
             0
         };
 
+        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
+
+        // Fetch the verified creators from the MPL Core asset and map into the expected type.
+        let verified_creators: Option<Vec<Creator>> =
+            fetch_plugin::<BaseAssetV1, VerifiedCreators>(
+                &self.asset.to_account_info(),
+                PluginType::VerifiedCreators,
+            )
+            .map(|(_, verified_creators, _)| {
+                verified_creators
+                    .signatures
+                    .into_iter()
+                    .map(|c| Creator {
+                        address: c.address,
+                        share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
+                        verified: c.verified,
+                    })
+                    .collect()
+            })
+            .ok();
+
+        let collection = match asset.update_authority {
+            UpdateAuthority::Collection(address) => Some(Collection {
+                key: address,
+                verified: true,
+            }),
+            _ => None,
+        };
+
+        let royalty_creators = royalties.map(|r| {
+            r.creators
+                .into_iter()
+                .map(|creator| Creator {
+                    address: creator.address,
+                    share: creator.percentage,
+                    verified: false, // mpl-core does not have a concept of "verified" creator for royalties
+                })
+                .collect()
+        });
+
         Ok(AmmAsset {
             pubkey: self.asset.key(),
             collection,
-            creators,
+            verified_creators,
+            royalty_creators,
             seller_fee_basis_points: royalty_fee,
             royalty_enforced: true,
         })
@@ -804,7 +837,6 @@ impl<'info> TradeShared<'info> {
         }
 
         Ok(Fees {
-            current_price,
             amm_fees: AmmFees {
                 taker_fee,
                 tamm_fee,
@@ -838,7 +870,11 @@ impl<'info> TradeShared<'info> {
             None
         };
 
-        whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+        whitelist.verify(
+            &asset.collection,
+            &asset.verified_creators,
+            &full_merkle_proof,
+        )
     }
 
     pub fn close_pool_ata_ctx(
@@ -896,7 +932,11 @@ impl<'info> TransferShared<'info> {
             None
         };
 
-        whitelist.verify(&asset.collection, &asset.creators, &full_merkle_proof)
+        whitelist.verify(
+            &asset.collection,
+            &asset.verified_creators,
+            &full_merkle_proof,
+        )
     }
 
     pub fn close_pool_ata_ctx(

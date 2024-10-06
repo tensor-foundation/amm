@@ -78,10 +78,11 @@ impl<'info> DepositNftT22<'info> {
 }
 
 /// Deposit a Token22 NFT into a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_deposit_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
     // validate mint account

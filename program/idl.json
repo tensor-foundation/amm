@@ -2536,6 +2536,16 @@
       ],
       "accounts": [
         {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "sysProgram",
+              "isMut": false,
+              "isSigner": false
+            }
+          ]
+        },
+        {
           "name": "trade",
           "accounts": [
             {

@@ -116,6 +116,7 @@ pub fn process_buy_nft<'info, 'b>(
         ctx.accounts.trade.pool.pool_id.as_ref(),
         &[ctx.accounts.trade.pool.bump[0]],
     ]];
+
     // Transfer nft to buyer
     // Has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
     transfer(

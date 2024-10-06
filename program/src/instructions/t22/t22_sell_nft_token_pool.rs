@@ -8,17 +8,9 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
 };
-use escrow_program::instructions::assert_decode_margin_account;
-use tensor_escrow::instructions::{
-    WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
-};
-use tensor_toolbox::{
-    token_2022::{transfer::transfer_checked, validate_mint, RoyaltyInfo},
-    transfer_creators_fee, transfer_lamports_from_pda, CreatorFeeMode, FromAcc, TCreator,
-};
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
+use tensor_toolbox::{token_2022::transfer::transfer_checked, TCreator};
 
-use crate::{constants::MAKER_BROKER_PCT, error::ErrorCode, *};
+use crate::{error::ErrorCode, *};
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -73,30 +65,26 @@ impl<'info> SellNftTokenPoolT22<'info> {
 }
 
 /// Sell a Token22 NFT into a Token pool.
-#[access_control(ctx.accounts.pre_process_checks())]
 pub fn process_t22_sell_nft_token_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,
 ) -> Result<()> {
-    let pool = &ctx.accounts.trade.pool;
-    let pool_initial_balance = pool.get_lamports();
-    let owner_pubkey = ctx.accounts.trade.owner.key();
+    ctx.accounts.pre_process_checks()?;
 
-    // Calculate fees from the current price.
-    let current_price = pool.current_price(TakerSide::Sell)?;
+    let asset = ctx
+        .accounts
+        .t22
+        .validate_asset(Some(ctx.accounts.mint.to_account_info()))?;
 
-    let AmmFees {
-        taker_fee,
-        tamm_fee,
-        maker_broker_fee,
-        taker_broker_fee,
-    } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+    let fees = ctx.accounts.trade.calculate_fees(
+        asset.seller_fee_basis_points,
+        min_price,
+        TakerSide::Sell,
+        Some(100),
+    )?;
 
-    // No mm_fee for token pools.
-
-    // Validate mint account and determine if royalites need to be paid.
-    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
+    let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
 
     // transfer the NFT
     let mut transfer_cpi = CpiContext::new(
@@ -111,24 +99,20 @@ pub fn process_t22_sell_nft_token_pool<'info>(
 
     // this will only add the remaining accounts required by a transfer hook if we
     // recognize the hook as a royalty one
-    let (creators, creator_accounts, creators_fee) = if let Some(RoyaltyInfo {
-        creators,
-        seller_fee,
-    }) = &royalties
-    {
+    let creator_accounts = if let Some(ref creators) = asset.royalty_creators {
         // add remaining accounts to the transfer cpi
         transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
 
         let mut creator_infos = Vec::with_capacity(creators.len());
-        let mut creator_data = Vec::with_capacity(creators.len());
+
         // filter out the creators accounts; the transfer will fail if there
         // are missing creator accounts – i.e., the creator is on the `creator_data`
         // but the account is not in the `creator_infos`
         creators.iter().for_each(|c| {
             let creator = TCreator {
-                address: c.0,
-                share: c.1,
-                verified: true,
+                address: c.address,
+                share: c.share,
+                verified: c.verified,
             };
 
             if let Some(account) = ctx
@@ -138,40 +122,12 @@ pub fn process_t22_sell_nft_token_pool<'info>(
             {
                 creator_infos.push(account.clone());
             }
-
-            creator_data.push(creator);
         });
 
-        // No optional royalties.
-        let creators_fee = calc_creators_fee(*seller_fee, current_price, Some(100))?;
-
-        (creator_data, creator_infos, creators_fee)
+        creator_infos
     } else {
-        (vec![], vec![], 0)
+        vec![]
     };
-
-    // For keeping track of current price + fees charged (computed dynamically)
-    // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
-    let event = TAmmEvent::BuySellEvent(BuySellEvent {
-        current_price,
-        taker_fee,
-        mm_fee: 0, // no MM fee for token pool
-        creators_fee,
-    });
-
-    // Self-CPI log the event.
-    record_event(
-        event,
-        &ctx.accounts.trade.amm_program,
-        &ctx.accounts.trade.pool,
-    )?;
-
-    // Check that the  price the seller receives + royalties isn't lower than the min price the user specified.
-    let price = unwrap_checked!({ current_price.checked_sub(creators_fee) });
-
-    if price < min_price {
-        throw_err!(ErrorCode::PriceMismatch);
-    }
 
     transfer_checked(transfer_cpi, 1, 0)?; // supply = 1, decimals = 0
 
@@ -184,153 +140,15 @@ pub fn process_t22_sell_nft_token_pool<'info>(
         ctx.accounts.taker_ta.to_account_info(),
     ))?;
 
-    // Signer seeds for the pool account.
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"pool",
-        owner_pubkey.as_ref(),
-        pool.pool_id.as_ref(),
-        &[pool.bump[0]],
-    ]];
+    ctx.accounts
+        .trade
+        .pay_seller_fees(asset, fees, &creator_accounts)?;
 
-    /*  **Transfer Fees**
-    The sell price is the total price the seller receives for selling the NFT into the pool.
-
-    sell_price = current_price - taker_fee - creators_fee
-
-    taker_fee = tamm_fee + maker_broker_fee + taker_broker_fee
-
-    No mm_fee for token pools.
-
-    Fees are paid by deducting them from the current price, with the final remainder
-    then being sent to the seller.
-    */
-
-    // If the source funds are from a shared escrow account, we first transfer from there
-    // to the pool, to make payments cleaner. After this, we can always send from the pool
-    // so the logic is simpler.
-    if pool.shared_escrow != Pubkey::default() {
-        let incoming_shared_escrow = unwrap_opt!(
-            ctx.accounts.trade.shared_escrow.as_ref(),
-            ErrorCode::BadSharedEscrow
-        )
-        .to_account_info();
-
-        let escrow_program = unwrap_opt!(
-            ctx.accounts.trade.escrow_program.as_ref(),
-            ErrorCode::EscrowProgramNotSet
-        )
-        .to_account_info();
-
-        // Validate it's a valid escrow account.
-        assert_decode_margin_account(
-            &incoming_shared_escrow,
-            &ctx.accounts.trade.owner.to_account_info(),
-        )?;
-
-        // Validate it's the correct account: the stored escrow account matches the one passed in.
-        if incoming_shared_escrow.key != &pool.shared_escrow {
-            throw_err!(ErrorCode::BadSharedEscrow);
-        }
-
-        // Withdraw from escrow account to pool.
-        WithdrawMarginAccountCpiTammCpi {
-            __program: &escrow_program,
-            margin_account: &incoming_shared_escrow,
-            pool: &ctx.accounts.trade.pool.to_account_info(),
-            owner: &ctx.accounts.trade.owner.to_account_info(),
-            destination: &ctx.accounts.trade.pool.to_account_info(),
-            system_program: &ctx.accounts.system_program.to_account_info(),
-            __args: WithdrawMarginAccountCpiTammInstructionArgs {
-                bump: pool.bump[0],
-                pool_id: pool.pool_id,
-                lamports: current_price,
-            },
-        }
-        .invoke_signed(signer_seeds)?;
-    }
-
-    let mut left_for_seller = current_price;
-
-    // TAmm contract fee.
-    transfer_lamports_from_pda(
-        &ctx.accounts.trade.pool.to_account_info(),
-        &ctx.accounts.trade.fee_vault.to_account_info(),
-        tamm_fee,
+    update_pool_accounting(
+        &mut ctx.accounts.trade.pool,
+        pool_initial_balance,
+        TakerSide::Sell,
     )?;
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
-
-    // Broker fees. Transfer if accounts are specified, otherwise the funds go to the fee_vault.
-    transfer_lamports_from_pda(
-        &ctx.accounts.trade.pool.to_account_info(),
-        ctx.accounts
-            .trade
-            .maker_broker
-            .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
-        maker_broker_fee,
-    )?;
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(maker_broker_fee));
-
-    transfer_lamports_from_pda(
-        &ctx.accounts.trade.pool.to_account_info(),
-        ctx.accounts
-            .trade
-            .taker_broker
-            .as_ref()
-            .unwrap_or(&ctx.accounts.trade.fee_vault),
-        taker_broker_fee,
-    )?;
-    left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
-
-    // Pay creators fee, if required.
-    if royalties.is_some() {
-        transfer_creators_fee(
-            &creators,
-            &mut creator_accounts.iter(),
-            creators_fee,
-            &CreatorFeeMode::Sol {
-                from: &FromAcc::Pda(&ctx.accounts.trade.pool.to_account_info()),
-            },
-        )?;
-        left_for_seller = unwrap_int!(left_for_seller.checked_sub(creators_fee));
-    }
-
-    // Token pools do not have MM fees.
-
-    // transfer remainder to seller
-    // (!) fees/royalties are paid by TAKER, which in this case is the SELLER
-    // (!) maker rebate already taken out of this amount
-    transfer_lamports_from_pda(
-        &ctx.accounts.trade.pool.to_account_info(),
-        &ctx.accounts.trade.taker.to_account_info(),
-        left_for_seller,
-    )?;
-
-    // --------------------------------------- accounting
-
-    //update pool accounting
-    let pool = &mut ctx.accounts.trade.pool;
-
-    // Pool has bought an NFT, so we decrement the trade counter.
-    pool.price_offset = unwrap_int!(pool.price_offset.checked_sub(1));
-
-    pool.stats.taker_sell_count = unwrap_int!(pool.stats.taker_sell_count.checked_add(1));
-    pool.updated_at = Clock::get()?.unix_timestamp;
-
-    // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
-    if pool.currency == Pubkey::default() {
-        let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
-        let pool_final_balance = pool.get_lamports();
-        let lamports_taken =
-            unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
-        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports_taken) });
-
-        // Sanity check to avoid edge cases:
-        require!(
-            pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
-            ErrorCode::InvalidPoolAmount
-        );
-    }
 
     try_autoclose_pool(
         &ctx.accounts.trade.pool,
