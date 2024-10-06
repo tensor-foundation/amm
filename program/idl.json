@@ -1659,7 +1659,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The NFT receipt account denoting that an NFT has been deposited into this pool."
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {
@@ -2358,7 +2358,7 @@
           "isMut": true,
           "isSigner": false,
           "docs": [
-            "The NFT receipt account denoting that an NFT has been deposited into this pool."
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {

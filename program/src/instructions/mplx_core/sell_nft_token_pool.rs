@@ -1,6 +1,7 @@
-//! Sell a Mpl Core NFT into a Token pool.
+//! Sell a Metaplex Core asset into a Token pool.
 //!
-//! This is separated from Trade pool since the owner will receive the NFT directly.
+//! This is separated from Trade pool since the owner will receive the asset directly.
+
 use super::*;
 
 /// Instruction accounts.
@@ -26,7 +27,6 @@ impl<'info> SellNftTokenPoolCore<'info> {
 /// Sell a MPL Core NFT into a Token pool.
 pub fn process_sell_nft_token_pool_core<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolCore<'info>>,
-    // Min vs exact so we can add slippage later.
     min_price: u64,
 ) -> Result<()> {
     ctx.accounts.pre_process_checks()?;
@@ -45,7 +45,7 @@ pub fn process_sell_nft_token_pool_core<'info>(
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
 
-    // Transfer the NFT from the seller directly to the pool owner.
+    // Transfer the asset from the seller directly to the pool owner.
     TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
         .asset(&ctx.accounts.core.asset)
         .authority(Some(&taker))

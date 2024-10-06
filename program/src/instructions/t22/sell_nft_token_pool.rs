@@ -2,15 +2,7 @@
 //!
 //! This is separated from Trade pool since the owner will receive the NFT directly in their ATA.
 
-// (!) Keep common logic in sync with sell_nft_token_pool.rs.
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
-};
-use tensor_toolbox::{token_2022::transfer::transfer_checked, TCreator};
-
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -65,7 +57,7 @@ impl<'info> SellNftTokenPoolT22<'info> {
 }
 
 /// Sell a Token22 NFT into a Token pool.
-pub fn process_t22_sell_nft_token_pool<'info>(
+pub fn process_sell_nft_token_pool_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolT22<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,

@@ -1,12 +1,6 @@
 //! Buy a Token22 NFT from a NFT or Trade pool.
-use crate::{error::ErrorCode, *};
 
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
-};
-use tensor_toolbox::{close_account, token_2022::transfer::transfer_checked, TCreator};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -74,7 +68,7 @@ impl<'info> BuyNftT22<'info> {
 }
 
 /// Buy a Token22 NFT from a NFT or Trade pool.
-pub fn process_t22_buy_nft<'info>(
+pub fn process_buy_nft_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
     // Max vs exact so we can add slippage later.
     max_amount: u64,

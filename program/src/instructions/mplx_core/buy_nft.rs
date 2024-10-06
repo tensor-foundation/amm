@@ -1,3 +1,5 @@
+//! Buy a Metaplex core asset from a NFT or Trade pool.
+
 use super::*;
 
 /// Instruction accounts.
@@ -34,7 +36,7 @@ impl<'info> BuyNftCore<'info> {
     }
 }
 
-/// Buy a MPL Core asset from a NFT or Trade pool.
+/// Buy a Metaplex Core asset from a NFT or Trade pool.
 pub fn process_buy_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, BuyNftCore<'info>>,
     // Max vs exact so we can add slippage later.
@@ -52,13 +54,11 @@ pub fn process_buy_nft_core<'info>(
         asset.seller_fee_basis_points,
         max_amount,
         TakerSide::Buy,
-        Some(100),
+        Some(100), // royalties enforced
     )?;
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
     let owner_pubkey = ctx.accounts.trade.owner.key();
-
-    // Transfer the NFT from the pool to the buyer.
 
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"pool",
@@ -67,6 +67,7 @@ pub fn process_buy_nft_core<'info>(
         &[ctx.accounts.trade.pool.bump[0]],
     ]];
 
+    // Transfer the asset from the pool to the buyer.
     TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
         .asset(&ctx.accounts.core.asset)
         .authority(Some(&pool))

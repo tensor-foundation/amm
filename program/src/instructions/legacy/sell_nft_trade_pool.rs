@@ -2,17 +2,10 @@
 //! owner of the NFT.
 //!
 //! The seller is the owner of the NFT and receives the pool's current price in return.
-//! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
+//! This is separated from Token pool since the asset will be transferred to the pool and
+//! a deposit receipt is created for it.
 
-// (!) Keep common logic in sync with sell_nft_token_pool.rs.
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
-};
-use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::token_metadata::{transfer, TransferArgs};
-
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]

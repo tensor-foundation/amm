@@ -1,4 +1,5 @@
-//! Deposit a MPL Core NFT into a NFT or Trade pool.
+//! Deposit a Metaplex Core asset into a NFT or Trade pool.
+
 use super::*;
 
 /// Instruction accounts
@@ -10,7 +11,7 @@ pub struct DepositNftCore<'info> {
     /// Transfer shared accounts.
     pub transfer: TransferShared<'info>,
 
-    /// The NFT receipt account denoting that an NFT has been deposited into this pool.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         init,
         payer = transfer.owner,
@@ -35,11 +36,12 @@ impl<'info> DepositNftCore<'info> {
     }
 }
 
-/// Deposit a MPL Core asset into a NFT or Trade pool.
-#[access_control(ctx.accounts.pre_process_checks())]
+/// Deposit a Metaplex Core asset into a NFT or Trade pool.
 pub fn process_deposit_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,
 ) -> Result<()> {
+    ctx.accounts.pre_process_checks()?;
+
     // transfer the NFT
     TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
         .asset(&ctx.accounts.core.asset)

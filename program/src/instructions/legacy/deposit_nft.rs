@@ -1,13 +1,6 @@
 //! Deposit a Metaplex legacy NFT or pNFT into a NFT or Trade pool.
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
-};
-use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::token_metadata::{transfer, TransferArgs};
-use tensor_vipers::{unwrap_int, Validate};
 
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]

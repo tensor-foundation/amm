@@ -1,17 +1,6 @@
 //! Withdraw a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
 
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
-};
-use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::{
-    close_account,
-    token_metadata::{transfer, TransferArgs},
-};
-use tensor_vipers::{unwrap_int, Validate};
-
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -85,7 +74,6 @@ pub fn process_withdraw_nft<'info>(
     ctx.accounts.pre_process_checks()?;
 
     let pool = &ctx.accounts.transfer.pool;
-
     let owner_pubkey = ctx.accounts.transfer.owner.key();
 
     let signer_seeds: &[&[&[u8]]] = &[&[

@@ -1,16 +1,6 @@
 //! Withdraw a Token22 NFT from a NFT or Trade pool.
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
-};
-use tensor_toolbox::{
-    close_account,
-    token_2022::{transfer::transfer_checked, validate_mint},
-};
-use tensor_vipers::{unwrap_int, Validate};
 
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]
@@ -79,7 +69,7 @@ impl<'info> WithdrawNftT22<'info> {
 }
 
 /// Withdraw a Token22 NFT from a NFT or Trade pool.
-pub fn process_t22_withdraw_nft<'info>(
+pub fn process_withdraw_nft_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
 ) -> Result<()> {
     ctx.accounts.pre_process_checks()?;

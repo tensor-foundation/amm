@@ -695,7 +695,6 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
         );
 
         let verified_creators = metadata.creators.clone();
-        // .map(|c| c.into_iter().filter(|c| c.verified).collect::<Vec<_>>());
 
         Ok(AmmAsset {
             pubkey: mint.key(),

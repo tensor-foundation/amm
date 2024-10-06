@@ -1,16 +1,6 @@
 //! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
-};
-use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::{
-    close_account,
-    token_metadata::{transfer, TransferArgs},
-};
 
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -79,13 +69,13 @@ impl<'info> BuyNft<'info> {
 }
 
 /// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
-#[access_control(ctx.accounts.pre_process_checks())]
-pub fn process_buy_nft<'info, 'b>(
-    ctx: Context<'_, 'b, '_, 'info, BuyNft<'info>>,
+pub fn process_buy_nft<'info>(
+    ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
     max_amount: u64,
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
+    // Pre-handler validation checks.
     ctx.accounts.pre_process_checks()?;
 
     let taker = ctx.accounts.trade.taker.to_account_info();

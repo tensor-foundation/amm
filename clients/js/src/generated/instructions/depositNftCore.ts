@@ -152,7 +152,7 @@ export type DepositNftCoreAsyncInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
@@ -291,7 +291,7 @@ export type DepositNftCoreInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
@@ -419,7 +419,7 @@ export type ParsedDepositNftCoreInstruction<
      */
 
     mintProof?: TAccountMetas[6] | undefined;
-    /** The NFT receipt account denoting that an NFT has been deposited into this pool. */
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[7];
     /** The Solana system program. */
     systemProgram: TAccountMetas[8];

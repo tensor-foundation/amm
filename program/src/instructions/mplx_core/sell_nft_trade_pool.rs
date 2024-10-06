@@ -1,8 +1,10 @@
-//! Sell a Token 2022 NFT into a two-sided ("Trade") pool, where the pool is the buyer and ends up as the
-//! owner of the NFT.
+//! Sell a Metaplex Core asset into a two-sided ("Trade") pool, where the pool
+//! is the buyer and ends up as the owner of the asset.
 //!
-//! The seller is the owner of the NFT and receives the pool's current price in return.
-//! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
+//! The seller is the owner of the asset and receives the pool's current price in return.
+//! This is separated from Token pool since the asset will be transferred to the pool and
+//! a deposit receipt is created for it.
+
 use super::*;
 
 /// Instruction accounts.

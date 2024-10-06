@@ -59,3 +59,7 @@ tensor-vipers = { version = "1.0.0" }
 whitelist-program = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", rev = "346eac4", features = [
     "cpi",
 ] }
+
+[lints.rust]
+unused_must_use = "deny"
+unused_imports = "deny"

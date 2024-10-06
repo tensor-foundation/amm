@@ -4,16 +4,7 @@
 //! The seller is the NFT owner and receives the pool's current price, minus fees, in return.
 //! This is separated from Trade pool since the owner will receive the NFT directly in their ATA.
 
-// (!) Keep common logic in sync with sell_nft_token_pool.rs.
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
-};
-use mpl_token_metadata::types::AuthorizationData;
-use tensor_toolbox::token_metadata::{transfer, TransferArgs};
-
-use crate::{error::ErrorCode, shared_accounts::MplxShared, *};
+use super::*;
 
 /// Instruction accounts.
 #[derive(Accounts)]

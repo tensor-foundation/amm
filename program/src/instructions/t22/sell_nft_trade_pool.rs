@@ -2,17 +2,10 @@
 //! owner of the NFT.
 //!
 //! The seller is the owner of the NFT and receives the pool's current price in return.
-//! This is separated from Token pool since the NFT will go into an NFT escrow w/ a receipt.
-// (!) Keep common logic in sync with sell_nft_token_pool.rs.
+//! This is separated from Token pool since the asset will be transferred to the pool and
+//! a deposit receipt is created for it.
 
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
-};
-use tensor_toolbox::{token_2022::transfer::transfer_checked, TCreator};
-
-use crate::{error::ErrorCode, *};
+use super::*;
 
 /// Instruction accounts
 #[derive(Accounts)]
@@ -92,7 +85,7 @@ impl<'info> SellNftTradePoolT22<'info> {
 }
 
 /// Sell a Token22 NFT into a Trade pool.
-pub fn process_sell_nft_trade_pool<'info>(
+pub fn process_sell_nft_trade_pool_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, SellNftTradePoolT22<'info>>,
     // Min vs exact so we can add slippage later.
     min_price: u64,
