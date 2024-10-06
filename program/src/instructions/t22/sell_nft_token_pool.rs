@@ -49,10 +49,14 @@ pub struct SellNftTokenPoolT22<'info> {
 }
 
 impl<'info> SellNftTokenPoolT22<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Token)?;
-        self.trade
-            .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
+
+        let asset = self.t22.validate_asset(Some(self.mint.to_account_info()))?;
+
+        self.trade.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 
@@ -62,12 +66,7 @@ pub fn process_sell_nft_token_pool_t22<'info>(
     // Min vs exact so we can add slippage later.
     min_price: u64,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
-
-    let asset = ctx
-        .accounts
-        .t22
-        .validate_asset(Some(ctx.accounts.mint.to_account_info()))?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

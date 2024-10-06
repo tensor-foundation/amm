@@ -34,9 +34,14 @@ pub struct SellNftTradePoolCore<'info> {
 }
 
 impl<'info> SellNftTradePoolCore<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Trade)?;
-        self.trade.verify_whitelist(&self.core, None)
+
+        let asset = self.core.validate_asset(None)?;
+
+        self.trade.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 
@@ -46,12 +51,10 @@ pub fn process_sell_nft_trade_pool_core<'info>(
     // Min vs exact so we can add slippage later.
     min_price: u64,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let taker = ctx.accounts.trade.taker.to_account_info();
     let pool = &ctx.accounts.trade.pool;
-
-    let asset = ctx.accounts.core.validate_asset(None)?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

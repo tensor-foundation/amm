@@ -69,10 +69,16 @@ pub struct SellNftTokenPool<'info> {
 }
 
 impl<'info> SellNftTokenPool<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Token)?;
-        self.trade
-            .verify_whitelist(&self.mplx, Some(self.mint.to_account_info()))
+
+        let asset = self
+            .mplx
+            .validate_asset(Some(self.mint.to_account_info()))?;
+
+        self.trade.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 
@@ -84,14 +90,10 @@ pub fn process_sell_nft_token_pool<'info>(
     authorization_data: Option<AuthorizationDataLocal>,
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
+    // Runs pre-checks and validates the asset.
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let owner = ctx.accounts.trade.owner.to_account_info();
-
-    let asset = ctx
-        .accounts
-        .mplx
-        .validate_asset(Some(ctx.accounts.mint.to_account_info()))?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

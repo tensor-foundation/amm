@@ -61,8 +61,10 @@ pub struct WithdrawNft<'info> {
 }
 
 impl<'info> WithdrawNft<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.transfer.validate()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.transfer.validate()?;
+
+        self.mplx.validate_asset(Some(self.mint.to_account_info()))
     }
 }
 

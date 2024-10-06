@@ -63,10 +63,14 @@ pub struct DepositNftT22<'info> {
 }
 
 impl<'info> DepositNftT22<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
-        self.transfer
-            .verify_whitelist(&self.t22, Some(self.mint.to_account_info()))
+
+        let asset = self.t22.validate_asset(Some(self.mint.to_account_info()))?;
+
+        self.transfer.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 

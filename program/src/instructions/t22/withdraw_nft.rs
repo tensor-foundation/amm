@@ -63,8 +63,10 @@ pub struct WithdrawNftT22<'info> {
 }
 
 impl<'info> WithdrawNftT22<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.transfer.validate()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.transfer.validate()?;
+
+        self.t22.validate_asset(Some(self.mint.to_account_info()))
     }
 }
 

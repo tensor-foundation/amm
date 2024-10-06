@@ -62,8 +62,10 @@ pub struct BuyNftT22<'info> {
 }
 
 impl<'info> BuyNftT22<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.trade.validate_buy()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.trade.validate_buy()?;
+
+        self.t22.validate_asset(Some(self.mint.to_account_info()))
     }
 }
 
@@ -73,12 +75,7 @@ pub fn process_buy_nft_t22<'info>(
     // Max vs exact so we can add slippage later.
     max_amount: u64,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
-
-    let asset = ctx
-        .accounts
-        .t22
-        .validate_asset(Some(ctx.accounts.mint.to_account_info()))?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

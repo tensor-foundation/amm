@@ -61,10 +61,16 @@ pub struct DepositNft<'info> {
 }
 
 impl<'info> DepositNft<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
-        self.transfer
-            .verify_whitelist(&self.mplx, Some(self.mint.to_account_info()))
+
+        let asset = self
+            .mplx
+            .validate_asset(Some(self.mint.to_account_info()))?;
+
+        self.transfer.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 

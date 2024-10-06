@@ -31,8 +31,10 @@ pub struct BuyNftCore<'info> {
 }
 
 impl<'info> BuyNftCore<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.trade.validate_buy()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.trade.validate_buy()?;
+
+        self.core.validate_asset(None)
     }
 }
 
@@ -42,13 +44,11 @@ pub fn process_buy_nft_core<'info>(
     // Max vs exact so we can add slippage later.
     max_amount: u64,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let taker = ctx.accounts.trade.taker.to_account_info();
     let pool = ctx.accounts.trade.pool.to_account_info();
     let owner = ctx.accounts.trade.owner.to_account_info();
-
-    let asset = ctx.accounts.core.validate_asset(None)?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

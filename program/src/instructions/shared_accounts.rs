@@ -803,14 +803,8 @@ impl<'info> TradeShared<'info> {
         })
     }
 
-    pub fn verify_whitelist(
-        &self,
-        standard: &impl ValidateAsset<'info>,
-        mint: Option<AccountInfo<'info>>,
-    ) -> Result<()> {
+    pub fn verify_whitelist(&self, asset: &AmmAsset) -> Result<()> {
         let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
-
-        let asset = standard.validate_asset(mint)?;
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;
@@ -865,14 +859,8 @@ impl<'info> TradeShared<'info> {
 }
 
 impl<'info> TransferShared<'info> {
-    pub fn verify_whitelist(
-        &self,
-        standard: &impl ValidateAsset<'info>,
-        mint: Option<AccountInfo<'info>>,
-    ) -> Result<()> {
+    pub fn verify_whitelist(&self, asset: &AmmAsset) -> Result<()> {
         let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
-
-        let asset = standard.validate_asset(mint)?;
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;

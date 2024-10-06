@@ -65,8 +65,10 @@ pub struct BuyNft<'info> {
 }
 
 impl<'info> BuyNft<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.trade.validate_buy()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.trade.validate_buy()?;
+
+        self.mplx.validate_asset(Some(self.mint.to_account_info()))
     }
 }
 
@@ -78,15 +80,10 @@ pub fn process_buy_nft<'info>(
     optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
     // Pre-handler validation checks.
-    ctx.accounts.pre_process_checks()?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let taker = ctx.accounts.trade.taker.to_account_info();
     let owner = ctx.accounts.trade.owner.to_account_info();
-
-    let asset = ctx
-        .accounts
-        .mplx
-        .validate_asset(Some(ctx.accounts.mint.to_account_info()))?;
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,

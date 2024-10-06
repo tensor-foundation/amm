@@ -27,8 +27,10 @@ pub struct WithdrawNftCore<'info> {
 }
 
 impl<'info> WithdrawNftCore<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
-        self.transfer.validate()
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
+        self.transfer.validate()?;
+
+        self.core.validate_asset(None)
     }
 }
 

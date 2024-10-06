@@ -30,9 +30,14 @@ pub struct DepositNftCore<'info> {
 }
 
 impl<'info> DepositNftCore<'info> {
-    fn pre_process_checks(&self) -> Result<()> {
+    fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
-        self.transfer.verify_whitelist(&self.core, None)
+
+        let asset = self.core.validate_asset(None)?;
+
+        self.transfer.verify_whitelist(&asset)?;
+
+        Ok(asset)
     }
 }
 
