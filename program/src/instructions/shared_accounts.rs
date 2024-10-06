@@ -224,13 +224,10 @@ impl<'info> Sell<'info> for TradeShared<'info> {
         remaining_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
         let Fees {
-            amm_fees:
-                AmmFees {
-                    taker_fee: _,
-                    tamm_fee,
-                    maker_broker_fee,
-                    taker_broker_fee,
-                },
+            taker_fee: _,
+            tamm_fee,
+            maker_broker_fee,
+            taker_broker_fee,
             creators_fee,
         } = fees;
 
@@ -413,13 +410,10 @@ impl<'info> Buy<'info> for TradeShared<'info> {
         creator_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
         let Fees {
-            amm_fees:
-                AmmFees {
-                    taker_fee: _,
-                    tamm_fee,
-                    maker_broker_fee,
-                    taker_broker_fee,
-                },
+            taker_fee: _,
+            tamm_fee,
+            maker_broker_fee,
+            taker_broker_fee,
             creators_fee,
         } = fees;
 
@@ -798,12 +792,10 @@ impl<'info> TradeShared<'info> {
         }
 
         Ok(Fees {
-            amm_fees: AmmFees {
-                taker_fee,
-                tamm_fee,
-                maker_broker_fee,
-                taker_broker_fee,
-            },
+            taker_fee,
+            tamm_fee,
+            maker_broker_fee,
+            taker_broker_fee,
             creators_fee,
         })
     }

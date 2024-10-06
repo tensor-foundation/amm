@@ -90,8 +90,11 @@ pub fn assert_decode_mint_proof_v2(
 }
 
 pub struct Fees {
-    amm_fees: AmmFees,
-    creators_fee: u64,
+    pub taker_fee: u64,
+    pub tamm_fee: u64,
+    pub maker_broker_fee: u64,
+    pub taker_broker_fee: u64,
+    pub creators_fee: u64,
 }
 
 pub struct AmmFees {
