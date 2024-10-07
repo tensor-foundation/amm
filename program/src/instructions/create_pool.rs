@@ -64,7 +64,7 @@ pub struct CreatePool<'info> {
 }
 
 impl<'info> CreatePool<'info> {
-    fn validate_pool_type(&self, config: PoolConfig) -> Result<()> {
+    fn validate(&self, config: PoolConfig, shared_escrow: Option<Pubkey>) -> Result<()> {
         match config.pool_type {
             PoolType::NFT | PoolType::Token => {
                 if config.mm_fee_bps > 0 {
@@ -86,12 +86,16 @@ impl<'info> CreatePool<'info> {
             }
         }
 
+        if config.pool_type == PoolType::Token && shared_escrow.is_some() {
+            throw_err!(ErrorCode::CannotUseSharedEscrow);
+        }
+
         Ok(())
     }
 }
 
 /// Create a new pool.
-#[access_control(ctx.accounts.validate_pool_type(args.config))]
+#[access_control(ctx.accounts.validate(args.config, args.shared_escrow))]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 

@@ -388,13 +388,12 @@ pub fn update_pool_accounting(
     pool_initial_balance: u64,
     taker_side: TakerSide,
 ) -> Result<()> {
-    pool.updated_at = Clock::get()?.unix_timestamp;
-
     // Calculate fees from the current price.
     let current_price = pool.current_price(taker_side)?;
-
     // This resolves to 0 for Token & NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
+
+    pool.updated_at = Clock::get()?.unix_timestamp;
 
     match taker_side {
         TakerSide::Buy => {
@@ -405,7 +404,6 @@ pub fn update_pool_accounting(
             pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
 
             pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
-            pool.updated_at = Clock::get()?.unix_timestamp;
 
             if pool.config.pool_type == PoolType::Trade {
                 pool.stats.accumulated_mm_profit =

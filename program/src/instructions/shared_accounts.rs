@@ -287,18 +287,18 @@ impl<'info> TradeShared<'info> {
         let mut left_for_seller = current_price;
 
         // TAmm contract fee.
-        transfer_lamports_from_pda(&self.pool.to_account_info(), &self.fee_vault, tamm_fee)?;
+        transfer_lamports(&self.pool.to_account_info(), &self.fee_vault, tamm_fee)?;
         left_for_seller = unwrap_int!(left_for_seller.checked_sub(tamm_fee));
 
         // Broker fees. Transfer if accounts are specified, otherwise the funds go to the fee_vault.
-        transfer_lamports_from_pda(
+        transfer_lamports_checked(
             &self.pool.to_account_info(),
             self.maker_broker.as_ref().unwrap_or(&self.fee_vault),
             maker_broker_fee,
         )?;
         left_for_seller = unwrap_int!(left_for_seller.checked_sub(maker_broker_fee));
 
-        transfer_lamports_from_pda(
+        transfer_lamports_checked(
             &self.pool.to_account_info(),
             self.taker_broker.as_ref().unwrap_or(&self.fee_vault),
             taker_broker_fee,
@@ -349,6 +349,17 @@ impl<'info> TradeShared<'info> {
                 let incoming_shared_escrow =
                     unwrap_opt!(self.shared_escrow.as_ref(), ErrorCode::BadSharedEscrow)
                         .to_account_info();
+
+                // Validate it's a valid escrow account.
+                assert_decode_margin_account(
+                    &incoming_shared_escrow,
+                    &self.owner.to_account_info(),
+                )?;
+
+                // Validate it's the correct account: the stored escrow account matches the one passed in.
+                if incoming_shared_escrow.key != &pool.shared_escrow {
+                    throw_err!(ErrorCode::BadSharedEscrow);
+                }
 
                 transfer_lamports_from_pda(
                     &self.pool.to_account_info(),
@@ -576,7 +587,8 @@ pub struct T22Shared<'info> {
 pub struct AmmAsset {
     pub pubkey: Pubkey,
     pub collection: Option<Collection>,
-    pub verified_creators: Option<Vec<Creator>>,
+    /// Creators used for whitelist verification (fine to include verified = false creators).
+    pub whitelist_creators: Option<Vec<Creator>>,
     pub royalty_creators: Option<Vec<Creator>>,
     pub seller_fee_basis_points: u16,
     pub royalty_enforced: bool,
@@ -609,7 +621,7 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: None,
-            verified_creators: None, // creators in Libreplex not verified
+            whitelist_creators: None, // creators in Libreplex not verified
             royalty_creators: creators,
             seller_fee_basis_points,
             royalty_enforced: true,
@@ -636,7 +648,7 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: metadata.collection,
-            verified_creators,
+            whitelist_creators: verified_creators,
             royalty_creators: metadata.creators,
             seller_fee_basis_points: metadata.seller_fee_basis_points,
             royalty_enforced,
@@ -703,7 +715,7 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
         Ok(AmmAsset {
             pubkey: self.asset.key(),
             collection,
-            verified_creators,
+            whitelist_creators: verified_creators,
             royalty_creators,
             seller_fee_basis_points: royalty_fee,
             royalty_enforced: true,
@@ -806,7 +818,7 @@ impl<'info> TradeShared<'info> {
 
         whitelist.verify(
             &asset.collection,
-            &asset.verified_creators,
+            &asset.whitelist_creators,
             &full_merkle_proof,
         )
     }
@@ -862,7 +874,7 @@ impl<'info> TransferShared<'info> {
 
         whitelist.verify(
             &asset.collection,
-            &asset.verified_creators,
+            &asset.whitelist_creators,
             &full_merkle_proof,
         )
     }

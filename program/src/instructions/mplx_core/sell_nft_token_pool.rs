@@ -12,9 +12,6 @@ pub struct SellNftTokenPoolCore<'info> {
 
     /// Metaplex core shared accounts.
     pub core: MplCoreShared<'info>,
-
-    /// The Solana system program.
-    pub system_program: Program<'info, System>,
 }
 
 impl<'info> SellNftTokenPoolCore<'info> {

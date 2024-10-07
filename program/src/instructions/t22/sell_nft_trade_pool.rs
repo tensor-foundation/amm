@@ -32,8 +32,8 @@ pub struct SellNftTradePoolT22<'info> {
 
     /// The mint account of the NFT being sold.
     #[account(
+        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
         constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
     )]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -55,16 +55,6 @@ pub struct SellNftTradePoolT22<'info> {
         associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
-    #[account(
-        init_if_needed,
-        payer = trade.taker,
-        associated_token::mint = mint,
-        associated_token::authority = trade.owner,
-        associated_token::token_program = token_program,
-    )]
-    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The Token 2022 program.
     pub token_program: Program<'info, Token2022>,
