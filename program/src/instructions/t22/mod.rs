@@ -21,7 +21,6 @@ use mpl_token_metadata::types::Creator;
 use tensor_toolbox::{
     close_account,
     token_2022::{transfer::transfer_checked, validate_mint},
-    TCreator,
 };
 use tensor_vipers::{unwrap_int, Validate};
 
@@ -56,15 +55,9 @@ fn transfer<'info>(
         creators
             .iter()
             .filter_map(|c| {
-                let creator = TCreator {
-                    address: c.address,
-                    share: c.share,
-                    verified: c.verified,
-                };
-
                 remaining_accounts
                     .iter()
-                    .find(|account| &creator.address == account.key)
+                    .find(|account| &c.address == account.key)
                     .cloned()
             })
             .collect()

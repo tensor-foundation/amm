@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::CloseAccount;
-use constants::{CURRENT_POOL_VERSION, MAKER_BROKER_PCT};
+use constants::{CURRENT_POOL_VERSION, TAKER_FEE_BPS};
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::{Collection, Creator, TokenStandard};
 use program::AmmProgram;
@@ -9,10 +9,10 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    escrow, shard_num, token_2022::validate_mint, token_metadata::assert_decode_metadata,
-    transfer_creators_fee, transfer_lamports, transfer_lamports_checked,
-    transfer_lamports_from_pda, CreatorFeeMode, FromAcc, FromExternal, TensorError,
-    HUNDRED_PCT_BPS,
+    calc_fees, escrow, shard_num, token_2022::validate_mint,
+    token_metadata::assert_decode_metadata, transfer_creators_fee, transfer_lamports,
+    transfer_lamports_checked, transfer_lamports_from_pda, CalcFeesArgs, CreatorFeeMode, FromAcc,
+    FromExternal, TensorError, BROKER_FEE_PCT, HUNDRED_PCT_BPS, MAKER_BROKER_PCT,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
@@ -135,6 +135,7 @@ pub struct TradeShared<'info> {
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = whitelist_program::ID,
+        // NB: this is an optional constraint: if whitelist is required, then it will be checked for existence in handler.
         constraint = whitelist.key() == pool.whitelist @ ErrorCode::BadWhitelist,
     )]
     pub whitelist: Option<Box<Account<'info, WhitelistV2>>>,
@@ -194,18 +195,8 @@ impl<'info> Validate<'info> for TradeShared<'info> {
     }
 }
 
-pub trait Sell<'info> {
-    fn validate_sell(&self, pool_type: &PoolType) -> Result<()>;
-    fn pay_seller_fees(
-        &self,
-        amm_asset: AmmAsset,
-        fees: Fees,
-        remaining_accounts: &[AccountInfo<'info>],
-    ) -> Result<()>;
-}
-
-impl<'info> Sell<'info> for TradeShared<'info> {
-    fn validate_sell(&self, pool_type: &PoolType) -> Result<()> {
+impl<'info> TradeShared<'info> {
+    pub fn validate_sell(&self, pool_type: &PoolType) -> Result<()> {
         // Ensure correct pool type
         require!(
             self.pool.config.pool_type == *pool_type,
@@ -217,7 +208,7 @@ impl<'info> Sell<'info> for TradeShared<'info> {
         self.validate()
     }
 
-    fn pay_seller_fees(
+    pub fn pay_seller_fees(
         &self,
         amm_asset: AmmAsset,
         fees: Fees,
@@ -380,19 +371,8 @@ impl<'info> Sell<'info> for TradeShared<'info> {
     }
 }
 
-pub trait Buy<'info> {
-    fn validate_buy(&self) -> Result<()>;
-
-    fn pay_buyer_fees(
-        &self,
-        amm_asset: AmmAsset,
-        fees: Fees,
-        remaining_accounts: &[AccountInfo<'info>],
-    ) -> Result<()>;
-}
-
-impl<'info> Buy<'info> for TradeShared<'info> {
-    fn validate_buy(&self) -> Result<()> {
+impl<'info> TradeShared<'info> {
+    pub fn validate_buy(&self) -> Result<()> {
         // Ensure correct pool type
         require!(
             self.pool.config.pool_type == PoolType::Trade
@@ -403,7 +383,7 @@ impl<'info> Buy<'info> for TradeShared<'info> {
         self.validate()
     }
 
-    fn pay_buyer_fees(
+    pub fn pay_buyer_fees(
         &self,
         amm_asset: AmmAsset,
         fees: Fees,
@@ -621,7 +601,7 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
                 .map(|c| Creator {
                     address: c.0,
                     share: c.1,
-                    verified: true,
+                    verified: false,
                 })
                 .collect()
         });
@@ -629,10 +609,10 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
         Ok(AmmAsset {
             pubkey: mint.key(),
             collection: None,
-            verified_creators: creators.clone(),
+            verified_creators: None, // creators in Libreplex not verified
             royalty_creators: creators,
             seller_fee_basis_points,
-            royalty_enforced: false,
+            royalty_enforced: true,
         })
     }
 }
@@ -644,6 +624,7 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
         let metadata = assert_decode_metadata(&mint.key(), &self.metadata)?;
 
         // Programmable NFTs enforce royalties on transfers.
+        // TODO(richardwu): use toolbox 0.5.0 when it's released
         let royalty_enforced = matches!(
             metadata.token_standard,
             Some(TokenStandard::ProgrammableNonFungible)
@@ -736,7 +717,7 @@ impl<'info> TradeShared<'info> {
         seller_fee_basis_points: u16,
         user_price: u64,
         taker_side: TakerSide,
-        optional_royalty_pct: Option<u16>,
+        royalty_pct: Option<u16>,
     ) -> Result<Fees> {
         let pool = &self.pool;
 
@@ -746,15 +727,21 @@ impl<'info> TradeShared<'info> {
         // This resolves to 0 for Token & NFT pools.
         let mm_fee = pool.calc_mm_fee(current_price)?;
 
-        let AmmFees {
+        let tensor_toolbox::Fees {
             taker_fee,
-            tamm_fee,
+            protocol_fee: tamm_fee,
             maker_broker_fee,
             taker_broker_fee,
-        } = calc_taker_fees(current_price, MAKER_BROKER_PCT)?;
+        } = calc_fees(CalcFeesArgs {
+            amount: current_price,
+            total_fee_bps: TAKER_FEE_BPS,
+            broker_fee_pct: BROKER_FEE_PCT,
+            maker_broker_pct: MAKER_BROKER_PCT,
+            tnsr_discount: false,
+        })?;
 
-        let creators_fee =
-            calc_creators_fee(seller_fee_basis_points, current_price, optional_royalty_pct)?;
+        // TODO(richardwu): use toolbox 0.5.0 when it's released
+        let creators_fee = calc_creators_fee(seller_fee_basis_points, current_price, royalty_pct)?;
 
         // for keeping track of current price + fees charged (computed dynamically)
         // we do this before PriceMismatch for easy debugging eg if there's a lot of slippage
@@ -919,9 +906,9 @@ pub enum TransferDirection {
 pub fn calc_creators_fee(
     seller_fee_basis_points: u16,
     amount: u64,
-    optional_royalty_pct: Option<u16>,
+    royalty_pct: Option<u16>,
 ) -> Result<u64> {
-    let creator_fee_bps = if let Some(royalty_pct) = optional_royalty_pct {
+    let creator_fee_bps = if let Some(royalty_pct) = royalty_pct {
         require!(royalty_pct <= 100, TensorError::BadRoyaltiesPct);
 
         // If optional passed, pay optional royalties

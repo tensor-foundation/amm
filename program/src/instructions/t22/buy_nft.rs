@@ -22,6 +22,7 @@ pub struct BuyNftT22<'info> {
         bump = nft_receipt.bump,
         // Check the receipt is for the correct pool and mint.
         has_one = mint @ ErrorCode::WrongMint,
+        constraint = nft_receipt.pool == trade.pool.key() @ ErrorCode::WrongPool,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -82,7 +83,7 @@ pub fn process_buy_nft_t22<'info>(
         asset.seller_fee_basis_points,
         max_amount,
         TakerSide::Buy,
-        Some(100),
+        Some(100), // no optional royalties for now
     )?;
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
