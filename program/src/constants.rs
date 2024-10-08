@@ -15,11 +15,5 @@ pub const MAX_MM_FEES_BPS: u16 = 9999; //99%
 #[constant]
 pub const MAX_DELTA_BPS: u16 = 9999; //99%
 
-// --------------------------------------- fees
-
-/// Taker fee in basis points.
-#[constant]
-pub const TAKER_FEE_BPS: u64 = 200;
-
 /// The pubkey of the Tensor Foundation Fees program.
 pub(crate) const TFEE_PROGRAM_ID: Pubkey = pubkey!("TFEEgwDP6nn1s8mMX2tTNPPz8j2VomkphLUmyxKm17A");

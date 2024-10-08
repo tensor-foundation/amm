@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{CloseAccount, Mint};
-use constants::{CURRENT_POOL_VERSION, TAKER_FEE_BPS};
+use constants::CURRENT_POOL_VERSION;
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::{Collection, Creator};
 use program::AmmProgram;
@@ -12,7 +12,7 @@ use tensor_toolbox::{
     calc_creators_fee, calc_fees, escrow, is_royalty_enforced, shard_num,
     token_2022::validate_mint, token_metadata::assert_decode_metadata, transfer_creators_fee,
     transfer_lamports, transfer_lamports_checked, transfer_lamports_from_pda, CalcFeesArgs,
-    CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT,
+    CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
