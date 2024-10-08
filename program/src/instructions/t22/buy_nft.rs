@@ -1,22 +1,22 @@
-//! Buy a Metaplex legacy NFT or pNFT from a NFT or Trade pool.
+//! Buy a Token22 NFT from a NFT or Trade pool.
 
 use super::*;
 
-/// Instruction accounts
+/// Instruction accounts.
 #[derive(Accounts)]
-pub struct BuyNft<'info> {
+pub struct BuyNftT22<'info> {
     /// Trade shared accounts.
     pub trade: TradeShared<'info>,
 
-    /// Metaplex legacy and pNFT shared accounts.
-    pub mplx: MplxShared<'info>,
+    /// T22 shared accounts.
+    pub t22: T22Shared<'info>,
 
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
         mut,
-        seeds = [
+        seeds=[
             b"nft_receipt".as_ref(),
-            mplx.mint.key().as_ref(),
+            t22.mint.key().as_ref(),
             trade.pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
@@ -27,62 +27,52 @@ pub struct BuyNft<'info> {
     #[account(
         init_if_needed,
         payer = trade.taker,
-        associated_token::mint = mplx.mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = trade.taker,
         associated_token::token_program = token_program,
     )]
     pub taker_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// The TA of the pool, where the NFT is held.
+    /// The TA of the pool, where the NFT will be escrowed.
     #[account(
         mut,
-        associated_token::mint = mplx.mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = trade.pool,
         associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// Either the legacy token program or token-2022.
-    pub token_program: Interface<'info, TokenInterface>,
+    /// The SPL Token program for the Mint and ATAs.
+    pub token_program: Program<'info, Token2022>,
     /// The SPL associated token program.
     pub associated_token_program: Program<'info, AssociatedToken>,
     /// The Solana system program.
     pub system_program: Program<'info, System>,
     //
-    // remaining accounts:
-    // optional 0 to N creator accounts
+    // ---- [0..n] remaining accounts for royalties transfer hook
 }
 
-impl<'info> BuyNft<'info> {
+impl<'info> BuyNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_buy()?;
 
-        self.mplx.validate_asset()
+        self.t22.validate_asset()
     }
 }
 
-/// Allows a buyer to purchase a Metaplex legacy NFT or pNFT from a Trade or NFT pool.
-pub fn process_buy_nft<'info>(
-    ctx: Context<'_, '_, '_, 'info, BuyNft<'info>>,
+/// Buy a Token22 NFT from a NFT or Trade pool.
+pub fn process_buy_nft_t22<'info>(
+    ctx: Context<'_, '_, '_, 'info, BuyNftT22<'info>>,
+    // Max vs exact so we can add slippage later.
     max_amount: u64,
-    authorization_data: Option<AuthorizationDataLocal>,
-    optional_royalty_pct: Option<u16>,
 ) -> Result<()> {
-    // Pre-handler validation checks.
     let asset = ctx.accounts.pre_process_checks()?;
-
-    let taker = ctx.accounts.trade.taker.to_account_info();
-    let owner = ctx.accounts.trade.owner.to_account_info();
 
     let fees = ctx.accounts.trade.calculate_fees(
         asset.seller_fee_basis_points,
         max_amount,
         TakerSide::Buy,
-        if asset.royalty_enforced {
-            Some(100)
-        } else {
-            optional_royalty_pct
-        },
+        Some(100), // no optional royalties for now
     )?;
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
@@ -95,30 +85,17 @@ pub fn process_buy_nft<'info>(
         &[ctx.accounts.trade.pool.bump[0]],
     ]];
 
-    // Transfer nft to buyer
-    // Has to go before any transfer_lamports, o/w we get `sum of account balances before and after instruction do not match`
-    transfer(
-        TransferArgs {
-            payer: &taker,
-            source: &ctx.accounts.trade.pool.to_account_info(),
-            source_ata: &ctx.accounts.pool_ta,
-            destination: &taker,
-            destination_ata: &ctx.accounts.taker_ta,
-            mint: &ctx.accounts.mplx.mint,
-            metadata: &ctx.accounts.mplx.metadata,
-            edition: &ctx.accounts.mplx.edition,
-            system_program: &ctx.accounts.system_program,
-            spl_token_program: &ctx.accounts.token_program,
-            spl_ata_program: &ctx.accounts.associated_token_program,
-            token_metadata_program: ctx.accounts.mplx.token_metadata_program.as_ref(),
-            sysvar_instructions: ctx.accounts.mplx.sysvar_instructions.as_ref(),
-            source_token_record: ctx.accounts.mplx.pool_token_record.as_ref(),
-            destination_token_record: ctx.accounts.mplx.user_token_record.as_ref(),
-            authorization_rules: ctx.accounts.mplx.authorization_rules.as_ref(),
-            authorization_rules_program: ctx.accounts.mplx.authorization_rules_program.as_ref(),
-            authorization_data: authorization_data.map(AuthorizationData::from),
-            delegate: None,
+    // Transfer from the pool to the buyer.
+    let creator_accounts = transfer(
+        &TransferArgs {
+            from: ctx.accounts.pool_ta.to_account_info(),
+            to: ctx.accounts.taker_ta.to_account_info(),
+            authority: ctx.accounts.trade.pool.to_account_info(),
+            mint: ctx.accounts.t22.mint.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
         },
+        ctx.remaining_accounts,
+        &asset.royalty_creators,
         Some(signer_seeds),
     )?;
 
@@ -138,7 +115,7 @@ pub fn process_buy_nft<'info>(
 
     ctx.accounts
         .trade
-        .pay_buyer_fees(asset, fees, ctx.remaining_accounts)?;
+        .pay_buyer_fees(asset, fees, &creator_accounts)?;
 
     // Close the NFT receipt account.
     close_account(
@@ -152,10 +129,9 @@ pub fn process_buy_nft<'info>(
         TakerSide::Buy,
     )?;
 
-    // If the pool is an NFT pool, and no remaining NFTs held, we can close it.
     try_autoclose_pool(
         &ctx.accounts.trade.pool,
         ctx.accounts.trade.rent_payer.to_account_info(),
-        owner,
+        ctx.accounts.trade.owner.to_account_info(),
     )
 }

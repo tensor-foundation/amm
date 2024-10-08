@@ -41,13 +41,13 @@ import {
   resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
-  resolveOwnerTokenRecordFromTokenStandard,
   resolvePoolAta,
   resolvePoolTokenRecordFromTokenStandard,
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
   type TokenStandardArgs,
 } from '@tensor-foundation/resolvers';
+import { resolveUserTokenRecordFromTokenStandard } from '../../hooked';
 import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
@@ -66,10 +66,22 @@ export type WithdrawNftInstruction<
   TProgram extends string = typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
+  TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountMintProof extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountMetadata extends string | IAccountMeta<string> = string,
+  TAccountEdition extends string | IAccountMeta<string> = string,
+  TAccountUserTokenRecord extends string | IAccountMeta<string> = string,
+  TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
+  TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
+  TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
+  TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
+  TAccountAuthorizationRulesProgram extends
+    | string
+    | IAccountMeta<string> = string,
+  TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountOwnerTa extends string | IAccountMeta<string> = string,
   TAccountPoolTa extends string | IAccountMeta<string> = string,
-  TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
     | string
     | IAccountMeta<string> = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
@@ -79,16 +91,6 @@ export type WithdrawNftInstruction<
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountMetadata extends string | IAccountMeta<string> = string,
-  TAccountEdition extends string | IAccountMeta<string> = string,
-  TAccountOwnerTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountPoolTokenRecord extends string | IAccountMeta<string> = string,
-  TAccountTokenMetadataProgram extends string | IAccountMeta<string> = string,
-  TAccountSysvarInstructions extends string | IAccountMeta<string> = string,
-  TAccountAuthorizationRules extends string | IAccountMeta<string> = string,
-  TAccountAuthorizationRulesProgram extends
-    | string
-    | IAccountMeta<string> = string,
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -101,36 +103,24 @@ export type WithdrawNftInstruction<
       TAccountPool extends string
         ? WritableAccount<TAccountPool>
         : TAccountPool,
+      TAccountWhitelist extends string
+        ? ReadonlyAccount<TAccountWhitelist>
+        : TAccountWhitelist,
+      TAccountMintProof extends string
+        ? ReadonlyAccount<TAccountMintProof>
+        : TAccountMintProof,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
-      TAccountOwnerTa extends string
-        ? WritableAccount<TAccountOwnerTa>
-        : TAccountOwnerTa,
-      TAccountPoolTa extends string
-        ? WritableAccount<TAccountPoolTa>
-        : TAccountPoolTa,
-      TAccountNftReceipt extends string
-        ? WritableAccount<TAccountNftReceipt>
-        : TAccountNftReceipt,
-      TAccountTokenProgram extends string
-        ? ReadonlyAccount<TAccountTokenProgram>
-        : TAccountTokenProgram,
-      TAccountAssociatedTokenProgram extends string
-        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
-        : TAccountAssociatedTokenProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       TAccountMetadata extends string
         ? WritableAccount<TAccountMetadata>
         : TAccountMetadata,
       TAccountEdition extends string
         ? ReadonlyAccount<TAccountEdition>
         : TAccountEdition,
-      TAccountOwnerTokenRecord extends string
-        ? WritableAccount<TAccountOwnerTokenRecord>
-        : TAccountOwnerTokenRecord,
+      TAccountUserTokenRecord extends string
+        ? WritableAccount<TAccountUserTokenRecord>
+        : TAccountUserTokenRecord,
       TAccountPoolTokenRecord extends string
         ? WritableAccount<TAccountPoolTokenRecord>
         : TAccountPoolTokenRecord,
@@ -146,6 +136,24 @@ export type WithdrawNftInstruction<
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
+      TAccountNftReceipt extends string
+        ? WritableAccount<TAccountNftReceipt>
+        : TAccountNftReceipt,
+      TAccountOwnerTa extends string
+        ? WritableAccount<TAccountOwnerTa>
+        : TAccountOwnerTa,
+      TAccountPoolTa extends string
+        ? WritableAccount<TAccountPoolTa>
+        : TAccountPoolTa,
+      TAccountTokenProgram extends string
+        ? ReadonlyAccount<TAccountTokenProgram>
+        : TAccountTokenProgram,
+      TAccountAssociatedTokenProgram extends string
+        ? ReadonlyAccount<TAccountAssociatedTokenProgram>
+        : TAccountAssociatedTokenProgram,
+      TAccountSystemProgram extends string
+        ? ReadonlyAccount<TAccountSystemProgram>
+        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -200,47 +208,47 @@ export type WithdrawNftInstructionExtraArgs = {
 export type WithdrawNftAsyncInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
+  TAccountWhitelist extends string = string,
+  TAccountMintProof extends string = string,
   TAccountMint extends string = string,
-  TAccountOwnerTa extends string = string,
-  TAccountPoolTa extends string = string,
-  TAccountNftReceipt extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
-  TAccountOwnerTokenRecord extends string = string,
+  TAccountUserTokenRecord extends string = string,
   TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
+  TAccountNftReceipt extends string = string,
+  TAccountOwnerTa extends string = string,
+  TAccountPoolTa extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
-  /** The owner of the pool and will receive the NFT at the owner_ta account. */
+  /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool from which the NFT will be withdrawn. */
+  /** The pool the NFT is being transferred to/from. */
   pool: Address<TAccountPool>;
-  /** The mint of the NFT. */
+  /**
+   * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+   * Must match the whitelist stored in the pool state.
+   */
+  whitelist?: Address<TAccountWhitelist>;
+  /**
+   * Optional account which must be passed in if the NFT must be verified against a
+   * merkle proof condition in the whitelist.
+   */
+  mintProof?: Address<TAccountMintProof>;
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
-  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
-  ownerTa?: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT token is escrowed. */
-  poolTa?: Address<TAccountPoolTa>;
-  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-  nftReceipt?: Address<TAccountNftReceipt>;
-  /** The SPL Token program for the Mint and ATAs. */
-  tokenProgram?: Address<TAccountTokenProgram>;
-  /** The SPL associated token program. */
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
-  /** The Token Metadata edition of the NFT. */
+  /** The Token Metadata edition account of the NFT. */
   edition?: Address<TAccountEdition>;
-  /** The Token Metadata owner's token record account of the NFT. */
-  ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
-  /** The Token Metadata token record for the pool. */
+  /** The Token Metadata source token record account of the NFT. */
+  userTokenRecord?: Address<TAccountUserTokenRecord>;
+  /** The Token Metadata token record for the destination. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
@@ -250,6 +258,18 @@ export type WithdrawNftAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
+  nftReceipt?: Address<TAccountNftReceipt>;
+  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+  ownerTa?: Address<TAccountOwnerTa>;
+  /** The TA of the pool, where the NFT token is escrowed. */
+  poolTa?: Address<TAccountPoolTa>;
+  /** The SPL Token program for the Mint and ATAs. */
+  tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
+  systemProgram?: Address<TAccountSystemProgram>;
   authorizationData?: WithdrawNftInstructionDataArgs['authorizationData'];
   tokenStandard?: WithdrawNftInstructionExtraArgs['tokenStandard'];
 };
@@ -257,61 +277,67 @@ export type WithdrawNftAsyncInput<
 export async function getWithdrawNftInstructionAsync<
   TAccountOwner extends string,
   TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountMintProof extends string,
   TAccountMint extends string,
-  TAccountOwnerTa extends string,
-  TAccountPoolTa extends string,
-  TAccountNftReceipt extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountMetadata extends string,
   TAccountEdition extends string,
-  TAccountOwnerTokenRecord extends string,
+  TAccountUserTokenRecord extends string,
   TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
+  TAccountNftReceipt extends string,
+  TAccountOwnerTa extends string,
+  TAccountPoolTa extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
 >(
   input: WithdrawNftAsyncInput<
     TAccountOwner,
     TAccountPool,
+    TAccountWhitelist,
+    TAccountMintProof,
     TAccountMint,
-    TAccountOwnerTa,
-    TAccountPoolTa,
-    TAccountNftReceipt,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram,
     TAccountMetadata,
     TAccountEdition,
-    TAccountOwnerTokenRecord,
+    TAccountUserTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
-    TAccountAuthorizationRulesProgram
+    TAccountAuthorizationRulesProgram,
+    TAccountNftReceipt,
+    TAccountOwnerTa,
+    TAccountPoolTa,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >
 ): Promise<
   WithdrawNftInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
+    TAccountWhitelist,
+    TAccountMintProof,
     TAccountMint,
-    TAccountOwnerTa,
-    TAccountPoolTa,
-    TAccountNftReceipt,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram,
     TAccountMetadata,
     TAccountEdition,
-    TAccountOwnerTokenRecord,
+    TAccountUserTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
-    TAccountAuthorizationRulesProgram
+    TAccountAuthorizationRulesProgram,
+    TAccountNftReceipt,
+    TAccountOwnerTa,
+    TAccountPoolTa,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >
 > {
   // Program address.
@@ -321,22 +347,12 @@ export async function getWithdrawNftInstructionAsync<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
+    whitelist: { value: input.whitelist ?? null, isWritable: false },
+    mintProof: { value: input.mintProof ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
-    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
-    poolTa: { value: input.poolTa ?? null, isWritable: true },
-    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
-    ownerTokenRecord: {
-      value: input.ownerTokenRecord ?? null,
-      isWritable: true,
-    },
+    userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
     poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
       value: input.tokenMetadataProgram ?? null,
@@ -354,6 +370,15 @@ export async function getWithdrawNftInstructionAsync<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
+    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -367,36 +392,6 @@ export async function getWithdrawNftInstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
-  if (!accounts.tokenProgram.value) {
-    accounts.tokenProgram.value =
-      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-  if (!accounts.ownerTa.value) {
-    accounts.ownerTa = {
-      ...accounts.ownerTa,
-      ...(await resolveOwnerAta(resolverScope)),
-    };
-  }
-  if (!accounts.poolTa.value) {
-    accounts.poolTa = {
-      ...accounts.poolTa,
-      ...(await resolvePoolAta(resolverScope)),
-    };
-  }
-  if (!accounts.nftReceipt.value) {
-    accounts.nftReceipt.value = await findNftDepositReceiptPda({
-      mint: expectAddress(accounts.mint.value),
-      pool: expectAddress(accounts.pool.value),
-    });
-  }
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.metadata.value) {
     accounts.metadata = {
       ...accounts.metadata,
@@ -409,10 +404,26 @@ export async function getWithdrawNftInstructionAsync<
       ...(await resolveEditionFromTokenStandard(resolverScope)),
     };
   }
-  if (!accounts.ownerTokenRecord.value) {
-    accounts.ownerTokenRecord = {
-      ...accounts.ownerTokenRecord,
-      ...(await resolveOwnerTokenRecordFromTokenStandard(resolverScope)),
+  if (!accounts.tokenProgram.value) {
+    accounts.tokenProgram.value =
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+  }
+  if (!accounts.ownerTa.value) {
+    accounts.ownerTa = {
+      ...accounts.ownerTa,
+      ...(await resolveOwnerAta(resolverScope)),
+    };
+  }
+  if (!accounts.userTokenRecord.value) {
+    accounts.userTokenRecord = {
+      ...accounts.userTokenRecord,
+      ...(await resolveUserTokenRecordFromTokenStandard(resolverScope)),
+    };
+  }
+  if (!accounts.poolTa.value) {
+    accounts.poolTa = {
+      ...accounts.poolTa,
+      ...(await resolvePoolAta(resolverScope)),
     };
   }
   if (!accounts.poolTokenRecord.value) {
@@ -442,27 +453,43 @@ export async function getWithdrawNftInstructionAsync<
       ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
     };
   }
+  if (!accounts.nftReceipt.value) {
+    accounts.nftReceipt.value = await findNftDepositReceiptPda({
+      mint: expectAddress(accounts.mint.value),
+      pool: expectAddress(accounts.pool.value),
+    });
+  }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.mint),
-      getAccountMeta(accounts.ownerTa),
-      getAccountMeta(accounts.poolTa),
-      getAccountMeta(accounts.nftReceipt),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
-      getAccountMeta(accounts.ownerTokenRecord),
+      getAccountMeta(accounts.userTokenRecord),
       getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
+      getAccountMeta(accounts.nftReceipt),
+      getAccountMeta(accounts.ownerTa),
+      getAccountMeta(accounts.poolTa),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getWithdrawNftInstructionDataEncoder().encode(
@@ -472,21 +499,23 @@ export async function getWithdrawNftInstructionAsync<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
+    TAccountWhitelist,
+    TAccountMintProof,
     TAccountMint,
-    TAccountOwnerTa,
-    TAccountPoolTa,
-    TAccountNftReceipt,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram,
     TAccountMetadata,
     TAccountEdition,
-    TAccountOwnerTokenRecord,
+    TAccountUserTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
-    TAccountAuthorizationRulesProgram
+    TAccountAuthorizationRulesProgram,
+    TAccountNftReceipt,
+    TAccountOwnerTa,
+    TAccountPoolTa,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >;
 
   return instruction;
@@ -495,47 +524,47 @@ export async function getWithdrawNftInstructionAsync<
 export type WithdrawNftInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
+  TAccountWhitelist extends string = string,
+  TAccountMintProof extends string = string,
   TAccountMint extends string = string,
-  TAccountOwnerTa extends string = string,
-  TAccountPoolTa extends string = string,
-  TAccountNftReceipt extends string = string,
-  TAccountTokenProgram extends string = string,
-  TAccountAssociatedTokenProgram extends string = string,
-  TAccountSystemProgram extends string = string,
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
-  TAccountOwnerTokenRecord extends string = string,
+  TAccountUserTokenRecord extends string = string,
   TAccountPoolTokenRecord extends string = string,
   TAccountTokenMetadataProgram extends string = string,
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
+  TAccountNftReceipt extends string = string,
+  TAccountOwnerTa extends string = string,
+  TAccountPoolTa extends string = string,
+  TAccountTokenProgram extends string = string,
+  TAccountAssociatedTokenProgram extends string = string,
+  TAccountSystemProgram extends string = string,
 > = {
-  /** The owner of the pool and will receive the NFT at the owner_ta account. */
+  /** The owner of the pool and the NFT. */
   owner: TransactionSigner<TAccountOwner>;
-  /** The pool from which the NFT will be withdrawn. */
+  /** The pool the NFT is being transferred to/from. */
   pool: Address<TAccountPool>;
-  /** The mint of the NFT. */
+  /**
+   * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+   * Must match the whitelist stored in the pool state.
+   */
+  whitelist?: Address<TAccountWhitelist>;
+  /**
+   * Optional account which must be passed in if the NFT must be verified against a
+   * merkle proof condition in the whitelist.
+   */
+  mintProof?: Address<TAccountMintProof>;
+  /** The mint account of the NFT. */
   mint: Address<TAccountMint>;
-  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
-  ownerTa: Address<TAccountOwnerTa>;
-  /** The TA of the pool, where the NFT token is escrowed. */
-  poolTa: Address<TAccountPoolTa>;
-  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-  nftReceipt: Address<TAccountNftReceipt>;
-  /** The SPL Token program for the Mint and ATAs. */
-  tokenProgram?: Address<TAccountTokenProgram>;
-  /** The SPL associated token program. */
-  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
-  /** The Token Metadata edition of the NFT. */
+  /** The Token Metadata edition account of the NFT. */
   edition: Address<TAccountEdition>;
-  /** The Token Metadata owner's token record account of the NFT. */
-  ownerTokenRecord?: Address<TAccountOwnerTokenRecord>;
-  /** The Token Metadata token record for the pool. */
+  /** The Token Metadata source token record account of the NFT. */
+  userTokenRecord?: Address<TAccountUserTokenRecord>;
+  /** The Token Metadata token record for the destination. */
   poolTokenRecord?: Address<TAccountPoolTokenRecord>;
   /** The Token Metadata program account. */
   tokenMetadataProgram?: Address<TAccountTokenMetadataProgram>;
@@ -545,6 +574,18 @@ export type WithdrawNftInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
+  /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
+  nftReceipt: Address<TAccountNftReceipt>;
+  /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+  ownerTa: Address<TAccountOwnerTa>;
+  /** The TA of the pool, where the NFT token is escrowed. */
+  poolTa: Address<TAccountPoolTa>;
+  /** The SPL Token program for the Mint and ATAs. */
+  tokenProgram?: Address<TAccountTokenProgram>;
+  /** The SPL associated token program. */
+  associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  /** The Solana system program. */
+  systemProgram?: Address<TAccountSystemProgram>;
   authorizationData?: WithdrawNftInstructionDataArgs['authorizationData'];
   tokenStandard?: WithdrawNftInstructionExtraArgs['tokenStandard'];
 };
@@ -552,60 +593,66 @@ export type WithdrawNftInput<
 export function getWithdrawNftInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
+  TAccountWhitelist extends string,
+  TAccountMintProof extends string,
   TAccountMint extends string,
-  TAccountOwnerTa extends string,
-  TAccountPoolTa extends string,
-  TAccountNftReceipt extends string,
-  TAccountTokenProgram extends string,
-  TAccountAssociatedTokenProgram extends string,
-  TAccountSystemProgram extends string,
   TAccountMetadata extends string,
   TAccountEdition extends string,
-  TAccountOwnerTokenRecord extends string,
+  TAccountUserTokenRecord extends string,
   TAccountPoolTokenRecord extends string,
   TAccountTokenMetadataProgram extends string,
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
+  TAccountNftReceipt extends string,
+  TAccountOwnerTa extends string,
+  TAccountPoolTa extends string,
+  TAccountTokenProgram extends string,
+  TAccountAssociatedTokenProgram extends string,
+  TAccountSystemProgram extends string,
 >(
   input: WithdrawNftInput<
     TAccountOwner,
     TAccountPool,
+    TAccountWhitelist,
+    TAccountMintProof,
     TAccountMint,
-    TAccountOwnerTa,
-    TAccountPoolTa,
-    TAccountNftReceipt,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram,
     TAccountMetadata,
     TAccountEdition,
-    TAccountOwnerTokenRecord,
+    TAccountUserTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
-    TAccountAuthorizationRulesProgram
+    TAccountAuthorizationRulesProgram,
+    TAccountNftReceipt,
+    TAccountOwnerTa,
+    TAccountPoolTa,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >
 ): WithdrawNftInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
   TAccountOwner,
   TAccountPool,
+  TAccountWhitelist,
+  TAccountMintProof,
   TAccountMint,
-  TAccountOwnerTa,
-  TAccountPoolTa,
-  TAccountNftReceipt,
-  TAccountTokenProgram,
-  TAccountAssociatedTokenProgram,
-  TAccountSystemProgram,
   TAccountMetadata,
   TAccountEdition,
-  TAccountOwnerTokenRecord,
+  TAccountUserTokenRecord,
   TAccountPoolTokenRecord,
   TAccountTokenMetadataProgram,
   TAccountSysvarInstructions,
   TAccountAuthorizationRules,
-  TAccountAuthorizationRulesProgram
+  TAccountAuthorizationRulesProgram,
+  TAccountNftReceipt,
+  TAccountOwnerTa,
+  TAccountPoolTa,
+  TAccountTokenProgram,
+  TAccountAssociatedTokenProgram,
+  TAccountSystemProgram
 > {
   // Program address.
   const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
@@ -614,22 +661,12 @@ export function getWithdrawNftInstruction<
   const originalAccounts = {
     owner: { value: input.owner ?? null, isWritable: true },
     pool: { value: input.pool ?? null, isWritable: true },
+    whitelist: { value: input.whitelist ?? null, isWritable: false },
+    mintProof: { value: input.mintProof ?? null, isWritable: false },
     mint: { value: input.mint ?? null, isWritable: false },
-    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
-    poolTa: { value: input.poolTa ?? null, isWritable: true },
-    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
-    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
-    associatedTokenProgram: {
-      value: input.associatedTokenProgram ?? null,
-      isWritable: false,
-    },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
-    ownerTokenRecord: {
-      value: input.ownerTokenRecord ?? null,
-      isWritable: true,
-    },
+    userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
     poolTokenRecord: { value: input.poolTokenRecord ?? null, isWritable: true },
     tokenMetadataProgram: {
       value: input.tokenMetadataProgram ?? null,
@@ -647,6 +684,15 @@ export function getWithdrawNftInstruction<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
+    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
+    ownerTa: { value: input.ownerTa ?? null, isWritable: true },
+    poolTa: { value: input.poolTa ?? null, isWritable: true },
+    tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
+    associatedTokenProgram: {
+      value: input.associatedTokenProgram ?? null,
+      isWritable: false,
+    },
+    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -663,14 +709,6 @@ export function getWithdrawNftInstruction<
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-  }
-  if (!accounts.associatedTokenProgram.value) {
-    accounts.associatedTokenProgram.value =
-      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
   if (!args.tokenStandard) {
     args.tokenStandard = TokenStandard.ProgrammableNonFungible;
@@ -693,27 +731,37 @@ export function getWithdrawNftInstruction<
       ...resolveAuthorizationRulesProgramFromTokenStandard(resolverScope),
     };
   }
+  if (!accounts.associatedTokenProgram.value) {
+    accounts.associatedTokenProgram.value =
+      'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL' as Address<'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'>;
+  }
+  if (!accounts.systemProgram.value) {
+    accounts.systemProgram.value =
+      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
   const instruction = {
     accounts: [
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
+      getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.mintProof),
       getAccountMeta(accounts.mint),
-      getAccountMeta(accounts.ownerTa),
-      getAccountMeta(accounts.poolTa),
-      getAccountMeta(accounts.nftReceipt),
-      getAccountMeta(accounts.tokenProgram),
-      getAccountMeta(accounts.associatedTokenProgram),
-      getAccountMeta(accounts.systemProgram),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
-      getAccountMeta(accounts.ownerTokenRecord),
+      getAccountMeta(accounts.userTokenRecord),
       getAccountMeta(accounts.poolTokenRecord),
       getAccountMeta(accounts.tokenMetadataProgram),
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
+      getAccountMeta(accounts.nftReceipt),
+      getAccountMeta(accounts.ownerTa),
+      getAccountMeta(accounts.poolTa),
+      getAccountMeta(accounts.tokenProgram),
+      getAccountMeta(accounts.associatedTokenProgram),
+      getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
     data: getWithdrawNftInstructionDataEncoder().encode(
@@ -723,21 +771,23 @@ export function getWithdrawNftInstruction<
     typeof TENSOR_AMM_PROGRAM_ADDRESS,
     TAccountOwner,
     TAccountPool,
+    TAccountWhitelist,
+    TAccountMintProof,
     TAccountMint,
-    TAccountOwnerTa,
-    TAccountPoolTa,
-    TAccountNftReceipt,
-    TAccountTokenProgram,
-    TAccountAssociatedTokenProgram,
-    TAccountSystemProgram,
     TAccountMetadata,
     TAccountEdition,
-    TAccountOwnerTokenRecord,
+    TAccountUserTokenRecord,
     TAccountPoolTokenRecord,
     TAccountTokenMetadataProgram,
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
-    TAccountAuthorizationRulesProgram
+    TAccountAuthorizationRulesProgram,
+    TAccountNftReceipt,
+    TAccountOwnerTa,
+    TAccountPoolTa,
+    TAccountTokenProgram,
+    TAccountAssociatedTokenProgram,
+    TAccountSystemProgram
   >;
 
   return instruction;
@@ -749,40 +799,52 @@ export type ParsedWithdrawNftInstruction<
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    /** The owner of the pool and will receive the NFT at the owner_ta account. */
+    /** The owner of the pool and the NFT. */
     owner: TAccountMetas[0];
-    /** The pool from which the NFT will be withdrawn. */
+    /** The pool the NFT is being transferred to/from. */
     pool: TAccountMetas[1];
-    /** The mint of the NFT. */
-    mint: TAccountMetas[2];
-    /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
-    ownerTa: TAccountMetas[3];
-    /** The TA of the pool, where the NFT token is escrowed. */
-    poolTa: TAccountMetas[4];
-    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
-    nftReceipt: TAccountMetas[5];
-    /** The SPL Token program for the Mint and ATAs. */
-    tokenProgram: TAccountMetas[6];
-    /** The SPL associated token program. */
-    associatedTokenProgram: TAccountMetas[7];
-    /** The Solana system program. */
-    systemProgram: TAccountMetas[8];
+    /**
+     * The whitelist that gatekeeps which NFTs can be deposited into the pool.
+     * Must match the whitelist stored in the pool state.
+     */
+
+    whitelist?: TAccountMetas[2] | undefined;
+    /**
+     * Optional account which must be passed in if the NFT must be verified against a
+     * merkle proof condition in the whitelist.
+     */
+
+    mintProof?: TAccountMetas[3] | undefined;
+    /** The mint account of the NFT. */
+    mint: TAccountMetas[4];
     /** The Token Metadata metadata account of the NFT. */
-    metadata: TAccountMetas[9];
-    /** The Token Metadata edition of the NFT. */
-    edition: TAccountMetas[10];
-    /** The Token Metadata owner's token record account of the NFT. */
-    ownerTokenRecord?: TAccountMetas[11] | undefined;
-    /** The Token Metadata token record for the pool. */
-    poolTokenRecord?: TAccountMetas[12] | undefined;
+    metadata: TAccountMetas[5];
+    /** The Token Metadata edition account of the NFT. */
+    edition: TAccountMetas[6];
+    /** The Token Metadata source token record account of the NFT. */
+    userTokenRecord?: TAccountMetas[7] | undefined;
+    /** The Token Metadata token record for the destination. */
+    poolTokenRecord?: TAccountMetas[8] | undefined;
     /** The Token Metadata program account. */
-    tokenMetadataProgram?: TAccountMetas[13] | undefined;
+    tokenMetadataProgram?: TAccountMetas[9] | undefined;
     /** The sysvar instructions account. */
-    sysvarInstructions?: TAccountMetas[14] | undefined;
+    sysvarInstructions?: TAccountMetas[10] | undefined;
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authorizationRules?: TAccountMetas[15] | undefined;
+    authorizationRules?: TAccountMetas[11] | undefined;
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram?: TAccountMetas[16] | undefined;
+    authorizationRulesProgram?: TAccountMetas[12] | undefined;
+    /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
+    nftReceipt: TAccountMetas[13];
+    /** The TA of the owner, where the NFT will be transferred to as a result of this action. */
+    ownerTa: TAccountMetas[14];
+    /** The TA of the pool, where the NFT token is escrowed. */
+    poolTa: TAccountMetas[15];
+    /** The SPL Token program for the Mint and ATAs. */
+    tokenProgram: TAccountMetas[16];
+    /** The SPL associated token program. */
+    associatedTokenProgram: TAccountMetas[17];
+    /** The Solana system program. */
+    systemProgram: TAccountMetas[18];
   };
   data: WithdrawNftInstructionData;
 };
@@ -795,7 +857,7 @@ export function parseWithdrawNftInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedWithdrawNftInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 17) {
+  if (instruction.accounts.length < 19) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -816,21 +878,23 @@ export function parseWithdrawNftInstruction<
     accounts: {
       owner: getNextAccount(),
       pool: getNextAccount(),
+      whitelist: getNextOptionalAccount(),
+      mintProof: getNextOptionalAccount(),
       mint: getNextAccount(),
-      ownerTa: getNextAccount(),
-      poolTa: getNextAccount(),
-      nftReceipt: getNextAccount(),
-      tokenProgram: getNextAccount(),
-      associatedTokenProgram: getNextAccount(),
-      systemProgram: getNextAccount(),
       metadata: getNextAccount(),
       edition: getNextAccount(),
-      ownerTokenRecord: getNextOptionalAccount(),
+      userTokenRecord: getNextOptionalAccount(),
       poolTokenRecord: getNextOptionalAccount(),
       tokenMetadataProgram: getNextOptionalAccount(),
       sysvarInstructions: getNextOptionalAccount(),
       authorizationRules: getNextOptionalAccount(),
       authorizationRulesProgram: getNextOptionalAccount(),
+      nftReceipt: getNextAccount(),
+      ownerTa: getNextAccount(),
+      poolTa: getNextAccount(),
+      tokenProgram: getNextAccount(),
+      associatedTokenProgram: getNextAccount(),
+      systemProgram: getNextAccount(),
     },
     data: getWithdrawNftInstructionDataDecoder().decode(instruction.data),
   };

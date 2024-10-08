@@ -26,6 +26,7 @@ import {
   createPool,
   createPoolThrows,
   createWhitelistV2,
+  CURRENT_POOL_VERSION,
   getAndFundOwner,
   tokenPoolConfig,
   tradePoolConfig,
@@ -76,7 +77,7 @@ test('it can create a pool w/ correct timestamps', async (t) => {
   t.like(poolAccount, <Pool>(<unknown>{
     address: pool,
     data: {
-      version: 0,
+      version: CURRENT_POOL_VERSION,
       config: {
         poolType: 0,
         curveType: 0,
@@ -395,6 +396,7 @@ test('it can create a pool w/ shared escrow', async (t) => {
   t.like(poolAccount, <Account<Pool, Address>>{
     address: pool,
     data: {
+      version: CURRENT_POOL_VERSION,
       config: {
         poolType: 0,
         curveType: 0,

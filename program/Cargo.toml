@@ -1,6 +1,6 @@
 [package]
 name = "amm-program"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 readme = "./README.md"
 license-file = "../LICENSE"
@@ -22,7 +22,10 @@ program-dependencies = [
     "TokExjvjJmhKaRBShsBAsbSvEWMA1AgUNK7ps4SAc2p",
     "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
 ]
-account-dependencies = ["99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G"]
+account-dependencies = [
+    "99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G",
+    "AdH2Utn6Fus15ZhtenW4hZBQnvtLgM1YCW2MfVp7pYS5",
+]
 external-programs-repositories = [
     [
         "tensor-foundation/escrow",
@@ -48,14 +51,18 @@ escrow-program = { version = "0.1.0", package = "escrow-program", git = "ssh://g
     "cpi",
 ] }
 mpl-core = { package = "mpl-core", version = "0.7.2" }
-mpl-token-metadata = "4.0.0"
+mpl-token-metadata = "4.1.2"
 solana-program = "<1.18"
 spl-math = { version = "0.1.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 static_assertions = "1.1.0"
 tensor-escrow = { version = "0.1.1" }
-tensor-toolbox = { version = "0.1.0", features = ["token-2022", "mpl-core"] }
-tensor-vipers = { version = "1.0.0" }
+tensor-toolbox = { version = "0.5.0", features = ["token-2022", "mpl-core"] }
+tensor-vipers = { version = "1.0.1" }
 whitelist-program = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", rev = "346eac4", features = [
     "cpi",
 ] }
+
+[lints.rust]
+unused_must_use = "deny"
+unused_imports = "deny"

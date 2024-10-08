@@ -38,6 +38,9 @@ export default function visitor(options) {
         },
         depositNftCore: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             nftReceipt: {
               defaultValue: k.pdaValueNode("assetDepositReceipt")
             }
@@ -52,6 +55,9 @@ export default function visitor(options) {
         },
         sellNftTokenPoolCore: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             feeVault: {
               defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
                 dependsOn: [k.accountValueNode("pool")]
@@ -77,6 +83,9 @@ export default function visitor(options) {
         },
         sellNftTradePoolCore: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             feeVault: {
               defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
                 dependsOn: [k.accountValueNode("pool")]

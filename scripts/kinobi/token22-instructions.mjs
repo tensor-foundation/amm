@@ -41,6 +41,9 @@ export default function visitor(options) {
         },
         depositNftT22: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             tokenProgram: {
               defaultValue: k.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
@@ -61,6 +64,9 @@ export default function visitor(options) {
         },
         sellNftTradePoolT22: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             tokenProgram: {
               defaultValue: k.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
@@ -89,6 +95,9 @@ export default function visitor(options) {
         },
         sellNftTokenPoolT22: {
           accounts: {
+            whitelist: {
+              isOptional: false
+            },
             tokenProgram: {
               defaultValue: k.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",

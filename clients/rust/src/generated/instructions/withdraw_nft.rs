@@ -11,31 +11,25 @@ use borsh::BorshSerialize;
 
 /// Accounts.
 pub struct WithdrawNft {
-    /// The owner of the pool and will receive the NFT at the owner_ta account.
+    /// The owner of the pool and the NFT.
     pub owner: solana_program::pubkey::Pubkey,
-    /// The pool from which the NFT will be withdrawn.
+    /// The pool the NFT is being transferred to/from.
     pub pool: solana_program::pubkey::Pubkey,
-    /// The mint of the NFT.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    pub whitelist: Option<solana_program::pubkey::Pubkey>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<solana_program::pubkey::Pubkey>,
+    /// The mint account of the NFT.
     pub mint: solana_program::pubkey::Pubkey,
-    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
-    pub owner_ta: solana_program::pubkey::Pubkey,
-    /// The TA of the pool, where the NFT token is escrowed.
-    pub pool_ta: solana_program::pubkey::Pubkey,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: solana_program::pubkey::Pubkey,
-    /// The SPL Token program for the Mint and ATAs.
-    pub token_program: solana_program::pubkey::Pubkey,
-    /// The SPL associated token program.
-    pub associated_token_program: solana_program::pubkey::Pubkey,
-    /// The Solana system program.
-    pub system_program: solana_program::pubkey::Pubkey,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: solana_program::pubkey::Pubkey,
-    /// The Token Metadata edition of the NFT.
+    /// The Token Metadata edition account of the NFT.
     pub edition: solana_program::pubkey::Pubkey,
-    /// The Token Metadata owner's token record account of the NFT.
-    pub owner_token_record: Option<solana_program::pubkey::Pubkey>,
-    /// The Token Metadata token record for the pool.
+    /// The Token Metadata source token record account of the NFT.
+    pub user_token_record: Option<solana_program::pubkey::Pubkey>,
+    /// The Token Metadata token record for the destination.
     pub pool_token_record: Option<solana_program::pubkey::Pubkey>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<solana_program::pubkey::Pubkey>,
@@ -45,6 +39,18 @@ pub struct WithdrawNft {
     pub authorization_rules: Option<solana_program::pubkey::Pubkey>,
     /// The Metaplex Token Authority Rules program account.
     pub authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: solana_program::pubkey::Pubkey,
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
+    pub owner_ta: solana_program::pubkey::Pubkey,
+    /// The TA of the pool, where the NFT token is escrowed.
+    pub pool_ta: solana_program::pubkey::Pubkey,
+    /// The SPL Token program for the Mint and ATAs.
+    pub token_program: solana_program::pubkey::Pubkey,
+    /// The SPL associated token program.
+    pub associated_token_program: solana_program::pubkey::Pubkey,
+    /// The Solana system program.
+    pub system_program: solana_program::pubkey::Pubkey,
 }
 
 impl WithdrawNft {
@@ -60,39 +66,35 @@ impl WithdrawNft {
         args: WithdrawNftInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.pool, false,
         ));
+        if let Some(whitelist) = self.whitelist {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                whitelist, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                mint_proof, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.mint, false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.owner_ta,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.pool_ta,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            self.nft_receipt,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.token_program,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.associated_token_program,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.system_program,
-            false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.metadata,
@@ -102,9 +104,9 @@ impl WithdrawNft {
             self.edition,
             false,
         ));
-        if let Some(owner_token_record) = self.owner_token_record {
+        if let Some(user_token_record) = self.user_token_record {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                owner_token_record,
+                user_token_record,
                 false,
             ));
         } else {
@@ -168,6 +170,30 @@ impl WithdrawNft {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.nft_receipt,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.owner_ta,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            self.pool_ta,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.token_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.associated_token_program,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.system_program,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = WithdrawNftInstructionData::new().try_to_vec().unwrap();
         let mut args = args.try_to_vec().unwrap();
@@ -212,40 +238,44 @@ pub struct WithdrawNftInstructionArgs {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[]` mint
-///   3. `[writable]` owner_ta
-///   4. `[writable]` pool_ta
-///   5. `[writable]` nft_receipt
-///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   7. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   9. `[writable]` metadata
-///   10. `[]` edition
-///   11. `[writable, optional]` owner_token_record
-///   12. `[writable, optional]` pool_token_record
-///   13. `[optional]` token_metadata_program
-///   14. `[optional]` sysvar_instructions
-///   15. `[optional]` authorization_rules
-///   16. `[optional]` authorization_rules_program
+///   2. `[optional]` whitelist
+///   3. `[optional]` mint_proof
+///   4. `[]` mint
+///   5. `[writable]` metadata
+///   6. `[]` edition
+///   7. `[writable, optional]` user_token_record
+///   8. `[writable, optional]` pool_token_record
+///   9. `[optional]` token_metadata_program
+///   10. `[optional]` sysvar_instructions
+///   11. `[optional]` authorization_rules
+///   12. `[optional]` authorization_rules_program
+///   13. `[writable]` nft_receipt
+///   14. `[writable]` owner_ta
+///   15. `[writable]` pool_ta
+///   16. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
+///   17. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   18. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct WithdrawNftBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
+    whitelist: Option<solana_program::pubkey::Pubkey>,
+    mint_proof: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
-    owner_ta: Option<solana_program::pubkey::Pubkey>,
-    pool_ta: Option<solana_program::pubkey::Pubkey>,
-    nft_receipt: Option<solana_program::pubkey::Pubkey>,
-    token_program: Option<solana_program::pubkey::Pubkey>,
-    associated_token_program: Option<solana_program::pubkey::Pubkey>,
-    system_program: Option<solana_program::pubkey::Pubkey>,
     metadata: Option<solana_program::pubkey::Pubkey>,
     edition: Option<solana_program::pubkey::Pubkey>,
-    owner_token_record: Option<solana_program::pubkey::Pubkey>,
+    user_token_record: Option<solana_program::pubkey::Pubkey>,
     pool_token_record: Option<solana_program::pubkey::Pubkey>,
     token_metadata_program: Option<solana_program::pubkey::Pubkey>,
     sysvar_instructions: Option<solana_program::pubkey::Pubkey>,
     authorization_rules: Option<solana_program::pubkey::Pubkey>,
     authorization_rules_program: Option<solana_program::pubkey::Pubkey>,
+    nft_receipt: Option<solana_program::pubkey::Pubkey>,
+    owner_ta: Option<solana_program::pubkey::Pubkey>,
+    pool_ta: Option<solana_program::pubkey::Pubkey>,
+    token_program: Option<solana_program::pubkey::Pubkey>,
+    associated_token_program: Option<solana_program::pubkey::Pubkey>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
     authorization_data: Option<AuthorizationDataLocal>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -254,64 +284,38 @@ impl WithdrawNftBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// The owner of the pool and will receive the NFT at the owner_ta account.
+    /// The owner of the pool and the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_program::pubkey::Pubkey) -> &mut Self {
         self.owner = Some(owner);
         self
     }
-    /// The pool from which the NFT will be withdrawn.
+    /// The pool the NFT is being transferred to/from.
     #[inline(always)]
     pub fn pool(&mut self, pool: solana_program::pubkey::Pubkey) -> &mut Self {
         self.pool = Some(pool);
         self
     }
-    /// The mint of the NFT.
+    /// `[optional account]`
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    #[inline(always)]
+    pub fn whitelist(&mut self, whitelist: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.whitelist = whitelist;
+        self
+    }
+    /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    #[inline(always)]
+    pub fn mint_proof(&mut self, mint_proof: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
+        self.mint_proof = mint_proof;
+        self
+    }
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
         self.mint = Some(mint);
-        self
-    }
-    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
-    #[inline(always)]
-    pub fn owner_ta(&mut self, owner_ta: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.owner_ta = Some(owner_ta);
-        self
-    }
-    /// The TA of the pool, where the NFT token is escrowed.
-    #[inline(always)]
-    pub fn pool_ta(&mut self, pool_ta: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.pool_ta = Some(pool_ta);
-        self
-    }
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    #[inline(always)]
-    pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.nft_receipt = Some(nft_receipt);
-        self
-    }
-    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
-    /// The SPL Token program for the Mint and ATAs.
-    #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.token_program = Some(token_program);
-        self
-    }
-    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
-    /// The SPL associated token program.
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: solana_program::pubkey::Pubkey,
-    ) -> &mut Self {
-        self.associated_token_program = Some(associated_token_program);
-        self
-    }
-    /// `[optional account, default to '11111111111111111111111111111111']`
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.system_program = Some(system_program);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -320,24 +324,24 @@ impl WithdrawNftBuilder {
         self.metadata = Some(metadata);
         self
     }
-    /// The Token Metadata edition of the NFT.
+    /// The Token Metadata edition account of the NFT.
     #[inline(always)]
     pub fn edition(&mut self, edition: solana_program::pubkey::Pubkey) -> &mut Self {
         self.edition = Some(edition);
         self
     }
     /// `[optional account]`
-    /// The Token Metadata owner's token record account of the NFT.
+    /// The Token Metadata source token record account of the NFT.
     #[inline(always)]
-    pub fn owner_token_record(
+    pub fn user_token_record(
         &mut self,
-        owner_token_record: Option<solana_program::pubkey::Pubkey>,
+        user_token_record: Option<solana_program::pubkey::Pubkey>,
     ) -> &mut Self {
-        self.owner_token_record = owner_token_record;
+        self.user_token_record = user_token_record;
         self
     }
     /// `[optional account]`
-    /// The Token Metadata token record for the pool.
+    /// The Token Metadata token record for the destination.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
@@ -386,6 +390,48 @@ impl WithdrawNftBuilder {
         self.authorization_rules_program = authorization_rules_program;
         self
     }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    #[inline(always)]
+    pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.nft_receipt = Some(nft_receipt);
+        self
+    }
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
+    #[inline(always)]
+    pub fn owner_ta(&mut self, owner_ta: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.owner_ta = Some(owner_ta);
+        self
+    }
+    /// The TA of the pool, where the NFT token is escrowed.
+    #[inline(always)]
+    pub fn pool_ta(&mut self, pool_ta: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.pool_ta = Some(pool_ta);
+        self
+    }
+    /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
+    /// The SPL Token program for the Mint and ATAs.
+    #[inline(always)]
+    pub fn token_program(&mut self, token_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.token_program = Some(token_program);
+        self
+    }
+    /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
+    /// The SPL associated token program.
+    #[inline(always)]
+    pub fn associated_token_program(
+        &mut self,
+        associated_token_program: solana_program::pubkey::Pubkey,
+    ) -> &mut Self {
+        self.associated_token_program = Some(associated_token_program);
+        self
+    }
+    /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The Solana system program.
+    #[inline(always)]
+    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.system_program = Some(system_program);
+        self
+    }
     /// `[optional argument]`
     #[inline(always)]
     pub fn authorization_data(&mut self, authorization_data: AuthorizationDataLocal) -> &mut Self {
@@ -415,10 +461,20 @@ impl WithdrawNftBuilder {
         let accounts = WithdrawNft {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
+            whitelist: self.whitelist,
+            mint_proof: self.mint_proof,
             mint: self.mint.expect("mint is not set"),
+            metadata: self.metadata.expect("metadata is not set"),
+            edition: self.edition.expect("edition is not set"),
+            user_token_record: self.user_token_record,
+            pool_token_record: self.pool_token_record,
+            token_metadata_program: self.token_metadata_program,
+            sysvar_instructions: self.sysvar_instructions,
+            authorization_rules: self.authorization_rules,
+            authorization_rules_program: self.authorization_rules_program,
+            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             owner_ta: self.owner_ta.expect("owner_ta is not set"),
             pool_ta: self.pool_ta.expect("pool_ta is not set"),
-            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
@@ -428,14 +484,6 @@ impl WithdrawNftBuilder {
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            metadata: self.metadata.expect("metadata is not set"),
-            edition: self.edition.expect("edition is not set"),
-            owner_token_record: self.owner_token_record,
-            pool_token_record: self.pool_token_record,
-            token_metadata_program: self.token_metadata_program,
-            sysvar_instructions: self.sysvar_instructions,
-            authorization_rules: self.authorization_rules,
-            authorization_rules_program: self.authorization_rules_program,
         };
         let args = WithdrawNftInstructionArgs {
             authorization_data: self.authorization_data.clone(),
@@ -447,31 +495,25 @@ impl WithdrawNftBuilder {
 
 /// `withdraw_nft` CPI accounts.
 pub struct WithdrawNftCpiAccounts<'a, 'b> {
-    /// The owner of the pool and will receive the NFT at the owner_ta account.
+    /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The pool from which the NFT will be withdrawn.
+    /// The pool the NFT is being transferred to/from.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint of the NFT.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    pub whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
-    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the pool, where the NFT token is escrowed.
-    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The SPL Token program for the Mint and ATAs.
-    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The SPL associated token program.
-    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Token Metadata edition of the NFT.
+    /// The Token Metadata edition account of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Token Metadata owner's token record account of the NFT.
-    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata token record for the pool.
+    /// The Token Metadata source token record account of the NFT.
+    pub user_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The Token Metadata token record for the destination.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -481,37 +523,43 @@ pub struct WithdrawNftCpiAccounts<'a, 'b> {
     pub authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Metaplex Token Authority Rules program account.
     pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
+    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The TA of the pool, where the NFT token is escrowed.
+    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The SPL Token program for the Mint and ATAs.
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The SPL associated token program.
+    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `withdraw_nft` CPI instruction.
 pub struct WithdrawNftCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The owner of the pool and will receive the NFT at the owner_ta account.
+    /// The owner of the pool and the NFT.
     pub owner: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The pool from which the NFT will be withdrawn.
+    /// The pool the NFT is being transferred to/from.
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The mint of the NFT.
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    pub whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    pub mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
-    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The TA of the pool, where the NFT token is escrowed.
-    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The SPL Token program for the Mint and ATAs.
-    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The SPL associated token program.
-    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The Token Metadata metadata account of the NFT.
     pub metadata: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Token Metadata edition of the NFT.
+    /// The Token Metadata edition account of the NFT.
     pub edition: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Token Metadata owner's token record account of the NFT.
-    pub owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    /// The Token Metadata token record for the pool.
+    /// The Token Metadata source token record account of the NFT.
+    pub user_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The Token Metadata token record for the destination.
     pub pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Token Metadata program account.
     pub token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
@@ -521,6 +569,18 @@ pub struct WithdrawNftCpi<'a, 'b> {
     pub authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Metaplex Token Authority Rules program account.
     pub authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
+    pub owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The TA of the pool, where the NFT token is escrowed.
+    pub pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The SPL Token program for the Mint and ATAs.
+    pub token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The SPL associated token program.
+    pub associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The Solana system program.
+    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: WithdrawNftInstructionArgs,
 }
@@ -535,21 +595,23 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             __program: program,
             owner: accounts.owner,
             pool: accounts.pool,
+            whitelist: accounts.whitelist,
+            mint_proof: accounts.mint_proof,
             mint: accounts.mint,
-            owner_ta: accounts.owner_ta,
-            pool_ta: accounts.pool_ta,
-            nft_receipt: accounts.nft_receipt,
-            token_program: accounts.token_program,
-            associated_token_program: accounts.associated_token_program,
-            system_program: accounts.system_program,
             metadata: accounts.metadata,
             edition: accounts.edition,
-            owner_token_record: accounts.owner_token_record,
+            user_token_record: accounts.user_token_record,
             pool_token_record: accounts.pool_token_record,
             token_metadata_program: accounts.token_metadata_program,
             sysvar_instructions: accounts.sysvar_instructions,
             authorization_rules: accounts.authorization_rules,
             authorization_rules_program: accounts.authorization_rules_program,
+            nft_receipt: accounts.nft_receipt,
+            owner_ta: accounts.owner_ta,
+            pool_ta: accounts.pool_ta,
+            token_program: accounts.token_program,
+            associated_token_program: accounts.associated_token_program,
+            system_program: accounts.system_program,
             __args: args,
         }
     }
@@ -586,7 +648,7 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(19 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             true,
@@ -595,32 +657,30 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             *self.pool.key,
             false,
         ));
+        if let Some(whitelist) = self.whitelist {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *whitelist.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *mint_proof.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.mint.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.owner_ta.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.pool_ta.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.nft_receipt.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.token_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.associated_token_program.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.system_program.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -631,9 +691,9 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             *self.edition.key,
             false,
         ));
-        if let Some(owner_token_record) = self.owner_token_record {
+        if let Some(user_token_record) = self.user_token_record {
             accounts.push(solana_program::instruction::AccountMeta::new(
-                *owner_token_record.key,
+                *user_token_record.key,
                 false,
             ));
         } else {
@@ -697,6 +757,30 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
                 false,
             ));
         }
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.nft_receipt.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.owner_ta.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new(
+            *self.pool_ta.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.token_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.associated_token_program.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.system_program.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -713,21 +797,21 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(17 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(19 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
+        if let Some(whitelist) = self.whitelist {
+            account_infos.push(whitelist.clone());
+        }
+        if let Some(mint_proof) = self.mint_proof {
+            account_infos.push(mint_proof.clone());
+        }
         account_infos.push(self.mint.clone());
-        account_infos.push(self.owner_ta.clone());
-        account_infos.push(self.pool_ta.clone());
-        account_infos.push(self.nft_receipt.clone());
-        account_infos.push(self.token_program.clone());
-        account_infos.push(self.associated_token_program.clone());
-        account_infos.push(self.system_program.clone());
         account_infos.push(self.metadata.clone());
         account_infos.push(self.edition.clone());
-        if let Some(owner_token_record) = self.owner_token_record {
-            account_infos.push(owner_token_record.clone());
+        if let Some(user_token_record) = self.user_token_record {
+            account_infos.push(user_token_record.clone());
         }
         if let Some(pool_token_record) = self.pool_token_record {
             account_infos.push(pool_token_record.clone());
@@ -744,6 +828,12 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
         if let Some(authorization_rules_program) = self.authorization_rules_program {
             account_infos.push(authorization_rules_program.clone());
         }
+        account_infos.push(self.nft_receipt.clone());
+        account_infos.push(self.owner_ta.clone());
+        account_infos.push(self.pool_ta.clone());
+        account_infos.push(self.token_program.clone());
+        account_infos.push(self.associated_token_program.clone());
+        account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -762,21 +852,23 @@ impl<'a, 'b> WithdrawNftCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` owner
 ///   1. `[writable]` pool
-///   2. `[]` mint
-///   3. `[writable]` owner_ta
-///   4. `[writable]` pool_ta
-///   5. `[writable]` nft_receipt
-///   6. `[]` token_program
-///   7. `[]` associated_token_program
-///   8. `[]` system_program
-///   9. `[writable]` metadata
-///   10. `[]` edition
-///   11. `[writable, optional]` owner_token_record
-///   12. `[writable, optional]` pool_token_record
-///   13. `[optional]` token_metadata_program
-///   14. `[optional]` sysvar_instructions
-///   15. `[optional]` authorization_rules
-///   16. `[optional]` authorization_rules_program
+///   2. `[optional]` whitelist
+///   3. `[optional]` mint_proof
+///   4. `[]` mint
+///   5. `[writable]` metadata
+///   6. `[]` edition
+///   7. `[writable, optional]` user_token_record
+///   8. `[writable, optional]` pool_token_record
+///   9. `[optional]` token_metadata_program
+///   10. `[optional]` sysvar_instructions
+///   11. `[optional]` authorization_rules
+///   12. `[optional]` authorization_rules_program
+///   13. `[writable]` nft_receipt
+///   14. `[writable]` owner_ta
+///   15. `[writable]` pool_ta
+///   16. `[]` token_program
+///   17. `[]` associated_token_program
+///   18. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct WithdrawNftCpiBuilder<'a, 'b> {
     instruction: Box<WithdrawNftCpiBuilderInstruction<'a, 'b>>,
@@ -788,96 +880,66 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
             __program: program,
             owner: None,
             pool: None,
+            whitelist: None,
+            mint_proof: None,
             mint: None,
-            owner_ta: None,
-            pool_ta: None,
-            nft_receipt: None,
-            token_program: None,
-            associated_token_program: None,
-            system_program: None,
             metadata: None,
             edition: None,
-            owner_token_record: None,
+            user_token_record: None,
             pool_token_record: None,
             token_metadata_program: None,
             sysvar_instructions: None,
             authorization_rules: None,
             authorization_rules_program: None,
+            nft_receipt: None,
+            owner_ta: None,
+            pool_ta: None,
+            token_program: None,
+            associated_token_program: None,
+            system_program: None,
             authorization_data: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
-    /// The owner of the pool and will receive the NFT at the owner_ta account.
+    /// The owner of the pool and the NFT.
     #[inline(always)]
     pub fn owner(&mut self, owner: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.owner = Some(owner);
         self
     }
-    /// The pool from which the NFT will be withdrawn.
+    /// The pool the NFT is being transferred to/from.
     #[inline(always)]
     pub fn pool(&mut self, pool: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.pool = Some(pool);
         self
     }
-    /// The mint of the NFT.
+    /// `[optional account]`
+    /// The whitelist that gatekeeps which NFTs can be deposited into the pool.
+    /// Must match the whitelist stored in the pool state.
+    #[inline(always)]
+    pub fn whitelist(
+        &mut self,
+        whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.whitelist = whitelist;
+        self
+    }
+    /// `[optional account]`
+    /// Optional account which must be passed in if the NFT must be verified against a
+    /// merkle proof condition in the whitelist.
+    #[inline(always)]
+    pub fn mint_proof(
+        &mut self,
+        mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.mint_proof = mint_proof;
+        self
+    }
+    /// The mint account of the NFT.
     #[inline(always)]
     pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.mint = Some(mint);
-        self
-    }
-    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
-    #[inline(always)]
-    pub fn owner_ta(
-        &mut self,
-        owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.owner_ta = Some(owner_ta);
-        self
-    }
-    /// The TA of the pool, where the NFT token is escrowed.
-    #[inline(always)]
-    pub fn pool_ta(
-        &mut self,
-        pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_ta = Some(pool_ta);
-        self
-    }
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    #[inline(always)]
-    pub fn nft_receipt(
-        &mut self,
-        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nft_receipt = Some(nft_receipt);
-        self
-    }
-    /// The SPL Token program for the Mint and ATAs.
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    /// The SPL associated token program.
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
-    }
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
         self
     }
     /// The Token Metadata metadata account of the NFT.
@@ -889,7 +951,7 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self.instruction.metadata = Some(metadata);
         self
     }
-    /// The Token Metadata edition of the NFT.
+    /// The Token Metadata edition account of the NFT.
     #[inline(always)]
     pub fn edition(
         &mut self,
@@ -899,17 +961,17 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         self
     }
     /// `[optional account]`
-    /// The Token Metadata owner's token record account of the NFT.
+    /// The Token Metadata source token record account of the NFT.
     #[inline(always)]
-    pub fn owner_token_record(
+    pub fn user_token_record(
         &mut self,
-        owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+        user_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
-        self.instruction.owner_token_record = owner_token_record;
+        self.instruction.user_token_record = user_token_record;
         self
     }
     /// `[optional account]`
-    /// The Token Metadata token record for the pool.
+    /// The Token Metadata token record for the destination.
     #[inline(always)]
     pub fn pool_token_record(
         &mut self,
@@ -956,6 +1018,60 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
         authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.authorization_rules_program = authorization_rules_program;
+        self
+    }
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    #[inline(always)]
+    pub fn nft_receipt(
+        &mut self,
+        nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.nft_receipt = Some(nft_receipt);
+        self
+    }
+    /// The TA of the owner, where the NFT will be transferred to as a result of this action.
+    #[inline(always)]
+    pub fn owner_ta(
+        &mut self,
+        owner_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.owner_ta = Some(owner_ta);
+        self
+    }
+    /// The TA of the pool, where the NFT token is escrowed.
+    #[inline(always)]
+    pub fn pool_ta(
+        &mut self,
+        pool_ta: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.pool_ta = Some(pool_ta);
+        self
+    }
+    /// The SPL Token program for the Mint and ATAs.
+    #[inline(always)]
+    pub fn token_program(
+        &mut self,
+        token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.token_program = Some(token_program);
+        self
+    }
+    /// The SPL associated token program.
+    #[inline(always)]
+    pub fn associated_token_program(
+        &mut self,
+        associated_token_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.associated_token_program = Some(associated_token_program);
+        self
+    }
+    /// The Solana system program.
+    #[inline(always)]
+    pub fn system_program(
+        &mut self,
+        system_program: &'b solana_program::account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.system_program = Some(system_program);
         self
     }
     /// `[optional argument]`
@@ -1015,16 +1131,36 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
 
             pool: self.instruction.pool.expect("pool is not set"),
 
+            whitelist: self.instruction.whitelist,
+
+            mint_proof: self.instruction.mint_proof,
+
             mint: self.instruction.mint.expect("mint is not set"),
 
-            owner_ta: self.instruction.owner_ta.expect("owner_ta is not set"),
+            metadata: self.instruction.metadata.expect("metadata is not set"),
 
-            pool_ta: self.instruction.pool_ta.expect("pool_ta is not set"),
+            edition: self.instruction.edition.expect("edition is not set"),
+
+            user_token_record: self.instruction.user_token_record,
+
+            pool_token_record: self.instruction.pool_token_record,
+
+            token_metadata_program: self.instruction.token_metadata_program,
+
+            sysvar_instructions: self.instruction.sysvar_instructions,
+
+            authorization_rules: self.instruction.authorization_rules,
+
+            authorization_rules_program: self.instruction.authorization_rules_program,
 
             nft_receipt: self
                 .instruction
                 .nft_receipt
                 .expect("nft_receipt is not set"),
+
+            owner_ta: self.instruction.owner_ta.expect("owner_ta is not set"),
+
+            pool_ta: self.instruction.pool_ta.expect("pool_ta is not set"),
 
             token_program: self
                 .instruction
@@ -1040,22 +1176,6 @@ impl<'a, 'b> WithdrawNftCpiBuilder<'a, 'b> {
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-
-            metadata: self.instruction.metadata.expect("metadata is not set"),
-
-            edition: self.instruction.edition.expect("edition is not set"),
-
-            owner_token_record: self.instruction.owner_token_record,
-
-            pool_token_record: self.instruction.pool_token_record,
-
-            token_metadata_program: self.instruction.token_metadata_program,
-
-            sysvar_instructions: self.instruction.sysvar_instructions,
-
-            authorization_rules: self.instruction.authorization_rules,
-
-            authorization_rules_program: self.instruction.authorization_rules_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1070,21 +1190,23 @@ struct WithdrawNftCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    mint_proof: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    owner_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    pool_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     metadata: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     edition: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    owner_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    user_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_token_record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_metadata_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     sysvar_instructions: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authorization_rules: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authorization_rules_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    owner_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pool_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    associated_token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     authorization_data: Option<AuthorizationDataLocal>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

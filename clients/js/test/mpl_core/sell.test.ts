@@ -19,8 +19,6 @@ import {
   NftDepositReceipt,
   PoolType,
   TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_COSIGNER,
-  TENSOR_AMM_ERROR__MISSING_MAKER_BROKER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
@@ -87,7 +85,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     asset: asset.address,
@@ -195,7 +193,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     asset: asset.address,
@@ -286,7 +284,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     asset: asset.address,
@@ -374,7 +372,7 @@ test('token pool autocloses when currency amount drops below current price', asy
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     rentPayer: poolOwner.address, // rent payer
     pool,
     whitelist,
@@ -433,7 +431,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
 
   const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     asset: asset.address,
@@ -477,7 +475,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address, // pool owner
-    seller: nftOwner, // nft owner--the seller
+    taker: nftOwner, // nft owner--the seller
     pool,
     whitelist,
     asset: asset.address,
@@ -524,7 +522,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -571,7 +569,7 @@ test('it cannot sell an NFT into a trade pool incorrect cosigner', async (t) => 
   // Sell NFT into pool without specififying cosigner
   const sellNftIxNoCosigner = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -585,17 +583,13 @@ test('it cannot sell an NFT into a trade pool incorrect cosigner', async (t) => 
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(
-    t,
-    promiseNoCosigner,
-    TENSOR_AMM_ERROR__MISSING_COSIGNER
-  );
+  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner =
     await getSellNftTradePoolCoreInstructionAsync({
       owner: poolOwner.address,
-      seller: nftOwner,
+      taker: nftOwner,
       pool,
       asset: asset.address,
       collection: collection.address,
@@ -689,7 +683,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   // Sell NFT into pool w/ specifying pool's whitelist & non-matching mint
   const sellNftIxPoolWL = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -710,7 +704,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -805,7 +799,7 @@ test('it can sell a NFT into a trade pool and pay the correct amount of royaltie
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -867,7 +861,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     asset: asset.address,
@@ -946,7 +940,7 @@ test('it can sell a NFT into a token pool w/ Merkle root whitelist', async (t) =
   // Sell NFT into pool
   const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     mintProof,
@@ -999,7 +993,7 @@ test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) =
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     whitelist,
     mintProof,
@@ -1044,7 +1038,7 @@ test('token pool with makerBroker set requires passing the account in & fails w/
 
   let sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,
@@ -1061,11 +1055,11 @@ test('token pool with makerBroker set requires passing the account in & fails w/
   );
 
   // Should fail with a missing makerBroker error.
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__MISSING_MAKER_BROKER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
 
   sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
     owner: poolOwner.address,
-    seller: nftOwner,
+    taker: nftOwner,
     pool,
     asset: asset.address,
     collection: collection.address,

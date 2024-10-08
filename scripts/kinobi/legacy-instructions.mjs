@@ -12,6 +12,20 @@ export default function visitor(options) {
     updateRoot(
       k.updateInstructionsVisitor({
         buyNft: {
+          accounts: {
+            userTokenRecord: {
+              isOptional: true,
+              defaultValue: k.resolverValueNode(
+                "resolveUserTokenRecordFromTokenStandard",
+                {
+                  dependsOn: [
+                    k.accountValueNode("mint"),
+                    k.accountValueNode("takerTa")
+                  ]
+                }
+              )
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -33,6 +47,23 @@ export default function visitor(options) {
           ]
         },
         depositNft: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            },
+            userTokenRecord: {
+              isOptional: true,
+              defaultValue: k.resolverValueNode(
+                "resolveUserTokenRecordFromTokenStandard",
+                {
+                  dependsOn: [
+                    k.accountValueNode("mint"),
+                    k.accountValueNode("ownerTa")
+                  ]
+                }
+              )
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -44,6 +75,23 @@ export default function visitor(options) {
           }
         },
         sellNftTokenPool: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            },
+            userTokenRecord: {
+              isOptional: true,
+              defaultValue: k.resolverValueNode(
+                "resolveUserTokenRecordFromTokenStandard",
+                {
+                  dependsOn: [
+                    k.accountValueNode("mint"),
+                    k.accountValueNode("takerTa")
+                  ]
+                }
+              )
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -65,6 +113,23 @@ export default function visitor(options) {
           ]
         },
         sellNftTradePool: {
+          accounts: {
+            whitelist: {
+              isOptional: false
+            },
+            userTokenRecord: {
+              isOptional: true,
+              defaultValue: k.resolverValueNode(
+                "resolveUserTokenRecordFromTokenStandard",
+                {
+                  dependsOn: [
+                    k.accountValueNode("mint"),
+                    k.accountValueNode("takerTa")
+                  ]
+                }
+              )
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
@@ -86,6 +151,20 @@ export default function visitor(options) {
           ]
         },
         withdrawNft: {
+          accounts: {
+            userTokenRecord: {
+              isOptional: true,
+              defaultValue: k.resolverValueNode(
+                "resolveUserTokenRecordFromTokenStandard",
+                {
+                  dependsOn: [
+                    k.accountValueNode("mint"),
+                    k.accountValueNode("ownerTa")
+                  ]
+                }
+              )
+            }
+          },
           arguments: {
             tokenStandard: {
               type: k.definedTypeLinkNode("TokenStandard", "resolvers"),

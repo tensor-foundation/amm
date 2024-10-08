@@ -73,7 +73,7 @@ dependencies = [
 
 [[package]]
 name = "amm-program"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -85,7 +85,7 @@ dependencies = [
  "spl-token-metadata-interface",
  "static_assertions",
  "tensor-escrow",
- "tensor-toolbox 0.1.0",
+ "tensor-toolbox 0.5.0",
  "tensor-vipers",
  "whitelist-program",
 ]
@@ -2577,6 +2577,23 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
+ "mpl-token-metadata",
+ "solana-program",
+ "spl-account-compression",
+ "spl-noop",
+ "spl-token-metadata-interface",
+ "tensor-vipers",
+]
+
+[[package]]
+name = "tensor-toolbox"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1e060f90f279c4561375157d870d5111a1907c1f0257709b8c0778a96454622"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bytemuck",
  "mpl-core",
  "mpl-token-metadata",
  "solana-program",
@@ -2588,9 +2605,9 @@ dependencies = [
 
 [[package]]
 name = "tensor-vipers"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37fdd59bf5f00e3eea14c55b833b0c45fad12d7c017bd8a138e4360887d42011"
+checksum = "264654b48a8f359d62a7bef00997eb14550834b464ad4aab27923f105af93cc0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

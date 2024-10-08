@@ -18,6 +18,7 @@ pub(crate) mod r#seeds_vec_local;
 pub(crate) mod r#t_amm_event;
 pub(crate) mod r#tagged_payload;
 pub(crate) mod r#taker_side;
+pub(crate) mod r#transfer_direction;
 
 pub use self::r#authorization_data_local::*;
 pub use self::r#buy_sell_event::*;
@@ -32,3 +33,4 @@ pub use self::r#seeds_vec_local::*;
 pub use self::r#t_amm_event::*;
 pub use self::r#tagged_payload::*;
 pub use self::r#taker_side::*;
+pub use self::r#transfer_direction::*;

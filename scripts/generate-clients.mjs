@@ -223,6 +223,22 @@ kinobi.update(
         "systemProgram"
       )
     },
+    {
+      account: "sysProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "11111111111111111111111111111111",
+        "systemProgram"
+      )
+    },
+    {
+      account: "nativeProgram",
+      ignoreIfOptional: true,
+      defaultValue: k.publicKeyValueNode(
+        "11111111111111111111111111111111",
+        "systemProgram"
+      )
+    },
     // pNFT specific accounts
     {
       account: "tokenMetadataProgram",
@@ -263,6 +279,31 @@ kinobi.update(
       })
     },
     {
+      account: "sourceTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveSourceAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("source"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+
+    {
+      account: "destinationTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveDestinationAta", {
+        importFrom: "resolvers",
+        dependsOn: [
+          k.accountValueNode("destination"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+    {
       account: "ownerTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolveOwnerAta", {
@@ -299,6 +340,17 @@ kinobi.update(
       })
     },
     {
+      account: "takerTa",
+      ignoreIfOptional: true,
+      defaultValue: k.resolverValueNode("resolveTakerAta", {
+        dependsOn: [
+          k.accountValueNode("taker"),
+          k.accountValueNode("mint"),
+          k.accountValueNode("tokenProgram")
+        ]
+      })
+    },
+    {
       account: "poolTa",
       ignoreIfOptional: true,
       defaultValue: k.resolverValueNode("resolvePoolAta", {
@@ -309,6 +361,34 @@ kinobi.update(
           k.accountValueNode("tokenProgram")
         ]
       })
+    },
+    {
+      account: "sourceTokenRecord ",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveSourceTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("sourceTa")
+          ]
+        }
+      )
+    },
+    {
+      account: "destinationTokenRecord",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveDestinationTokenRecordFromTokenStandard",
+        {
+          importFrom: "resolvers",
+          dependsOn: [
+            k.accountValueNode("mint"),
+            k.accountValueNode("destinationTa")
+          ]
+        }
+      )
     },
     {
       account: "ownerTokenRecord",
@@ -440,10 +520,16 @@ kinobi.accept(
       "resolveOwnerAta",
       "resolveBuyerAta",
       "resolveSellerAta",
+      "resolveTakerAta",
       "resolvePoolAta",
+      "resolveSourceAta",
+      "resolveDestinationAta",
+      "resolveSourceTokenRecordFromTokenStandard",
+      "resolveDestinationTokenRecordFromTokenStandard",
       "resolveOwnerTokenRecordFromTokenStandard",
       "resolveBuyerTokenRecordFromTokenStandard",
       "resolveSellerTokenRecordFromTokenStandard",
+      "resolveUserTokenRecordFromTokenStandard",
       "resolvePoolTokenRecordFromTokenStandard",
       "resolvePoolNftReceipt",
       "resolveMetadata",

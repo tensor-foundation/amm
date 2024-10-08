@@ -19,3 +19,4 @@ export * from './seedsVecLocal';
 export * from './taggedPayload';
 export * from './takerSide';
 export * from './tAmmEvent';
+export * from './transferDirection';
