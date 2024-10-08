@@ -136,7 +136,7 @@ pub enum ErrorCode {
     WrongFrozenStatus = 6031,
 
     // 6032 | 0x1790
-    #[msg("cannot use shared escrow in token pools")]
+    #[msg("cannot use shared escrow in NFT pools")]
     CannotUseSharedEscrow = 6032,
 
     // 6033 | 0x1791
