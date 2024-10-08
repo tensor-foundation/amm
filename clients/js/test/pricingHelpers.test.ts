@@ -311,7 +311,7 @@ test('Linear pool pricing after 20 sells', async (t) => {
       client,
       payer: poolOwner,
       authority: nftUpdateAuthority,
-      owner: nftOwner,
+      owner: nftOwner.address,
     });
     nftPromises.push(nft);
   }
@@ -379,7 +379,7 @@ test('Exponential pool pricing after 20 sells', async (t) => {
       client,
       payer: poolOwner,
       authority: nftUpdateAuthority,
-      owner: nftOwner,
+      owner: nftOwner.address,
     });
     nftPromises.push(nft);
   }
@@ -456,7 +456,7 @@ test('Exponential pool pricing speed test', async (t) => {
   t.pass();
 });
 
-test.skip('Linear pool pricing after 30 buys', async (t) => {
+test('Linear pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.NFT,
@@ -503,7 +503,7 @@ test.skip('Linear pool pricing after 30 buys', async (t) => {
   t.is(finalPoolAccount.data.stats.takerBuyCount, 30);
 });
 
-test.skip('Exponential pool pricing after 30 buys', async (t) => {
+test('Exponential pool pricing after 30 buys', async (t) => {
   t.timeout(60000);
   const config: PoolConfig = {
     poolType: PoolType.Trade,
@@ -733,7 +733,7 @@ async function mintAndDepositNfts(
         client,
         payer: poolOwner,
         authority: nftUpdateAuthority,
-        owner: poolOwner,
+        owner: poolOwner.address,
       })
     );
 

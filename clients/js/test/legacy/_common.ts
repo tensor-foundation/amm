@@ -333,6 +333,7 @@ export interface BuyLegacyTests {
   creators?: Creator[];
   expectError?: number;
   pNft?: boolean;
+  ruleset?: Address;
 }
 
 export async function testBuyNft(
@@ -386,7 +387,7 @@ export async function testBuyNft(
       ? TokenStandard.ProgrammableNonFungible
       : TokenStandard.NonFungible,
     optionalRoyaltyPct,
-    authorizationRules: tests.pNft ? COMPAT_RULESET : undefined,
+    authorizationRules: tests.pNft ? tests.ruleset : undefined,
     // Remaining accounts
     creators: creators.map(({ address }) => address),
   });

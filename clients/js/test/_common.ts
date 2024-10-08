@@ -97,6 +97,8 @@ export const ONE_SOL = 1_000_000_000n;
 
 export const POOL_SIZE = 447n;
 
+export const CURRENT_POOL_VERSION = 1;
+
 export const TAKER_FEE_BPS = 200n;
 export const BROKER_FEE_PCT = 50n;
 export const BASIS_POINTS = 10_000n;

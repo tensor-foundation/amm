@@ -86,7 +86,7 @@ impl<'info> CreatePool<'info> {
             }
         }
 
-        if config.pool_type == PoolType::Token && shared_escrow.is_some() {
+        if config.pool_type == PoolType::NFT && shared_escrow.is_some() {
             throw_err!(ErrorCode::CannotUseSharedEscrow);
         }
 

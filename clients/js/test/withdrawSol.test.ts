@@ -63,7 +63,7 @@ test('it can withdraw Sol from a Trade pool', async (t) => {
     client,
     payer: nftOwner,
     authority: nftOwner,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL

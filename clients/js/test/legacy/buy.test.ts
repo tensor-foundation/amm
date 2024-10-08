@@ -272,7 +272,7 @@ test('buy from NFT pool, max price lower than current price fails', async (t) =>
   }
 });
 
-test('buy pNFT from NFT pool', async (t) => {
+test('buy pNFT from NFT pool, no ruleset', async (t) => {
   const legacyTest = await setupLegacyTest({
     t,
     poolType: PoolType.NFT,
@@ -286,6 +286,25 @@ test('buy pNFT from NFT pool', async (t) => {
   await testBuyNft(t, legacyTest, {
     brokerPayments: false,
     pNft: true,
+  });
+});
+
+test('buy pNFT from NFT pool, compat ruleset', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    pNft: true,
+    ruleset: COMPAT_RULESET,
+  });
+
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+    pNft: true,
+    ruleset: COMPAT_RULESET,
   });
 });
 

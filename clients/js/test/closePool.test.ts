@@ -116,7 +116,7 @@ test('close pool fails if nfts still deposited', async (t) => {
     client,
     payer: owner,
     authority: owner,
-    owner,
+    owner: owner.address,
   });
 
   // Deposit NFT into pool
@@ -184,7 +184,7 @@ test('close token pool succeeds if someone sold nfts into it', async (t) => {
     client,
     payer: nftOwner,
     authority: nftOwner,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -297,7 +297,7 @@ test('close trade pool fail if someone sold nfts into it', async (t) => {
     client,
     payer: nftOwner,
     authority: nftOwner,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
