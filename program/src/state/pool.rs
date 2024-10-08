@@ -1,10 +1,9 @@
 use anchor_lang::prelude::*;
-use mpl_token_metadata::accounts::Metadata;
 use spl_math::precise_number::PreciseNumber;
-use tensor_toolbox::transfer_lamports_checked;
+use tensor_toolbox::{transfer_lamports_checked, HUNDRED_PCT_BPS};
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
 
-use crate::{calc_creators_fee, constants::*, error::ErrorCode};
+use crate::error::ErrorCode;
 
 /// Size of the Pool account, inclusive of the 8-byte discriminator.
 #[constant]
@@ -132,17 +131,6 @@ pub struct Pool {
     pub _reserved: [u8; 100],
 }
 
-/// Calculates a fee generically from the fee_bps and current price.
-pub fn calc_fee(fee_bps: u16, current_price: u64) -> Result<u64> {
-    let fee = unwrap_checked!({
-        (fee_bps as u64)
-            .checked_mul(current_price)?
-            .checked_div(HUNDRED_PCT_BPS as u64)
-    });
-
-    Ok(fee)
-}
-
 impl Pool {
     /// Determines if a taker is able to sell into a pool.
     pub fn taker_allowed_to_sell(&self) -> Result<()> {
@@ -190,18 +178,13 @@ impl Pool {
                 unwrap_checked!({
                     (self.config.mm_fee_bps as u64)
                         .checked_mul(current_price)?
-                        .checked_div(HUNDRED_PCT_BPS as u64)
+                        .checked_div(HUNDRED_PCT_BPS)
                 })
             }
             PoolType::NFT | PoolType::Token => 0, // No mm fees for NFT or Token pools
         };
 
         Ok(fee)
-    }
-
-    /// Calculate the fee the taker has to pay when buying from the pool.
-    pub fn calc_taker_fee(&self, current_price: u64) -> Result<u64> {
-        calc_fee(TAKER_FEE_BPS, current_price)
     }
 
     /// Calculate the price of the pool after shifting it by a certain offset.
@@ -220,20 +203,6 @@ impl Pool {
                 throw_err!(ErrorCode::WrongPoolType);
             }
         }
-    }
-
-    /// Calculate the fee that should be paid to the creators of the NFT.
-    pub fn calc_creators_fee(
-        &self,
-        metadata: &Metadata,
-        current_price: u64,
-        optional_royalty_pct: Option<u16>,
-    ) -> Result<u64> {
-        calc_creators_fee(
-            metadata.seller_fee_basis_points,
-            current_price,
-            optional_royalty_pct,
-        )
     }
 
     /// Shifts the price of a pool by a certain offset.
@@ -265,13 +234,9 @@ impl Pool {
 
                 let base = unwrap_int!(PreciseNumber::new(self.config.starting_price.into()));
                 let factor = unwrap_checked!({
-                    PreciseNumber::new(
-                        (HUNDRED_PCT_BPS as u64)
-                            .checked_add(self.config.delta)?
-                            .into(),
-                    )?
-                    .checked_div(&hundred_pct)?
-                    .checked_pow(offset.into())
+                    PreciseNumber::new((HUNDRED_PCT_BPS).checked_add(self.config.delta)?.into())?
+                        .checked_div(&hundred_pct)?
+                        .checked_pow(offset.into())
                 });
 
                 let result = unwrap_int!(match direction {
@@ -423,13 +388,12 @@ pub fn update_pool_accounting(
     pool_initial_balance: u64,
     taker_side: TakerSide,
 ) -> Result<()> {
-    pool.updated_at = Clock::get()?.unix_timestamp;
-
     // Calculate fees from the current price.
     let current_price = pool.current_price(taker_side)?;
-
     // This resolves to 0 for Token & NFT pools.
     let mm_fee = pool.calc_mm_fee(current_price)?;
+
+    pool.updated_at = Clock::get()?.unix_timestamp;
 
     match taker_side {
         TakerSide::Buy => {
@@ -440,7 +404,6 @@ pub fn update_pool_accounting(
             pool.price_offset = unwrap_int!(pool.price_offset.checked_add(1));
 
             pool.stats.taker_buy_count = unwrap_int!(pool.stats.taker_buy_count.checked_add(1));
-            pool.updated_at = Clock::get()?.unix_timestamp;
 
             if pool.config.pool_type == PoolType::Trade {
                 pool.stats.accumulated_mm_profit =

@@ -38,7 +38,7 @@ impl<'info> SellNftTradePoolCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Trade)?;
 
-        let asset = self.core.validate_asset(None)?;
+        let asset = self.core.validate_asset()?;
 
         self.trade.verify_whitelist(&asset)?;
 
@@ -69,9 +69,9 @@ pub fn process_sell_nft_trade_pool_core<'info>(
     // Transfer the NFT from the seller to the pool.
     TransferV1CpiBuilder::new(&ctx.accounts.core.mpl_core_program)
         .asset(&ctx.accounts.core.asset)
-        .payer(&taker)
         .authority(Some(&taker))
         .new_owner(&pool.to_account_info())
+        .payer(&taker)
         .collection(ctx.accounts.core.collection.as_ref().map(|c| c.as_ref()))
         .invoke()?;
 

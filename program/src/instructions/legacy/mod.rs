@@ -13,13 +13,13 @@ pub use self::withdraw_nft::*;
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, Mint, TokenAccount, TokenInterface},
+    token_interface::{self, TokenAccount, TokenInterface},
 };
 use mpl_token_metadata::types::AuthorizationData;
 use tensor_toolbox::{
     close_account,
     token_metadata::{transfer, TransferArgs},
 };
-use tensor_vipers::{unwrap_int, Validate};
+use tensor_vipers::unwrap_int;
 
-use crate::{error::ErrorCode, *};
+use crate::*;

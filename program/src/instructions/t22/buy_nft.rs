@@ -16,28 +16,18 @@ pub struct BuyNftT22<'info> {
         mut,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            t22.mint.key().as_ref(),
             trade.pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // Check the receipt is for the correct pool and mint.
-        has_one = mint @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// The mint account of the NFT.
-    #[account(
-        constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The TA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
         payer = trade.taker,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = trade.taker,
         associated_token::token_program = token_program,
     )]
@@ -46,7 +36,7 @@ pub struct BuyNftT22<'info> {
     /// The TA of the pool, where the NFT will be escrowed.
     #[account(
         mut,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = trade.pool,
         associated_token::token_program = token_program,
     )]
@@ -66,7 +56,7 @@ impl<'info> BuyNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_buy()?;
 
-        self.t22.validate_asset(Some(self.mint.to_account_info()))
+        self.t22.validate_asset()
     }
 }
 
@@ -82,7 +72,7 @@ pub fn process_buy_nft_t22<'info>(
         asset.seller_fee_basis_points,
         max_amount,
         TakerSide::Buy,
-        Some(100),
+        Some(100), // no optional royalties for now
     )?;
 
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
@@ -101,7 +91,7 @@ pub fn process_buy_nft_t22<'info>(
             from: ctx.accounts.pool_ta.to_account_info(),
             to: ctx.accounts.taker_ta.to_account_info(),
             authority: ctx.accounts.trade.pool.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
+            mint: ctx.accounts.t22.mint.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         },
         ctx.remaining_accounts,

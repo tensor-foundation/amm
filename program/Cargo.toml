@@ -54,7 +54,7 @@ spl-math = { version = "0.1.0", features = ["no-entrypoint"] }
 spl-token-metadata-interface = "0.2.0"
 static_assertions = "1.1.0"
 tensor-escrow = { version = "0.1.1" }
-tensor-toolbox = { version = "0.4.0", features = ["token-2022", "mpl-core"] }
+tensor-toolbox = { version = "0.5.0", features = ["token-2022", "mpl-core"] }
 tensor-vipers = { version = "1.0.1" }
 whitelist-program = { package = "whitelist-program", git = "ssh://git@github.com/tensor-foundation/whitelist.git", rev = "346eac4", features = [
     "cpi",

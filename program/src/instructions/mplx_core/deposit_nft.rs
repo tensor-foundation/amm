@@ -33,7 +33,7 @@ impl<'info> DepositNftCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        let asset = self.core.validate_asset(None)?;
+        let asset = self.core.validate_asset()?;
 
         self.transfer.verify_whitelist(&asset)?;
 

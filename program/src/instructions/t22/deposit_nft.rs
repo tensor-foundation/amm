@@ -17,7 +17,7 @@ pub struct DepositNftT22<'info> {
         payer = transfer.owner,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            t22.mint.key().as_ref(),
             transfer.pool.key().as_ref(),
         ],
         bump,
@@ -25,18 +25,10 @@ pub struct DepositNftT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ta and pool_ta.
-    #[account(
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
     /// The TA of the owner, where the NFT will be transferred from.
     #[account(
         mut,
-        token::mint = mint,
+        token::mint = t22.mint,
         token::authority = transfer.owner,
         token::token_program = token_program,
     )]
@@ -46,7 +38,7 @@ pub struct DepositNftT22<'info> {
     #[account(
         init_if_needed,
         payer = transfer.owner,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = transfer.pool,
         associated_token::token_program = token_program,
     )]
@@ -66,7 +58,7 @@ impl<'info> DepositNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        let asset = self.t22.validate_asset(Some(self.mint.to_account_info()))?;
+        let asset = self.t22.validate_asset()?;
 
         self.transfer.verify_whitelist(&asset)?;
 
@@ -83,7 +75,7 @@ pub fn process_deposit_nft_t22<'info>(
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
     // validate mint account
-    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
+    let royalties = validate_mint(&ctx.accounts.t22.mint.to_account_info())?;
 
     // transfer the NFT
     let mut transfer_cpi = CpiContext::new(
@@ -92,7 +84,7 @@ pub fn process_deposit_nft_t22<'info>(
             from: ctx.accounts.owner_ta.to_account_info(),
             to: ctx.accounts.pool_ta.to_account_info(),
             authority: ctx.accounts.transfer.owner.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
+            mint: ctx.accounts.t22.mint.to_account_info(),
         },
     );
 
@@ -117,7 +109,7 @@ pub fn process_deposit_nft_t22<'info>(
     //create nft receipt
     let receipt = &mut ctx.accounts.nft_receipt;
     receipt.bump = ctx.bumps.nft_receipt;
-    receipt.mint = ctx.accounts.mint.key();
+    receipt.mint = ctx.accounts.t22.mint.key();
     receipt.pool = ctx.accounts.transfer.pool.key();
 
     Ok(())

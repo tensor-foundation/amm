@@ -22,7 +22,7 @@ pub struct SellNftTradePool<'info> {
         payer = trade.taker,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            mplx.mint.key().as_ref(),
             trade.pool.key().as_ref(),
         ],
         bump,
@@ -30,17 +30,10 @@ pub struct SellNftTradePool<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    // The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
     /// The token account of the seller, where the NFT will be transferred from.
     #[account(
         mut,
-        token::mint = mint,
+        token::mint = mplx.mint,
         token::authority = trade.taker,
         token::token_program = token_program,
     )]
@@ -50,7 +43,7 @@ pub struct SellNftTradePool<'info> {
     #[account(
         init_if_needed,
         payer = trade.taker,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = trade.pool,
         associated_token::token_program = token_program,
     )]
@@ -68,9 +61,7 @@ impl<'info> SellNftTradePool<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Trade)?;
 
-        let asset = self
-            .mplx
-            .validate_asset(Some(self.mint.to_account_info()))?;
+        let asset = self.mplx.validate_asset()?;
 
         self.trade.verify_whitelist(&asset)?;
 
@@ -113,7 +104,7 @@ pub fn process_sell_nft_trade_pool<'info>(
             source_ata: &ctx.accounts.taker_ta,
             destination,
             destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
-            mint: &ctx.accounts.mint,
+            mint: &ctx.accounts.mplx.mint,
             metadata: &ctx.accounts.mplx.metadata,
             edition: &ctx.accounts.mplx.edition,
             system_program: &ctx.accounts.system_program,
@@ -151,7 +142,7 @@ pub fn process_sell_nft_trade_pool<'info>(
     //create nft receipt for trade pool
     let receipt_state = &mut ctx.accounts.nft_receipt;
     receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.mint = ctx.accounts.mint.key();
+    receipt_state.mint = ctx.accounts.mplx.mint.key();
     receipt_state.pool = ctx.accounts.trade.pool.key();
 
     Ok(())

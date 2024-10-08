@@ -22,7 +22,7 @@ pub struct SellNftTradePoolT22<'info> {
         payer = trade.taker,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            t22.mint.key().as_ref(),
             trade.pool.key().as_ref(),
         ],
         bump,
@@ -30,17 +30,10 @@ pub struct SellNftTradePoolT22<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
     /// The token account of the NFT for the seller's wallet.
     #[account(
         mut,
-        token::mint = mint,
+        token::mint = t22.mint,
         token::authority = trade.taker,
         token::token_program = token_program,
     )]
@@ -50,21 +43,11 @@ pub struct SellNftTradePoolT22<'info> {
     #[account(
         init_if_needed,
         payer = trade.taker,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = trade.pool,
         associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The ATA of the owner, where the NFT will be transferred to as a result of this sale.
-    #[account(
-        init_if_needed,
-        payer = trade.taker,
-        associated_token::mint = mint,
-        associated_token::authority = trade.owner,
-        associated_token::token_program = token_program,
-    )]
-    pub owner_ta: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// The Token 2022 program.
     pub token_program: Program<'info, Token2022>,
@@ -80,7 +63,7 @@ impl<'info> SellNftTradePoolT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Trade)?;
 
-        let asset = self.t22.validate_asset(Some(self.mint.to_account_info()))?;
+        let asset = self.t22.validate_asset()?;
 
         self.trade.verify_whitelist(&asset)?;
 
@@ -111,7 +94,7 @@ pub fn process_sell_nft_trade_pool_t22<'info>(
             from: ctx.accounts.taker_ta.to_account_info(),
             to: ctx.accounts.pool_ta.to_account_info(),
             authority: ctx.accounts.trade.taker.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
+            mint: ctx.accounts.t22.mint.to_account_info(),
             token_program: ctx.accounts.token_program.to_account_info(),
         },
         ctx.remaining_accounts,
@@ -141,7 +124,7 @@ pub fn process_sell_nft_trade_pool_t22<'info>(
     //create nft receipt for trade pool
     let receipt_state = &mut ctx.accounts.nft_receipt;
     receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.mint = ctx.accounts.mint.key();
+    receipt_state.mint = ctx.accounts.t22.mint.key();
     receipt_state.pool = ctx.accounts.trade.pool.key();
 
     Ok(())

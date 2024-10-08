@@ -16,29 +16,18 @@ pub struct BuyNft<'info> {
         mut,
         seeds = [
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            mplx.mint.key().as_ref(),
             trade.pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // Check that the mint and pool match the nft receipt.
-        has_one = mint @ ErrorCode::WrongMint,
-        constraint = nft_receipt.pool == trade.pool.key() @ ErrorCode::WrongPool,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// The mint account of the NFT being sold.
-    #[account(
-        constraint = mint.key() == taker_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The TA of the buyer, where the NFT will be transferred.
     #[account(
         init_if_needed,
         payer = trade.taker,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = trade.taker,
         associated_token::token_program = token_program,
     )]
@@ -47,7 +36,7 @@ pub struct BuyNft<'info> {
     /// The TA of the pool, where the NFT is held.
     #[account(
         mut,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = trade.pool,
         associated_token::token_program = token_program,
     )]
@@ -68,7 +57,7 @@ impl<'info> BuyNft<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_buy()?;
 
-        self.mplx.validate_asset(Some(self.mint.to_account_info()))
+        self.mplx.validate_asset()
     }
 }
 
@@ -115,7 +104,7 @@ pub fn process_buy_nft<'info>(
             source_ata: &ctx.accounts.pool_ta,
             destination: &taker,
             destination_ata: &ctx.accounts.taker_ta,
-            mint: &ctx.accounts.mint,
+            mint: &ctx.accounts.mplx.mint,
             metadata: &ctx.accounts.mplx.metadata,
             edition: &ctx.accounts.mplx.edition,
             system_program: &ctx.accounts.system_program,

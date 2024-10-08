@@ -21,7 +21,6 @@ pub struct WithdrawNftCore<'info> {
             transfer.pool.key().as_ref(),
         ],
         bump,
-        constraint = core.asset.key() == nft_receipt.mint @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 }
@@ -30,7 +29,7 @@ impl<'info> WithdrawNftCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        self.core.validate_asset(None)
+        self.core.validate_asset()
     }
 }
 

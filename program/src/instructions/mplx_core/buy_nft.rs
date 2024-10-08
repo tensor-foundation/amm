@@ -20,9 +20,6 @@ pub struct BuyNftCore<'info> {
             trade.pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // Check the receipt is for the correct pool and asset.
-        constraint = nft_receipt.mint == core.asset.key() && nft_receipt.pool == trade.pool.key() @ ErrorCode::WrongMint,
-        constraint = trade.pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
@@ -34,7 +31,7 @@ impl<'info> BuyNftCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_buy()?;
 
-        self.core.validate_asset(None)
+        self.core.validate_asset()
     }
 }
 

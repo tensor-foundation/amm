@@ -11,19 +11,23 @@ pub struct WithdrawNft<'info> {
     /// Metaplex legacy and pNFT shared accounts.
     pub mplx: MplxShared<'info>,
 
-    /// The mint of the NFT.
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[account(
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
+        mut,
+        seeds=[
+            b"nft_receipt".as_ref(),
+            mplx.mint.key().as_ref(),
+            transfer.pool.key().as_ref(),
+        ],
+        bump = nft_receipt.bump,
     )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
     /// The TA of the owner, where the NFT will be transferred to as a result of this action.
     #[account(
         init_if_needed,
         payer = transfer.owner,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = transfer.owner,
         associated_token::token_program = token_program,
     )]
@@ -32,25 +36,11 @@ pub struct WithdrawNft<'info> {
     /// The TA of the pool, where the NFT token is escrowed.
     #[account(
         mut,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = transfer.pool,
         associated_token::token_program = token_program,
     )]
     pub pool_ta: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    #[account(
-        mut,
-        seeds=[
-            b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
-            transfer.pool.key().as_ref(),
-        ],
-        bump = nft_receipt.bump,
-        //can't withdraw an NFT that's associated with a different pool
-        has_one = mint @ ErrorCode::WrongMint,
-    )]
-    pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
     /// The SPL Token program for the Mint and ATAs.
     pub token_program: Interface<'info, TokenInterface>,
@@ -64,7 +54,7 @@ impl<'info> WithdrawNft<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        self.mplx.validate_asset(Some(self.mint.to_account_info()))
+        self.mplx.validate_asset()
     }
 }
 
@@ -92,7 +82,7 @@ pub fn process_withdraw_nft<'info>(
             source_ata: &ctx.accounts.pool_ta,
             destination: &ctx.accounts.transfer.owner,
             destination_ata: &ctx.accounts.owner_ta,
-            mint: &ctx.accounts.mint,
+            mint: &ctx.accounts.mplx.mint,
             metadata: &ctx.accounts.mplx.metadata,
             edition: &ctx.accounts.mplx.edition,
             system_program: &ctx.accounts.system_program,

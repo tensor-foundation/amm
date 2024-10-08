@@ -99,12 +99,12 @@ impl From<ProofInfoLocal> for ProofInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::{HUNDRED_PCT_BPS, TAKER_FEE_BPS};
 
     use super::*;
 
     use anchor_lang::solana_program::native_token::LAMPORTS_PER_SOL;
     use spl_math::precise_number::PreciseNumber;
+    use tensor_toolbox::HUNDRED_PCT_BPS;
 
     impl Pool {
         pub fn new(
@@ -180,23 +180,6 @@ mod tests {
 
         p.config.mm_fee_bps = 2499;
         assert_eq!(p.calc_mm_fee(1000).unwrap(), 249); //249.9 floored
-    }
-
-    #[test]
-    fn tst_taker_fees() {
-        let p = Pool::new(
-            PoolType::Trade,
-            CurveType::Linear,
-            LAMPORTS_PER_SOL,
-            LAMPORTS_PER_SOL,
-            0,
-            0,
-        );
-
-        assert_eq!(
-            p.calc_taker_fee(LAMPORTS_PER_SOL).unwrap(),
-            LAMPORTS_PER_SOL * TAKER_FEE_BPS as u64 / 10000
-        );
     }
 
     // --------------------------------------- Linear
@@ -493,7 +476,7 @@ mod tests {
 
     // --------------------------------------- exponential
 
-    const MAX_BPS: u64 = HUNDRED_PCT_BPS as u64;
+    const MAX_BPS: u64 = HUNDRED_PCT_BPS;
 
     fn calc_price_frac(
         price: u64,
