@@ -64,7 +64,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
     client,
     payer: nftOwner,
     authority: nftOwner,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -191,7 +191,7 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
     client,
     payer: owner,
     authority: owner,
-    owner,
+    owner: owner.address,
   });
 
   // Deposit NFT into pool

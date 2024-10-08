@@ -22,7 +22,10 @@ program-dependencies = [
     "TokExjvjJmhKaRBShsBAsbSvEWMA1AgUNK7ps4SAc2p",
     "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
 ]
-account-dependencies = ["99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G"]
+account-dependencies = [
+    "99jtJwGDfaBKXtc7kxQneAGbERGK8F5XyJWHv7qTbj9G",
+    "AdH2Utn6Fus15ZhtenW4hZBQnvtLgM1YCW2MfVp7pYS5",
+]
 external-programs-repositories = [
     [
         "tensor-foundation/escrow",

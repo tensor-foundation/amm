@@ -208,7 +208,7 @@ test('it can buy an NFT from a Trade pool', async (t) => {
     client,
     payer: owner,
     authority: owner,
-    owner,
+    owner: owner.address,
   });
 
   const [poolAta] = await findAtaPda({ mint, owner: pool });

@@ -2,20 +2,17 @@ import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budge
 import { Token, fetchToken } from '@solana-program/token';
 import {
   Account,
+  address,
   Address,
   appendTransactionMessageInstruction,
-  appendTransactionMessageInstructions,
-  IInstruction,
   pipe,
 } from '@solana/web3.js';
 import {
   Creator,
   Nft,
   TokenStandard,
-  VerificationArgs,
   createDefaultNftInCollection,
   fetchMetadata,
-  getVerifyInstruction,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   Client,
@@ -61,6 +58,10 @@ import {
 } from '../_common.js';
 import { ExecutionContext } from 'ava';
 
+export const COMPAT_RULESET = address(
+  'AdH2Utn6Fus15ZhtenW4hZBQnvtLgM1YCW2MfVp7pYS5'
+);
+
 export interface LegacyTest {
   client: Client;
   signers: TestSigners;
@@ -76,6 +77,7 @@ export interface LegacyTest {
 export async function setupLegacyTest(
   params: SetupTestParams & {
     pNft?: boolean;
+    ruleset?: Address;
     signerFunds?: bigint;
     poolConfig?: PoolConfig | null;
   }
@@ -88,6 +90,7 @@ export async function setupLegacyTest(
     depositAmount: dA,
     treeSize = 10,
     pNft = false,
+    ruleset,
     useMakerBroker = false,
     useSharedEscrow = false,
     useCosigner = false,
@@ -116,7 +119,7 @@ export async function setupLegacyTest(
     client,
     payer,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
     standard: pNft
       ? TokenStandard.ProgrammableNonFungible
       : TokenStandard.NonFungible,
@@ -127,27 +130,8 @@ export async function setupLegacyTest(
         verified: true,
       },
     ],
+    ruleset,
   });
-
-  const verifyCreatorIxs: IInstruction[] = [];
-
-  // Verify creators, if necessary.
-  for (const creator of params.creators?.signers ?? []) {
-    // If verified and not the update authority which is already signing, verify.
-    verifyCreatorIxs.push(
-      getVerifyInstruction({
-        authority: creator,
-        metadata: nft.metadata,
-        verificationArgs: VerificationArgs.CreatorV1,
-      })
-    );
-
-    await pipe(
-      await createDefaultTransaction(client, creator),
-      (tx) => appendTransactionMessageInstructions(verifyCreatorIxs, tx),
-      (tx) => signAndSendTransaction(client, tx)
-    );
-  }
 
   // Reset test timeout for long-running tests.
   t.pass();
@@ -291,6 +275,7 @@ export async function setupLegacyTest(
         tokenStandard: pNft
           ? TokenStandard.ProgrammableNonFungible
           : TokenStandard.NonFungible,
+        authorizationRules: pNft ? ruleset : undefined,
       });
 
       await pipe(
@@ -397,7 +382,11 @@ export async function testBuyNft(
     maxAmount,
     makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
     takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
+    tokenStandard: tests.pNft
+      ? TokenStandard.ProgrammableNonFungible
+      : TokenStandard.NonFungible,
     optionalRoyaltyPct,
+    authorizationRules: tests.pNft ? COMPAT_RULESET : undefined,
     // Remaining accounts
     creators: creators.map(({ address }) => address),
   });
@@ -415,6 +404,11 @@ export async function testBuyNft(
 
   await pipe(
     await createDefaultTransaction(client, buyer),
+    (tx) =>
+      appendTransactionMessageInstruction(
+        getSetComputeUnitLimitInstruction({ units: 400_000 }),
+        tx
+      ),
     (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );

@@ -95,7 +95,7 @@ test('it can sell an NFT into a Trade pool', async (t) => {
     client,
     payer: nftUpdateAuthority,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Balance of pool before any sales operations, but including the SOL deposit.
@@ -212,7 +212,7 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
     client,
     payer: nftUpdateAuthority,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Create a shared escrow account.
@@ -355,7 +355,7 @@ test('it can sell an NFT into a Token pool', async (t) => {
     client,
     payer: nftUpdateAuthority,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -490,7 +490,7 @@ test('token pool autocloses when currency amount drops below current price', asy
     client,
     payer, // test generic payer
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -596,7 +596,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     client,
     payer: nftUpdateAuthority,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -676,7 +676,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     client,
     payer,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   // Deposit SOL
@@ -769,7 +769,7 @@ test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
     client,
     payer,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   await getAndFundFeeVault(client, pool);
@@ -854,7 +854,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     client,
     payer,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   await getAndFundFeeVault(client, pool);
@@ -954,7 +954,7 @@ test('it cannot sell an NFT into a token pool w/ incorrect whitelist', async (t)
     client,
     payer,
     authority: mintWhitelistAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   await getAndFundFeeVault(client, pool);
@@ -1051,7 +1051,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     client,
     payer,
     authority: mintWhitelistAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
   });
 
   await getAndFundFeeVault(client, pool);
@@ -1145,7 +1145,7 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
     client,
     payer,
     authority: nftUpdateAuthority,
-    owner: nftOwner,
+    owner: nftOwner.address,
     standard: TokenStandard.ProgrammableNonFungible,
     creators: [creator],
   });
