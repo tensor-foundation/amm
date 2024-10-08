@@ -70,8 +70,8 @@ export const TENSOR_AMM_ERROR__POOL_ON_SHARED_ESCROW = 0x2efd; // 12029
 export const TENSOR_AMM_ERROR__WRONG_ORDER_TYPE = 0x2efe; // 12030
 /** WrongFrozenStatus: wrong frozen status */
 export const TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS = 0x2eff; // 12031
-/** SharedEscrowInUse: shared escrow account has pools open and is in use */
-export const TENSOR_AMM_ERROR__SHARED_ESCROW_IN_USE = 0x2f00; // 12032
+/** CannotUseSharedEscrow: cannot use shared escrow in token pools */
+export const TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW = 0x2f00; // 12032
 /** MaxTakerSellCountExceeded: max taker sell count exceeded, pool cannot buy anymore NFTs */
 export const TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED = 0x2f01; // 12033
 /** MaxTakerSellCountTooSmall: max taker sell count is too small */
@@ -127,6 +127,7 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__BAD_RULE_SET
   | typeof TENSOR_AMM_ERROR__BAD_SHARED_ESCROW
   | typeof TENSOR_AMM_ERROR__BAD_WHITELIST
+  | typeof TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW
   | typeof TENSOR_AMM_ERROR__CREATOR_MISMATCH
   | typeof TENSOR_AMM_ERROR__DELTA_TOO_LARGE
   | typeof TENSOR_AMM_ERROR__ESCROW_PROGRAM_NOT_SET
@@ -154,7 +155,6 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__POOLS_ARE_THE_SAME
   | typeof TENSOR_AMM_ERROR__PRICE_MISMATCH
   | typeof TENSOR_AMM_ERROR__ROYALTIES_ENABLED
-  | typeof TENSOR_AMM_ERROR__SHARED_ESCROW_IN_USE
   | typeof TENSOR_AMM_ERROR__SPL_TOKENS_NOT_SUPPORTED
   | typeof TENSOR_AMM_ERROR__STARTING_PRICE_TOO_SMALL
   | typeof TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY
@@ -185,6 +185,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__BAD_RULE_SET]: `rule set for programmable nft does not match`,
     [TENSOR_AMM_ERROR__BAD_SHARED_ESCROW]: `bad shared escrow account passed`,
     [TENSOR_AMM_ERROR__BAD_WHITELIST]: `unexpected whitelist address`,
+    [TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW]: `cannot use shared escrow in token pools`,
     [TENSOR_AMM_ERROR__CREATOR_MISMATCH]: `provided creator address does not match metadata creator`,
     [TENSOR_AMM_ERROR__DELTA_TOO_LARGE]: `delta too large`,
     [TENSOR_AMM_ERROR__ESCROW_PROGRAM_NOT_SET]: `Escrow program not set`,
@@ -212,7 +213,6 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__POOLS_ARE_THE_SAME]: `new pool should not match old pool`,
     [TENSOR_AMM_ERROR__PRICE_MISMATCH]: `specified price not within current price`,
     [TENSOR_AMM_ERROR__ROYALTIES_ENABLED]: `royalties are enabled always`,
-    [TENSOR_AMM_ERROR__SHARED_ESCROW_IN_USE]: `shared escrow account has pools open and is in use`,
     [TENSOR_AMM_ERROR__SPL_TOKENS_NOT_SUPPORTED]: `SPL tokens not supported`,
     [TENSOR_AMM_ERROR__STARTING_PRICE_TOO_SMALL]: `starting price can't be smaller than 1 lamport`,
     [TENSOR_AMM_ERROR__UNSUPPORTED_CURRENCY]: `Unsupported currency`,

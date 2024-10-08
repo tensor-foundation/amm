@@ -67,9 +67,6 @@ export type SellNftTokenPoolCoreInstruction<
   TAccountMplCoreProgram extends
     | string
     | IAccountMeta<string> = 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d',
-  TAccountSystemProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
   TRemainingAccounts extends readonly IAccountMeta<string>[] = [],
 > = IInstruction<TProgram> &
   IInstructionWithData<Uint8Array> &
@@ -128,9 +125,6 @@ export type SellNftTokenPoolCoreInstruction<
       TAccountMplCoreProgram extends string
         ? ReadonlyAccount<TAccountMplCoreProgram>
         : TAccountMplCoreProgram,
-      TAccountSystemProgram extends string
-        ? ReadonlyAccount<TAccountSystemProgram>
-        : TAccountSystemProgram,
       ...TRemainingAccounts,
     ]
   >;
@@ -192,7 +186,6 @@ export type SellNftTokenPoolCoreAsyncInput<
   TAccountAsset extends string = string,
   TAccountCollection extends string = string,
   TAccountMplCoreProgram extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
@@ -237,8 +230,6 @@ export type SellNftTokenPoolCoreAsyncInput<
   collection?: Address<TAccountCollection>;
   /** The MPL Core program. */
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
   minPrice: SellNftTokenPoolCoreInstructionDataArgs['minPrice'];
   creators?: Array<Address>;
 };
@@ -261,7 +252,6 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
   TAccountAsset extends string,
   TAccountCollection extends string,
   TAccountMplCoreProgram extends string,
-  TAccountSystemProgram extends string,
 >(
   input: SellNftTokenPoolCoreAsyncInput<
     TAccountOwner,
@@ -280,8 +270,7 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
     TAccountNativeProgram,
     TAccountAsset,
     TAccountCollection,
-    TAccountMplCoreProgram,
-    TAccountSystemProgram
+    TAccountMplCoreProgram
   >
 ): Promise<
   SellNftTokenPoolCoreInstruction<
@@ -302,8 +291,7 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
     TAccountNativeProgram,
     TAccountAsset,
     TAccountCollection,
-    TAccountMplCoreProgram,
-    TAccountSystemProgram
+    TAccountMplCoreProgram
   >
 > {
   // Program address.
@@ -328,7 +316,6 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -363,10 +350,6 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
     accounts.mplCoreProgram.value =
       'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
   }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
 
   // Remaining accounts.
   const remainingAccounts: IAccountMeta[] = (args.creators ?? []).map(
@@ -393,7 +376,6 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
       getAccountMeta(accounts.asset),
       getAccountMeta(accounts.collection),
       getAccountMeta(accounts.mplCoreProgram),
-      getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
     ],
     programAddress,
@@ -418,8 +400,7 @@ export async function getSellNftTokenPoolCoreInstructionAsync<
     TAccountNativeProgram,
     TAccountAsset,
     TAccountCollection,
-    TAccountMplCoreProgram,
-    TAccountSystemProgram
+    TAccountMplCoreProgram
   >;
 
   return instruction;
@@ -443,7 +424,6 @@ export type SellNftTokenPoolCoreInput<
   TAccountAsset extends string = string,
   TAccountCollection extends string = string,
   TAccountMplCoreProgram extends string = string,
-  TAccountSystemProgram extends string = string,
 > = {
   /** The owner of the pool and the buyer/recipient of the NFT. */
   owner: Address<TAccountOwner>;
@@ -488,8 +468,6 @@ export type SellNftTokenPoolCoreInput<
   collection?: Address<TAccountCollection>;
   /** The MPL Core program. */
   mplCoreProgram?: Address<TAccountMplCoreProgram>;
-  /** The Solana system program. */
-  systemProgram?: Address<TAccountSystemProgram>;
   minPrice: SellNftTokenPoolCoreInstructionDataArgs['minPrice'];
   creators?: Array<Address>;
 };
@@ -512,7 +490,6 @@ export function getSellNftTokenPoolCoreInstruction<
   TAccountAsset extends string,
   TAccountCollection extends string,
   TAccountMplCoreProgram extends string,
-  TAccountSystemProgram extends string,
 >(
   input: SellNftTokenPoolCoreInput<
     TAccountOwner,
@@ -531,8 +508,7 @@ export function getSellNftTokenPoolCoreInstruction<
     TAccountNativeProgram,
     TAccountAsset,
     TAccountCollection,
-    TAccountMplCoreProgram,
-    TAccountSystemProgram
+    TAccountMplCoreProgram
   >
 ): SellNftTokenPoolCoreInstruction<
   typeof TENSOR_AMM_PROGRAM_ADDRESS,
@@ -552,8 +528,7 @@ export function getSellNftTokenPoolCoreInstruction<
   TAccountNativeProgram,
   TAccountAsset,
   TAccountCollection,
-  TAccountMplCoreProgram,
-  TAccountSystemProgram
+  TAccountMplCoreProgram
 > {
   // Program address.
   const programAddress = TENSOR_AMM_PROGRAM_ADDRESS;
@@ -577,7 +552,6 @@ export function getSellNftTokenPoolCoreInstruction<
     asset: { value: input.asset ?? null, isWritable: true },
     collection: { value: input.collection ?? null, isWritable: false },
     mplCoreProgram: { value: input.mplCoreProgram ?? null, isWritable: false },
-    systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -602,10 +576,6 @@ export function getSellNftTokenPoolCoreInstruction<
   if (!accounts.mplCoreProgram.value) {
     accounts.mplCoreProgram.value =
       'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d' as Address<'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'>;
-  }
-  if (!accounts.systemProgram.value) {
-    accounts.systemProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
   }
 
   // Remaining accounts.
@@ -633,7 +603,6 @@ export function getSellNftTokenPoolCoreInstruction<
       getAccountMeta(accounts.asset),
       getAccountMeta(accounts.collection),
       getAccountMeta(accounts.mplCoreProgram),
-      getAccountMeta(accounts.systemProgram),
       ...remainingAccounts,
     ],
     programAddress,
@@ -658,8 +627,7 @@ export function getSellNftTokenPoolCoreInstruction<
     TAccountNativeProgram,
     TAccountAsset,
     TAccountCollection,
-    TAccountMplCoreProgram,
-    TAccountSystemProgram
+    TAccountMplCoreProgram
   >;
 
   return instruction;
@@ -717,8 +685,6 @@ export type ParsedSellNftTokenPoolCoreInstruction<
     collection?: TAccountMetas[15] | undefined;
     /** The MPL Core program. */
     mplCoreProgram: TAccountMetas[16];
-    /** The Solana system program. */
-    systemProgram: TAccountMetas[17];
   };
   data: SellNftTokenPoolCoreInstructionData;
 };
@@ -731,7 +697,7 @@ export function parseSellNftTokenPoolCoreInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedSellNftTokenPoolCoreInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 18) {
+  if (instruction.accounts.length < 17) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -767,7 +733,6 @@ export function parseSellNftTokenPoolCoreInstruction<
       asset: getNextAccount(),
       collection: getNextOptionalAccount(),
       mplCoreProgram: getNextAccount(),
-      systemProgram: getNextAccount(),
     },
     data: getSellNftTokenPoolCoreInstructionDataDecoder().decode(
       instruction.data

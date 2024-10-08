@@ -6,14 +6,9 @@
   ],
   "constants": [
     {
-      "name": "CURRENT_TAMM_VERSION",
-      "type": "u8",
-      "value": "0"
-    },
-    {
       "name": "CURRENT_POOL_VERSION",
       "type": "u8",
-      "value": "0"
+      "value": "1"
     },
     {
       "name": "MAX_MM_FEES_BPS",
@@ -21,29 +16,9 @@
       "value": "9999"
     },
     {
-      "name": "HUNDRED_PCT_BPS",
-      "type": "u16",
-      "value": "10000"
-    },
-    {
       "name": "MAX_DELTA_BPS",
       "type": "u16",
       "value": "9999"
-    },
-    {
-      "name": "TAKER_FEE_BPS",
-      "type": "u16",
-      "value": "200"
-    },
-    {
-      "name": "BROKER_FEE_PCT",
-      "type": "u8",
-      "value": "50"
-    },
-    {
-      "name": "MAKER_BROKER_PCT",
-      "type": "u8",
-      "value": "80"
     },
     {
       "name": "DEPOSIT_RECEIPT_SIZE",
@@ -389,6 +364,14 @@
           "name": "mplx",
           "accounts": [
             {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
+            },
+            {
               "name": "metadata",
               "isMut": true,
               "isSigner": false,
@@ -466,15 +449,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ta and pool_ta."
           ]
         },
         {
@@ -580,6 +554,14 @@
           "name": "mplx",
           "accounts": [
             {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
+            },
+            {
               "name": "metadata",
               "isMut": true,
               "isSigner": false,
@@ -652,11 +634,11 @@
           ]
         },
         {
-          "name": "mint",
-          "isMut": false,
+          "name": "nftReceipt",
+          "isMut": true,
           "isSigner": false,
           "docs": [
-            "The mint of the NFT."
+            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {
@@ -673,14 +655,6 @@
           "isSigner": false,
           "docs": [
             "The TA of the pool, where the NFT token is escrowed."
-          ]
-        },
-        {
-          "name": "nftReceipt",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
         },
         {
@@ -855,6 +829,14 @@
           "name": "mplx",
           "accounts": [
             {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
+            },
+            {
               "name": "metadata",
               "isMut": true,
               "isSigner": false,
@@ -932,14 +914,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT being sold."
           ]
         },
         {
@@ -1140,6 +1114,14 @@
           "name": "mplx",
           "accounts": [
             {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
+            },
+            {
               "name": "metadata",
               "isMut": true,
               "isSigner": false,
@@ -1209,14 +1191,6 @@
                 "The Metaplex Token Authority Rules program account."
               ]
             }
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT being sold."
           ]
         },
         {
@@ -1434,6 +1408,14 @@
           "name": "mplx",
           "accounts": [
             {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
+            },
+            {
               "name": "metadata",
               "isMut": true,
               "isSigner": false,
@@ -1512,11 +1494,6 @@
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
           ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "takerTa",
@@ -2099,14 +2076,6 @@
               ]
             }
           ]
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The Solana system program."
-          ]
         }
       ],
       "args": [
@@ -2350,9 +2319,12 @@
           "name": "t22",
           "accounts": [
             {
-              "name": "sysProgram",
+              "name": "mint",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -2362,15 +2334,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT. It should be the mint account common",
-            "to the owner_ta and pool_ta."
           ]
         },
         {
@@ -2467,9 +2430,12 @@
           "name": "t22",
           "accounts": [
             {
-              "name": "sysProgram",
+              "name": "mint",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -2479,14 +2445,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint of the NFT."
           ]
         },
         {
@@ -2668,9 +2626,12 @@
           "name": "t22",
           "accounts": [
             {
-              "name": "sysProgram",
+              "name": "mint",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -2680,14 +2641,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT."
           ]
         },
         {
@@ -2748,9 +2701,12 @@
           "name": "t22",
           "accounts": [
             {
-              "name": "sysProgram",
+              "name": "mint",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -2878,14 +2834,6 @@
               "isMut": false,
               "isSigner": false
             }
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT being sold."
           ]
         },
         {
@@ -3072,9 +3020,12 @@
           "name": "t22",
           "accounts": [
             {
-              "name": "sysProgram",
+              "name": "mint",
               "isMut": false,
-              "isSigner": false
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -3084,14 +3035,6 @@
           "isSigner": false,
           "docs": [
             "The NFT deposit receipt, which ties an NFT to the pool it was deposited to."
-          ]
-        },
-        {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "The mint account of the NFT being sold."
           ]
         },
         {
@@ -3108,14 +3051,6 @@
           "isSigner": false,
           "docs": [
             "The ATA of the pool, where the NFT will be transferred to."
-          ]
-        },
-        {
-          "name": "ownerTa",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The ATA of the owner, where the NFT will be transferred to as a result of this sale."
           ]
         },
         {
@@ -3973,8 +3908,8 @@
     },
     {
       "code": 12032,
-      "name": "SharedEscrowInUse",
-      "msg": "shared escrow account has pools open and is in use"
+      "name": "CannotUseSharedEscrow",
+      "msg": "cannot use shared escrow in token pools"
     },
     {
       "code": 12033,

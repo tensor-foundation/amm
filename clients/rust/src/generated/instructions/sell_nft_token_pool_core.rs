@@ -49,8 +49,6 @@ pub struct SellNftTokenPoolCore {
     pub collection: Option<solana_program::pubkey::Pubkey>,
     /// The MPL Core program.
     pub mpl_core_program: solana_program::pubkey::Pubkey,
-    /// The Solana system program.
-    pub system_program: solana_program::pubkey::Pubkey,
 }
 
 impl SellNftTokenPoolCore {
@@ -66,7 +64,7 @@ impl SellNftTokenPoolCore {
         args: SellNftTokenPoolCoreInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -177,10 +175,6 @@ impl SellNftTokenPoolCore {
             self.mpl_core_program,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.system_program,
-            false,
-        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = SellNftTokenPoolCoreInstructionData::new()
             .try_to_vec()
@@ -242,7 +236,6 @@ pub struct SellNftTokenPoolCoreInstructionArgs {
 ///   14. `[writable]` asset
 ///   15. `[optional]` collection
 ///   16. `[optional]` mpl_core_program (default to `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`)
-///   17. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct SellNftTokenPoolCoreBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -262,7 +255,6 @@ pub struct SellNftTokenPoolCoreBuilder {
     asset: Option<solana_program::pubkey::Pubkey>,
     collection: Option<solana_program::pubkey::Pubkey>,
     mpl_core_program: Option<solana_program::pubkey::Pubkey>,
-    system_program: Option<solana_program::pubkey::Pubkey>,
     min_price: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -401,13 +393,6 @@ impl SellNftTokenPoolCoreBuilder {
         self.mpl_core_program = Some(mpl_core_program);
         self
     }
-    /// `[optional account, default to '11111111111111111111111111111111']`
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.system_program = Some(system_program);
-        self
-    }
     #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.min_price = Some(min_price);
@@ -457,9 +442,6 @@ impl SellNftTokenPoolCoreBuilder {
             mpl_core_program: self.mpl_core_program.unwrap_or(solana_program::pubkey!(
                 "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
             )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
         let args = SellNftTokenPoolCoreInstructionArgs {
             min_price: self.min_price.clone().expect("min_price is not set"),
@@ -510,8 +492,6 @@ pub struct SellNftTokenPoolCoreCpiAccounts<'a, 'b> {
     pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The MPL Core program.
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `sell_nft_token_pool_core` CPI instruction.
@@ -557,8 +537,6 @@ pub struct SellNftTokenPoolCoreCpi<'a, 'b> {
     pub collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The MPL Core program.
     pub mpl_core_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The Solana system program.
-    pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: SellNftTokenPoolCoreInstructionArgs,
 }
@@ -588,7 +566,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
             asset: accounts.asset,
             collection: accounts.collection,
             mpl_core_program: accounts.mpl_core_program,
-            system_program: accounts.system_program,
             __args: args,
         }
     }
@@ -625,7 +602,7 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(18 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -743,10 +720,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
             *self.mpl_core_program.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.system_program.key,
-            false,
-        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -765,7 +738,7 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(18 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(17 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.taker.clone());
@@ -798,7 +771,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
             account_infos.push(collection.clone());
         }
         account_infos.push(self.mpl_core_program.clone());
-        account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -832,7 +804,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpi<'a, 'b> {
 ///   14. `[writable]` asset
 ///   15. `[optional]` collection
 ///   16. `[]` mpl_core_program
-///   17. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct SellNftTokenPoolCoreCpiBuilder<'a, 'b> {
     instruction: Box<SellNftTokenPoolCoreCpiBuilderInstruction<'a, 'b>>,
@@ -859,7 +830,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpiBuilder<'a, 'b> {
             asset: None,
             collection: None,
             mpl_core_program: None,
-            system_program: None,
             min_price: None,
             __remaining_accounts: Vec::new(),
         });
@@ -1016,15 +986,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpiBuilder<'a, 'b> {
         self.instruction.mpl_core_program = Some(mpl_core_program);
         self
     }
-    /// The Solana system program.
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
     #[inline(always)]
     pub fn min_price(&mut self, min_price: u64) -> &mut Self {
         self.instruction.min_price = Some(min_price);
@@ -1123,11 +1084,6 @@ impl<'a, 'b> SellNftTokenPoolCoreCpiBuilder<'a, 'b> {
                 .instruction
                 .mpl_core_program
                 .expect("mpl_core_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1157,7 +1113,6 @@ struct SellNftTokenPoolCoreCpiBuilderInstruction<'a, 'b> {
     asset: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     collection: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mpl_core_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     min_price: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

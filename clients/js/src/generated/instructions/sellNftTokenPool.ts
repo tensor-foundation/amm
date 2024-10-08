@@ -92,6 +92,7 @@ export type SellNftTokenPoolInstruction<
   TAccountNativeProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
+  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountMetadata extends string | IAccountMeta<string> = string,
   TAccountEdition extends string | IAccountMeta<string> = string,
   TAccountUserTokenRecord extends string | IAccountMeta<string> = string,
@@ -102,7 +103,6 @@ export type SellNftTokenPoolInstruction<
   TAccountAuthorizationRulesProgram extends
     | string
     | IAccountMeta<string> = string,
-  TAccountMint extends string | IAccountMeta<string> = string,
   TAccountTakerTa extends string | IAccountMeta<string> = string,
   TAccountOwnerTa extends string | IAccountMeta<string> = string,
   TAccountPoolTa extends string | IAccountMeta<string> = string,
@@ -165,6 +165,9 @@ export type SellNftTokenPoolInstruction<
       TAccountNativeProgram extends string
         ? ReadonlyAccount<TAccountNativeProgram>
         : TAccountNativeProgram,
+      TAccountMint extends string
+        ? ReadonlyAccount<TAccountMint>
+        : TAccountMint,
       TAccountMetadata extends string
         ? WritableAccount<TAccountMetadata>
         : TAccountMetadata,
@@ -189,9 +192,6 @@ export type SellNftTokenPoolInstruction<
       TAccountAuthorizationRulesProgram extends string
         ? ReadonlyAccount<TAccountAuthorizationRulesProgram>
         : TAccountAuthorizationRulesProgram,
-      TAccountMint extends string
-        ? ReadonlyAccount<TAccountMint>
-        : TAccountMint,
       TAccountTakerTa extends string
         ? WritableAccount<TAccountTakerTa>
         : TAccountTakerTa,
@@ -288,6 +288,7 @@ export type SellNftTokenPoolAsyncInput<
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
   TAccountNativeProgram extends string = string,
+  TAccountMint extends string = string,
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
   TAccountUserTokenRecord extends string = string,
@@ -296,7 +297,6 @@ export type SellNftTokenPoolAsyncInput<
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountMint extends string = string,
   TAccountTakerTa extends string = string,
   TAccountOwnerTa extends string = string,
   TAccountPoolTa extends string = string,
@@ -343,6 +343,8 @@ export type SellNftTokenPoolAsyncInput<
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
   nativeProgram?: Address<TAccountNativeProgram>;
+  /** The mint account of the NFT. */
+  mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata?: Address<TAccountMetadata>;
   /** The Token Metadata edition account of the NFT. */
@@ -359,8 +361,6 @@ export type SellNftTokenPoolAsyncInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The mint account of the NFT being sold. */
-  mint: Address<TAccountMint>;
   /** The token account of the NFT for the seller's wallet. */
   takerTa?: Address<TAccountTakerTa>;
   /** The TA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -397,6 +397,7 @@ export async function getSellNftTokenPoolInstructionAsync<
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
   TAccountNativeProgram extends string,
+  TAccountMint extends string,
   TAccountMetadata extends string,
   TAccountEdition extends string,
   TAccountUserTokenRecord extends string,
@@ -405,7 +406,6 @@ export async function getSellNftTokenPoolInstructionAsync<
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountMint extends string,
   TAccountTakerTa extends string,
   TAccountOwnerTa extends string,
   TAccountPoolTa extends string,
@@ -429,6 +429,7 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountMint,
     TAccountMetadata,
     TAccountEdition,
     TAccountUserTokenRecord,
@@ -437,7 +438,6 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountMint,
     TAccountTakerTa,
     TAccountOwnerTa,
     TAccountPoolTa,
@@ -463,6 +463,7 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountMint,
     TAccountMetadata,
     TAccountEdition,
     TAccountUserTokenRecord,
@@ -471,7 +472,6 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountMint,
     TAccountTakerTa,
     TAccountOwnerTa,
     TAccountPoolTa,
@@ -500,6 +500,7 @@ export async function getSellNftTokenPoolInstructionAsync<
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
     nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
     userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
@@ -520,7 +521,6 @@ export async function getSellNftTokenPoolInstructionAsync<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    mint: { value: input.mint ?? null, isWritable: false },
     takerTa: { value: input.takerTa ?? null, isWritable: true },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolTa: { value: input.poolTa ?? null, isWritable: true },
@@ -668,6 +668,7 @@ export async function getSellNftTokenPoolInstructionAsync<
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
       getAccountMeta(accounts.nativeProgram),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.userTokenRecord),
@@ -676,7 +677,6 @@ export async function getSellNftTokenPoolInstructionAsync<
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.takerTa),
       getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolTa),
@@ -706,6 +706,7 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountMint,
     TAccountMetadata,
     TAccountEdition,
     TAccountUserTokenRecord,
@@ -714,7 +715,6 @@ export async function getSellNftTokenPoolInstructionAsync<
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountMint,
     TAccountTakerTa,
     TAccountOwnerTa,
     TAccountPoolTa,
@@ -742,6 +742,7 @@ export type SellNftTokenPoolInput<
   TAccountAmmProgram extends string = string,
   TAccountEscrowProgram extends string = string,
   TAccountNativeProgram extends string = string,
+  TAccountMint extends string = string,
   TAccountMetadata extends string = string,
   TAccountEdition extends string = string,
   TAccountUserTokenRecord extends string = string,
@@ -750,7 +751,6 @@ export type SellNftTokenPoolInput<
   TAccountSysvarInstructions extends string = string,
   TAccountAuthorizationRules extends string = string,
   TAccountAuthorizationRulesProgram extends string = string,
-  TAccountMint extends string = string,
   TAccountTakerTa extends string = string,
   TAccountOwnerTa extends string = string,
   TAccountPoolTa extends string = string,
@@ -797,6 +797,8 @@ export type SellNftTokenPoolInput<
   /** The escrow program account for shared liquidity pools. */
   escrowProgram?: Address<TAccountEscrowProgram>;
   nativeProgram?: Address<TAccountNativeProgram>;
+  /** The mint account of the NFT. */
+  mint: Address<TAccountMint>;
   /** The Token Metadata metadata account of the NFT. */
   metadata: Address<TAccountMetadata>;
   /** The Token Metadata edition account of the NFT. */
@@ -813,8 +815,6 @@ export type SellNftTokenPoolInput<
   authorizationRules?: Address<TAccountAuthorizationRules>;
   /** The Metaplex Token Authority Rules program account. */
   authorizationRulesProgram?: Address<TAccountAuthorizationRulesProgram>;
-  /** The mint account of the NFT being sold. */
-  mint: Address<TAccountMint>;
   /** The token account of the NFT for the seller's wallet. */
   takerTa: Address<TAccountTakerTa>;
   /** The TA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -851,6 +851,7 @@ export function getSellNftTokenPoolInstruction<
   TAccountAmmProgram extends string,
   TAccountEscrowProgram extends string,
   TAccountNativeProgram extends string,
+  TAccountMint extends string,
   TAccountMetadata extends string,
   TAccountEdition extends string,
   TAccountUserTokenRecord extends string,
@@ -859,7 +860,6 @@ export function getSellNftTokenPoolInstruction<
   TAccountSysvarInstructions extends string,
   TAccountAuthorizationRules extends string,
   TAccountAuthorizationRulesProgram extends string,
-  TAccountMint extends string,
   TAccountTakerTa extends string,
   TAccountOwnerTa extends string,
   TAccountPoolTa extends string,
@@ -883,6 +883,7 @@ export function getSellNftTokenPoolInstruction<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountMint,
     TAccountMetadata,
     TAccountEdition,
     TAccountUserTokenRecord,
@@ -891,7 +892,6 @@ export function getSellNftTokenPoolInstruction<
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountMint,
     TAccountTakerTa,
     TAccountOwnerTa,
     TAccountPoolTa,
@@ -916,6 +916,7 @@ export function getSellNftTokenPoolInstruction<
   TAccountAmmProgram,
   TAccountEscrowProgram,
   TAccountNativeProgram,
+  TAccountMint,
   TAccountMetadata,
   TAccountEdition,
   TAccountUserTokenRecord,
@@ -924,7 +925,6 @@ export function getSellNftTokenPoolInstruction<
   TAccountSysvarInstructions,
   TAccountAuthorizationRules,
   TAccountAuthorizationRulesProgram,
-  TAccountMint,
   TAccountTakerTa,
   TAccountOwnerTa,
   TAccountPoolTa,
@@ -952,6 +952,7 @@ export function getSellNftTokenPoolInstruction<
     ammProgram: { value: input.ammProgram ?? null, isWritable: false },
     escrowProgram: { value: input.escrowProgram ?? null, isWritable: false },
     nativeProgram: { value: input.nativeProgram ?? null, isWritable: false },
+    mint: { value: input.mint ?? null, isWritable: false },
     metadata: { value: input.metadata ?? null, isWritable: true },
     edition: { value: input.edition ?? null, isWritable: false },
     userTokenRecord: { value: input.userTokenRecord ?? null, isWritable: true },
@@ -972,7 +973,6 @@ export function getSellNftTokenPoolInstruction<
       value: input.authorizationRulesProgram ?? null,
       isWritable: false,
     },
-    mint: { value: input.mint ?? null, isWritable: false },
     takerTa: { value: input.takerTa ?? null, isWritable: true },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolTa: { value: input.poolTa ?? null, isWritable: true },
@@ -1066,6 +1066,7 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.ammProgram),
       getAccountMeta(accounts.escrowProgram),
       getAccountMeta(accounts.nativeProgram),
+      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.metadata),
       getAccountMeta(accounts.edition),
       getAccountMeta(accounts.userTokenRecord),
@@ -1074,7 +1075,6 @@ export function getSellNftTokenPoolInstruction<
       getAccountMeta(accounts.sysvarInstructions),
       getAccountMeta(accounts.authorizationRules),
       getAccountMeta(accounts.authorizationRulesProgram),
-      getAccountMeta(accounts.mint),
       getAccountMeta(accounts.takerTa),
       getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolTa),
@@ -1104,6 +1104,7 @@ export function getSellNftTokenPoolInstruction<
     TAccountAmmProgram,
     TAccountEscrowProgram,
     TAccountNativeProgram,
+    TAccountMint,
     TAccountMetadata,
     TAccountEdition,
     TAccountUserTokenRecord,
@@ -1112,7 +1113,6 @@ export function getSellNftTokenPoolInstruction<
     TAccountSysvarInstructions,
     TAccountAuthorizationRules,
     TAccountAuthorizationRulesProgram,
-    TAccountMint,
     TAccountTakerTa,
     TAccountOwnerTa,
     TAccountPoolTa,
@@ -1172,24 +1172,24 @@ export type ParsedSellNftTokenPoolInstruction<
     /** The escrow program account for shared liquidity pools. */
     escrowProgram?: TAccountMetas[12] | undefined;
     nativeProgram: TAccountMetas[13];
+    /** The mint account of the NFT. */
+    mint: TAccountMetas[14];
     /** The Token Metadata metadata account of the NFT. */
-    metadata: TAccountMetas[14];
+    metadata: TAccountMetas[15];
     /** The Token Metadata edition account of the NFT. */
-    edition: TAccountMetas[15];
+    edition: TAccountMetas[16];
     /** The Token Metadata source token record account of the NFT. */
-    userTokenRecord?: TAccountMetas[16] | undefined;
+    userTokenRecord?: TAccountMetas[17] | undefined;
     /** The Token Metadata token record for the destination. */
-    poolTokenRecord?: TAccountMetas[17] | undefined;
+    poolTokenRecord?: TAccountMetas[18] | undefined;
     /** The Token Metadata program account. */
-    tokenMetadataProgram?: TAccountMetas[18] | undefined;
+    tokenMetadataProgram?: TAccountMetas[19] | undefined;
     /** The sysvar instructions account. */
-    sysvarInstructions?: TAccountMetas[19] | undefined;
+    sysvarInstructions?: TAccountMetas[20] | undefined;
     /** The Metaplex Token Authority Rules account that stores royalty enforcement rules. */
-    authorizationRules?: TAccountMetas[20] | undefined;
+    authorizationRules?: TAccountMetas[21] | undefined;
     /** The Metaplex Token Authority Rules program account. */
-    authorizationRulesProgram?: TAccountMetas[21] | undefined;
-    /** The mint account of the NFT being sold. */
-    mint: TAccountMetas[22];
+    authorizationRulesProgram?: TAccountMetas[22] | undefined;
     /** The token account of the NFT for the seller's wallet. */
     takerTa: TAccountMetas[23];
     /** The TA of the owner, where the NFT will be transferred to as a result of this sale. */
@@ -1249,6 +1249,7 @@ export function parseSellNftTokenPoolInstruction<
       ammProgram: getNextAccount(),
       escrowProgram: getNextOptionalAccount(),
       nativeProgram: getNextAccount(),
+      mint: getNextAccount(),
       metadata: getNextAccount(),
       edition: getNextAccount(),
       userTokenRecord: getNextOptionalAccount(),
@@ -1257,7 +1258,6 @@ export function parseSellNftTokenPoolInstruction<
       sysvarInstructions: getNextOptionalAccount(),
       authorizationRules: getNextOptionalAccount(),
       authorizationRulesProgram: getNextOptionalAccount(),
-      mint: getNextAccount(),
       takerTa: getNextAccount(),
       ownerTa: getNextAccount(),
       poolTa: getNextAccount(),

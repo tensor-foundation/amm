@@ -43,12 +43,10 @@ pub struct BuyNftT22 {
     pub escrow_program: Option<solana_program::pubkey::Pubkey>,
 
     pub native_program: solana_program::pubkey::Pubkey,
-
-    pub sys_program: solana_program::pubkey::Pubkey,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: solana_program::pubkey::Pubkey,
     /// The mint account of the NFT.
     pub mint: solana_program::pubkey::Pubkey,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: solana_program::pubkey::Pubkey,
     /// The TA of the buyer, where the NFT will be transferred.
     pub taker_ta: solana_program::pubkey::Pubkey,
     /// The TA of the pool, where the NFT will be escrowed.
@@ -74,7 +72,7 @@ impl BuyNftT22 {
         args: BuyNftT22InstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(21 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.owner, false,
         ));
@@ -175,15 +173,11 @@ impl BuyNftT22 {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.sys_program,
-            false,
+            self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.nft_receipt,
             false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            self.mint, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.taker_ta,
@@ -261,14 +255,13 @@ pub struct BuyNftT22InstructionArgs {
 ///   11. `[optional]` amm_program (default to `TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg`)
 ///   12. `[optional]` escrow_program
 ///   13. `[optional]` native_program (default to `11111111111111111111111111111111`)
-///   14. `[optional]` sys_program (default to `11111111111111111111111111111111`)
+///   14. `[]` mint
 ///   15. `[writable]` nft_receipt
-///   16. `[]` mint
-///   17. `[writable]` taker_ta
-///   18. `[writable]` pool_ta
-///   19. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
-///   20. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-///   21. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   16. `[writable]` taker_ta
+///   17. `[writable]` pool_ta
+///   18. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
+///   19. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
+///   20. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct BuyNftT22Builder {
     owner: Option<solana_program::pubkey::Pubkey>,
@@ -285,9 +278,8 @@ pub struct BuyNftT22Builder {
     amm_program: Option<solana_program::pubkey::Pubkey>,
     escrow_program: Option<solana_program::pubkey::Pubkey>,
     native_program: Option<solana_program::pubkey::Pubkey>,
-    sys_program: Option<solana_program::pubkey::Pubkey>,
-    nft_receipt: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
+    nft_receipt: Option<solana_program::pubkey::Pubkey>,
     taker_ta: Option<solana_program::pubkey::Pubkey>,
     pool_ta: Option<solana_program::pubkey::Pubkey>,
     token_program: Option<solana_program::pubkey::Pubkey>,
@@ -410,22 +402,16 @@ impl BuyNftT22Builder {
         self.native_program = Some(native_program);
         self
     }
-    /// `[optional account, default to '11111111111111111111111111111111']`
+    /// The mint account of the NFT.
     #[inline(always)]
-    pub fn sys_program(&mut self, sys_program: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.sys_program = Some(sys_program);
+    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.mint = Some(mint);
         self
     }
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
     #[inline(always)]
     pub fn nft_receipt(&mut self, nft_receipt: solana_program::pubkey::Pubkey) -> &mut Self {
         self.nft_receipt = Some(nft_receipt);
-        self
-    }
-    /// The mint account of the NFT.
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.mint = Some(mint);
         self
     }
     /// The TA of the buyer, where the NFT will be transferred.
@@ -508,11 +494,8 @@ impl BuyNftT22Builder {
             native_program: self
                 .native_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            sys_program: self
-                .sys_program
-                .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             mint: self.mint.expect("mint is not set"),
+            nft_receipt: self.nft_receipt.expect("nft_receipt is not set"),
             taker_ta: self.taker_ta.expect("taker_ta is not set"),
             pool_ta: self.pool_ta.expect("pool_ta is not set"),
             token_program: self.token_program.unwrap_or(solana_program::pubkey!(
@@ -568,12 +551,10 @@ pub struct BuyNftT22CpiAccounts<'a, 'b> {
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sys_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the buyer, where the NFT will be transferred.
     pub taker_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the pool, where the NFT will be escrowed.
@@ -623,12 +604,10 @@ pub struct BuyNftT22Cpi<'a, 'b> {
     pub escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 
     pub native_program: &'b solana_program::account_info::AccountInfo<'a>,
-
-    pub sys_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
-    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The mint account of the NFT.
     pub mint: &'b solana_program::account_info::AccountInfo<'a>,
+    /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
+    pub nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the buyer, where the NFT will be transferred.
     pub taker_ta: &'b solana_program::account_info::AccountInfo<'a>,
     /// The TA of the pool, where the NFT will be escrowed.
@@ -665,9 +644,8 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             amm_program: accounts.amm_program,
             escrow_program: accounts.escrow_program,
             native_program: accounts.native_program,
-            sys_program: accounts.sys_program,
-            nft_receipt: accounts.nft_receipt,
             mint: accounts.mint,
+            nft_receipt: accounts.nft_receipt,
             taker_ta: accounts.taker_ta,
             pool_ta: accounts.pool_ta,
             token_program: accounts.token_program,
@@ -709,7 +687,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(22 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(21 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.owner.key,
             false,
@@ -816,15 +794,11 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.sys_program.key,
+            *self.mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.nft_receipt.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-            *self.mint.key,
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -863,7 +837,7 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(22 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(21 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.taker.clone());
@@ -893,9 +867,8 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
             account_infos.push(escrow_program.clone());
         }
         account_infos.push(self.native_program.clone());
-        account_infos.push(self.sys_program.clone());
-        account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.mint.clone());
+        account_infos.push(self.nft_receipt.clone());
         account_infos.push(self.taker_ta.clone());
         account_infos.push(self.pool_ta.clone());
         account_infos.push(self.token_program.clone());
@@ -931,14 +904,13 @@ impl<'a, 'b> BuyNftT22Cpi<'a, 'b> {
 ///   11. `[]` amm_program
 ///   12. `[optional]` escrow_program
 ///   13. `[]` native_program
-///   14. `[]` sys_program
+///   14. `[]` mint
 ///   15. `[writable]` nft_receipt
-///   16. `[]` mint
-///   17. `[writable]` taker_ta
-///   18. `[writable]` pool_ta
-///   19. `[]` token_program
-///   20. `[]` associated_token_program
-///   21. `[]` system_program
+///   16. `[writable]` taker_ta
+///   17. `[writable]` pool_ta
+///   18. `[]` token_program
+///   19. `[]` associated_token_program
+///   20. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct BuyNftT22CpiBuilder<'a, 'b> {
     instruction: Box<BuyNftT22CpiBuilderInstruction<'a, 'b>>,
@@ -962,9 +934,8 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
             amm_program: None,
             escrow_program: None,
             native_program: None,
-            sys_program: None,
-            nft_receipt: None,
             mint: None,
+            nft_receipt: None,
             taker_ta: None,
             pool_ta: None,
             token_program: None,
@@ -1103,12 +1074,10 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         self.instruction.native_program = Some(native_program);
         self
     }
+    /// The mint account of the NFT.
     #[inline(always)]
-    pub fn sys_program(
-        &mut self,
-        sys_program: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.sys_program = Some(sys_program);
+    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.mint = Some(mint);
         self
     }
     /// The NFT deposit receipt, which ties an NFT to the pool it was deposited to.
@@ -1118,12 +1087,6 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
         nft_receipt: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.nft_receipt = Some(nft_receipt);
-        self
-    }
-    /// The mint account of the NFT.
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
         self
     }
     /// The TA of the buyer, where the NFT will be transferred.
@@ -1261,17 +1224,12 @@ impl<'a, 'b> BuyNftT22CpiBuilder<'a, 'b> {
                 .native_program
                 .expect("native_program is not set"),
 
-            sys_program: self
-                .instruction
-                .sys_program
-                .expect("sys_program is not set"),
+            mint: self.instruction.mint.expect("mint is not set"),
 
             nft_receipt: self
                 .instruction
                 .nft_receipt
                 .expect("nft_receipt is not set"),
-
-            mint: self.instruction.mint.expect("mint is not set"),
 
             taker_ta: self.instruction.taker_ta.expect("taker_ta is not set"),
 
@@ -1317,9 +1275,8 @@ struct BuyNftT22CpiBuilderInstruction<'a, 'b> {
     amm_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     escrow_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     native_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    sys_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    nft_receipt: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     taker_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_ta: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,

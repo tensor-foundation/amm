@@ -46,11 +46,8 @@ export type DepositNftT22Instruction<
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
   TAccountMintProof extends string | IAccountMeta<string> = string,
-  TAccountSysProgram extends
-    | string
-    | IAccountMeta<string> = '11111111111111111111111111111111',
-  TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountMint extends string | IAccountMeta<string> = string,
+  TAccountNftReceipt extends string | IAccountMeta<string> = string,
   TAccountOwnerTa extends string | IAccountMeta<string> = string,
   TAccountPoolTa extends string | IAccountMeta<string> = string,
   TAccountTokenProgram extends
@@ -80,15 +77,12 @@ export type DepositNftT22Instruction<
       TAccountMintProof extends string
         ? ReadonlyAccount<TAccountMintProof>
         : TAccountMintProof,
-      TAccountSysProgram extends string
-        ? ReadonlyAccount<TAccountSysProgram>
-        : TAccountSysProgram,
-      TAccountNftReceipt extends string
-        ? WritableAccount<TAccountNftReceipt>
-        : TAccountNftReceipt,
       TAccountMint extends string
         ? ReadonlyAccount<TAccountMint>
         : TAccountMint,
+      TAccountNftReceipt extends string
+        ? WritableAccount<TAccountNftReceipt>
+        : TAccountNftReceipt,
       TAccountOwnerTa extends string
         ? WritableAccount<TAccountOwnerTa>
         : TAccountOwnerTa,
@@ -145,9 +139,8 @@ export type DepositNftT22AsyncInput<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
-  TAccountSysProgram extends string = string,
-  TAccountNftReceipt extends string = string,
   TAccountMint extends string = string,
+  TAccountNftReceipt extends string = string,
   TAccountOwnerTa extends string = string,
   TAccountPoolTa extends string = string,
   TAccountTokenProgram extends string = string,
@@ -168,14 +161,10 @@ export type DepositNftT22AsyncInput<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  sysProgram?: Address<TAccountSysProgram>;
+  /** The mint account of the NFT. */
+  mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt?: Address<TAccountNftReceipt>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ta and pool_ta.
-   */
-  mint: Address<TAccountMint>;
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa?: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT will be escrowed. */
@@ -194,9 +183,8 @@ export async function getDepositNftT22InstructionAsync<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
-  TAccountSysProgram extends string,
-  TAccountNftReceipt extends string,
   TAccountMint extends string,
+  TAccountNftReceipt extends string,
   TAccountOwnerTa extends string,
   TAccountPoolTa extends string,
   TAccountTokenProgram extends string,
@@ -208,9 +196,8 @@ export async function getDepositNftT22InstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSysProgram,
-    TAccountNftReceipt,
     TAccountMint,
+    TAccountNftReceipt,
     TAccountOwnerTa,
     TAccountPoolTa,
     TAccountTokenProgram,
@@ -224,9 +211,8 @@ export async function getDepositNftT22InstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSysProgram,
-    TAccountNftReceipt,
     TAccountMint,
+    TAccountNftReceipt,
     TAccountOwnerTa,
     TAccountPoolTa,
     TAccountTokenProgram,
@@ -243,9 +229,8 @@ export async function getDepositNftT22InstructionAsync<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
-    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
+    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolTa: { value: input.poolTa ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -267,10 +252,6 @@ export async function getDepositNftT22InstructionAsync<
   const resolverScope = { programAddress, accounts, args };
 
   // Resolve default values.
-  if (!accounts.sysProgram.value) {
-    accounts.sysProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.nftReceipt.value) {
     accounts.nftReceipt.value = await findNftDepositReceiptPda({
       mint: expectAddress(accounts.mint.value),
@@ -314,9 +295,8 @@ export async function getDepositNftT22InstructionAsync<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
-      getAccountMeta(accounts.sysProgram),
-      getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.tokenProgram),
@@ -332,9 +312,8 @@ export async function getDepositNftT22InstructionAsync<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSysProgram,
-    TAccountNftReceipt,
     TAccountMint,
+    TAccountNftReceipt,
     TAccountOwnerTa,
     TAccountPoolTa,
     TAccountTokenProgram,
@@ -350,9 +329,8 @@ export type DepositNftT22Input<
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
   TAccountMintProof extends string = string,
-  TAccountSysProgram extends string = string,
-  TAccountNftReceipt extends string = string,
   TAccountMint extends string = string,
+  TAccountNftReceipt extends string = string,
   TAccountOwnerTa extends string = string,
   TAccountPoolTa extends string = string,
   TAccountTokenProgram extends string = string,
@@ -373,14 +351,10 @@ export type DepositNftT22Input<
    * merkle proof condition in the whitelist.
    */
   mintProof?: Address<TAccountMintProof>;
-  sysProgram?: Address<TAccountSysProgram>;
+  /** The mint account of the NFT. */
+  mint: Address<TAccountMint>;
   /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
   nftReceipt: Address<TAccountNftReceipt>;
-  /**
-   * The mint account of the NFT. It should be the mint account common
-   * to the owner_ta and pool_ta.
-   */
-  mint: Address<TAccountMint>;
   /** The TA of the owner, where the NFT will be transferred from. */
   ownerTa: Address<TAccountOwnerTa>;
   /** The TA of the pool, where the NFT will be escrowed. */
@@ -399,9 +373,8 @@ export function getDepositNftT22Instruction<
   TAccountPool extends string,
   TAccountWhitelist extends string,
   TAccountMintProof extends string,
-  TAccountSysProgram extends string,
-  TAccountNftReceipt extends string,
   TAccountMint extends string,
+  TAccountNftReceipt extends string,
   TAccountOwnerTa extends string,
   TAccountPoolTa extends string,
   TAccountTokenProgram extends string,
@@ -413,9 +386,8 @@ export function getDepositNftT22Instruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSysProgram,
-    TAccountNftReceipt,
     TAccountMint,
+    TAccountNftReceipt,
     TAccountOwnerTa,
     TAccountPoolTa,
     TAccountTokenProgram,
@@ -428,9 +400,8 @@ export function getDepositNftT22Instruction<
   TAccountPool,
   TAccountWhitelist,
   TAccountMintProof,
-  TAccountSysProgram,
-  TAccountNftReceipt,
   TAccountMint,
+  TAccountNftReceipt,
   TAccountOwnerTa,
   TAccountPoolTa,
   TAccountTokenProgram,
@@ -446,9 +417,8 @@ export function getDepositNftT22Instruction<
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
     mintProof: { value: input.mintProof ?? null, isWritable: false },
-    sysProgram: { value: input.sysProgram ?? null, isWritable: false },
-    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     mint: { value: input.mint ?? null, isWritable: false },
+    nftReceipt: { value: input.nftReceipt ?? null, isWritable: true },
     ownerTa: { value: input.ownerTa ?? null, isWritable: true },
     poolTa: { value: input.poolTa ?? null, isWritable: true },
     tokenProgram: { value: input.tokenProgram ?? null, isWritable: false },
@@ -467,10 +437,6 @@ export function getDepositNftT22Instruction<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.sysProgram.value) {
-    accounts.sysProgram.value =
-      '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
-  }
   if (!accounts.tokenProgram.value) {
     accounts.tokenProgram.value =
       'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
@@ -496,9 +462,8 @@ export function getDepositNftT22Instruction<
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
       getAccountMeta(accounts.mintProof),
-      getAccountMeta(accounts.sysProgram),
-      getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.mint),
+      getAccountMeta(accounts.nftReceipt),
       getAccountMeta(accounts.ownerTa),
       getAccountMeta(accounts.poolTa),
       getAccountMeta(accounts.tokenProgram),
@@ -514,9 +479,8 @@ export function getDepositNftT22Instruction<
     TAccountPool,
     TAccountWhitelist,
     TAccountMintProof,
-    TAccountSysProgram,
-    TAccountNftReceipt,
     TAccountMint,
+    TAccountNftReceipt,
     TAccountOwnerTa,
     TAccountPoolTa,
     TAccountTokenProgram,
@@ -549,25 +513,20 @@ export type ParsedDepositNftT22Instruction<
      */
 
     mintProof?: TAccountMetas[3] | undefined;
-    sysProgram: TAccountMetas[4];
+    /** The mint account of the NFT. */
+    mint: TAccountMetas[4];
     /** The NFT deposit receipt, which ties an NFT to the pool it was deposited to. */
     nftReceipt: TAccountMetas[5];
-    /**
-     * The mint account of the NFT. It should be the mint account common
-     * to the owner_ta and pool_ta.
-     */
-
-    mint: TAccountMetas[6];
     /** The TA of the owner, where the NFT will be transferred from. */
-    ownerTa: TAccountMetas[7];
+    ownerTa: TAccountMetas[6];
     /** The TA of the pool, where the NFT will be escrowed. */
-    poolTa: TAccountMetas[8];
+    poolTa: TAccountMetas[7];
     /** The SPL Token program for the Mint and ATAs. */
-    tokenProgram: TAccountMetas[9];
+    tokenProgram: TAccountMetas[8];
     /** The SPL associated token program. */
-    associatedTokenProgram: TAccountMetas[10];
+    associatedTokenProgram: TAccountMetas[9];
     /** The Solana system program. */
-    systemProgram: TAccountMetas[11];
+    systemProgram: TAccountMetas[10];
   };
   data: DepositNftT22InstructionData;
 };
@@ -580,7 +539,7 @@ export function parseDepositNftT22Instruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedDepositNftT22Instruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 12) {
+  if (instruction.accounts.length < 11) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -603,9 +562,8 @@ export function parseDepositNftT22Instruction<
       pool: getNextAccount(),
       whitelist: getNextAccount(),
       mintProof: getNextOptionalAccount(),
-      sysProgram: getNextAccount(),
-      nftReceipt: getNextAccount(),
       mint: getNextAccount(),
+      nftReceipt: getNextAccount(),
       ownerTa: getNextAccount(),
       poolTa: getNextAccount(),
       tokenProgram: getNextAccount(),
