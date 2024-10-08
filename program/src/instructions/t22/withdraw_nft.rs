@@ -16,28 +16,18 @@ pub struct WithdrawNftT22<'info> {
         mut,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            t22.mint.key().as_ref(),
             transfer.pool.key().as_ref(),
         ],
         bump = nft_receipt.bump,
-        // can't withdraw an NFT that's associated with a different pool
-        has_one = mint @ ErrorCode::WrongMint,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
-
-    /// The mint of the NFT.
-    #[account(
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == nft_receipt.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The TA of the owner where the NFT will be withdrawn to.
     #[account(
         init_if_needed,
         payer = transfer.owner,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = transfer.owner,
         associated_token::token_program = token_program,
     )]
@@ -46,7 +36,7 @@ pub struct WithdrawNftT22<'info> {
     /// The TA of the pool, where the NFT token is escrowed.
     #[account(
         mut,
-        associated_token::mint = mint,
+        associated_token::mint = t22.mint,
         associated_token::authority = transfer.pool,
         associated_token::token_program = token_program,
     )]
@@ -66,7 +56,7 @@ impl<'info> WithdrawNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        self.t22.validate_asset(Some(self.mint.to_account_info()))
+        self.t22.validate_asset()
     }
 }
 
@@ -76,7 +66,7 @@ pub fn process_withdraw_nft_t22<'info>(
 ) -> Result<()> {
     ctx.accounts.pre_process_checks()?;
 
-    let royalties = validate_mint(&ctx.accounts.mint.to_account_info())?;
+    let royalties = validate_mint(&ctx.accounts.t22.mint.to_account_info())?;
 
     // transfer the NFT
     let mut transfer_cpi = CpiContext::new(
@@ -85,7 +75,7 @@ pub fn process_withdraw_nft_t22<'info>(
             from: ctx.accounts.pool_ta.to_account_info(),
             to: ctx.accounts.owner_ta.to_account_info(),
             authority: ctx.accounts.transfer.pool.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
+            mint: ctx.accounts.t22.mint.to_account_info(),
         },
     );
 

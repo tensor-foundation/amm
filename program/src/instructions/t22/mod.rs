@@ -10,19 +10,19 @@ pub use self::sell_nft_token_pool::*;
 pub use self::sell_nft_trade_pool::*;
 pub use self::withdraw_nft::*;
 
-use crate::{error::ErrorCode, *};
+use crate::*;
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{self, Mint, Token2022, TokenAccount, TransferChecked},
+    token_interface::{self, Token2022, TokenAccount, TransferChecked},
 };
 use mpl_token_metadata::types::Creator;
 use tensor_toolbox::{
     close_account,
     token_2022::{transfer::transfer_checked, validate_mint},
 };
-use tensor_vipers::{unwrap_int, Validate};
+use tensor_vipers::unwrap_int;
 
 struct TransferArgs<'info> {
     from: AccountInfo<'info>,

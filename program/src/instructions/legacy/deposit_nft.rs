@@ -17,7 +17,7 @@ pub struct DepositNft<'info> {
         payer = transfer.owner,
         seeds=[
             b"nft_receipt".as_ref(),
-            mint.key().as_ref(),
+            mplx.mint.key().as_ref(),
             transfer.pool.key().as_ref(),
         ],
         bump,
@@ -25,18 +25,10 @@ pub struct DepositNft<'info> {
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 
-    /// The mint account of the NFT. It should be the mint account common
-    /// to the owner_ta and pool_ta.
-    #[account(
-        constraint = mint.key() == owner_ta.mint @ ErrorCode::WrongMint,
-        constraint = mint.key() == pool_ta.mint @ ErrorCode::WrongMint,
-    )]
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
-
     /// The token account of the owner, where the NFT will be transferred from.
     #[account(
         mut,
-        token::mint = mint,
+        token::mint = mplx.mint,
         token::authority = transfer.owner,
         token::token_program = token_program,
     )]
@@ -46,7 +38,7 @@ pub struct DepositNft<'info> {
     #[account(
         init_if_needed,
         payer = transfer.owner,
-        associated_token::mint = mint,
+        associated_token::mint = mplx.mint,
         associated_token::authority = transfer.pool,
         associated_token::token_program = token_program,
     )]
@@ -64,9 +56,7 @@ impl<'info> DepositNft<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.transfer.validate()?;
 
-        let asset = self
-            .mplx
-            .validate_asset(Some(self.mint.to_account_info()))?;
+        let asset = self.mplx.validate_asset()?;
 
         self.transfer.verify_whitelist(&asset)?;
 
@@ -88,7 +78,7 @@ pub fn process_deposit_nft(
             source_ata: &ctx.accounts.owner_ta,
             destination: &ctx.accounts.transfer.pool.to_account_info(),
             destination_ata: &ctx.accounts.pool_ta,
-            mint: &ctx.accounts.mint,
+            mint: &ctx.accounts.mplx.mint,
             metadata: &ctx.accounts.mplx.metadata,
             edition: &ctx.accounts.mplx.edition,
             system_program: &ctx.accounts.system_program,
@@ -119,7 +109,7 @@ pub fn process_deposit_nft(
     //create nft receipt
     let receipt = &mut ctx.accounts.nft_receipt;
     receipt.bump = ctx.bumps.nft_receipt;
-    receipt.mint = ctx.accounts.mint.key();
+    receipt.mint = ctx.accounts.mplx.mint.key();
     receipt.pool = ctx.accounts.transfer.pool.key();
 
     Ok(())

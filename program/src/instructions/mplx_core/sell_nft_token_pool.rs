@@ -18,7 +18,7 @@ impl<'info> SellNftTokenPoolCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
         self.trade.validate_sell(&PoolType::Token)?;
 
-        let asset = self.core.validate_asset(None)?;
+        let asset = self.core.validate_asset()?;
 
         self.trade.verify_whitelist(&asset)?;
 

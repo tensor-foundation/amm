@@ -10,9 +10,9 @@ pub use self::sell_nft_token_pool::*;
 pub use self::sell_nft_trade_pool::*;
 pub use self::withdraw_nft::*;
 
-use crate::{error::ErrorCode, MplCoreShared, MplCoreSharedBumps, NftDepositReceipt, *};
+use crate::{MplCoreShared, MplCoreSharedBumps, NftDepositReceipt, *};
 
 use anchor_lang::prelude::*;
 use mpl_core::instructions::TransferV1CpiBuilder;
 use tensor_toolbox::close_account;
-use tensor_vipers::{unwrap_int, Validate};
+use tensor_vipers::unwrap_int;

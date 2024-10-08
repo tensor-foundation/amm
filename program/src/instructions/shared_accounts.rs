@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::CloseAccount;
+use anchor_spl::token_interface::{CloseAccount, Mint};
 use constants::{CURRENT_POOL_VERSION, TAKER_FEE_BPS};
 use escrow_program::instructions::assert_decode_margin_account;
 use mpl_token_metadata::types::{Collection, Creator};
@@ -14,7 +14,7 @@ use tensor_toolbox::{
     transfer_lamports, transfer_lamports_checked, transfer_lamports_from_pda, CalcFeesArgs,
     CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT,
 };
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt, Validate};
+use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use super::constants::TFEE_PROGRAM_ID;
@@ -69,8 +69,8 @@ pub struct TransferShared<'info> {
     pub mint_proof: Option<UncheckedAccount<'info>>,
 }
 
-impl<'info> Validate<'info> for TransferShared<'info> {
-    fn validate(&self) -> Result<()> {
+impl<'info> TransferShared<'info> {
+    pub fn validate(&self) -> Result<()> {
         if self.pool.version != CURRENT_POOL_VERSION {
             throw_err!(ErrorCode::WrongPoolVersion);
         }
@@ -175,8 +175,8 @@ pub struct TradeShared<'info> {
     pub native_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for TradeShared<'info> {
-    fn validate(&self) -> Result<()> {
+impl<'info> TradeShared<'info> {
+    pub fn validate(&self) -> Result<()> {
         // If the pool has a cosigner, the cosigner account must be passed in.
         if self.pool.cosigner != Pubkey::default() {
             require!(self.cosigner.is_some(), ErrorCode::MissingCosigner);
@@ -521,6 +521,9 @@ impl<'info> TradeShared<'info> {
 /// Shared accounts for interacting with Metaplex legacy and pNFTs.
 #[derive(Accounts)]
 pub struct MplxShared<'info> {
+    /// The mint account of the NFT.
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+
     /// The Token Metadata metadata account of the NFT.
     /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
     #[account(mut)]
@@ -581,7 +584,8 @@ pub struct MplCoreShared<'info> {
 
 #[derive(Accounts)]
 pub struct T22Shared<'info> {
-    pub sys_program: Program<'info, System>,
+    /// The mint account of the NFT.
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
 }
 
 pub struct AmmAsset {
@@ -595,15 +599,13 @@ pub struct AmmAsset {
 }
 
 pub trait ValidateAsset<'info> {
-    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset>;
+    fn validate_asset(&self) -> Result<AmmAsset>;
 }
 
 impl<'info> ValidateAsset<'info> for T22Shared<'info> {
-    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
-        let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
-
+    fn validate_asset(&self) -> Result<AmmAsset> {
         // Validate mint account and determine if royalites need to be paid.
-        let royalties = validate_mint(&mint)?;
+        let royalties = validate_mint(&self.mint.to_account_info())?;
 
         let seller_fee_basis_points = royalties.clone().map(|ref r| r.seller_fee).unwrap_or(0);
 
@@ -619,7 +621,7 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
         });
 
         Ok(AmmAsset {
-            pubkey: mint.key(),
+            pubkey: self.mint.key(),
             collection: None,
             whitelist_creators: None, // creators in Libreplex not verified
             royalty_creators: creators,
@@ -630,14 +632,13 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
 }
 
 impl<'info> ValidateAsset<'info> for MplxShared<'info> {
-    fn validate_asset(&self, mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
-        let mint = unwrap_opt!(mint, ErrorCode::WrongMint);
-        let metadata = assert_decode_metadata(&mint.key(), &self.metadata)?;
+    fn validate_asset(&self) -> Result<AmmAsset> {
+        let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;
         let royalty_enforced = is_royalty_enforced(metadata.token_standard);
         let verified_creators = metadata.creators.clone();
 
         Ok(AmmAsset {
-            pubkey: mint.key(),
+            pubkey: self.mint.key(),
             collection: metadata.collection,
             whitelist_creators: verified_creators,
             royalty_creators: metadata.creators,
@@ -648,7 +649,7 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
 }
 
 impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
-    fn validate_asset(&self, _mint: Option<AccountInfo<'info>>) -> Result<AmmAsset> {
+    fn validate_asset(&self) -> Result<AmmAsset> {
         let royalties = validate_asset(
             &self.asset.to_account_info(),
             self.collection
