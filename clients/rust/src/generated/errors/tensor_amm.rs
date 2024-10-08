@@ -106,8 +106,8 @@ pub enum TensorAmmError {
     /// 12031 - wrong frozen status
     #[error("wrong frozen status")]
     WrongFrozenStatus = 0x2EFF,
-    /// 12032 - cannot use shared escrow in token pools
-    #[error("cannot use shared escrow in token pools")]
+    /// 12032 - cannot use shared escrow in NFT pools
+    #[error("cannot use shared escrow in NFT pools")]
     CannotUseSharedEscrow = 0x2F00,
     /// 12033 - max taker sell count exceeded, pool cannot buy anymore NFTs
     #[error("max taker sell count exceeded, pool cannot buy anymore NFTs")]

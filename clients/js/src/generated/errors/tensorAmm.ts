@@ -70,7 +70,7 @@ export const TENSOR_AMM_ERROR__POOL_ON_SHARED_ESCROW = 0x2efd; // 12029
 export const TENSOR_AMM_ERROR__WRONG_ORDER_TYPE = 0x2efe; // 12030
 /** WrongFrozenStatus: wrong frozen status */
 export const TENSOR_AMM_ERROR__WRONG_FROZEN_STATUS = 0x2eff; // 12031
-/** CannotUseSharedEscrow: cannot use shared escrow in token pools */
+/** CannotUseSharedEscrow: cannot use shared escrow in NFT pools */
 export const TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW = 0x2f00; // 12032
 /** MaxTakerSellCountExceeded: max taker sell count exceeded, pool cannot buy anymore NFTs */
 export const TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED = 0x2f01; // 12033
@@ -185,7 +185,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__BAD_RULE_SET]: `rule set for programmable nft does not match`,
     [TENSOR_AMM_ERROR__BAD_SHARED_ESCROW]: `bad shared escrow account passed`,
     [TENSOR_AMM_ERROR__BAD_WHITELIST]: `unexpected whitelist address`,
-    [TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW]: `cannot use shared escrow in token pools`,
+    [TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW]: `cannot use shared escrow in NFT pools`,
     [TENSOR_AMM_ERROR__CREATOR_MISMATCH]: `provided creator address does not match metadata creator`,
     [TENSOR_AMM_ERROR__DELTA_TOO_LARGE]: `delta too large`,
     [TENSOR_AMM_ERROR__ESCROW_PROGRAM_NOT_SET]: `Escrow program not set`,

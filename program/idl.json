@@ -3909,7 +3909,7 @@
     {
       "code": 12032,
       "name": "CannotUseSharedEscrow",
-      "msg": "cannot use shared escrow in token pools"
+      "msg": "cannot use shared escrow in NFT pools"
     },
     {
       "code": 12033,
