@@ -82,7 +82,6 @@ pub fn process_withdraw_nft_t22<'info>(
     // this will only add the remaining accounts required by a transfer hook if we
     // recognize the hook as a royalty one
     if royalties.is_some() {
-        msg!("adding remaining accounts");
         transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
     }
 
