@@ -1,6 +1,7 @@
 import { Account, Address, generateKeyPairSigner } from '@solana/web3.js';
 import { findMarginAccountPda } from '@tensor-foundation/escrow';
 import {
+  LAMPORTS_PER_SOL,
   TSWAP_SINGLETON,
   createDefaultSolanaClient,
   generateKeyPairSignerWithSol,
@@ -23,6 +24,7 @@ import {
   solCurrency,
 } from '../src/index.js';
 import {
+  createPoolAndFundSharedEscrow,
   createPool,
   createPoolThrows,
   createWhitelistV2,
@@ -358,7 +360,10 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
 
 test('it can create a pool w/ shared escrow', async (t) => {
   const client = createDefaultSolanaClient();
-  const updateAuthority = await generateKeyPairSignerWithSol(client);
+  const updateAuthority = await generateKeyPairSignerWithSol(
+    client,
+    5n * LAMPORTS_PER_SOL
+  );
   const freezeAuthority = (await generateKeyPairSigner()).address;
   const namespace = await generateKeyPairSigner();
   const voc = (await generateKeyPairSigner()).address;
@@ -384,12 +389,15 @@ test('it can create a pool w/ shared escrow', async (t) => {
     tswap: TSWAP_SINGLETON,
     marginNr: 0,
   });
-  const { pool } = await createPool({
-    client,
-    whitelist,
-    owner: updateAuthority,
-    sharedEscrow: margin,
-  });
+  const { pool } = await createPoolAndFundSharedEscrow(
+    {
+      client,
+      whitelist,
+      owner: updateAuthority,
+      sharedEscrow: margin,
+    },
+    LAMPORTS_PER_SOL
+  );
 
   const poolAccount = await fetchPool(client.rpc, pool);
   // Then an account was created with the correct data.

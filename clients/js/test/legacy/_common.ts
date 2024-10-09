@@ -130,7 +130,7 @@ export async function setupLegacyTest(
         verified: true,
       },
     ],
-    ruleset,
+    ruleSet: ruleset,
   });
 
   // Reset test timeout for long-running tests.
