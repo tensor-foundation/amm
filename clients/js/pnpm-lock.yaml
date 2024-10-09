@@ -43,8 +43,8 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1(bufferutil@4.0.8)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.6.2)(utf-8-validate@5.0.10)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@tensor-foundation/whitelist':
-        specifier: ^0.1.0
-        version: 0.1.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        specifier: ^0.3.0
+        version: 0.3.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@types/node':
         specifier: 20.12.7
         version: 20.12.7
@@ -1769,8 +1769,8 @@ packages:
   '@tensor-foundation/wen-royalty-distribution@0.1.1':
     resolution: {integrity: sha512-EEOrvJP5sYmo2P4BwzhQyGZg5kvvdXFCM4wSWqqh76aTXb0GO7MTm0Bu5OE5DSgfXQoO7S5aot1vNYfxGnV96Q==}
 
-  '@tensor-foundation/whitelist@0.1.0':
-    resolution: {integrity: sha512-yZqbFmQwmiZiP1cvLb0VJINFI1zCEz3CgEP73LtxUtoOPdkAHql4iXVOmX9uZUz4g1VfC4TAL9wlxTtLBlBCRw==}
+  '@tensor-foundation/whitelist@0.3.0':
+    resolution: {integrity: sha512-pac/+Ddu1dJHo+7zhNj90L1CCQpzbTGKFDWzBK39HgR8+iyVtkICDhAfIsYc1dHV4EpKF44fOqKsZyNpKH8hMA==}
 
   '@tootallnate/once@1.1.2':
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
@@ -7513,7 +7513,7 @@ snapshots:
     transitivePeerDependencies:
       - '@solana/web3.js'
 
-  '@tensor-foundation/whitelist@0.1.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@tensor-foundation/whitelist@0.3.0(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       '@coral-xyz/anchor-errors': 0.30.1
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
