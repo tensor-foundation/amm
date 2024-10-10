@@ -210,7 +210,7 @@
         },
         {
           "name": "owner",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false,
           "docs": [
             "The owner account must be specified and match the account stored in the pool but does not have to sign",

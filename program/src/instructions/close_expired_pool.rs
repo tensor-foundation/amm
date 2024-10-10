@@ -14,6 +14,7 @@ pub struct CloseExpiredPool<'info> {
     /// The owner account must be specified and match the account stored in the pool but does not have to sign
     /// for expired pools.
     /// CHECK: seeds in pool
+    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The pool to close.
