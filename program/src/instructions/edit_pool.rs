@@ -1,5 +1,5 @@
 //! Edit an existing pool.
-use tensor_vipers::{throw_err, try_or_err};
+use tensor_vipers::throw_err;
 
 use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
@@ -76,21 +76,11 @@ pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<(
         pool.price_offset = 0;
     }
 
-    let timestamp = Clock::get()?.unix_timestamp;
-
     // If the user passes in a new expiry value, set it to that.
     // None, in this case means no change, instead of max value like it does in create_pool.
     if let Some(expire_in_sec) = args.expire_in_sec {
-        // Convert the user's u64 seconds offset to i64 for timestamp math.
-        let expire_in_i64 = try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
-
-        // Ensure the expiry is not too far in the future.
-        require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
-
         // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
-        pool.expiry = timestamp
-            .checked_add(expire_in_i64)
-            .ok_or(ErrorCode::ArithmeticError)?;
+        pool.expiry = assert_expiry(expire_in_sec)?;
     }
 
     Ok(())

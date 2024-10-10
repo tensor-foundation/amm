@@ -6,6 +6,7 @@ use tensor_vipers::{throw_err, try_or_err, unwrap_checked, unwrap_int};
 use crate::{
     constants::{DISCRIMINATOR_SIZE, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
     error::ErrorCode,
+    MAX_EXPIRY_SEC,
 };
 
 /// Size of the Pool account, inclusive of the 8-byte discriminator.
@@ -432,4 +433,18 @@ pub fn update_pool_accounting(
     }
 
     Ok(())
+}
+
+pub(crate) fn assert_expiry(expire_in_sec: u64) -> Result<i64> {
+    let timestamp = Clock::get()?.unix_timestamp;
+
+    // Convert the user's u64 seconds offset to i64 for timestamp math.
+    let expire_in_i64 = try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
+    // Ensure the expiry is not too far in the future.
+    require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
+
+    // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
+    timestamp
+        .checked_add(expire_in_i64)
+        .ok_or(ErrorCode::ArithmeticError.into())
 }

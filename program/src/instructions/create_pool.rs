@@ -1,7 +1,7 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
 use escrow_program::state::MarginAccount;
-use tensor_vipers::{throw_err, try_or_err};
+use tensor_vipers::throw_err;
 use whitelist_program::{self, WhitelistV2};
 
 use crate::{
@@ -10,6 +10,8 @@ use crate::{
     state::{Pool, PoolConfig, POOL_SIZE},
     PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
+
+use super::assert_expiry;
 
 /// Create pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -85,18 +87,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     let timestamp = Clock::get()?.unix_timestamp;
 
     let expiry = match args.expire_in_sec {
-        Some(expire_in_sec) => {
-            // Convert the user's u64 seconds offset to i64 for timestamp math.
-            let expire_in_i64 =
-                try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
-            // Ensure the expiry is not too far in the future.
-            require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
-
-            // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
-            timestamp
-                .checked_add(expire_in_i64)
-                .ok_or(ErrorCode::ArithmeticError)?
-        }
+        Some(expire_in_sec) => assert_expiry(expire_in_sec)?,
         // No expiry provided, set to the maximum allowed value.
         None => timestamp
             .checked_add(MAX_EXPIRY_SEC)

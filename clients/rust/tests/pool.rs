@@ -320,6 +320,7 @@ async fn close_expired_pool_returns_excess_lamports_to_owner() {
     let clock = context.banks_client.get_sysvar::<Clock>().await.unwrap();
     let now = clock.unix_timestamp;
 
+    let rent_payer_balance_before = context.banks_client.get_balance(rent_payer).await.unwrap();
     let owner_balance_before = context.banks_client.get_balance(pool_owner).await.unwrap();
 
     // The pool has expired
@@ -349,10 +350,12 @@ async fn close_expired_pool_returns_excess_lamports_to_owner() {
     let rent = context.banks_client.get_rent().await.unwrap();
     let pool_rent = rent.minimum_balance(Pool::LEN);
 
+    let rent_payer_balance_after = context.banks_client.get_balance(rent_payer).await.unwrap();
     let owner_balance_after = context.banks_client.get_balance(pool_owner).await.unwrap();
+    assert_eq!(owner_balance_after, owner_balance_before + ONE_SOL_LAMPORTS);
     assert_eq!(
-        owner_balance_after,
-        owner_balance_before + ONE_SOL_LAMPORTS - pool_rent
+        rent_payer_balance_after,
+        rent_payer_balance_before + pool_rent
     );
 }
 
