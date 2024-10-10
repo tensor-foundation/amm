@@ -24,6 +24,7 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
+import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -41,6 +42,7 @@ import {
   findWhitelistV2Pda,
   getCreateWhitelistV2Instruction,
   getInitUpdateMintProofV2InstructionAsync,
+  intoAddress,
 } from '@tensor-foundation/whitelist';
 import { ExecutionContext } from 'ava';
 import bs58 from 'bs58';
@@ -57,7 +59,7 @@ import {
   getCreatePoolInstruction,
   getDepositSolInstruction,
 } from '../src/index.js';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
+import { generateTreeOfSize } from './_merkle.js';
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
@@ -857,4 +859,27 @@ export async function assertNftReceiptClosed(params: DepositReceiptParams) {
     nftReceipt
   );
   t.assert(maybeNftReceipt.exists === false);
+}
+
+export async function createProofWhitelist(
+  client: Client,
+  updateAuthority: KeyPairSigner,
+  assets: Address[],
+  treeSize: number
+) {
+  // Setup a merkle tree with our assets as leaves
+  const { root, proofs } = await generateTreeOfSize(treeSize, assets);
+
+  const namespace = await generateKeyPairSigner();
+
+  const conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    conditions,
+    namespace,
+  });
+
+  return { whitelist, proofs };
 }

@@ -11,7 +11,10 @@ use solana_sdk::{
 };
 use tensor_amm::{
     accounts::Pool,
-    instructions::{CloseExpiredPool, ClosePool, EditPool, EditPoolInstructionArgs},
+    instructions::{
+        CloseExpiredPool, ClosePool, DepositSol, DepositSolInstructionArgs, EditPool,
+        EditPoolInstructionArgs,
+    },
     types::{CurveType, PoolConfig},
 };
 
@@ -231,6 +234,131 @@ async fn close_expired_pool() {
     let account = context.banks_client.get_account(pool).await.unwrap();
     assert!(account.is_none());
 }
+
+#[tokio::test]
+async fn close_expired_pool_returns_excess_lamports_to_owner() {
+    // Set up program context with Tamm and WhiteList programs
+    let mut context = program_context().await;
+
+    // Set up signers and identity and fund them.
+    let rent_payer_signer = Keypair::new();
+    let rent_payer = rent_payer_signer.pubkey();
+    let pool_owner_signer = Keypair::new();
+    let pool_owner = pool_owner_signer.pubkey();
+
+    airdrop(&mut context, &rent_payer, 2 * ONE_SOL_LAMPORTS)
+        .await
+        .unwrap();
+    airdrop(&mut context, &pool_owner, 2 * ONE_SOL_LAMPORTS)
+        .await
+        .unwrap();
+
+    // Set up a basic whitelist.
+    let TestWhitelistV2 { whitelist, .. } = setup_default_whitelist(
+        &mut context,
+        TestWhitelistV2Inputs {
+            update_authority_signer: &pool_owner_signer,
+            ..Default::default()
+        },
+    )
+    .await;
+
+    // When a pool is created
+    let TestPool { pool, config, .. } = setup_default_pool(
+        &mut context,
+        TestPoolInputs {
+            payer: &rent_payer_signer,
+            owner: &pool_owner_signer,
+            whitelist,
+            expire_in_sec: Some(1),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    // And the owner has deposited 1 SOL
+    let deposit_ix = DepositSol {
+        pool,
+        owner: pool_owner,
+        system_program: system_program::id(),
+    }
+    .instruction(DepositSolInstructionArgs {
+        lamports: ONE_SOL_LAMPORTS,
+    });
+
+    let tx = Transaction::new_signed_with_payer(
+        &[deposit_ix],
+        Some(&context.payer.pubkey()),
+        &[&context.payer, &pool_owner_signer],
+        context.last_blockhash,
+    );
+    context.banks_client.process_transaction(tx).await.unwrap();
+
+    // Then an account was created with the correct data.
+    let account = context.banks_client.get_account(pool).await.unwrap();
+
+    assert!(account.is_some());
+
+    let account = account.unwrap();
+
+    let mut account_data = account.data.as_ref();
+    let pool_data = Pool::deserialize(&mut account_data).unwrap();
+    assert_eq!(pool_data.config, config);
+    assert_eq!(pool_data.expiry, pool_data.created_at + 1);
+
+    // Warp ahead so the pool expires
+    context.warp_to_slot(2000).unwrap();
+
+    let account = context.banks_client.get_account(pool).await.unwrap();
+
+    assert!(account.is_some());
+
+    let account = account.unwrap();
+
+    let mut account_data = account.data.as_ref();
+    let pool_data = Pool::deserialize(&mut account_data).unwrap();
+    let clock = context.banks_client.get_sysvar::<Clock>().await.unwrap();
+    let now = clock.unix_timestamp;
+
+    let rent_payer_balance_before = context.banks_client.get_balance(rent_payer).await.unwrap();
+    let owner_balance_before = context.banks_client.get_balance(pool_owner).await.unwrap();
+
+    // The pool has expired
+    assert!(now > pool_data.expiry);
+
+    let ix = CloseExpiredPool {
+        rent_payer,
+        pool,
+        owner: pool_owner,
+        system_program: system_program::id(),
+    }
+    .instruction();
+
+    let tx = Transaction::new_signed_with_payer(
+        &[ix],
+        Some(&context.payer.pubkey()),
+        &[&context.payer], // No signers other than tx payer--permissionless close
+        context.last_blockhash,
+    );
+    context.banks_client.process_transaction(tx).await.unwrap();
+
+    // Then the account is gone
+    let account = context.banks_client.get_account(pool).await.unwrap();
+    assert!(account.is_none());
+
+    // And the owner has received 1 minus the rent back
+    let rent = context.banks_client.get_rent().await.unwrap();
+    let pool_rent = rent.minimum_balance(Pool::LEN);
+
+    let rent_payer_balance_after = context.banks_client.get_balance(rent_payer).await.unwrap();
+    let owner_balance_after = context.banks_client.get_balance(pool_owner).await.unwrap();
+    assert_eq!(owner_balance_after, owner_balance_before + ONE_SOL_LAMPORTS);
+    assert_eq!(
+        rent_payer_balance_after,
+        rent_payer_balance_before + pool_rent
+    );
+}
+
 
 #[tokio::test]
 async fn edit_pool() {
