@@ -40,8 +40,8 @@ export const TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED = 0x2eee; // 12014
 export const TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL = 0x2eef; // 12015
 /** StartingPriceTooSmall: starting price can't be smaller than 1 lamport */
 export const TENSOR_AMM_ERROR__STARTING_PRICE_TOO_SMALL = 0x2ef0; // 12016
-/** PoolKeepAlive: Pool must keep minimum rent balance */
-export const TENSOR_AMM_ERROR__POOL_KEEP_ALIVE = 0x2ef1; // 12017
+/** PoolInsufficientRent: Pool must keep minimum rent balance */
+export const TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT = 0x2ef1; // 12017
 /** WrongRentPayer: Wrong rent payer */
 export const TENSOR_AMM_ERROR__WRONG_RENT_PAYER = 0x2ef2; // 12018
 /** ExpiryTooLarge: Expiry too large */
@@ -80,7 +80,7 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL
   | typeof TENSOR_AMM_ERROR__MISSING_COSIGNER
   | typeof TENSOR_AMM_ERROR__MISSING_MAKER_BROKER
-  | typeof TENSOR_AMM_ERROR__POOL_KEEP_ALIVE
+  | typeof TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT
   | typeof TENSOR_AMM_ERROR__POOL_NOT_EXPIRED
   | typeof TENSOR_AMM_ERROR__POOL_ON_SHARED_ESCROW
   | typeof TENSOR_AMM_ERROR__PRICE_MISMATCH
@@ -112,7 +112,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL]: `max taker sell count is too small`,
     [TENSOR_AMM_ERROR__MISSING_COSIGNER]: `Missing cosigner account`,
     [TENSOR_AMM_ERROR__MISSING_MAKER_BROKER]: `Missing maker broker account`,
-    [TENSOR_AMM_ERROR__POOL_KEEP_ALIVE]: `Pool must keep minimum rent balance`,
+    [TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT]: `Pool must keep minimum rent balance`,
     [TENSOR_AMM_ERROR__POOL_NOT_EXPIRED]: `Pool not expired`,
     [TENSOR_AMM_ERROR__POOL_ON_SHARED_ESCROW]: `expected a non-shared escrow pool to be passed in`,
     [TENSOR_AMM_ERROR__PRICE_MISMATCH]: `specified price not within current price`,

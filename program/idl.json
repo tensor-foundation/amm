@@ -26,13 +26,6 @@
         "defined": "usize"
       },
       "value": "8 + 1 + 32 * 2"
-    },
-    {
-      "name": "POOL_SIZE",
-      "type": {
-        "defined": "usize"
-      },
-      "value": "8 + (2 * 1) + 32 + 8 * 3 + (3 * 32) + (32 + 8) + (2 * 4) + (2 * 4) + 8 + (3 * 32) + 4 + (2 * 1) + (2 * 8) + 1 + 2 + 100"
     }
   ],
   "instructions": [
@@ -3833,7 +3826,7 @@
     },
     {
       "code": 12017,
-      "name": "PoolKeepAlive",
+      "name": "PoolInsufficientRent",
       "msg": "Pool must keep minimum rent balance"
     },
     {

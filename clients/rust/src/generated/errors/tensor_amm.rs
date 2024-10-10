@@ -63,7 +63,7 @@ pub enum TensorAmmError {
     StartingPriceTooSmall = 0x2EF0,
     /// 12017 - Pool must keep minimum rent balance
     #[error("Pool must keep minimum rent balance")]
-    PoolKeepAlive = 0x2EF1,
+    PoolInsufficientRent = 0x2EF1,
     /// 12018 - Wrong rent payer
     #[error("Wrong rent payer")]
     WrongRentPayer = 0x2EF2,

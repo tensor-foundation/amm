@@ -28,7 +28,6 @@ pub struct CloseExpiredPool<'info> {
         has_one = rent_payer @ ErrorCode::WrongRentPayer,
         constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.nfts_held == 0 @ ErrorCode::ExistingNfts,
-        // Must be expired
         constraint = Clock::get()?.unix_timestamp > pool.expiry @ ErrorCode::PoolNotExpired,
     )]
     pub pool: Box<Account<'info, Pool>>,
