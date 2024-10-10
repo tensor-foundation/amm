@@ -3748,273 +3748,143 @@
   "errors": [
     {
       "code": 12000,
-      "name": "InvalidProof",
-      "msg": "invalid merkle proof, token not whitelisted"
+      "name": "WrongWhitelist",
+      "msg": "wrong whitelist"
     },
     {
       "code": 12001,
-      "name": "WhitelistNotVerified",
-      "msg": "whitelist not verified -- currently only verified pools supported"
-    },
-    {
-      "code": 12002,
-      "name": "BadWhitelist",
-      "msg": "unexpected whitelist address"
-    },
-    {
-      "code": 12003,
       "name": "WrongPoolType",
       "msg": "operation not permitted on this pool type"
     },
     {
-      "code": 12004,
-      "name": "BadFeeAccount",
-      "msg": "fee account doesn't match that stored on pool"
-    },
-    {
-      "code": 12005,
-      "name": "BadEscrowAccount",
-      "msg": "escrow account doesn't match that stored on pool"
-    },
-    {
-      "code": 12006,
-      "name": "MissingFees",
-      "msg": "when setting up a Trade pool, must provide fee bps"
-    },
-    {
-      "code": 12007,
+      "code": 12002,
       "name": "FeesTooHigh",
       "msg": "fees entered above allowed threshold"
     },
     {
-      "code": 12008,
+      "code": 12003,
       "name": "DeltaTooLarge",
       "msg": "delta too large"
     },
     {
-      "code": 12009,
+      "code": 12004,
       "name": "ArithmeticError",
       "msg": "arithmetic error"
     },
     {
-      "code": 12010,
-      "name": "WrongPool",
-      "msg": "this nft doesnt belong to this pool"
-    },
-    {
-      "code": 12011,
-      "name": "RoyaltiesEnabled",
-      "msg": "royalties are enabled always"
-    },
-    {
-      "code": 12012,
+      "code": 12005,
       "name": "PriceMismatch",
       "msg": "specified price not within current price"
     },
     {
-      "code": 12013,
+      "code": 12006,
       "name": "ExistingNfts",
       "msg": "cannot close pool with nfts in escrow -- withdraw all before closing"
     },
     {
-      "code": 12014,
-      "name": "WrongMint",
-      "msg": "wrong mint passed for provided accounts"
-    },
-    {
-      "code": 12015,
-      "name": "InsufficientTswapAccBalance",
-      "msg": "insufficient Tswap account balance"
-    },
-    {
-      "code": 12016,
-      "name": "BadOwner",
-      "msg": "bad owner"
-    },
-    {
-      "code": 12017,
+      "code": 12007,
       "name": "FeesNotAllowed",
       "msg": "fees not allowed for non-trade pools"
     },
     {
-      "code": 12018,
-      "name": "BadMetadata",
-      "msg": "metadata account does not match"
-    },
-    {
-      "code": 12019,
-      "name": "CreatorMismatch",
-      "msg": "provided creator address does not match metadata creator"
-    },
-    {
-      "code": 12020,
+      "code": 12008,
       "name": "WrongPoolVersion",
       "msg": "wrong pool version provided"
     },
     {
-      "code": 12021,
-      "name": "PoolsAreTheSame",
-      "msg": "new pool should not match old pool"
-    },
-    {
-      "code": 12022,
-      "name": "WrongAuthority",
-      "msg": "wrong nft authority account provided"
-    },
-    {
-      "code": 12023,
-      "name": "FrozenAmountMismatch",
-      "msg": "amount frozen doesnt match current price"
-    },
-    {
-      "code": 12024,
+      "code": 12009,
       "name": "BadMintProof",
-      "msg": "mint proof account does not match"
+      "msg": "bad mint proof account"
     },
     {
-      "code": 12025,
-      "name": "BadCosigner",
-      "msg": "bad cosigner passed - either wrong key or no signature"
+      "code": 12010,
+      "name": "WrongCosigner",
+      "msg": "wrong cosigner"
     },
     {
-      "code": 12026,
-      "name": "PoolFrozen",
-      "msg": "pool is frozen and cannot execute normal operations"
-    },
-    {
-      "code": 12027,
+      "code": 12011,
       "name": "BadSharedEscrow",
-      "msg": "bad shared escrow account passed"
+      "msg": "bad shared escrow account"
     },
     {
-      "code": 12028,
-      "name": "PoolNotOnSharedEscrow",
-      "msg": "expected a shared escrow pool to be passed in"
-    },
-    {
-      "code": 12029,
+      "code": 12012,
       "name": "PoolOnSharedEscrow",
       "msg": "expected a non-shared escrow pool to be passed in"
     },
     {
-      "code": 12030,
-      "name": "WrongOrderType",
-      "msg": "wrong order type"
-    },
-    {
-      "code": 12031,
-      "name": "WrongFrozenStatus",
-      "msg": "wrong frozen status"
-    },
-    {
-      "code": 12032,
+      "code": 12013,
       "name": "CannotUseSharedEscrow",
       "msg": "cannot use shared escrow in NFT pools"
     },
     {
-      "code": 12033,
+      "code": 12014,
       "name": "MaxTakerSellCountExceeded",
       "msg": "max taker sell count exceeded, pool cannot buy anymore NFTs"
     },
     {
-      "code": 12034,
+      "code": 12015,
       "name": "MaxTakerSellCountTooSmall",
       "msg": "max taker sell count is too small"
     },
     {
-      "code": 12035,
-      "name": "BadRuleSet",
-      "msg": "rule set for programmable nft does not match"
-    },
-    {
-      "code": 12036,
-      "name": "PoolFeesCompounded",
-      "msg": "this pool compounds fees and they cannot be withdrawn separately"
-    },
-    {
-      "code": 12037,
-      "name": "BadRoyaltiesPct",
-      "msg": "royalties percentage passed in must be between 0 and 100"
-    },
-    {
-      "code": 12038,
+      "code": 12016,
       "name": "StartingPriceTooSmall",
       "msg": "starting price can't be smaller than 1 lamport"
     },
     {
-      "code": 12039,
+      "code": 12017,
       "name": "PoolKeepAlive",
       "msg": "Pool must keep minimum rent balance"
     },
     {
-      "code": 12040,
+      "code": 12018,
       "name": "WrongRentPayer",
       "msg": "Wrong rent payer"
     },
     {
-      "code": 12041,
-      "name": "SplTokensNotSupported",
-      "msg": "SPL tokens not supported"
-    },
-    {
-      "code": 12042,
+      "code": 12019,
       "name": "ExpiryTooLarge",
       "msg": "Expiry too large"
     },
     {
-      "code": 12043,
+      "code": 12020,
       "name": "ExpiredPool",
       "msg": "Expired Pool"
     },
     {
-      "code": 12044,
+      "code": 12021,
       "name": "PoolNotExpired",
       "msg": "Pool not expired"
     },
     {
-      "code": 12045,
-      "name": "UnsupportedCurrency",
-      "msg": "Unsupported currency"
-    },
-    {
-      "code": 12046,
+      "code": 12022,
       "name": "InvalidPoolAmount",
       "msg": "Invalid pool amount"
     },
     {
-      "code": 12047,
+      "code": 12023,
       "name": "WrongMakerBroker",
       "msg": "Wrong maker broker account"
     },
     {
-      "code": 12048,
+      "code": 12024,
       "name": "WrongOwner",
-      "msg": "Wrong rent payer"
+      "msg": "Wrong owner"
     },
     {
-      "code": 12049,
+      "code": 12025,
       "name": "EscrowProgramNotSet",
       "msg": "Escrow program not set"
     },
     {
-      "code": 12050,
-      "name": "MintProofNotSet",
-      "msg": "Mint proof not set"
-    },
-    {
-      "code": 12051,
+      "code": 12026,
       "name": "MissingMakerBroker",
       "msg": "Missing maker broker account"
     },
     {
-      "code": 12052,
+      "code": 12027,
       "name": "MissingCosigner",
       "msg": "Missing cosigner account"
-    },
-    {
-      "code": 12053,
-      "name": "WrongCosigner",
-      "msg": "Wrong cosigner account"
     }
   ],
   "metadata": {

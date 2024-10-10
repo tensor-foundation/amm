@@ -1,7 +1,7 @@
 //! Deposit SOL into a Token or Trade pool.
-use anchor_lang::solana_program::{program::invoke, system_instruction};
 use constants::CURRENT_POOL_VERSION;
-use tensor_vipers::{throw_err, unwrap_checked, Validate};
+use tensor_toolbox::transfer_lamports;
+use tensor_vipers::unwrap_int;
 
 use crate::{error::ErrorCode, *};
 
@@ -9,7 +9,7 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct DepositSol<'info> {
     /// The owner of the pool--must sign to deposit SOL.
-    /// CHECK: has_one = owner in pool
+    /// CHECK: seeds in pool
     #[account(mut)]
     pub owner: Signer<'info>,
 
@@ -22,9 +22,9 @@ pub struct DepositSol<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
-        // can only deposit SOL into Token/Trade pool
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.shared_escrow == Pubkey::default() @ ErrorCode::PoolOnSharedEscrow,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -33,40 +33,7 @@ pub struct DepositSol<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> DepositSol<'info> {
-    fn transfer_lamports(&self, lamports: u64) -> Result<()> {
-        invoke(
-            &system_instruction::transfer(self.owner.key, &self.pool.key(), lamports),
-            &[
-                self.owner.to_account_info(),
-                self.pool.to_account_info(),
-                self.system_program.to_account_info(),
-            ],
-        )
-        .map_err(Into::into)
-    }
-}
-
-impl<'info> Validate<'info> for DepositSol<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.pool.shared_escrow != Pubkey::default() {
-            throw_err!(ErrorCode::PoolOnSharedEscrow);
-        }
-        match self.pool.config.pool_type {
-            PoolType::Token | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Allows a pool owner to deposit SOL into a Token or Trade pool.
-#[access_control(ctx.accounts.validate())]
 pub fn process_deposit_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositSol<'info>>,
     lamports: u64,
@@ -75,8 +42,12 @@ pub fn process_deposit_sol<'info>(
 
     // Update the pool's currency amount
     if pool.currency == Pubkey::default() {
-        pool.amount = unwrap_checked!({ pool.amount.checked_add(lamports) });
+        pool.amount = unwrap_int!(pool.amount.checked_add(lamports));
     }
 
-    ctx.accounts.transfer_lamports(lamports)
+    transfer_lamports(
+        &ctx.accounts.owner.to_account_info(),
+        &ctx.accounts.pool.to_account_info(),
+        lamports,
+    )
 }

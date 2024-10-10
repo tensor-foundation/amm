@@ -1,9 +1,12 @@
 use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 use tensor_toolbox::{transfer_lamports_checked, HUNDRED_PCT_BPS};
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
+use tensor_vipers::{throw_err, try_or_err, unwrap_checked, unwrap_int};
 
-use crate::error::ErrorCode;
+use crate::{
+    constants::{MAX_DELTA_BPS, MAX_MM_FEES_BPS},
+    error::ErrorCode,
+};
 
 /// Size of the Pool account, inclusive of the 8-byte discriminator.
 #[constant]
@@ -59,6 +62,33 @@ pub struct PoolConfig {
     pub delta: u64,
     pub mm_compound_fees: bool,
     pub mm_fee_bps: u16,
+}
+
+impl PoolConfig {
+    pub fn validate(&self) -> Result<()> {
+        match self.pool_type {
+            PoolType::NFT | PoolType::Token => {
+                if self.mm_fee_bps > 0 {
+                    throw_err!(ErrorCode::FeesNotAllowed);
+                }
+            }
+            PoolType::Trade => {
+                if self.mm_fee_bps > MAX_MM_FEES_BPS {
+                    throw_err!(ErrorCode::FeesTooHigh);
+                }
+            }
+        }
+
+        //for exponential pool delta can't be above 99.99% and has to fit into a u16
+        if self.curve_type == CurveType::Exponential {
+            let u16delta = try_or_err!(u16::try_from(self.delta), ErrorCode::ArithmeticError);
+            if u16delta > MAX_DELTA_BPS {
+                throw_err!(ErrorCode::DeltaTooLarge);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
@@ -196,7 +226,9 @@ impl Pool {
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
-            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1, side),
+            (PoolType::Trade, TakerSide::Sell) => {
+                self.shift_price(unwrap_int!(self.price_offset.checked_sub(1)), side)
+            }
 
             // Invalid combinations of pool type and side.
             _ => {
@@ -258,22 +290,6 @@ impl Pool {
         Ok(current_price)
     }
 
-    /// This check is against the following scenario:
-    /// 1. user sets cap to 1 and reaches it (so 1/1)
-    /// 2. user detaches shared escrow
-    /// 3. user sells more into the pool (so 2/1)
-    /// 4. user attaches shared escrow again, but 2/1 is theoretically invalid
-    pub fn adjust_pool_max_taker_sell_count(&mut self) -> Result<()> {
-        if self
-            .valid_max_sell_count(self.max_taker_sell_count)
-            .is_err()
-        {
-            self.max_taker_sell_count = self.stats.taker_sell_count - self.stats.taker_buy_count;
-        }
-
-        Ok(())
-    }
-
     /// Returns the seeds for the pool account.
     pub fn seeds(&self) -> [&[u8]; 4] {
         [
@@ -282,34 +298,6 @@ impl Pool {
             self.pool_id.as_ref(),
             &self.bump,
         ]
-    }
-
-    pub fn validate_maker_broker(&self, maker_broker: &Option<UncheckedAccount>) -> Result<()> {
-        // If the pool has a maker broker, the maker broker account must be passed in.
-        if self.maker_broker == Pubkey::default() {
-            return Ok(());
-        }
-        require!(
-            maker_broker
-                .as_ref()
-                .ok_or(ErrorCode::MissingMakerBroker)?
-                .key()
-                == self.maker_broker,
-            ErrorCode::WrongMakerBroker
-        );
-        Ok(())
-    }
-
-    pub fn validate_cosigner(&self, cosigner: &Option<Signer>) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.cosigner == Pubkey::default() {
-            return Ok(());
-        }
-        require!(
-            cosigner.as_ref().ok_or(ErrorCode::MissingCosigner)?.key() == self.cosigner,
-            ErrorCode::WrongCosigner
-        );
-        Ok(())
     }
 }
 

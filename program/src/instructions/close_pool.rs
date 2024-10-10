@@ -1,6 +1,5 @@
 //! Close a pool if it has no NFTs and is not attached to a shared escrow.
 use constants::CURRENT_POOL_VERSION;
-use tensor_vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
@@ -8,7 +7,7 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct ClosePool<'info> {
     /// The rent payer to refund pool rent to.
-    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    /// CHECK: has_one in pool
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
@@ -25,7 +24,9 @@ pub struct ClosePool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        has_one = rent_payer @ ErrorCode::WrongRentPayer,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
+        constraint = pool.nfts_held == 0 @ ErrorCode::ExistingNfts,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -33,21 +34,7 @@ pub struct ClosePool<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for ClosePool<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.pool.nfts_held > 0 {
-            throw_err!(ErrorCode::ExistingNfts);
-        }
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        Ok(())
-    }
-}
-
 /// Allows the owner to close a pool if it has no NFTs.
-#[access_control(ctx.accounts.validate())]
 pub fn process_close_pool<'info>(ctx: Context<'_, '_, '_, 'info, ClosePool<'info>>) -> Result<()> {
     // Must close manually because we cannot do this logic in the accounts macro.
 

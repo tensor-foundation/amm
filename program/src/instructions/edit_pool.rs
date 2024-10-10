@@ -1,17 +1,8 @@
 //! Edit an existing pool.
-use tensor_vipers::{throw_err, try_or_err, Validate};
+use tensor_vipers::{throw_err, try_or_err};
 
-use self::constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS};
+use self::constants::CURRENT_POOL_VERSION;
 use crate::{error::ErrorCode, *};
-
-macro_rules! unwrap_opt_or_return_ok {
-    ($expr:expr) => {
-        match $expr {
-            Some(val) => val,
-            None => return Ok(()),
-        }
-    };
-}
 
 /// Edit pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -38,7 +29,7 @@ pub struct EditPool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -47,54 +38,24 @@ pub struct EditPool<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for EditPool<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 impl<'info> EditPool<'info> {
-    fn validate_pool_type(&self, new_config: Option<PoolConfig>) -> Result<()> {
-        let new_config = unwrap_opt_or_return_ok!(new_config);
+    fn validate_pool_config(&self, new_config: Option<PoolConfig>) -> Result<()> {
+        let new_config = match new_config {
+            Some(config) => config,
+            None => return Ok(()),
+        };
 
         //cannot change pool type
         if self.pool.config.pool_type != new_config.pool_type {
             throw_err!(ErrorCode::WrongPoolType);
         }
 
-        match new_config.pool_type {
-            PoolType::NFT | PoolType::Token => {
-                if new_config.mm_fee_bps > 0 {
-                    throw_err!(ErrorCode::FeesNotAllowed);
-                }
-            }
-            PoolType::Trade => {
-                if new_config.mm_fee_bps > MAX_MM_FEES_BPS {
-                    throw_err!(ErrorCode::FeesTooHigh);
-                }
-            }
-        }
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        //for exponential pool delta can't be above 99.99% and has to fit into a u16
-        if new_config.curve_type == CurveType::Exponential {
-            let u16delta = try_or_err!(u16::try_from(new_config.delta), ErrorCode::ArithmeticError);
-            if u16delta > MAX_DELTA_BPS {
-                throw_err!(ErrorCode::DeltaTooLarge);
-            }
-        }
-
-        Ok(())
+        new_config.validate()
     }
 }
 
 /// Edit an existing pool.
-#[access_control(ctx.accounts.validate(); ctx.accounts.validate_pool_type(args.new_config))]
+#[access_control(ctx.accounts.validate_pool_config(args.new_config))]
 pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 

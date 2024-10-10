@@ -1,6 +1,5 @@
 //! Permissionlessly close an expired pool.
 use constants::CURRENT_POOL_VERSION;
-use tensor_vipers::{throw_err, Validate};
 
 use crate::{error::ErrorCode, *};
 
@@ -8,13 +7,13 @@ use crate::{error::ErrorCode, *};
 #[derive(Accounts)]
 pub struct CloseExpiredPool<'info> {
     /// The rent payer to refund pool rent to.
-    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    /// CHECK: has_one in pool
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
     /// The owner account must be specified and match the account stored in the pool but does not have to sign
     /// for expired pools.
-    /// CHECK: has_one = owner in pool
+    /// CHECK: seeds in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
@@ -26,7 +25,9 @@ pub struct CloseExpiredPool<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        has_one = rent_payer @ ErrorCode::WrongRentPayer,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
+        constraint = pool.nfts_held == 0 @ ErrorCode::ExistingNfts,
         // Must be expired
         constraint = Clock::get()?.unix_timestamp > pool.expiry @ ErrorCode::PoolNotExpired,
     )]
@@ -36,21 +37,7 @@ pub struct CloseExpiredPool<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Validate<'info> for CloseExpiredPool<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.pool.nfts_held > 0 {
-            throw_err!(ErrorCode::ExistingNfts);
-        }
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-
-        Ok(())
-    }
-}
-
 /// Permissionlessly close an expired pool.
-#[access_control(ctx.accounts.validate())]
 pub fn process_close_expired_pool<'info>(
     ctx: Context<'_, '_, '_, 'info, CloseExpiredPool<'info>>,
 ) -> Result<()> {
