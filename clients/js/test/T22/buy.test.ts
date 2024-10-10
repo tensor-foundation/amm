@@ -24,8 +24,8 @@ import {
   isSol,
   Pool,
   PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
 } from '../../src';
 import {
@@ -561,7 +561,7 @@ test('it cannot buy an NFT from a pool w/ incorrect or no cosigner', async (t) =
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_COSIGNER);
 
   ix = await getBuyNftT22InstructionAsync({
     owner: poolOwner.address,

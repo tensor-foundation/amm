@@ -21,7 +21,10 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Mode } from '@tensor-foundation/whitelist';
+import {
+  Mode,
+  TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION,
+} from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   CurveType,
@@ -29,9 +32,10 @@ import {
   Pool,
   PoolConfig,
   PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_WHITELIST,
   fetchMaybePool,
   fetchNftDepositReceipt,
   fetchPool,
@@ -623,6 +627,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   const sellNftIx = await getSellNftTokenPoolInstructionAsync({
     owner: poolOwner.address, // pool owner
     taker: nftOwner, // nft owner--the seller
+    rentPayer: payer.address,
     pool,
     whitelist,
     mint,
@@ -701,6 +706,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
     owner: poolOwner.address, // pool owner
     taker: nftOwner, // nft owner--the seller
+    rentPayer: payer.address,
     pool,
     whitelist,
     mint,
@@ -878,7 +884,11 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
+  );
 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner = await getSellNftTradePoolInstructionAsync({
@@ -900,7 +910,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   await expectCustomError(
     t,
     promiseIncorrectCosigner,
-    TENSOR_AMM_ERROR__BAD_COSIGNER
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
   );
 });
 
@@ -972,15 +982,17 @@ test('it cannot sell an NFT into a token pool w/ incorrect whitelist', async (t)
     minPrice: minPrice,
     creators: [mintWhitelistAuthority.address],
   });
-  const BAD_WHITELIST_ERROR_CODE = 12002;
-  const FAILED_FVC_VERIFICATION_ERROR_CODE = 6007; // thrown by whitelist program
 
   const promisePoolWL = pipe(
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(sellNftIxPoolWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promisePoolWL, FAILED_FVC_VERIFICATION_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promisePoolWL,
+    TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION
+  );
 
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTokenPoolInstructionAsync({
@@ -998,7 +1010,7 @@ test('it cannot sell an NFT into a token pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(sellNftIxMintWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
+  await expectCustomError(t, promiseMintWL, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 });
 
 test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t) => {
@@ -1069,15 +1081,17 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     minPrice: minPrice,
     creators: [mintWhitelistAuthority.address],
   });
-  const BAD_WHITELIST_ERROR_CODE = 12002;
-  const FAILED_FVC_VERIFICATION_ERROR_CODE = 6007; // thrown by whitelist program
 
   const promisePoolWL = pipe(
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(sellNftIxPoolWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promisePoolWL, FAILED_FVC_VERIFICATION_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promisePoolWL,
+    TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION
+  );
 
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTradePoolInstructionAsync({
@@ -1095,7 +1109,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(sellNftIxMintWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
+  await expectCustomError(t, promiseMintWL, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 });
 
 test('it can sell a pNFT into a trade pool and pay the correct amount of royalties', async (t) => {
@@ -1177,6 +1191,7 @@ test('it can sell a pNFT into a trade pool and pay the correct amount of royalti
 
   // Sell NFT into pool
   const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    rentPayer: payer.address,
     owner: poolOwner.address,
     taker: nftOwner,
     pool,

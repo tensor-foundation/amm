@@ -26,6 +26,7 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
+import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -59,7 +60,6 @@ import {
   getCreatePoolInstruction,
   getDepositSolInstruction,
 } from '../src/index.js';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
