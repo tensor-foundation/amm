@@ -26,11 +26,11 @@ import {
   isSol,
   Pool,
   PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__BAD_MINT_PROOF,
-  TENSOR_AMM_ERROR__BAD_WHITELIST,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_WHITELIST,
 } from '../../src';
 import {
   assertNftReceiptCreated,
@@ -690,7 +690,11 @@ test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) 
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
+  );
 
   // Sell NFT into pool with fakeCosigner
   const sellNftIxIncorrectCosigner =
@@ -721,7 +725,7 @@ test('it cannot sell an NFT into a token pool w/ incorrect cosigner', async (t) 
   await expectCustomError(
     t,
     promiseIncorrectCosigner,
-    TENSOR_AMM_ERROR__BAD_COSIGNER
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
   );
 });
 
@@ -769,7 +773,11 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
+  );
 
   // Sell NFT into pool with fakeCosigner
   const sellNftIxIncorrectCosigner =
@@ -799,7 +807,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect cosigner', async (t) 
   await expectCustomError(
     t,
     promiseIncorrectCosigner,
-    TENSOR_AMM_ERROR__BAD_COSIGNER
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
   );
 });
 
@@ -889,7 +897,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(sellNftIxMintWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseMintWL, TENSOR_AMM_ERROR__BAD_WHITELIST);
+  await expectCustomError(t, promiseMintWL, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 
   // Try to sell the NFT into the pool specifying pool's whitelist
   let ix = await getSellNftTradePoolT22InstructionAsync({

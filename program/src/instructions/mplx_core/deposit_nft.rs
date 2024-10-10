@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::error::ErrorCode;
+
 /// Instruction accounts
 #[derive(Accounts)]
 pub struct DepositNftCore<'info> {
@@ -31,7 +33,9 @@ pub struct DepositNftCore<'info> {
 
 impl<'info> DepositNftCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
-        self.transfer.validate()?;
+        if self.transfer.pool.expiry < Clock::get()?.unix_timestamp {
+            throw_err!(ErrorCode::ExpiredPool);
+        }
 
         let asset = self.core.validate_asset()?;
 
@@ -61,10 +65,11 @@ pub fn process_deposit_nft_core<'info>(
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_add(1));
 
     //create nft receipt
-    let receipt = &mut ctx.accounts.nft_receipt;
-    receipt.bump = ctx.bumps.nft_receipt;
-    receipt.mint = ctx.accounts.core.asset.key();
-    receipt.pool = ctx.accounts.transfer.pool.key();
+    **ctx.accounts.nft_receipt.as_mut() = NftDepositReceipt {
+        bump: ctx.bumps.nft_receipt,
+        mint: ctx.accounts.core.asset.key(),
+        pool: ctx.accounts.transfer.pool.key(),
+    };
 
     Ok(())
 }

@@ -20,6 +20,6 @@ use tensor_toolbox::{
     close_account,
     token_metadata::{transfer, TransferArgs},
 };
-use tensor_vipers::unwrap_int;
+use tensor_vipers::{throw_err, unwrap_int};
 
 use crate::*;

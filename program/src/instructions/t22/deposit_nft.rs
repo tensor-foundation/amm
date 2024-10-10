@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::error::ErrorCode;
+
 /// Instruction accounts.
 #[derive(Accounts)]
 pub struct DepositNftT22<'info> {
@@ -56,7 +58,9 @@ pub struct DepositNftT22<'info> {
 
 impl<'info> DepositNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
-        self.transfer.validate()?;
+        if self.transfer.pool.expiry < Clock::get()?.unix_timestamp {
+            throw_err!(ErrorCode::ExpiredPool);
+        }
 
         let asset = self.t22.validate_asset()?;
 
@@ -70,12 +74,9 @@ impl<'info> DepositNftT22<'info> {
 pub fn process_deposit_nft_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, DepositNftT22<'info>>,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
-
-    // validate mint account
-    let royalties = validate_mint(&ctx.accounts.t22.mint.to_account_info())?;
 
     // transfer the NFT
     let mut transfer_cpi = CpiContext::new(
@@ -90,7 +91,7 @@ pub fn process_deposit_nft_t22<'info>(
 
     // this will only add the remaining accounts required by a transfer hook if we
     // recognize the hook as a royalty one
-    if royalties.is_some() {
+    if asset.royalty_creators.is_some() {
         transfer_cpi = transfer_cpi.with_remaining_accounts(remaining_accounts);
     }
 
@@ -107,10 +108,11 @@ pub fn process_deposit_nft_t22<'info>(
     pool.nfts_held = unwrap_int!(pool.nfts_held.checked_add(1));
 
     //create nft receipt
-    let receipt = &mut ctx.accounts.nft_receipt;
-    receipt.bump = ctx.bumps.nft_receipt;
-    receipt.mint = ctx.accounts.t22.mint.key();
-    receipt.pool = ctx.accounts.transfer.pool.key();
+    **ctx.accounts.nft_receipt.as_mut() = NftDepositReceipt {
+        bump: ctx.bumps.nft_receipt,
+        mint: ctx.accounts.t22.mint.key(),
+        pool: ctx.accounts.transfer.pool.key(),
+    };
 
     Ok(())
 }

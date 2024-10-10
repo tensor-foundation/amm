@@ -21,6 +21,8 @@ pub struct CreatePool {
     pub pool: solana_program::pubkey::Pubkey,
     /// The whitelist that gatekeeps which NFTs can be bought or sold with this pool.
     pub whitelist: solana_program::pubkey::Pubkey,
+
+    pub shared_escrow: Option<solana_program::pubkey::Pubkey>,
     /// The Solana system program.
     pub system_program: solana_program::pubkey::Pubkey,
 }
@@ -38,7 +40,7 @@ impl CreatePool {
         args: CreatePoolInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.rent_payer,
             true,
@@ -53,6 +55,17 @@ impl CreatePool {
             self.whitelist,
             false,
         ));
+        if let Some(shared_escrow) = self.shared_escrow {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                shared_escrow,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false,
@@ -95,7 +108,6 @@ pub struct CreatePoolInstructionArgs {
     pub pool_id: [u8; 32],
     pub config: PoolConfig,
     pub currency: Option<Pubkey>,
-    pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
     pub order_type: u8,
@@ -111,18 +123,19 @@ pub struct CreatePoolInstructionArgs {
 ///   1. `[signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` whitelist
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   4. `[optional]` shared_escrow
+///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct CreatePoolBuilder {
     rent_payer: Option<solana_program::pubkey::Pubkey>,
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     whitelist: Option<solana_program::pubkey::Pubkey>,
+    shared_escrow: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
     pool_id: Option<[u8; 32]>,
     config: Option<PoolConfig>,
     currency: Option<Pubkey>,
-    shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
     order_type: Option<u8>,
@@ -160,6 +173,15 @@ impl CreatePoolBuilder {
         self.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn shared_escrow(
+        &mut self,
+        shared_escrow: Option<solana_program::pubkey::Pubkey>,
+    ) -> &mut Self {
+        self.shared_escrow = shared_escrow;
+        self
+    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     /// The Solana system program.
     #[inline(always)]
@@ -181,12 +203,6 @@ impl CreatePoolBuilder {
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.currency = Some(currency);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn shared_escrow(&mut self, shared_escrow: Pubkey) -> &mut Self {
-        self.shared_escrow = Some(shared_escrow);
         self
     }
     /// `[optional argument]`
@@ -244,6 +260,7 @@ impl CreatePoolBuilder {
             owner: self.owner.expect("owner is not set"),
             pool: self.pool.expect("pool is not set"),
             whitelist: self.whitelist.expect("whitelist is not set"),
+            shared_escrow: self.shared_escrow,
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
@@ -252,7 +269,6 @@ impl CreatePoolBuilder {
             pool_id: self.pool_id.clone().expect("pool_id is not set"),
             config: self.config.clone().expect("config is not set"),
             currency: self.currency.clone(),
-            shared_escrow: self.shared_escrow.clone(),
             cosigner: self.cosigner.clone(),
             maker_broker: self.maker_broker.clone(),
             order_type: self.order_type.clone().unwrap_or(0),
@@ -275,6 +291,8 @@ pub struct CreatePoolCpiAccounts<'a, 'b> {
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be bought or sold with this pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
@@ -292,6 +310,8 @@ pub struct CreatePoolCpi<'a, 'b> {
     pub pool: &'b solana_program::account_info::AccountInfo<'a>,
     /// The whitelist that gatekeeps which NFTs can be bought or sold with this pool.
     pub whitelist: &'b solana_program::account_info::AccountInfo<'a>,
+
+    pub shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The Solana system program.
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
@@ -310,6 +330,7 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             owner: accounts.owner,
             pool: accounts.pool,
             whitelist: accounts.whitelist,
+            shared_escrow: accounts.shared_escrow,
             system_program: accounts.system_program,
             __args: args,
         }
@@ -347,7 +368,7 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.rent_payer.key,
             true,
@@ -364,6 +385,17 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             *self.whitelist.key,
             false,
         ));
+        if let Some(shared_escrow) = self.shared_escrow {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                *shared_escrow.key,
+                false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::TENSOR_AMM_ID,
+                false,
+            ));
+        }
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false,
@@ -384,12 +416,15 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(5 + 1 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(6 + 1 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.rent_payer.clone());
         account_infos.push(self.owner.clone());
         account_infos.push(self.pool.clone());
         account_infos.push(self.whitelist.clone());
+        if let Some(shared_escrow) = self.shared_escrow {
+            account_infos.push(shared_escrow.clone());
+        }
         account_infos.push(self.system_program.clone());
         remaining_accounts
             .iter()
@@ -411,7 +446,8 @@ impl<'a, 'b> CreatePoolCpi<'a, 'b> {
 ///   1. `[signer]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` whitelist
-///   4. `[]` system_program
+///   4. `[optional]` shared_escrow
+///   5. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct CreatePoolCpiBuilder<'a, 'b> {
     instruction: Box<CreatePoolCpiBuilderInstruction<'a, 'b>>,
@@ -425,11 +461,11 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             owner: None,
             pool: None,
             whitelist: None,
+            shared_escrow: None,
             system_program: None,
             pool_id: None,
             config: None,
             currency: None,
-            shared_escrow: None,
             cosigner: None,
             maker_broker: None,
             order_type: None,
@@ -470,6 +506,15 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.whitelist = Some(whitelist);
         self
     }
+    /// `[optional account]`
+    #[inline(always)]
+    pub fn shared_escrow(
+        &mut self,
+        shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    ) -> &mut Self {
+        self.instruction.shared_escrow = shared_escrow;
+        self
+    }
     /// The Solana system program.
     #[inline(always)]
     pub fn system_program(
@@ -493,12 +538,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn currency(&mut self, currency: Pubkey) -> &mut Self {
         self.instruction.currency = Some(currency);
-        self
-    }
-    /// `[optional argument]`
-    #[inline(always)]
-    pub fn shared_escrow(&mut self, shared_escrow: Pubkey) -> &mut Self {
-        self.instruction.shared_escrow = Some(shared_escrow);
         self
     }
     /// `[optional argument]`
@@ -580,7 +619,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
                 .expect("pool_id is not set"),
             config: self.instruction.config.clone().expect("config is not set"),
             currency: self.instruction.currency.clone(),
-            shared_escrow: self.instruction.shared_escrow.clone(),
             cosigner: self.instruction.cosigner.clone(),
             maker_broker: self.instruction.maker_broker.clone(),
             order_type: self.instruction.order_type.clone().unwrap_or(0),
@@ -597,6 +635,8 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             pool: self.instruction.pool.expect("pool is not set"),
 
             whitelist: self.instruction.whitelist.expect("whitelist is not set"),
+
+            shared_escrow: self.instruction.shared_escrow,
 
             system_program: self
                 .instruction
@@ -618,11 +658,11 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     whitelist: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    shared_escrow: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool_id: Option<[u8; 32]>,
     config: Option<PoolConfig>,
     currency: Option<Pubkey>,
-    shared_escrow: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
     order_type: Option<u8>,

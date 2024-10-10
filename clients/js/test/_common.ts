@@ -9,6 +9,7 @@ import {
   address,
   airdropFactory,
   appendTransactionMessageInstruction,
+  appendTransactionMessageInstructions,
   generateKeyPairSigner,
   getAddressEncoder,
   getProgramDerivedAddress,
@@ -20,6 +21,7 @@ import {
 } from '@solana/web3.js';
 import {
   findMarginAccountPda,
+  findTSwapPda,
   getDepositMarginAccountInstruction,
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
@@ -363,7 +365,7 @@ export async function createPool({
     config,
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
-    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    sharedEscrow: sharedEscrow ?? undefined,
     makerBroker: makerBroker ? some(makerBroker) : none(),
     orderType: 0,
     expireInSec: expireInSec ?? null,
@@ -427,7 +429,7 @@ export async function createPoolThrows({
     config,
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
-    sharedEscrow: sharedEscrow ? some(sharedEscrow) : none(),
+    sharedEscrow: sharedEscrow ?? undefined,
     orderType: 0,
     expireInSec: null,
   });
@@ -450,6 +452,52 @@ export async function createPoolThrows({
   } else {
     t.fail("expected a custom error, but didn't get one");
   }
+}
+
+export async function createPoolAndFundSharedEscrow(
+  params: CreatePoolParams,
+  lamports: bigint
+): Promise<CreatePoolReturns> {
+  const { client, owner, sharedEscrow } = params;
+
+  const tswap = (await findTSwapPda())[0];
+  const tswapOwner = await getAndFundOwner(client);
+
+  const initTswapIx = getInitUpdateTswapInstruction({
+    tswap,
+    owner: tswapOwner,
+    newOwner: tswapOwner,
+    feeVault: DEFAULT_PUBKEY, // Dummy fee vault
+    cosigner: owner,
+    config: { feeBps: 0 },
+  });
+
+  const createMarginAccountIx = getInitMarginAccountInstruction({
+    owner,
+    tswap: (await findTSwapPda())[0],
+    marginAccount: sharedEscrow!,
+    marginNr: 0,
+    name: Uint8Array.from([]),
+  });
+
+  const depositEscrowIx = getDepositMarginAccountInstruction({
+    tswap: (await findTSwapPda())[0],
+    marginAccount: sharedEscrow!,
+    owner,
+    lamports,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) =>
+      appendTransactionMessageInstructions(
+        [initTswapIx, createMarginAccountIx, depositEscrowIx],
+        tx
+      ),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  return await createPool(params);
 }
 
 // Turn owner into an optional param.

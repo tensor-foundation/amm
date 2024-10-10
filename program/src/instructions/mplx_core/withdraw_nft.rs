@@ -20,15 +20,13 @@ pub struct WithdrawNftCore<'info> {
             core.asset.key().as_ref(),
             transfer.pool.key().as_ref(),
         ],
-        bump,
+        bump = nft_receipt.bump,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 }
 
 impl<'info> WithdrawNftCore<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
-        self.transfer.validate()?;
-
         self.core.validate_asset()
     }
 }

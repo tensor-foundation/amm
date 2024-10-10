@@ -359,7 +359,6 @@ async fn close_expired_pool_returns_excess_lamports_to_owner() {
     );
 }
 
-
 #[tokio::test]
 async fn edit_pool() {
     // Set up program context with Tamm and WhiteList programs
