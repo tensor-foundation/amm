@@ -86,13 +86,7 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
 
     let timestamp = Clock::get()?.unix_timestamp;
 
-    let expiry = match args.expire_in_sec {
-        Some(expire_in_sec) => assert_expiry(expire_in_sec)?,
-        // No expiry provided, set to the maximum allowed value.
-        None => timestamp
-            .checked_add(MAX_EXPIRY_SEC)
-            .ok_or(ErrorCode::ArithmeticError)?,
-    };
+    let expiry = assert_expiry(args.expire_in_sec.unwrap_or(MAX_EXPIRY_SEC as u64))?;
 
     **ctx.accounts.pool.as_mut() = Pool {
         version: CURRENT_POOL_VERSION,
