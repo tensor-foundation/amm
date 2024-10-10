@@ -1,3 +1,4 @@
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   Account,
   Address,
@@ -18,12 +19,13 @@ import {
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
+import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   Pool,
   PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
   fetchPool,
@@ -48,8 +50,6 @@ import {
   tradePoolConfig,
 } from '../_common.js';
 import { setupCoreTest } from './_common.js';
-import { Mode } from '@tensor-foundation/whitelist';
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 
 test('it can buy an NFT from a Trade pool', async (t) => {
   const { client, signers, asset, collection, testConfig, pool, feeVault } =
@@ -750,7 +750,11 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
     (tx) => appendTransactionMessageInstruction(buyNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
+  );
 
   // Buy NFT from pool with fakeCosigner
   const buyNftIxIncorrectCosigner = await getBuyNftCoreInstructionAsync({
@@ -772,7 +776,7 @@ test('it cannot buy an NFT from a pool w/ incorrect cosigner', async (t) => {
   await expectCustomError(
     t,
     promiseIncorrectCosigner,
-    TENSOR_AMM_ERROR__BAD_COSIGNER
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
   );
 });
 

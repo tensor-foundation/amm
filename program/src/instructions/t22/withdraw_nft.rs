@@ -54,8 +54,6 @@ pub struct WithdrawNftT22<'info> {
 
 impl<'info> WithdrawNftT22<'info> {
     fn pre_process_checks(&self) -> Result<AmmAsset> {
-        self.transfer.validate()?;
-
         self.t22.validate_asset()
     }
 }
@@ -64,9 +62,7 @@ impl<'info> WithdrawNftT22<'info> {
 pub fn process_withdraw_nft_t22<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftT22<'info>>,
 ) -> Result<()> {
-    ctx.accounts.pre_process_checks()?;
-
-    let royalties = validate_mint(&ctx.accounts.t22.mint.to_account_info())?;
+    let asset = ctx.accounts.pre_process_checks()?;
 
     // transfer the NFT
     let mut transfer_cpi = CpiContext::new(
@@ -81,7 +77,7 @@ pub fn process_withdraw_nft_t22<'info>(
 
     // this will only add the remaining accounts required by a transfer hook if we
     // recognize the hook as a royalty one
-    if royalties.is_some() {
+    if asset.royalty_creators.is_some() {
         transfer_cpi = transfer_cpi.with_remaining_accounts(ctx.remaining_accounts.to_vec());
     }
 

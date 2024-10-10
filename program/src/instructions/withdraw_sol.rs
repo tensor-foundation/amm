@@ -1,7 +1,7 @@
 //! Withdraw SOL from a Trade or Token pool.
 use constants::CURRENT_POOL_VERSION;
-use tensor_toolbox::transfer_lamports_from_pda;
-use tensor_vipers::{throw_err, unwrap_checked};
+use tensor_toolbox::transfer_lamports;
+use tensor_vipers::{throw_err, unwrap_int};
 
 use crate::{error::ErrorCode, *};
 
@@ -21,8 +21,9 @@ pub struct WithdrawSol<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.config.pool_type == PoolType::Token ||  pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
+        constraint = pool.shared_escrow == Pubkey::default() @ ErrorCode::PoolOnSharedEscrow,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -30,43 +31,7 @@ pub struct WithdrawSol<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> WithdrawSol<'info> {
-    pub fn transfer_lamports(&self, from: &AccountInfo<'info>, lamports: u64) -> Result<()> {
-        transfer_lamports_from_pda(from, &self.owner.to_account_info(), lamports)
-    }
-}
-
-impl<'info> WithdrawSol<'info> {
-    fn validate(&self) -> Result<()> {
-        if self.pool.shared_escrow != Pubkey::default() {
-            throw_err!(ErrorCode::PoolOnSharedEscrow);
-        }
-        match self.pool.config.pool_type {
-            PoolType::NFT | PoolType::Trade => (),
-            _ => {
-                throw_err!(ErrorCode::WrongPoolType);
-            }
-        }
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-
-    pub fn validate_mm_fee_transfer(&self) -> Result<()> {
-        if self.pool.config.pool_type != PoolType::Trade {
-            throw_err!(ErrorCode::WrongPoolType);
-        }
-        // (!) NOT doing this check so that if they change pool type to compounded, they can still withdraw fees
-        // if self.pool.config.mm_compound_fees {
-        //     throw_err!(PoolFeesCompounded);
-        // }
-        Ok(())
-    }
-}
-
 /// Withdraw SOL from a Token or Trade pool.
-#[access_control(ctx.accounts.validate())]
 pub fn process_withdraw_sol<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawSol<'info>>,
     lamports: u64,
@@ -74,7 +39,7 @@ pub fn process_withdraw_sol<'info>(
     let pool = &mut ctx.accounts.pool;
 
     let rent = solana_program::rent::Rent::get()?;
-    let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
+    let pool_min_rent = rent.minimum_balance(POOL_SIZE);
 
     let current_pool_lamports = pool.to_account_info().get_lamports();
 
@@ -83,16 +48,19 @@ pub fn process_withdraw_sol<'info>(
     if current_pool_lamports
         .checked_sub(lamports)
         .ok_or(ErrorCode::ArithmeticError)?
-        < pool_keep_alive
+        < pool_min_rent
     {
-        throw_err!(ErrorCode::PoolKeepAlive);
+        throw_err!(ErrorCode::PoolInsufficientRent);
     }
 
     // Update the pool's currency amount
     if pool.currency == Pubkey::default() {
-        pool.amount = unwrap_checked!({ pool.amount.checked_sub(lamports) });
+        pool.amount = unwrap_int!(pool.amount.checked_sub(lamports));
     }
 
-    ctx.accounts
-        .transfer_lamports(&ctx.accounts.pool.to_account_info(), lamports)
+    transfer_lamports(
+        &ctx.accounts.pool.to_account_info(),
+        &ctx.accounts.owner.to_account_info(),
+        lamports,
+    )
 }

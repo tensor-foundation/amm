@@ -122,10 +122,11 @@ pub fn process_sell_nft_trade_pool_t22<'info>(
     )?;
 
     //create nft receipt for trade pool
-    let receipt_state = &mut ctx.accounts.nft_receipt;
-    receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.mint = ctx.accounts.t22.mint.key();
-    receipt_state.pool = ctx.accounts.trade.pool.key();
+    **ctx.accounts.nft_receipt.as_mut() = NftDepositReceipt {
+        bump: ctx.bumps.nft_receipt,
+        mint: ctx.accounts.t22.mint.key(),
+        pool: ctx.accounts.trade.pool.key(),
+    };
 
     Ok(())
 }

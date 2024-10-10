@@ -18,11 +18,8 @@ use anchor_spl::{
     token_interface::{self, Token2022, TokenAccount, TransferChecked},
 };
 use mpl_token_metadata::types::Creator;
-use tensor_toolbox::{
-    close_account,
-    token_2022::{transfer::transfer_checked, validate_mint},
-};
-use tensor_vipers::unwrap_int;
+use tensor_toolbox::{close_account, token_2022::transfer::transfer_checked};
+use tensor_vipers::{throw_err, unwrap_int};
 
 struct TransferArgs<'info> {
     from: AccountInfo<'info>,

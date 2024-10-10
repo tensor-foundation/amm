@@ -11,8 +11,8 @@ use tensor_escrow::instructions::{
 use tensor_toolbox::{
     calc_creators_fee, calc_fees, escrow, is_royalty_enforced, shard_num,
     token_2022::validate_mint, token_metadata::assert_decode_metadata, transfer_creators_fee,
-    transfer_lamports, transfer_lamports_checked, transfer_lamports_from_pda, CalcFeesArgs,
-    CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
+    transfer_lamports, transfer_lamports_checked, CalcFeesArgs, CreatorFeeMode, FromAcc,
+    FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
@@ -48,7 +48,7 @@ pub struct TransferShared<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.config.pool_type == PoolType::NFT || pool.config.pool_type == PoolType::Trade @ ErrorCode::WrongPoolType,
     )]
     pub pool: Box<Account<'info, Pool>>,
@@ -59,7 +59,7 @@ pub struct TransferShared<'info> {
         seeds = [b"whitelist", &whitelist.namespace.as_ref(), &whitelist.uuid],
         bump,
         seeds::program = whitelist_program::ID,
-        constraint = whitelist.key() == pool.whitelist @ ErrorCode::BadWhitelist,
+        constraint = whitelist.key() == pool.whitelist @ ErrorCode::WrongWhitelist,
     )]
     pub whitelist: Option<Box<Account<'info, WhitelistV2>>>,
 
@@ -69,22 +69,13 @@ pub struct TransferShared<'info> {
     pub mint_proof: Option<UncheckedAccount<'info>>,
 }
 
-impl<'info> TransferShared<'info> {
-    pub fn validate(&self) -> Result<()> {
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
-        }
-        Ok(())
-    }
-}
-
 /// Shared accounts for trade instructions: buy & sell
 /// Mint and token accounts are not included here as the AMM program supports multiple types of
 /// NFTs, not all of which are SPL token based.
 #[derive(Accounts)]
 pub struct TradeShared<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
-    /// CHECK: has_one = owner in pool
+    /// CHECK: seeds in pool
     #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
@@ -94,7 +85,7 @@ pub struct TradeShared<'info> {
 
     /// The original rent payer of the pool--stored on the pool. Used to refund rent in case the pool
     /// is auto-closed.
-    /// CHECK: handler logic checks that it's the same as the stored rent payer
+    /// CHECK: has_one in pool
     #[account(mut)]
     pub rent_payer: UncheckedAccount<'info>,
 
@@ -123,10 +114,11 @@ pub struct TradeShared<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::BadOwner,
+        has_one = rent_payer @ ErrorCode::WrongRentPayer,
+        constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
         constraint = maker_broker.as_ref().map(|c| c.key()).unwrap_or_default() == pool.maker_broker @ ErrorCode::WrongMakerBroker,
-        constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::BadCosigner,
+        constraint = cosigner.as_ref().map(|c| c.key()).unwrap_or_default() == pool.cosigner @ ErrorCode::WrongCosigner,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
@@ -136,7 +128,7 @@ pub struct TradeShared<'info> {
         bump,
         seeds::program = whitelist_program::ID,
         // NB: this is an optional constraint: if whitelist is required, then it will be checked for existence in handler.
-        constraint = whitelist.key() == pool.whitelist @ ErrorCode::BadWhitelist,
+        constraint = whitelist.key() == pool.whitelist @ ErrorCode::WrongWhitelist,
     )]
     pub whitelist: Option<Box<Account<'info, WhitelistV2>>>,
 
@@ -185,10 +177,6 @@ impl<'info> TradeShared<'info> {
         // If the pool has a maker broker set, the maker broker account must be passed in.
         if self.pool.maker_broker != Pubkey::default() {
             require!(self.maker_broker.is_some(), ErrorCode::MissingMakerBroker);
-        }
-
-        if self.pool.version != CURRENT_POOL_VERSION {
-            throw_err!(ErrorCode::WrongPoolVersion);
         }
 
         Ok(())
@@ -330,13 +318,13 @@ impl<'info> TradeShared<'info> {
         left_for_seller = unwrap_int!(left_for_seller.checked_sub(mm_fee));
 
         // Finally, transfer remainder to seller
-        transfer_lamports_from_pda(
+        transfer_lamports(
             &self.pool.to_account_info(),
             &self.taker.to_account_info(),
             left_for_seller,
         )?;
 
-        // No compounding fees.
+        // No MM fees.
         if pool.config.pool_type == PoolType::Token {
             return Ok(());
         }
@@ -361,7 +349,7 @@ impl<'info> TradeShared<'info> {
                     throw_err!(ErrorCode::BadSharedEscrow);
                 }
 
-                transfer_lamports_from_pda(
+                transfer_lamports(
                     &self.pool.to_account_info(),
                     &incoming_shared_escrow,
                     mm_fee,
@@ -371,7 +359,7 @@ impl<'info> TradeShared<'info> {
         } else {
             msg!("Sending mm fees to the owner");
             // Send to owner
-            transfer_lamports_from_pda(
+            transfer_lamports(
                 &self.pool.to_account_info(),
                 &self.owner.to_account_info(),
                 mm_fee,
@@ -790,7 +778,7 @@ impl<'info> TradeShared<'info> {
     }
 
     pub fn verify_whitelist(&self, asset: &AmmAsset) -> Result<()> {
-        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
+        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::WrongWhitelist);
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;
@@ -846,7 +834,7 @@ impl<'info> TradeShared<'info> {
 
 impl<'info> TransferShared<'info> {
     pub fn verify_whitelist(&self, asset: &AmmAsset) -> Result<()> {
-        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::BadWhitelist);
+        let whitelist = unwrap_opt!(self.whitelist.as_ref(), ErrorCode::WrongWhitelist);
 
         let full_merkle_proof = if let Some(mint_proof) = &self.mint_proof {
             let mint_proof = assert_decode_mint_proof_v2(whitelist, &asset.pubkey, mint_proof)?;

@@ -1,27 +1,16 @@
 use anchor_lang::prelude::*;
 use spl_math::precise_number::PreciseNumber;
 use tensor_toolbox::{transfer_lamports_checked, HUNDRED_PCT_BPS};
-use tensor_vipers::{throw_err, unwrap_checked, unwrap_int};
+use tensor_vipers::{throw_err, try_or_err, unwrap_checked, unwrap_int};
 
-use crate::error::ErrorCode;
+use crate::{
+    constants::{DISCRIMINATOR_SIZE, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
+    error::ErrorCode,
+    MAX_EXPIRY_SEC,
+};
 
 /// Size of the Pool account, inclusive of the 8-byte discriminator.
-#[constant]
-#[allow(clippy::identity_op)]
-pub const POOL_SIZE: usize =
-        8                                // discriminator
-        + (2 * 1)                        // version + bump
-        + 32                             // identifier
-        + 8 * 3                          // created_at, updated_at, expiry
-        + (3 * 32)                       // owner, whitelist, rent_payer
-        + (32 + 8)                       // currency and currency amount
-        + (2 * 4)                        // price_offset, nfts_held
-        + (2 * 4) + 8                    // pool stats
-        + (3 * 32)                       // shared escrow, cosigner, maker_broker
-        + 4                              // max_taker_sell_count
-        + (2 * 1) + (2 * 8) + 1 + 2      // pool config
-        + 100                            // _reserved
-        ;
+pub const POOL_SIZE: usize = DISCRIMINATOR_SIZE + Pool::INIT_SPACE;
 
 /// Enum representing the different types of pools.
 ///
@@ -31,7 +20,7 @@ pub const POOL_SIZE: usize =
 ///
 /// Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two.
 #[repr(u8)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
 pub enum PoolType {
     Token = 0,
     NFT = 1,
@@ -44,14 +33,14 @@ pub enum PoolType {
 ///
 /// Exponential curves have a price offset that increases or decreases exponentially.
 #[repr(u8)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
 pub enum CurveType {
     Linear = 0,
     Exponential = 1,
 }
 
 /// Configuration values for a pool define the type of pool, curve, and other parameters.
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
 pub struct PoolConfig {
     pub pool_type: PoolType,
     pub curve_type: CurveType,
@@ -61,8 +50,37 @@ pub struct PoolConfig {
     pub mm_fee_bps: u16,
 }
 
+impl PoolConfig {
+    pub fn validate(&self) -> Result<()> {
+        match self.pool_type {
+            PoolType::NFT | PoolType::Token => {
+                if self.mm_fee_bps > 0 {
+                    throw_err!(ErrorCode::FeesNotAllowed);
+                }
+            }
+            PoolType::Trade => {
+                if self.mm_fee_bps > MAX_MM_FEES_BPS {
+                    throw_err!(ErrorCode::FeesTooHigh);
+                }
+            }
+        }
+
+        //for exponential pool delta can't be above 99.99% and has to fit into a u16
+        if self.curve_type == CurveType::Exponential {
+            let u16delta = try_or_err!(u16::try_from(self.delta), ErrorCode::ArithmeticError);
+            if u16delta > MAX_DELTA_BPS {
+                throw_err!(ErrorCode::DeltaTooLarge);
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default, InitSpace, PartialEq, Eq,
+)]
 pub struct PoolStats {
     pub taker_sell_count: u32,
     pub taker_buy_count: u32,
@@ -71,6 +89,7 @@ pub struct PoolStats {
 
 /// `Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.
 /// `Pool` accounts are Program Derived Addresses derived  from the seeds: `"pool"`, `owner`, and `identifier`.
+#[derive(InitSpace)]
 #[account]
 pub struct Pool {
     /// Pool version, used to control upgrades.
@@ -196,7 +215,9 @@ impl Pool {
 
             // Trade pool sells require the price to be shifted down by 1 to prevent
             // liquidity from being drained by repeated matched buys and sells.
-            (PoolType::Trade, TakerSide::Sell) => self.shift_price(self.price_offset - 1, side),
+            (PoolType::Trade, TakerSide::Sell) => {
+                self.shift_price(unwrap_int!(self.price_offset.checked_sub(1)), side)
+            }
 
             // Invalid combinations of pool type and side.
             _ => {
@@ -258,22 +279,6 @@ impl Pool {
         Ok(current_price)
     }
 
-    /// This check is against the following scenario:
-    /// 1. user sets cap to 1 and reaches it (so 1/1)
-    /// 2. user detaches shared escrow
-    /// 3. user sells more into the pool (so 2/1)
-    /// 4. user attaches shared escrow again, but 2/1 is theoretically invalid
-    pub fn adjust_pool_max_taker_sell_count(&mut self) -> Result<()> {
-        if self
-            .valid_max_sell_count(self.max_taker_sell_count)
-            .is_err()
-        {
-            self.max_taker_sell_count = self.stats.taker_sell_count - self.stats.taker_buy_count;
-        }
-
-        Ok(())
-    }
-
     /// Returns the seeds for the pool account.
     pub fn seeds(&self) -> [&[u8]; 4] {
         [
@@ -282,34 +287,6 @@ impl Pool {
             self.pool_id.as_ref(),
             &self.bump,
         ]
-    }
-
-    pub fn validate_maker_broker(&self, maker_broker: &Option<UncheckedAccount>) -> Result<()> {
-        // If the pool has a maker broker, the maker broker account must be passed in.
-        if self.maker_broker == Pubkey::default() {
-            return Ok(());
-        }
-        require!(
-            maker_broker
-                .as_ref()
-                .ok_or(ErrorCode::MissingMakerBroker)?
-                .key()
-                == self.maker_broker,
-            ErrorCode::WrongMakerBroker
-        );
-        Ok(())
-    }
-
-    pub fn validate_cosigner(&self, cosigner: &Option<Signer>) -> Result<()> {
-        // If the pool has a cosigner, the cosigner account must be passed in.
-        if self.cosigner == Pubkey::default() {
-            return Ok(());
-        }
-        require!(
-            cosigner.as_ref().ok_or(ErrorCode::MissingCosigner)?.key() == self.cosigner,
-            ErrorCode::WrongCosigner
-        );
-        Ok(())
     }
 }
 
@@ -369,12 +346,12 @@ pub fn close_pool<'info>(
         throw_err!(ErrorCode::WrongOwner);
     }
 
-    let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+    let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
     let pool_lamports = pool.get_lamports();
 
     // Any SOL above the minimum rent/state bond goes to the owner.
-    if pool_lamports > pool_state_bond {
-        let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_state_bond));
+    if pool_lamports > pool_min_rent {
+        let owner_amount = unwrap_int!(pool_lamports.checked_sub(pool_min_rent));
         // If owner is not rent exempt, this skips the transfer and the rent destination will get it instead.
         transfer_lamports_checked(&pool.to_account_info(), &owner, owner_amount)?;
     }
@@ -413,7 +390,7 @@ pub fn update_pool_accounting(
             // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
             // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
             if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
-                let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
                 let pool_final_balance = pool.get_lamports();
                 let lamports_added =
                     unwrap_checked!({ pool_final_balance.checked_sub(pool_initial_balance) });
@@ -421,7 +398,7 @@ pub fn update_pool_accounting(
 
                 // Sanity check to avoid edge cases:
                 require!(
-                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
+                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_min_rent)),
                     ErrorCode::InvalidPoolAmount
                 );
             }
@@ -440,7 +417,7 @@ pub fn update_pool_accounting(
 
             // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
             if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
-                let pool_state_bond = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
                 let pool_final_balance = pool.get_lamports();
                 let lamports_taken =
                     unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });
@@ -448,7 +425,7 @@ pub fn update_pool_accounting(
 
                 // Sanity check to avoid edge cases:
                 require!(
-                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_state_bond)),
+                    pool.amount <= unwrap_int!(pool_final_balance.checked_sub(pool_min_rent)),
                     ErrorCode::InvalidPoolAmount
                 );
             }
@@ -456,4 +433,18 @@ pub fn update_pool_accounting(
     }
 
     Ok(())
+}
+
+pub(crate) fn assert_expiry(expire_in_sec: u64) -> Result<i64> {
+    let timestamp = Clock::get()?.unix_timestamp;
+
+    // Convert the user's u64 seconds offset to i64 for timestamp math.
+    let expire_in_i64 = try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
+    // Ensure the expiry is not too far in the future.
+    require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
+
+    // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
+    timestamp
+        .checked_add(expire_in_i64)
+        .ok_or(ErrorCode::ArithmeticError.into())
 }

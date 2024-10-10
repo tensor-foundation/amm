@@ -12,7 +12,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
-  TENSOR_AMM_ERROR__POOL_KEEP_ALIVE,
+  TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT,
   fetchPool,
   getDepositSolInstruction,
   getSellNftTradePoolInstructionAsync,
@@ -195,7 +195,7 @@ test('it cannot withdraw all SOL from a pool', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__POOL_KEEP_ALIVE);
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT);
 });
 
 test('withdrawing Sol from a Trade pool decreases currency amount', async (t) => {

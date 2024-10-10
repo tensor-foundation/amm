@@ -15,4 +15,4 @@ use crate::{MplCoreShared, MplCoreSharedBumps, NftDepositReceipt, *};
 use anchor_lang::prelude::*;
 use mpl_core::instructions::TransferV1CpiBuilder;
 use tensor_toolbox::close_account;
-use tensor_vipers::unwrap_int;
+use tensor_vipers::{throw_err, unwrap_int};

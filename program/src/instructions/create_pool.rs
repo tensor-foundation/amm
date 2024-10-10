@@ -1,15 +1,17 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
 use escrow_program::state::MarginAccount;
-use tensor_vipers::{throw_err, try_or_err};
+use tensor_vipers::throw_err;
 use whitelist_program::{self, WhitelistV2};
 
 use crate::{
-    constants::{CURRENT_POOL_VERSION, MAX_DELTA_BPS, MAX_MM_FEES_BPS},
+    constants::CURRENT_POOL_VERSION,
     error::ErrorCode,
     state::{Pool, PoolConfig, POOL_SIZE},
-    CurveType, PoolStats, PoolType, MAX_EXPIRY_SEC,
+    PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
+
+use super::assert_expiry;
 
 /// Create pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
@@ -47,9 +49,9 @@ pub struct CreatePool<'info> {
             owner.key().as_ref(),
             args.pool_id.as_ref(),
         ],
-        bump
+        bump,
     )]
-    pub pool: Account<'info, Pool>,
+    pub pool: Box<Account<'info, Pool>>,
 
     /// The whitelist that gatekeeps which NFTs can be bought or sold with this pool.
     #[account(
@@ -60,7 +62,7 @@ pub struct CreatePool<'info> {
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
     #[account(
-        has_one = owner @ ErrorCode::BadOwner,
+        has_one = owner @ ErrorCode::WrongOwner,
         constraint = pool.config.pool_type != PoolType::NFT @ ErrorCode::CannotUseSharedEscrow,
     )]
     pub shared_escrow: Option<Account<'info, MarginAccount>>,
@@ -71,95 +73,48 @@ pub struct CreatePool<'info> {
 
 impl<'info> CreatePool<'info> {
     fn validate(&self, config: PoolConfig) -> Result<()> {
-        match config.pool_type {
-            PoolType::NFT | PoolType::Token => {
-                if config.mm_fee_bps > 0 {
-                    throw_err!(ErrorCode::FeesNotAllowed);
-                }
-            }
-            PoolType::Trade => {
-                if config.mm_fee_bps > MAX_MM_FEES_BPS {
-                    throw_err!(ErrorCode::FeesTooHigh);
-                }
-            }
-        }
-
-        //for exponential pool delta can't be above 99.99% and has to fit into a u16
-        if config.curve_type == CurveType::Exponential {
-            let u16delta = try_or_err!(u16::try_from(config.delta), ErrorCode::ArithmeticError);
-            if u16delta > MAX_DELTA_BPS {
-                throw_err!(ErrorCode::DeltaTooLarge);
-            }
-        }
-
-        Ok(())
+        config.validate()
     }
 }
 
 /// Create a new pool.
 #[access_control(ctx.accounts.validate(args.config))]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
-    let pool = &mut ctx.accounts.pool;
-
     if args.config.starting_price < 1 {
         throw_err!(ErrorCode::StartingPriceTooSmall);
     }
 
-    pool.version = CURRENT_POOL_VERSION;
-    pool.bump = [ctx.bumps.pool];
-    pool.config = args.config;
-
-    pool.owner = ctx.accounts.owner.key();
-    pool.whitelist = ctx.accounts.whitelist.key();
-    pool.pool_id = args.pool_id;
-    pool.rent_payer = ctx.accounts.rent_payer.key();
-    pool.shared_escrow = ctx
-        .accounts
-        .shared_escrow
-        .clone()
-        .map(|a| a.key())
-        .unwrap_or_default();
-
-    // Only SOL currently supported
-    pool.currency = Pubkey::default();
-    pool.amount = 0;
-
-    pool.price_offset = 0;
-    pool.nfts_held = 0;
-
-    pool.stats = PoolStats::default();
-
-    pool.cosigner = args.cosigner.unwrap_or_default();
-    pool.maker_broker = args.maker_broker.unwrap_or_default();
-
     let timestamp = Clock::get()?.unix_timestamp;
 
-    let expiry = match args.expire_in_sec {
-        Some(expire_in_sec) => {
-            // Convert the user's u64 seconds offset to i64 for timestamp math.
-            let expire_in_i64 =
-                try_or_err!(i64::try_from(expire_in_sec), ErrorCode::ArithmeticError);
-            // Ensure the expiry is not too far in the future.
-            require!(expire_in_i64 <= MAX_EXPIRY_SEC, ErrorCode::ExpiryTooLarge);
+    let expiry = assert_expiry(args.expire_in_sec.unwrap_or(MAX_EXPIRY_SEC as u64))?;
 
-            // Set the expiry to a timestamp equal to the current timestamp plus the user's offset.
-            timestamp
-                .checked_add(expire_in_i64)
-                .ok_or(ErrorCode::ArithmeticError)?
-        }
-        // No expiry provided, set to the maximum allowed value.
-        None => timestamp
-            .checked_add(MAX_EXPIRY_SEC)
-            .ok_or(ErrorCode::ArithmeticError)?,
+    **ctx.accounts.pool.as_mut() = Pool {
+        version: CURRENT_POOL_VERSION,
+        bump: [ctx.bumps.pool],
+        pool_id: args.pool_id,
+        created_at: timestamp,
+        updated_at: timestamp,
+        expiry,
+        owner: ctx.accounts.owner.key(),
+        whitelist: ctx.accounts.whitelist.key(),
+        rent_payer: ctx.accounts.rent_payer.key(),
+        currency: Pubkey::default(),
+        amount: 0,
+        price_offset: 0,
+        nfts_held: 0,
+        stats: PoolStats::default(),
+        shared_escrow: ctx
+            .accounts
+            .shared_escrow
+            .clone()
+            .map(|a| a.key())
+            .unwrap_or_default(),
+        cosigner: args.cosigner.unwrap_or_default(),
+        maker_broker: args.maker_broker.unwrap_or_default(),
+        max_taker_sell_count: args.max_taker_sell_count.unwrap_or(0),
+        config: args.config,
+        _reserved: [0; 100],
     };
-
-    pool.created_at = timestamp;
-    pool.updated_at = timestamp;
-    pool.expiry = expiry;
-
-    if let Some(max_taker_sell_count) = args.max_taker_sell_count {
-        pool.max_taker_sell_count = max_taker_sell_count;
-    }
 
     Ok(())
 }

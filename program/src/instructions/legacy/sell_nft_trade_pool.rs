@@ -103,7 +103,7 @@ pub fn process_sell_nft_trade_pool<'info>(
             source: seller,
             source_ata: &ctx.accounts.taker_ta,
             destination,
-            destination_ata: &ctx.accounts.pool_ta, //<- send to pool as escrow first
+            destination_ata: &ctx.accounts.pool_ta,
             mint: &ctx.accounts.mplx.mint,
             metadata: &ctx.accounts.mplx.metadata,
             edition: &ctx.accounts.mplx.edition,
@@ -140,10 +140,11 @@ pub fn process_sell_nft_trade_pool<'info>(
     )?;
 
     //create nft receipt for trade pool
-    let receipt_state = &mut ctx.accounts.nft_receipt;
-    receipt_state.bump = ctx.bumps.nft_receipt;
-    receipt_state.mint = ctx.accounts.mplx.mint.key();
-    receipt_state.pool = ctx.accounts.trade.pool.key();
+    **ctx.accounts.nft_receipt.as_mut() = NftDepositReceipt {
+        bump: ctx.bumps.nft_receipt,
+        mint: ctx.accounts.mplx.mint.key(),
+        pool: ctx.accounts.trade.pool.key(),
+    };
 
     Ok(())
 }

@@ -8,19 +8,24 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
-  TSWAP_PROGRAM_ID,
+  AssetV1,
+  createDefaultAssetWithCollection,
+  fetchAssetV1,
+} from '@tensor-foundation/mpl-core';
+import { Creator } from '@tensor-foundation/mpl-token-metadata';
+import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
+  TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
+import {
+  Mode,
+  TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION,
+} from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
-  NftDepositReceipt,
-  PoolType,
-  TENSOR_AMM_ERROR__BAD_COSIGNER,
-  TENSOR_AMM_ERROR__PRICE_MISMATCH,
-  TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
   fetchMaybePool,
   fetchNftDepositReceipt,
   fetchPool,
@@ -30,6 +35,12 @@ import {
   getSellNftTokenPoolCoreInstructionAsync,
   getSellNftTradePoolCoreInstructionAsync,
   isSol,
+  NftDepositReceipt,
+  PoolType,
+  TENSOR_AMM_ERROR__PRICE_MISMATCH,
+  TENSOR_AMM_ERROR__WRONG_COSIGNER,
+  TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_WHITELIST,
 } from '../../src/index.js';
 import {
   assertTammNoop,
@@ -44,13 +55,6 @@ import {
   VIPER_ERROR__INTEGER_OVERFLOW,
 } from '../_common.js';
 import { setupCoreTest } from './_common.js';
-import {
-  AssetV1,
-  createDefaultAssetWithCollection,
-  fetchAssetV1,
-} from '@tensor-foundation/mpl-core';
-import { Mode } from '@tensor-foundation/whitelist';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const {
@@ -583,7 +587,11 @@ test('it cannot sell an NFT into a trade pool incorrect cosigner', async (t) => 
     (tx) => appendTransactionMessageInstruction(sellNftIxNoCosigner, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseNoCosigner, TENSOR_AMM_ERROR__BAD_COSIGNER);
+  await expectCustomError(
+    t,
+    promiseNoCosigner,
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
+  );
 
   // Sell NFT into pool with arbitraryCosigner
   const sellNftIxIncorrectCosigner =
@@ -607,7 +615,7 @@ test('it cannot sell an NFT into a trade pool incorrect cosigner', async (t) => 
   await expectCustomError(
     t,
     promiseIncorrectCosigner,
-    TENSOR_AMM_ERROR__BAD_COSIGNER
+    TENSOR_AMM_ERROR__WRONG_COSIGNER
   );
 });
 
@@ -691,15 +699,17 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     minPrice: minPrice,
     creators: [mintWhitelistAuthority.address],
   });
-  const BAD_WHITELIST_ERROR_CODE = 12002;
-  const FAILED_FVC_VERIFICATION_ERROR_CODE = 6007; // thrown by whitelist program
 
   const promisePoolWL = pipe(
     await createDefaultTransaction(client, nftOwner),
     (tx) => appendTransactionMessageInstruction(sellNftIxPoolWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promisePoolWL, FAILED_FVC_VERIFICATION_ERROR_CODE);
+  await expectCustomError(
+    t,
+    promisePoolWL,
+    TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION
+  );
 
   // Sell NFT into pool w/ specifying mint's whitelist & non-matching pool
   const sellNftIxMintWL = await getSellNftTradePoolCoreInstructionAsync({
@@ -718,7 +728,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     (tx) => appendTransactionMessageInstruction(sellNftIxMintWL, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
-  await expectCustomError(t, promiseMintWL, BAD_WHITELIST_ERROR_CODE);
+  await expectCustomError(t, promiseMintWL, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 });
 
 test('it can sell a NFT into a trade pool and pay the correct amount of royalties', async (t) => {
@@ -800,6 +810,7 @@ test('it can sell a NFT into a trade pool and pay the correct amount of royaltie
   const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
     owner: poolOwner.address,
     taker: nftOwner,
+    rentPayer: payer.address,
     pool,
     asset: asset.address,
     collection: collection.address,
