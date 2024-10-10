@@ -25,7 +25,7 @@ pub fn process_noop(ctx: Context<TAmmNoop>) -> Result<()> {
     // State account must sign to use this transaction to ensure it's
     // only used by the program for logging.
     if !ctx.accounts.pool.to_account_info().is_signer {
-        return Err(ErrorCode::InvalidProgramId.into());
+        return Err(ErrorCode::AccountNotSigner.into());
     }
     Ok(())
 }

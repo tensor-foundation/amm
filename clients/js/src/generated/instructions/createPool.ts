@@ -66,6 +66,7 @@ export type CreatePoolInstruction<
   TAccountOwner extends string | IAccountMeta<string> = string,
   TAccountPool extends string | IAccountMeta<string> = string,
   TAccountWhitelist extends string | IAccountMeta<string> = string,
+  TAccountSharedEscrow extends string | IAccountMeta<string> = string,
   TAccountSystemProgram extends
     | string
     | IAccountMeta<string> = '11111111111111111111111111111111',
@@ -88,6 +89,9 @@ export type CreatePoolInstruction<
       TAccountWhitelist extends string
         ? ReadonlyAccount<TAccountWhitelist>
         : TAccountWhitelist,
+      TAccountSharedEscrow extends string
+        ? ReadonlyAccount<TAccountSharedEscrow>
+        : TAccountSharedEscrow,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
         : TAccountSystemProgram,
@@ -100,7 +104,6 @@ export type CreatePoolInstructionData = {
   poolId: ReadonlyUint8Array;
   config: PoolConfig;
   currency: Option<Address>;
-  sharedEscrow: Option<Address>;
   cosigner: Option<Address>;
   makerBroker: Option<Address>;
   orderType: number;
@@ -112,7 +115,6 @@ export type CreatePoolInstructionDataArgs = {
   poolId: ReadonlyUint8Array;
   config: PoolConfigArgs;
   currency?: OptionOrNullable<Address>;
-  sharedEscrow?: OptionOrNullable<Address>;
   cosigner?: OptionOrNullable<Address>;
   makerBroker?: OptionOrNullable<Address>;
   orderType?: number;
@@ -127,7 +129,6 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['poolId', fixEncoderSize(getBytesEncoder(), 32)],
       ['config', getPoolConfigEncoder()],
       ['currency', getOptionEncoder(getAddressEncoder())],
-      ['sharedEscrow', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['makerBroker', getOptionEncoder(getAddressEncoder())],
       ['orderType', getU8Encoder()],
@@ -138,7 +139,6 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ...value,
       discriminator: new Uint8Array([233, 146, 209, 142, 207, 104, 64, 188]),
       currency: value.currency ?? none(),
-      sharedEscrow: value.sharedEscrow ?? none(),
       cosigner: value.cosigner ?? none(),
       makerBroker: value.makerBroker ?? none(),
       orderType: value.orderType ?? 0,
@@ -154,7 +154,6 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['poolId', fixDecoderSize(getBytesDecoder(), 32)],
     ['config', getPoolConfigDecoder()],
     ['currency', getOptionDecoder(getAddressDecoder())],
-    ['sharedEscrow', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['makerBroker', getOptionDecoder(getAddressDecoder())],
     ['orderType', getU8Decoder()],
@@ -178,6 +177,7 @@ export type CreatePoolAsyncInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
+  TAccountSharedEscrow extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   /**
@@ -191,12 +191,12 @@ export type CreatePoolAsyncInput<
   pool?: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
   whitelist: Address<TAccountWhitelist>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   poolId?: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
   currency?: CreatePoolInstructionDataArgs['currency'];
-  sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
   orderType?: CreatePoolInstructionDataArgs['orderType'];
@@ -209,6 +209,7 @@ export async function getCreatePoolInstructionAsync<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
+  TAccountSharedEscrow extends string,
   TAccountSystemProgram extends string,
 >(
   input: CreatePoolAsyncInput<
@@ -216,6 +217,7 @@ export async function getCreatePoolInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
+    TAccountSharedEscrow,
     TAccountSystemProgram
   >
 ): Promise<
@@ -225,6 +227,7 @@ export async function getCreatePoolInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
+    TAccountSharedEscrow,
     TAccountSystemProgram
   >
 > {
@@ -237,6 +240,7 @@ export async function getCreatePoolInstructionAsync<
     owner: { value: input.owner ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
+    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -275,6 +279,7 @@ export async function getCreatePoolInstructionAsync<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -287,6 +292,7 @@ export async function getCreatePoolInstructionAsync<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
+    TAccountSharedEscrow,
     TAccountSystemProgram
   >;
 
@@ -298,6 +304,7 @@ export type CreatePoolInput<
   TAccountOwner extends string = string,
   TAccountPool extends string = string,
   TAccountWhitelist extends string = string,
+  TAccountSharedEscrow extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
   /**
@@ -311,12 +318,12 @@ export type CreatePoolInput<
   pool: Address<TAccountPool>;
   /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
   whitelist: Address<TAccountWhitelist>;
+  sharedEscrow?: Address<TAccountSharedEscrow>;
   /** The Solana system program. */
   systemProgram?: Address<TAccountSystemProgram>;
   poolId?: CreatePoolInstructionDataArgs['poolId'];
   config: CreatePoolInstructionDataArgs['config'];
   currency?: CreatePoolInstructionDataArgs['currency'];
-  sharedEscrow?: CreatePoolInstructionDataArgs['sharedEscrow'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
   orderType?: CreatePoolInstructionDataArgs['orderType'];
@@ -329,6 +336,7 @@ export function getCreatePoolInstruction<
   TAccountOwner extends string,
   TAccountPool extends string,
   TAccountWhitelist extends string,
+  TAccountSharedEscrow extends string,
   TAccountSystemProgram extends string,
 >(
   input: CreatePoolInput<
@@ -336,6 +344,7 @@ export function getCreatePoolInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
+    TAccountSharedEscrow,
     TAccountSystemProgram
   >
 ): CreatePoolInstruction<
@@ -344,6 +353,7 @@ export function getCreatePoolInstruction<
   TAccountOwner,
   TAccountPool,
   TAccountWhitelist,
+  TAccountSharedEscrow,
   TAccountSystemProgram
 > {
   // Program address.
@@ -355,6 +365,7 @@ export function getCreatePoolInstruction<
     owner: { value: input.owner ?? null, isWritable: false },
     pool: { value: input.pool ?? null, isWritable: true },
     whitelist: { value: input.whitelist ?? null, isWritable: false },
+    sharedEscrow: { value: input.sharedEscrow ?? null, isWritable: false },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -387,6 +398,7 @@ export function getCreatePoolInstruction<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.pool),
       getAccountMeta(accounts.whitelist),
+      getAccountMeta(accounts.sharedEscrow),
       getAccountMeta(accounts.systemProgram),
     ],
     programAddress,
@@ -399,6 +411,7 @@ export function getCreatePoolInstruction<
     TAccountOwner,
     TAccountPool,
     TAccountWhitelist,
+    TAccountSharedEscrow,
     TAccountSystemProgram
   >;
 
@@ -423,8 +436,9 @@ export type ParsedCreatePoolInstruction<
     pool: TAccountMetas[2];
     /** The whitelist that gatekeeps which NFTs can be bought or sold with this pool. */
     whitelist: TAccountMetas[3];
+    sharedEscrow?: TAccountMetas[4] | undefined;
     /** The Solana system program. */
-    systemProgram: TAccountMetas[4];
+    systemProgram: TAccountMetas[5];
   };
   data: CreatePoolInstructionData;
 };
@@ -437,7 +451,7 @@ export function parseCreatePoolInstruction<
     IInstructionWithAccounts<TAccountMetas> &
     IInstructionWithData<Uint8Array>
 ): ParsedCreatePoolInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 5) {
+  if (instruction.accounts.length < 6) {
     // TODO: Coded error.
     throw new Error('Not enough accounts');
   }
@@ -447,6 +461,12 @@ export function parseCreatePoolInstruction<
     accountIndex += 1;
     return accountMeta;
   };
+  const getNextOptionalAccount = () => {
+    const accountMeta = getNextAccount();
+    return accountMeta.address === TENSOR_AMM_PROGRAM_ADDRESS
+      ? undefined
+      : accountMeta;
+  };
   return {
     programAddress: instruction.programAddress,
     accounts: {
@@ -454,6 +474,7 @@ export function parseCreatePoolInstruction<
       owner: getNextAccount(),
       pool: getNextAccount(),
       whitelist: getNextAccount(),
+      sharedEscrow: getNextOptionalAccount(),
       systemProgram: getNextAccount(),
     },
     data: getCreatePoolInstructionDataDecoder().decode(instruction.data),

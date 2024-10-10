@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{CloseAccount, Mint};
 use constants::CURRENT_POOL_VERSION;
-use escrow_program::instructions::assert_decode_margin_account;
+use escrow_program::instructions::assert_decode_margin_account as assert_decode_escrow_account;
 use mpl_token_metadata::types::{Collection, Creator};
 use program::AmmProgram;
 use solana_program::keccak;
@@ -260,7 +260,7 @@ impl<'info> TradeShared<'info> {
                     .to_account_info();
 
             // Validate it's a valid escrow account.
-            assert_decode_margin_account(&incoming_shared_escrow, &self.owner.to_account_info())?;
+            assert_decode_escrow_account(&incoming_shared_escrow, &self.owner.to_account_info())?;
 
             // Validate it's the correct account: the stored escrow account matches the one passed in.
             if incoming_shared_escrow.key != &pool.shared_escrow {
@@ -351,7 +351,7 @@ impl<'info> TradeShared<'info> {
                         .to_account_info();
 
                 // Validate it's a valid escrow account.
-                assert_decode_margin_account(
+                assert_decode_escrow_account(
                     &incoming_shared_escrow,
                     &self.owner.to_account_info(),
                 )?;
@@ -437,10 +437,9 @@ impl<'info> TradeShared<'info> {
                         unwrap_opt!(self.shared_escrow.as_ref(), ErrorCode::BadSharedEscrow)
                             .to_account_info();
 
-                    assert_decode_margin_account(
-                        &incoming_shared_escrow,
-                        &self.owner.to_account_info(),
-                    )?;
+                    // NB: we don't explicitly assert for presence and decode the escrow account.
+                    // This is because a pool owner can close the escrow and DOS buying from their pool.
+                    // We already asserted the shared_escrow was a valid MarginAccount during creator.
 
                     if incoming_shared_escrow.key != &pool.shared_escrow {
                         throw_err!(ErrorCode::BadSharedEscrow);

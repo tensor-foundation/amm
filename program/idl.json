@@ -97,6 +97,12 @@
           ]
         },
         {
+          "name": "sharedEscrow",
+          "isMut": false,
+          "isSigner": false,
+          "isOptional": true
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false,
@@ -2698,19 +2704,6 @@
       ],
       "accounts": [
         {
-          "name": "t22",
-          "accounts": [
-            {
-              "name": "mint",
-              "isMut": false,
-              "isSigner": false,
-              "docs": [
-                "The mint account of the NFT."
-              ]
-            }
-          ]
-        },
-        {
           "name": "trade",
           "accounts": [
             {
@@ -2833,6 +2826,19 @@
               "name": "nativeProgram",
               "isMut": false,
               "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "t22",
+          "accounts": [
+            {
+              "name": "mint",
+              "isMut": false,
+              "isSigner": false,
+              "docs": [
+                "The mint account of the NFT."
+              ]
             }
           ]
         },
@@ -3335,12 +3341,6 @@
           },
           {
             "name": "currency",
-            "type": {
-              "option": "publicKey"
-            }
-          },
-          {
-            "name": "sharedEscrow",
             "type": {
               "option": "publicKey"
             }

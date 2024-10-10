@@ -1,5 +1,6 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
+use escrow_program::state::MarginAccount;
 use tensor_vipers::{throw_err, try_or_err};
 use whitelist_program::{self, WhitelistV2};
 
@@ -17,7 +18,6 @@ pub struct CreatePoolArgs {
     pub config: PoolConfig,
     // Here to support future SPL mints, contract enforces this is the native mint currently
     pub currency: Option<Pubkey>,
-    pub shared_escrow: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
     pub order_type: u8,
@@ -59,12 +59,18 @@ pub struct CreatePool<'info> {
     )]
     pub whitelist: Box<Account<'info, WhitelistV2>>,
 
+    #[account(
+        has_one = owner @ ErrorCode::BadOwner,
+        constraint = pool.config.pool_type != PoolType::NFT @ ErrorCode::CannotUseSharedEscrow,
+    )]
+    pub shared_escrow: Option<Account<'info, MarginAccount>>,
+
     /// The Solana system program.
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> CreatePool<'info> {
-    fn validate(&self, config: PoolConfig, shared_escrow: Option<Pubkey>) -> Result<()> {
+    fn validate(&self, config: PoolConfig) -> Result<()> {
         match config.pool_type {
             PoolType::NFT | PoolType::Token => {
                 if config.mm_fee_bps > 0 {
@@ -86,16 +92,12 @@ impl<'info> CreatePool<'info> {
             }
         }
 
-        if config.pool_type == PoolType::NFT && shared_escrow.is_some() {
-            throw_err!(ErrorCode::CannotUseSharedEscrow);
-        }
-
         Ok(())
     }
 }
 
 /// Create a new pool.
-#[access_control(ctx.accounts.validate(args.config, args.shared_escrow))]
+#[access_control(ctx.accounts.validate(args.config))]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
 
@@ -111,6 +113,12 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.whitelist = ctx.accounts.whitelist.key();
     pool.pool_id = args.pool_id;
     pool.rent_payer = ctx.accounts.rent_payer.key();
+    pool.shared_escrow = ctx
+        .accounts
+        .shared_escrow
+        .clone()
+        .map(|a| a.key())
+        .unwrap_or_default();
 
     // Only SOL currently supported
     pool.currency = Pubkey::default();
@@ -122,7 +130,6 @@ pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Re
     pool.stats = PoolStats::default();
 
     pool.cosigner = args.cosigner.unwrap_or_default();
-    pool.shared_escrow = args.shared_escrow.unwrap_or_default();
     pool.maker_broker = args.maker_broker.unwrap_or_default();
 
     let timestamp = Clock::get()?.unix_timestamp;
