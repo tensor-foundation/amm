@@ -14,7 +14,6 @@ pub struct CloseExpiredPool<'info> {
     /// The owner account must be specified and match the account stored in the pool but does not have to sign
     /// for expired pools.
     /// CHECK: seeds in pool
-    #[account(mut)]
     pub owner: UncheckedAccount<'info>,
 
     /// The pool to close.
@@ -28,7 +27,6 @@ pub struct CloseExpiredPool<'info> {
         has_one = rent_payer @ ErrorCode::WrongRentPayer,
         constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.nfts_held == 0 @ ErrorCode::ExistingNfts,
-        // Must be expired
         constraint = Clock::get()?.unix_timestamp > pool.expiry @ ErrorCode::PoolNotExpired,
     )]
     pub pool: Box<Account<'info, Pool>>,

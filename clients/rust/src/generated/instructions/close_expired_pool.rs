@@ -35,7 +35,7 @@ impl CloseExpiredPool {
             self.rent_payer,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.owner, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
@@ -80,7 +80,7 @@ impl Default for CloseExpiredPoolInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable]` rent_payer
-///   1. `[writable]` owner
+///   1. `[]` owner
 ///   2. `[writable]` pool
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
@@ -234,7 +234,7 @@ impl<'a, 'b> CloseExpiredPoolCpi<'a, 'b> {
             *self.rent_payer.key,
             false,
         ));
-        accounts.push(solana_program::instruction::AccountMeta::new(
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.owner.key,
             false,
         ));
@@ -283,7 +283,7 @@ impl<'a, 'b> CloseExpiredPoolCpi<'a, 'b> {
 /// ### Accounts:
 ///
 ///   0. `[writable]` rent_payer
-///   1. `[writable]` owner
+///   1. `[]` owner
 ///   2. `[writable]` pool
 ///   3. `[]` system_program
 #[derive(Clone, Debug)]

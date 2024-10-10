@@ -56,7 +56,7 @@ pub enum ErrorCode {
     StartingPriceTooSmall,
 
     #[msg("Pool must keep minimum rent balance")]
-    PoolKeepAlive,
+    PoolInsufficientRent,
 
     #[msg("Wrong rent payer")]
     WrongRentPayer,

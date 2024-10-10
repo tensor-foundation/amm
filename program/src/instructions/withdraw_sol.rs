@@ -39,7 +39,7 @@ pub fn process_withdraw_sol<'info>(
     let pool = &mut ctx.accounts.pool;
 
     let rent = solana_program::rent::Rent::get()?;
-    let pool_keep_alive = rent.minimum_balance(POOL_SIZE);
+    let pool_min_rent = rent.minimum_balance(POOL_SIZE);
 
     let current_pool_lamports = pool.to_account_info().get_lamports();
 
@@ -48,9 +48,9 @@ pub fn process_withdraw_sol<'info>(
     if current_pool_lamports
         .checked_sub(lamports)
         .ok_or(ErrorCode::ArithmeticError)?
-        < pool_keep_alive
+        < pool_min_rent
     {
-        throw_err!(ErrorCode::PoolKeepAlive);
+        throw_err!(ErrorCode::PoolInsufficientRent);
     }
 
     // Update the pool's currency amount

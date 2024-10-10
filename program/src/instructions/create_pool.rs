@@ -47,7 +47,7 @@ pub struct CreatePool<'info> {
             owner.key().as_ref(),
             args.pool_id.as_ref(),
         ],
-        bump
+        bump,
     )]
     pub pool: Box<Account<'info, Pool>>,
 
