@@ -1,18 +1,19 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
-import { Token, fetchToken } from '@solana-program/token';
+import { fetchToken, Token } from '@solana-program/token';
 import {
   Account,
   address,
   Address,
   appendTransactionMessageInstruction,
+  KeyPairSigner,
   pipe,
 } from '@solana/web3.js';
 import {
+  createDefaultNftInCollection,
   Creator,
+  fetchMetadata,
   Nft,
   TokenStandard,
-  createDefaultNftInCollection,
-  fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   Client,
@@ -22,17 +23,17 @@ import {
   ONE_SOL,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
-import { Condition, Mode, intoAddress } from '@tensor-foundation/whitelist';
+import { Condition, intoAddress, Mode } from '@tensor-foundation/whitelist';
+import { ExecutionContext } from 'ava';
 import {
-  Pool,
-  PoolConfig,
-  PoolType,
   fetchMaybePool,
   fetchPool,
   getBuyNftInstructionAsync,
   getDepositNftInstructionAsync,
+  Pool,
+  PoolConfig,
+  PoolType,
 } from '../../src/index.js';
-import { generateTreeOfSize } from '../_merkle.js';
 import {
   assertNftReceiptClosed,
   assertNftReceiptCreated,
@@ -56,7 +57,7 @@ import {
   tradePoolConfig,
   upsertMintProof,
 } from '../_common.js';
-import { ExecutionContext } from 'ava';
+import { generateTreeOfSize } from '../_merkle.js';
 
 export const COMPAT_RULESET = address(
   'AdH2Utn6Fus15ZhtenW4hZBQnvtLgM1YCW2MfVp7pYS5'
@@ -76,6 +77,7 @@ export interface LegacyTest {
 
 export async function setupLegacyTest(
   params: SetupTestParams & {
+    creators?: Creator[] & { signers?: KeyPairSigner[] };
     pNft?: boolean;
     ruleset?: Address;
     signerFunds?: bigint;
@@ -334,6 +336,7 @@ export interface BuyLegacyTests {
   expectError?: number;
   pNft?: boolean;
   ruleset?: Address;
+  checkCreatorBalances?: boolean;
 }
 
 export async function testBuyNft(
@@ -360,9 +363,11 @@ export async function testBuyNft(
     client,
     takerBroker.address
   );
-  const creatorStartingBalance = await getBalance(
-    client,
-    nftUpdateAuthority.address
+  const creatorStartingBalances = await Promise.all(
+    creators.map(async (creator) => ({
+      creator,
+      balance: await getBalance(client, creator.address),
+    }))
   );
 
   const poolAccount = await fetchPool(client.rpc, pool);
@@ -477,14 +482,19 @@ export async function testBuyNft(
     t.assert(takerBrokerEndingBalance === expectedTakerBrokerBalance);
   }
 
-  // Always check verified creator balances for royalty payments.
-  for (const creator of creators) {
-    if (creator.verified) {
-      const expectedCreatorBalance =
-        creatorStartingBalance +
-        (appliedRoyaltyFee * BigInt(creator.share)) / HUNDRED_PERCENT;
-      const creatorEndingBalance = await getBalance(client, creator.address);
-      t.assert(creatorEndingBalance === expectedCreatorBalance);
+  // Check verified creator balances for royalty payments if requested.
+  if (tests.checkCreatorBalances) {
+    for (const {
+      creator,
+      balance: creatorStartingBalance,
+    } of creatorStartingBalances) {
+      if (creator.verified) {
+        const expectedCreatorBalance =
+          creatorStartingBalance +
+          (appliedRoyaltyFee * BigInt(creator.share)) / HUNDRED_PERCENT;
+        const creatorEndingBalance = await getBalance(client, creator.address);
+        t.assert(creatorEndingBalance === expectedCreatorBalance);
+      }
     }
   }
 

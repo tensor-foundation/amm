@@ -4,6 +4,7 @@ import {
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   generateKeyPairSigner,
+  isSome,
   pipe,
 } from '@solana/web3.js';
 import {
@@ -47,6 +48,7 @@ import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
   BASIS_POINTS,
+  COMPUTE_500K_IX,
   TENSOR_ERROR__BAD_ROYALTIES_PCT,
   TestAction,
   assertTammNoop,
@@ -63,12 +65,6 @@ import {
   upsertMintProof,
 } from '../_common.js';
 import { COMPAT_RULESET, setupLegacyTest, testBuyNft } from './_common.js';
-
-// TODO: add tests for:
-// - buyNft alternate deposits and buys
-// - buyNft buy a ton with default exponential curve + tolerance
-// buy pNft from nft pool (no ruleset)
-// MAX ACC CHECK: buy pNft from trade pool (1 ruleset) (should require LUT) (margin)
 
 test('buy from NFT pool', async (t) => {
   const legacyTest = await setupLegacyTest({
@@ -180,11 +176,16 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     ))
   );
 
-  const creators: Creator[] = creatorSigners.map(({ address }) => ({
+  let creators: Creator[] = creatorSigners.map(({ address }) => ({
     address,
     verified: false, // have to set this to false so creating the NFT will work
     share: 20,
   }));
+
+  // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
+  let config = nftPoolConfig;
+  config.startingPrice = 10000n;
+  config.delta = config.startingPrice / 10n;
 
   const legacyTest = await setupLegacyTest({
     t,
@@ -194,14 +195,15 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     useSharedEscrow: false,
     fundPool: false,
     creators,
+    poolConfig: config,
     treeSize: 10_000,
     whitelistMode: Mode.MerkleTree,
+    pNft: true,
   });
 
   const verifyCreatorIxs: IInstruction[] = [];
 
   for (const creator of creatorSigners ?? []) {
-    // If verified and not the update authority which is already signing, verify.
     verifyCreatorIxs.push(
       getVerifyInstruction({
         authority: creator,
@@ -217,10 +219,33 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
+  // Ensure creators are now verified.
+  const md = await fetchMetadata(client.rpc, legacyTest.nft.metadata);
+
+  if (isSome(md.data.creators)) {
+    creators = md.data.creators.value;
+  } else {
+    creators = [];
+  }
+
+  t.assert(creators.every((c) => c.verified));
+
+  const creatorStartingBalances = await Promise.all(
+    creatorSigners.map((c) => getBalance(client, c.address))
+  );
+
   await testBuyNft(t, legacyTest, {
     brokerPayments: false,
-    creators,
+    creators, // pass in the verified creators
+    checkCreatorBalances: false,
+    pNft: true,
   });
+
+  // First three creators should have a higher balance.
+  for (const [i, creator] of creatorSigners.slice(0, 3).entries()) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance > creatorStartingBalances[i]);
+  }
 
   // Last two creators should have 0 balance.
   for (const creator of creatorSigners.slice(-2)) {
@@ -1579,5 +1604,126 @@ test('alternate deposits & buys', async (t) => {
       poolData = await fetchPool(client.rpc, pool);
       t.assert(poolData.data.nftsHeld === depositCount - buyCount);
     }
+  }
+});
+
+test('buy a ton with default exponential curve + tolerance', async (t) => {
+  t.timeout(120_000); // Increase timeout due to many operations
+
+  const client = createDefaultSolanaClient();
+  const numBuys = 109; // prime #
+
+  const traderA = await generateKeyPairSignerWithSol(
+    client,
+    250_000n * LAMPORTS_PER_SOL
+  );
+  const traderB = await generateKeyPairSignerWithSol(
+    client,
+    250_000n * LAMPORTS_PER_SOL
+  );
+
+  const config = {
+    poolType: PoolType.NFT,
+    curveType: CurveType.Exponential,
+    startingPrice: 2_083_195_757n, // ~2 SOL (prime #)
+    delta: 877n, // 8.77% (prime #)
+    mmCompoundFees: true,
+    mmFeeBps: null,
+  };
+
+  t.log('minting nfts');
+
+  // Prepare multiple NFTs
+  const nfts = await Promise.all(
+    Array(numBuys)
+      .fill(null)
+      .map(async () => {
+        const { mint, metadata } = await createDefaultNft({
+          client,
+          payer: traderA,
+          authority: traderA,
+          owner: traderA.address,
+        });
+        const [ataA] = await findAtaPda({ mint, owner: traderA.address });
+        const [ataB] = await findAtaPda({ mint, owner: traderB.address });
+        return { mint, metadata, ataA, ataB };
+      })
+  );
+
+  t.log('creating whitelist and pool');
+
+  // Prepare whitelist and pool
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: traderA,
+    conditions: [{ mode: Mode.FVC, value: traderA.address }],
+  });
+
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: traderA,
+    config,
+  });
+
+  t.log('depositing nfts');
+
+  // Deposit all NFTs
+  for (const nft of nfts) {
+    const depositNftIx = await getDepositNftInstructionAsync({
+      owner: traderA,
+      pool,
+      whitelist,
+      mint: nft.mint,
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderA),
+      (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('buying nfts');
+
+  // Buy NFTs sequentially
+  for (const [buyCount, nft] of nfts.entries()) {
+    const poolData = await fetchPool(client.rpc, pool);
+    const currPrice = getCurrentAskPrice({
+      pool: poolData.data,
+      royaltyFeeBps: 0, // Assuming no royalties for simplicity
+      extraOffset: 1,
+      excludeMMFee: true,
+    });
+
+    t.log(`buying nft ${buyCount + 1} at price ${currPrice}`);
+
+    const buyNftIx = await getBuyNftInstructionAsync({
+      owner: traderA.address,
+      taker: traderB,
+      pool,
+      mint: nft.mint,
+      maxAmount: currPrice ?? 0n,
+      creators: [traderA.address],
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderB),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+      (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('verifying nft ownership');
+
+  // Check NFTs have been transferred correctly
+  for (const nft of nfts) {
+    await assertTokenNftOwnedBy({
+      t,
+      client,
+      mint: nft.mint,
+      owner: traderB.address,
+    });
   }
 });

@@ -27,7 +27,6 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -824,7 +823,6 @@ export interface SetupTestParams {
   action: TestAction;
   whitelistMode?: Mode;
   treeSize?: number;
-  creators?: Creator[] & { signers?: KeyPairSigner[] };
   depositAmount?: bigint;
   useMakerBroker?: boolean;
   useSharedEscrow?: boolean;

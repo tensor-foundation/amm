@@ -11,177 +11,474 @@ import {
   AssetV1,
   createDefaultAsset,
   createDefaultAssetWithCollection,
+  createDefaultCollection,
+  Creator,
   fetchAssetV1,
 } from '@tensor-foundation/mpl-core';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
+  getBalance,
+  LAMPORTS_PER_SOL,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
+  CurveType,
+  fetchMaybePool,
+  fetchPool,
+  findNftDepositReceiptPda,
+  getBuyNftCoreInstructionAsync,
+  getCurrentAskPrice,
+  getDepositNftCoreInstructionAsync,
+  getEditPoolInstruction,
+  isSol,
   Pool,
   PoolType,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
-  fetchMaybePool,
-  fetchPool,
-  findNftDepositReceiptPda,
-  getBuyNftCoreInstructionAsync,
-  getDepositNftCoreInstructionAsync,
-  getEditPoolInstruction,
-  isSol,
 } from '../../src/index.js';
 import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
-  BASIS_POINTS,
-  TestAction,
   assertNftReceiptClosed,
   assertTammNoop,
+  BASIS_POINTS,
   createPool,
+  createProofWhitelist,
   createWhitelistV2,
   expectCustomError,
   getAndFundFeeVault,
   nftPoolConfig,
+  TestAction,
   tradePoolConfig,
+  upsertMintProof,
 } from '../_common.js';
-import { setupCoreTest } from './_common.js';
+import { setupCoreTest, testBuyNft } from './_common.js';
 
-test('it can buy an NFT from a Trade pool', async (t) => {
-  const { client, signers, asset, collection, testConfig, pool, feeVault } =
-    await setupCoreTest({
-      t,
-      poolType: PoolType.Trade,
-      action: TestAction.Buy,
-      useSharedEscrow: false,
-      fundPool: false,
-    });
-
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
-  const { poolConfig } = testConfig;
-
-  // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
-  const mmFee = poolConfig.startingPrice * BigInt(poolConfig.mmFeeBps ?? 0);
-  const royalties = (poolConfig.startingPrice * 500n) / 10000n;
-  // It should work with exact amount, but users might also pad this to allow for slippage.
-  const maxAmount = poolConfig.startingPrice + mmFee + royalties;
-
-  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-
-  // Buy NFT from pool
-  const buyNftIx = await getBuyNftCoreInstructionAsync({
-    owner: poolOwner.address,
-    taker: buyer,
-    pool,
-    asset: asset.address,
-    collection: collection.address,
-    maxAmount,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
+test('buy from NFT pool', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
   });
 
-  await pipe(
-    await createDefaultTransaction(client, buyer),
-    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  // NFT is now owned by the buyer.
-  t.like(await fetchAssetV1(client.rpc, asset.address), <
-    Account<AssetV1, Address>
-  >{
-    address: asset.address,
-    data: {
-      owner: buyer.address,
-    },
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
   });
-
-  // Pool stats are updated
-  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
-    address: pool,
-    data: {
-      stats: {
-        takerBuyCount: 1,
-        takerSellCount: 0,
-      },
-    },
-  });
-
-  // Fee vault balance increases.
-  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-  t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
-
-  // Deposit Receipt is closed
-  await assertNftReceiptClosed({ t, client, pool, mint: asset.address });
 });
 
-test('it can buy an NFT from a NFT pool', async (t) => {
-  const { client, signers, asset, collection, testConfig, pool, feeVault } =
-    await setupCoreTest({
+test('buy from NFT pool, pay brokers', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, coreTest, {
+    brokerPayments: true,
+  });
+});
+
+test('buy from NFT pool, max creators large proof', async (t) => {
+  const creatorSigners = await Promise.all(
+    Array.from({ length: 5 }, () => generateKeyPairSigner())
+  );
+
+  const creators: Creator[] = creatorSigners.map(({ address }) => ({
+    address,
+    percentage: 20,
+  }));
+
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    creators,
+    treeSize: 10_000,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+    creators,
+  });
+});
+
+test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Fund the first 3 creators with 1 SOL so they're rent exempt.
+  const creatorSigners = await Promise.all(
+    Array.from({ length: 3 }, () => generateKeyPairSignerWithSol(client))
+  );
+  // Add two more creators to the end of the array that are not rent exempt.
+  creatorSigners.push(
+    ...(await Promise.all(
+      Array.from({ length: 2 }, () => generateKeyPairSigner())
+    ))
+  );
+
+  const creators: Creator[] = creatorSigners.map(({ address }) => ({
+    address,
+    percentage: 20,
+  }));
+
+  // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
+  let config = nftPoolConfig;
+  config.startingPrice = 10000n;
+  config.delta = config.startingPrice / 10n;
+
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    creators,
+    treeSize: 10_000,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  const creatorStartingBalances = await Promise.all(
+    creatorSigners.map(({ address }) => getBalance(client, address))
+  );
+
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+    creators,
+  });
+
+  // First three creators should have a higher balance.
+  for (const [i, creator] of creatorSigners.slice(0, 3).entries()) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance > creatorStartingBalances[i]);
+  }
+
+  // Last two creators should have 0 balance.
+  for (const creator of creatorSigners.slice(-2)) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance === 0n);
+  }
+});
+
+test('buy from NFT pool, max price higher than current price succeeds', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [101n, 10000n]) {
+    const coreTest = await setupCoreTest({
       t,
       poolType: PoolType.NFT,
       action: TestAction.Buy,
+      useMakerBroker: false,
       useSharedEscrow: false,
       fundPool: false,
     });
 
-  const { buyer, poolOwner, nftUpdateAuthority } = signers;
-  const { poolConfig } = testConfig;
+    // We multiply by the pre-configured maxPrice which includes the royalties.
+    coreTest.testConfig.price = (coreTest.testConfig.price * adjust) / 100n;
 
-  // Max amount is the maximum price the user is willing to pay for the NFT + creators fee and mm fee, if applicable.
-  const mmFee = poolConfig.startingPrice * BigInt(poolConfig.mmFeeBps ?? 0);
-  const royalties = (poolConfig.startingPrice * 500n) / 10000n;
-  // It should work with exact amount, but users might also pad this to allow for slippage.
-  const maxAmount = poolConfig.startingPrice + mmFee + royalties;
+    await testBuyNft(t, coreTest, {
+      brokerPayments: false,
+    });
+  }
+});
 
-  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
+test('buy from NFT pool, max price lower than current price fails', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [99n, 50n]) {
+    const coreTest = await setupCoreTest({
+      t,
+      poolType: PoolType.NFT,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
 
-  // Buy NFT from pool
-  const buyNftIx = await getBuyNftCoreInstructionAsync({
-    owner: poolOwner.address,
-    taker: buyer,
-    pool,
-    asset: asset.address,
-    collection: collection.address,
-    maxAmount,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
+    // We multiply by the starting price which does not have royalties added, so we can test the price mismatch logic.
+    coreTest.testConfig.price =
+      (coreTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
+
+    await testBuyNft(t, coreTest, {
+      brokerPayments: false,
+      expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
+    });
+  }
+});
+
+test('buy from wrong NFT pool fails', async (t) => {
+  t.timeout(15_000);
+  const client = createDefaultSolanaClient();
+  const payer = await generateKeyPairSignerWithSol(client);
+  const traderA = await generateKeyPairSignerWithSol(client);
+  const traderB = await generateKeyPairSignerWithSol(client);
+
+  // Mint NFT
+  const [nftA, collectionA] = await createDefaultAssetWithCollection({
+    client,
+    payer,
+    owner: traderA.address,
+    collectionAuthority: traderA,
+  });
+
+  // Mint NFT
+  const [nftB, collectionB] = await createDefaultAssetWithCollection({
+    client,
+    payer,
+    owner: traderB.address,
+    collectionAuthority: traderB,
+  });
+
+  const { whitelist, proofs } = await createProofWhitelist(
+    client,
+    traderA,
+    [nftA.address, nftB.address],
+    4
+  );
+
+  // Create pools
+  const { pool: poolA } = await createPool({
+    client,
+    payer,
+    owner: traderA,
+    config: nftPoolConfig,
+    whitelist,
+  });
+
+  const { pool: poolB } = await createPool({
+    client,
+    payer,
+    owner: traderB,
+    config: nftPoolConfig,
+    whitelist,
+  });
+
+  // Create mint proofs
+  const { mintProof: mintProofA } = await upsertMintProof({
+    client,
+    payer,
+    mint: nftA.address,
+    whitelist,
+    proof: proofs[0].proof,
+  });
+
+  const { mintProof: mintProofB } = await upsertMintProof({
+    client,
+    payer,
+    mint: nftB.address,
+    whitelist,
+    proof: proofs[1].proof,
+  });
+
+  // Deposit NFTs into resepective pools
+  const depositNftIxA = await getDepositNftCoreInstructionAsync({
+    pool: poolA,
+    asset: nftA.address,
+    collection: collectionA.address,
+    owner: traderA,
+    whitelist,
+    mintProof: mintProofA,
+  });
+  const depositNftIxB = await getDepositNftCoreInstructionAsync({
+    pool: poolB,
+    asset: nftB.address,
+    collection: collectionB.address,
+    owner: traderB,
+    whitelist,
+    mintProof: mintProofB,
   });
 
   await pipe(
-    await createDefaultTransaction(client, buyer),
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(depositNftIxA, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIxB, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Try to buy NFT B from pool A, the default derived NFT receipt will be from
+  // pool A and NFT B which won't exist so the error is account unintialized.
+  let buyNftIx = await getBuyNftCoreInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderA.address,
+    pool: poolA,
+    taker: traderB,
+    asset: nftB.address,
+    collection: collectionB.address,
+    maxAmount: 1n,
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, traderB),
     (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // NFT is now owned by the buyer.
-  t.like(await fetchAssetV1(client.rpc, asset.address), <
-    Account<AssetV1, Address>
-  >{
-    address: asset.address,
-    data: {
-      owner: buyer.address,
-    },
+  await expectCustomError(t, promise, ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED);
+
+  // Try to buy NFT B from pool A, but use the correct NFT receipt and token accounts so they exist.
+  // The error will then be a seeds constraint error because  the NFT receipt passed in doesn't match the
+  // one in the pool.
+
+  // Derive  NFT receipt
+  const [nftReceiptA] = await findNftDepositReceiptPda({
+    mint: nftA.address,
+    pool: poolA,
   });
 
-  // Pool is auto-closed by the last NFT being bought.
-  const maybePool = await fetchMaybePool(client.rpc, pool);
-  t.assert(!maybePool.exists);
+  buyNftIx = await getBuyNftCoreInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderA.address,
+    pool: poolA,
+    taker: traderB,
+    asset: nftB.address,
+    collection: collectionB.address,
+    maxAmount: 1n,
+    nftReceipt: nftReceiptA,
+  });
 
-  // Fee vault balance increases.
-  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-  t.assert(endingFeeVaultBalance > startingFeeVaultBalance);
+  promise = pipe(
+    await createDefaultTransaction(client, traderB),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
 
-  // Deposit Receipt is closed
-  await assertNftReceiptClosed({ t, client, pool, mint: asset.address });
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+
+  // Try to buy NFT A from pool B, the default derived NFT receipt will be from
+  // pool B and NFT A which won't exist so the error is account uninitialized.
+  buyNftIx = await getBuyNftCoreInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderB.address,
+    pool: poolB,
+    taker: traderA,
+    asset: nftA.address,
+    collection: collectionA.address,
+    maxAmount: 1n,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED);
+
+  // Try to buy NFT A from pool B, but use the correct NFT receipt and token accounts so they exist.
+  // The error will then be a seeds constraint error because the NFT receipt passed in doesn't match the
+  // one in the pool.
+
+  // Derive NFT receipt
+  const [nftReceiptB] = await findNftDepositReceiptPda({
+    mint: nftB.address,
+    pool: poolB,
+  });
+
+  buyNftIx = await getBuyNftCoreInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderB.address,
+    pool: poolB,
+    taker: traderA,
+    asset: nftA.address,
+    collection: collectionA.address,
+    maxAmount: 1n,
+    nftReceipt: nftReceiptB,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+});
+
+test('buy from Trade pool', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+  });
+});
+
+test('buy from Trade pool, pay brokers', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  await testBuyNft(t, coreTest, {
+    brokerPayments: true,
+  });
+});
+
+test('buy from Trade pool, max price higher than current price succeeds', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [101n, 10000n]) {
+    const coreTest = await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the pre-configured maxPrice which includes the mm fee and royalties.
+    coreTest.testConfig.price = (coreTest.testConfig.price * adjust) / 100n;
+
+    await testBuyNft(t, coreTest, {
+      brokerPayments: false,
+    });
+  }
+});
+
+test('buy from Trade pool, max price lower than current price fails', async (t) => {
+  t.timeout(15_000);
+  for (const adjust of [99n, 50n]) {
+    const coreTest = await setupCoreTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Buy,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: false,
+    });
+
+    // We multiply by the starting price which does not have mm fee androyalties added, so we can test the price mismatch logic.
+    coreTest.testConfig.price =
+      (coreTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
+
+    await testBuyNft(t, coreTest, {
+      brokerPayments: false,
+      expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
+    });
+  }
 });
 
 test('it can buy an NFT from a Trade pool w/ Merkle Root whitelist', async (t) => {
@@ -1047,4 +1344,299 @@ test('pool with makerBroker set requires passing the account in; fails w/ incorr
 
   // Should fail with a missing makerBroker error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
+});
+
+test('alternate deposits & buys', async (t) => {
+  t.timeout(25_000);
+  const client = createDefaultSolanaClient();
+  const numBuys = 10;
+
+  for (const poolType of [PoolType.NFT, PoolType.Trade]) {
+    for (const curveType of [CurveType.Linear, CurveType.Exponential]) {
+      const traderA = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+      const traderB = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+
+      const config = {
+        poolType,
+        curveType,
+        startingPrice: 1_238_923_843n,
+        delta:
+          curveType === CurveType.Linear
+            ? 1_238_923_843n / BigInt(numBuys)
+            : 1021n,
+        mmCompoundFees: true,
+        mmFeeBps: poolType === PoolType.Trade ? 0 : null,
+      };
+
+      t.log('minting nfts');
+
+      const sellerFeeBasisPoints = 100;
+
+      // Create a collection
+      const collection = await createDefaultCollection({
+        client,
+        payer: traderA,
+        updateAuthority: traderA.address,
+        royalties: {
+          creators: [{ address: traderA.address, percentage: 100 }],
+          basisPoints: sellerFeeBasisPoints,
+        },
+      });
+
+      // Prepare multiple NFTs
+      const nfts = await Promise.all(
+        Array(numBuys)
+          .fill(null)
+          .map(async () => {
+            const asset = await createDefaultAsset({
+              client,
+              payer: traderA,
+              authority: traderA,
+              owner: traderA.address,
+              collection: collection.address,
+            });
+            return { asset, collection };
+          })
+      );
+
+      t.log('creating whitelist and pool');
+
+      // Prepare whitelist and pool
+      const { whitelist } = await createWhitelistV2({
+        client,
+        updateAuthority: traderA,
+        conditions: [{ mode: Mode.VOC, value: collection.address }],
+      });
+
+      const { pool } = await createPool({
+        client,
+        whitelist,
+        owner: traderA,
+        config,
+      });
+
+      // Deposit and buy NFTs sequentially
+      let depositCount = 1;
+      let buyCount = 0;
+
+      t.log('initial deposit');
+
+      // Initial deposit
+      const nft = nfts[0];
+
+      const depositNftIx = await getDepositNftCoreInstructionAsync({
+        owner: traderA,
+        pool,
+        whitelist,
+        asset: nft.asset.address,
+        collection: nft.collection.address,
+      });
+
+      await pipe(
+        await createDefaultTransaction(client, traderA),
+        (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+        (tx) => signAndSendTransaction(client, tx)
+      );
+
+      t.pass();
+
+      let poolData = await fetchPool(client.rpc, pool);
+
+      // Alternate between deposits and buys
+      for (let i = 1; i < numBuys; i++) {
+        // Deposit next NFT
+        const nftToDeposit = nfts[depositCount];
+
+        t.log(`depositing nft ${depositCount + 1}`);
+
+        const depositNftIx = await getDepositNftCoreInstructionAsync({
+          owner: traderA,
+          pool,
+          whitelist,
+          asset: nftToDeposit.asset.address,
+          collection: nftToDeposit.collection.address,
+        });
+        await pipe(
+          await createDefaultTransaction(client, traderA),
+          (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+          (tx) => signAndSendTransaction(client, tx)
+        );
+        depositCount++;
+
+        t.log('buying nft');
+
+        // Buy NFT
+        const nftToBuy = nfts[buyCount];
+        poolData = await fetchPool(client.rpc, pool);
+        const currPrice = getCurrentAskPrice({
+          pool: poolData.data,
+          royaltyFeeBps: sellerFeeBasisPoints,
+          extraOffset: 1,
+          excludeMMFee: poolType === PoolType.NFT ? true : false,
+        });
+
+        const buyNftIx = await getBuyNftCoreInstructionAsync({
+          owner: traderA.address,
+          taker: traderB,
+          pool,
+          asset: nftToBuy.asset.address,
+          collection: nftToBuy.collection.address,
+          maxAmount: currPrice ?? 0n,
+          creators: [traderA.address],
+        });
+        await pipe(
+          await createDefaultTransaction(client, traderB),
+          (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+          (tx) => signAndSendTransaction(client, tx)
+        );
+        buyCount++;
+      }
+
+      // Check NFTs have been transferred correctly
+      for (let i = 0; i < buyCount; i++) {
+        t.like(await fetchAssetV1(client.rpc, nfts[i].asset.address), {
+          data: { owner: traderB.address },
+        });
+      }
+
+      // Check remaining NFTs are still in the pool
+      poolData = await fetchPool(client.rpc, pool);
+      t.assert(poolData.data.nftsHeld === depositCount - buyCount);
+    }
+  }
+});
+
+test('buy a ton with default exponential curve + tolerance', async (t) => {
+  t.timeout(120_000); // Increase timeout due to many operations
+
+  const client = createDefaultSolanaClient();
+  const numBuys = 109; // prime #
+
+  const traderA = await generateKeyPairSignerWithSol(
+    client,
+    250_000n * LAMPORTS_PER_SOL
+  );
+  const traderB = await generateKeyPairSignerWithSol(
+    client,
+    250_000n * LAMPORTS_PER_SOL
+  );
+
+  const config = {
+    poolType: PoolType.NFT,
+    curveType: CurveType.Exponential,
+    startingPrice: 2_083_195_757n, // ~2 SOL (prime #)
+    delta: 877n, // 8.77% (prime #)
+    mmCompoundFees: true,
+    mmFeeBps: null,
+  };
+
+  t.log('minting nfts');
+
+  // Create a collection
+  const collection = await createDefaultCollection({
+    client,
+    payer: traderA,
+    updateAuthority: traderA.address,
+    royalties: {
+      creators: [{ address: traderA.address, percentage: 100 }],
+      basisPoints: 100,
+    },
+  });
+
+  // Prepare multiple NFTs
+  const nfts = await Promise.all(
+    Array(numBuys)
+      .fill(null)
+      .map(async () => {
+        const asset = await createDefaultAsset({
+          client,
+          payer: traderA,
+          authority: traderA,
+          owner: traderA.address,
+          collection: collection.address,
+        });
+        return { asset, collection };
+      })
+  );
+
+  t.log('creating whitelist and pool');
+
+  // Prepare whitelist and pool
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: traderA,
+    conditions: [{ mode: Mode.VOC, value: collection.address }],
+  });
+
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: traderA,
+    config,
+  });
+
+  t.log('depositing nfts');
+
+  // Deposit all NFTs
+  for (const nft of nfts) {
+    const depositNftIx = await getDepositNftCoreInstructionAsync({
+      owner: traderA,
+      pool,
+      whitelist,
+      asset: nft.asset.address,
+      collection: nft.collection.address,
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderA),
+      (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('buying nfts');
+
+  // Buy NFTs sequentially
+  for (const [buyCount, nft] of nfts.entries()) {
+    const poolData = await fetchPool(client.rpc, pool);
+    const currPrice = getCurrentAskPrice({
+      pool: poolData.data,
+      royaltyFeeBps: 0, // Assuming no royalties for simplicity
+      extraOffset: 1,
+      excludeMMFee: true,
+    });
+
+    t.log(`buying nft ${buyCount + 1} at price ${currPrice}`);
+
+    const buyNftIx = await getBuyNftCoreInstructionAsync({
+      owner: traderA.address,
+      taker: traderB,
+      pool,
+      asset: nft.asset.address,
+      collection: nft.collection.address,
+      maxAmount: currPrice ?? 0n,
+      creators: [traderA.address],
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderB),
+      (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('verifying nft ownership');
+
+  // Check NFTs have been transferred correctly
+  for (const nft of nfts) {
+    t.like(await fetchAssetV1(client.rpc, nft.asset.address), {
+      data: { owner: traderB.address },
+    });
+  }
 });
