@@ -22,7 +22,6 @@ pub struct CreatePoolArgs {
     pub currency: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
-    pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
     pub expire_in_sec: Option<u64>,
 }

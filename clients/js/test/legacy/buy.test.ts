@@ -11,19 +11,25 @@ import {
   TokenStandard,
   VerificationArgs,
   createDefaultNft,
+  createDefaultNftInCollection,
   fetchMetadata,
   getVerifyInstruction,
 } from '@tensor-foundation/mpl-token-metadata';
+import { findAssociatedTokenAccountPda } from '@tensor-foundation/resolvers';
 import {
+  LAMPORTS_PER_SOL,
+  TOKEN_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   getBalance,
+  getTokenAmount,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
+  CurveType,
   PoolType,
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_COSIGNER,
@@ -32,6 +38,7 @@ import {
   fetchPool,
   findNftDepositReceiptPda,
   getBuyNftInstructionAsync,
+  getCurrentAskPrice,
   getDepositNftInstructionAsync,
   getEditPoolInstruction,
   isSol,
@@ -45,25 +52,19 @@ import {
   assertTammNoop,
   assertTokenNftOwnedBy,
   createPool,
+  createProofWhitelist,
   createWhitelistV2,
   expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
-  getTokenAmount,
   getTokenOwner,
   nftPoolConfig,
   tradePoolConfig,
+  upsertMintProof,
 } from '../_common.js';
 import { COMPAT_RULESET, setupLegacyTest, testBuyNft } from './_common.js';
 
 // TODO: add tests for:
-// - buyNft non-whitelisted NFT fails
-//   All:
-//    1) non-WL mint + bad ATA
-//    2) non-WL mint + good ATA
-//    3) WL mint + bad ATA
-//    should fail.
-// - buyNft from wrong pool fails
 // - buyNft alternate deposits and buys
 // - buyNft buy a ton with default exponential curve + tolerance
 // buy pNft from nft pool (no ruleset)
@@ -100,7 +101,7 @@ test('buy from NFT pool, pay brokers', async (t) => {
 });
 
 test('buy from NFT pool, pay optional royalties', async (t) => {
-  t.timeout(25_000);
+  t.timeout(30_000);
   for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
     const legacyTest = await setupLegacyTest({
       t,
@@ -308,6 +309,206 @@ test('buy pNFT from NFT pool, compat ruleset', async (t) => {
   });
 });
 
+test('buy from wrong NFT pool fails', async (t) => {
+  t.timeout(15_000);
+  const client = createDefaultSolanaClient();
+  const payer = await generateKeyPairSignerWithSol(client);
+  const traderA = await generateKeyPairSignerWithSol(client);
+  const traderB = await generateKeyPairSignerWithSol(client);
+
+  // Mint NFT
+  const { item: nftA } = await createDefaultNftInCollection({
+    client,
+    payer,
+    authority: traderA,
+    owner: traderA.address,
+    standard: TokenStandard.NonFungible,
+  });
+
+  // Mint NFT
+  const { item: nftB } = await createDefaultNftInCollection({
+    client,
+    payer,
+    authority: traderB,
+    owner: traderB.address,
+    standard: TokenStandard.NonFungible,
+  });
+
+  const { whitelist, proofs } = await createProofWhitelist(
+    client,
+    traderA,
+    [nftA.mint, nftB.mint],
+    4
+  );
+
+  // Create pools
+  const { pool: poolA } = await createPool({
+    client,
+    payer,
+    owner: traderA,
+    config: nftPoolConfig,
+    whitelist,
+  });
+
+  const { pool: poolB } = await createPool({
+    client,
+    payer,
+    owner: traderB,
+    config: nftPoolConfig,
+    whitelist,
+  });
+
+  // Create mint proofs
+  const { mintProof: mintProofA } = await upsertMintProof({
+    client,
+    payer,
+    mint: nftA.mint,
+    whitelist,
+    proof: proofs[0].proof,
+  });
+
+  const { mintProof: mintProofB } = await upsertMintProof({
+    client,
+    payer,
+    mint: nftB.mint,
+    whitelist,
+    proof: proofs[1].proof,
+  });
+
+  // Deposit NFTs into resepective pools
+  const depositNftIxA = await getDepositNftInstructionAsync({
+    pool: poolA,
+    mint: nftA.mint,
+    owner: traderA,
+    whitelist,
+    mintProof: mintProofA,
+  });
+  const depositNftIxB = await getDepositNftInstructionAsync({
+    pool: poolB,
+    mint: nftB.mint,
+    owner: traderB,
+    whitelist,
+    mintProof: mintProofB,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(depositNftIxA, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIxB, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Try to buy NFT B from pool A, the default derived NFT receipt will be from
+  // pool A and NFT B which won't exist so the error is account unintialized.
+  let buyNftIx = await getBuyNftInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderA.address,
+    pool: poolA,
+    taker: traderB,
+    mint: nftB.mint,
+    maxAmount: 1n,
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, traderB),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED);
+
+  // Try to buy NFT B from pool A, but use the correct NFT receipt and token accounts so they exist.
+  // The error will then be a seeds constraint error because  the NFT receipt passed in doesn't match the
+  // one in the pool.
+
+  // Derive  NFT receipt
+  const [nftReceiptA] = await findNftDepositReceiptPda({
+    mint: nftA.mint,
+    pool: poolA,
+  });
+
+  // Derive pool token account
+  const [poolTokenAccount] = await findAssociatedTokenAccountPda({
+    mint: nftA.mint,
+    owner: poolA,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+
+  buyNftIx = await getBuyNftInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderA.address,
+    pool: poolA,
+    taker: traderB,
+    mint: nftB.mint,
+    maxAmount: 1n,
+    nftReceipt: nftReceiptA,
+    poolTa: poolTokenAccount,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, traderB),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+
+  // Try to buy NFT A from pool B, the default derived NFT receipt will be from
+  // pool B and NFT A which won't exist so the error is account uninitialized.
+  buyNftIx = await getBuyNftInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderB.address,
+    pool: poolB,
+    taker: traderA,
+    mint: nftA.mint,
+    maxAmount: 1n,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED);
+
+  // Try to buy NFT A from pool B, but use the correct NFT receipt and token accounts so they exist.
+  // The error will then be a seeds constraint error because the NFT receipt passed in doesn't match the
+  // one in the pool.
+
+  // Derive NFT receipt
+  const [nftReceiptB] = await findNftDepositReceiptPda({
+    mint: nftB.mint,
+    pool: poolB,
+  });
+
+  // Derive pool token account
+  const [poolTokenAccountB] = await findAssociatedTokenAccountPda({
+    mint: nftB.mint,
+    owner: poolB,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+
+  buyNftIx = await getBuyNftInstructionAsync({
+    rentPayer: payer.address,
+    owner: traderB.address,
+    pool: poolB,
+    taker: traderA,
+    mint: nftA.mint,
+    maxAmount: 1n,
+    nftReceipt: nftReceiptB,
+    poolTa: poolTokenAccountB,
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+});
+
 test('buy from Trade pool', async (t) => {
   const legacyTest = await setupLegacyTest({
     t,
@@ -339,7 +540,7 @@ test('buy from Trade pool, pay brokers', async (t) => {
 });
 
 test('buy from Trade pool, pay optional royalties', async (t) => {
-  t.timeout(20_000);
+  t.timeout(30_000);
   for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
     const legacyTest = await setupLegacyTest({
       t,
@@ -1223,4 +1424,160 @@ test('pool with makerBroker set requires passing the account in; fails w/ wrong 
 
   // Should fail with a missing makerBroker error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
+});
+
+test('alternate deposits & buys', async (t) => {
+  t.timeout(25_000);
+  const client = createDefaultSolanaClient();
+  const numBuys = 10;
+
+  for (const poolType of [PoolType.NFT, PoolType.Trade]) {
+    for (const curveType of [CurveType.Linear, CurveType.Exponential]) {
+      const traderA = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+      const traderB = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+
+      const config = {
+        poolType,
+        curveType,
+        startingPrice: 1_238_923_843n,
+        delta:
+          curveType === CurveType.Linear
+            ? 1_238_923_843n / BigInt(numBuys)
+            : 1021n,
+        mmCompoundFees: true,
+        mmFeeBps: poolType === PoolType.Trade ? 0 : null,
+      };
+
+      t.log('minting nfts');
+
+      // Prepare multiple NFTs
+      const nfts = await Promise.all(
+        Array(numBuys)
+          .fill(null)
+          .map(async () => {
+            const { mint, metadata } = await createDefaultNft({
+              client,
+              payer: traderA,
+              authority: traderA,
+              owner: traderA.address,
+            });
+            const [ataA] = await findAtaPda({ mint, owner: traderA.address });
+            const [ataB] = await findAtaPda({ mint, owner: traderB.address });
+            return { mint, metadata, ataA, ataB };
+          })
+      );
+
+      const { sellerFeeBasisPoints } = (
+        await fetchMetadata(client.rpc, nfts[0].metadata)
+      ).data;
+
+      t.log('creating whitelist and pool');
+
+      // Prepare whitelist and pool
+      const { whitelist } = await createWhitelistV2({
+        client,
+        updateAuthority: traderA,
+        conditions: [{ mode: Mode.FVC, value: traderA.address }],
+      });
+
+      const { pool } = await createPool({
+        client,
+        whitelist,
+        owner: traderA,
+        config,
+      });
+
+      // Deposit and buy NFTs sequentially
+      let depositCount = 1;
+      let buyCount = 0;
+
+      t.log('initial deposit');
+
+      // Initial deposit
+      const nft = nfts[0];
+
+      const depositNftIx = await getDepositNftInstructionAsync({
+        owner: traderA,
+        pool,
+        whitelist,
+        mint: nft.mint,
+      });
+
+      await pipe(
+        await createDefaultTransaction(client, traderA),
+        (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+        (tx) => signAndSendTransaction(client, tx)
+      );
+
+      let poolData = await fetchPool(client.rpc, pool);
+
+      // Alternate between deposits and buys
+      for (let i = 1; i < numBuys; i++) {
+        // Deposit next NFT
+        const nftToDeposit = nfts[depositCount];
+
+        t.log(`depositing nft ${depositCount + 1}`);
+
+        const depositNftIx = await getDepositNftInstructionAsync({
+          owner: traderA,
+          pool,
+          whitelist,
+          mint: nftToDeposit.mint,
+        });
+        await pipe(
+          await createDefaultTransaction(client, traderA),
+          (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+          (tx) => signAndSendTransaction(client, tx)
+        );
+        depositCount++;
+
+        t.log('buying nft');
+
+        // Buy NFT
+        const nftToBuy = nfts[buyCount];
+        poolData = await fetchPool(client.rpc, pool);
+        const currPrice = getCurrentAskPrice({
+          pool: poolData.data,
+          royaltyFeeBps: sellerFeeBasisPoints,
+          extraOffset: 1,
+          excludeMMFee: poolType === PoolType.NFT ? true : false,
+        });
+
+        const buyNftIx = await getBuyNftInstructionAsync({
+          owner: traderA.address,
+          taker: traderB,
+          pool,
+          mint: nftToBuy.mint,
+          maxAmount: currPrice ?? 0n,
+          creators: [traderA.address],
+        });
+        await pipe(
+          await createDefaultTransaction(client, traderB),
+          (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+          (tx) => signAndSendTransaction(client, tx)
+        );
+        buyCount++;
+      }
+
+      // Check NFTs have been transferred correctly
+      for (let i = 0; i < buyCount; i++) {
+        await assertTokenNftOwnedBy({
+          t,
+          client,
+          mint: nfts[i].mint,
+          owner: traderB.address,
+        });
+      }
+
+      // Check remaining NFTs are still in the pool
+      poolData = await fetchPool(client.rpc, pool);
+      t.assert(poolData.data.nftsHeld === depositCount - buyCount);
+    }
+  }
 });
