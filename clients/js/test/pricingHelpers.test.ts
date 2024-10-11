@@ -17,6 +17,7 @@ import {
 } from '@tensor-foundation/test-helpers';
 import test, { ExecutionContext } from 'ava';
 import {
+  calculateAmountForQuantity,
   calculatePrice,
   CurveType,
   fetchPool,
@@ -26,14 +27,18 @@ import {
   getCurrentBidPrice,
   getDepositNftInstructionAsync,
   getDepositSolInstruction,
-  calculateAmountForQuantity,
   getSellNftTokenPoolInstructionAsync,
   getSellNftTradePoolInstructionAsync,
   PoolConfig,
   PoolType,
   TakerSide,
 } from '../src';
-import { expectCustomError, ONE_SOL, TestAction } from './_common';
+import {
+  COMPUTE_500K_IX,
+  expectCustomError,
+  ONE_SOL,
+  TestAction,
+} from './_common';
 import { setupLegacyTest } from './legacy/_common';
 
 test('getCurrentAskPrice returns null for empty NFT pool', async (t) => {
@@ -802,6 +807,7 @@ async function buyNftsFromPool(
 
     await pipe(
       await createDefaultTransaction(client, buyer),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
       (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
