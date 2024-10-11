@@ -110,7 +110,6 @@ pub struct CreatePoolInstructionArgs {
     pub currency: Option<Pubkey>,
     pub cosigner: Option<Pubkey>,
     pub maker_broker: Option<Pubkey>,
-    pub order_type: u8,
     pub max_taker_sell_count: Option<u32>,
     pub expire_in_sec: Option<u64>,
 }
@@ -138,7 +137,6 @@ pub struct CreatePoolBuilder {
     currency: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
-    order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
     expire_in_sec: Option<u64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
@@ -217,12 +215,6 @@ impl CreatePoolBuilder {
         self.maker_broker = Some(maker_broker);
         self
     }
-    /// `[optional argument, defaults to '0']`
-    #[inline(always)]
-    pub fn order_type(&mut self, order_type: u8) -> &mut Self {
-        self.order_type = Some(order_type);
-        self
-    }
     /// `[optional argument]`
     #[inline(always)]
     pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
@@ -271,7 +263,6 @@ impl CreatePoolBuilder {
             currency: self.currency.clone(),
             cosigner: self.cosigner.clone(),
             maker_broker: self.maker_broker.clone(),
-            order_type: self.order_type.clone().unwrap_or(0),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
             expire_in_sec: self.expire_in_sec.clone(),
         };
@@ -468,7 +459,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             currency: None,
             cosigner: None,
             maker_broker: None,
-            order_type: None,
             max_taker_sell_count: None,
             expire_in_sec: None,
             __remaining_accounts: Vec::new(),
@@ -552,12 +542,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
         self.instruction.maker_broker = Some(maker_broker);
         self
     }
-    /// `[optional argument, defaults to '0']`
-    #[inline(always)]
-    pub fn order_type(&mut self, order_type: u8) -> &mut Self {
-        self.instruction.order_type = Some(order_type);
-        self
-    }
     /// `[optional argument]`
     #[inline(always)]
     pub fn max_taker_sell_count(&mut self, max_taker_sell_count: u32) -> &mut Self {
@@ -621,7 +605,6 @@ impl<'a, 'b> CreatePoolCpiBuilder<'a, 'b> {
             currency: self.instruction.currency.clone(),
             cosigner: self.instruction.cosigner.clone(),
             maker_broker: self.instruction.maker_broker.clone(),
-            order_type: self.instruction.order_type.clone().unwrap_or(0),
             max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
             expire_in_sec: self.instruction.expire_in_sec.clone(),
         };
@@ -665,7 +648,6 @@ struct CreatePoolCpiBuilderInstruction<'a, 'b> {
     currency: Option<Pubkey>,
     cosigner: Option<Pubkey>,
     maker_broker: Option<Pubkey>,
-    order_type: Option<u8>,
     max_taker_sell_count: Option<u32>,
     expire_in_sec: Option<u64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

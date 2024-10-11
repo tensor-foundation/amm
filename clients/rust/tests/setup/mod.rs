@@ -202,8 +202,7 @@ pub async fn setup_default_pool<'a>(
         .whitelist(whitelist)
         .pool_id(pool_id.to_bytes())
         .currency(Pubkey::default())
-        .config(config.clone())
-        .order_type(0);
+        .config(config.clone());
 
     if let Some(expire_in_sec) = expire_in_sec {
         builder.expire_in_sec(expire_in_sec);

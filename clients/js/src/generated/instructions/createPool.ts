@@ -22,8 +22,6 @@ import {
   getU32Encoder,
   getU64Decoder,
   getU64Encoder,
-  getU8Decoder,
-  getU8Encoder,
   none,
   transformEncoder,
   type Address,
@@ -106,7 +104,6 @@ export type CreatePoolInstructionData = {
   currency: Option<Address>;
   cosigner: Option<Address>;
   makerBroker: Option<Address>;
-  orderType: number;
   maxTakerSellCount: Option<number>;
   expireInSec: Option<bigint>;
 };
@@ -117,7 +114,6 @@ export type CreatePoolInstructionDataArgs = {
   currency?: OptionOrNullable<Address>;
   cosigner?: OptionOrNullable<Address>;
   makerBroker?: OptionOrNullable<Address>;
-  orderType?: number;
   maxTakerSellCount?: OptionOrNullable<number>;
   expireInSec?: OptionOrNullable<number | bigint>;
 };
@@ -131,7 +127,6 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       ['currency', getOptionEncoder(getAddressEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
       ['makerBroker', getOptionEncoder(getAddressEncoder())],
-      ['orderType', getU8Encoder()],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
       ['expireInSec', getOptionEncoder(getU64Encoder())],
     ]),
@@ -141,7 +136,6 @@ export function getCreatePoolInstructionDataEncoder(): Encoder<CreatePoolInstruc
       currency: value.currency ?? none(),
       cosigner: value.cosigner ?? none(),
       makerBroker: value.makerBroker ?? none(),
-      orderType: value.orderType ?? 0,
       maxTakerSellCount: value.maxTakerSellCount ?? none(),
       expireInSec: value.expireInSec ?? none(),
     })
@@ -156,7 +150,6 @@ export function getCreatePoolInstructionDataDecoder(): Decoder<CreatePoolInstruc
     ['currency', getOptionDecoder(getAddressDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
     ['makerBroker', getOptionDecoder(getAddressDecoder())],
-    ['orderType', getU8Decoder()],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
     ['expireInSec', getOptionDecoder(getU64Decoder())],
   ]);
@@ -199,7 +192,6 @@ export type CreatePoolAsyncInput<
   currency?: CreatePoolInstructionDataArgs['currency'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
-  orderType?: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
@@ -326,7 +318,6 @@ export type CreatePoolInput<
   currency?: CreatePoolInstructionDataArgs['currency'];
   cosigner?: CreatePoolInstructionDataArgs['cosigner'];
   makerBroker?: CreatePoolInstructionDataArgs['makerBroker'];
-  orderType?: CreatePoolInstructionDataArgs['orderType'];
   maxTakerSellCount?: CreatePoolInstructionDataArgs['maxTakerSellCount'];
   expireInSec?: CreatePoolInstructionDataArgs['expireInSec'];
 };
