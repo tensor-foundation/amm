@@ -9,9 +9,6 @@ use crate::{
     MAX_EXPIRY_SEC,
 };
 
-/// Size of the Pool account, inclusive of the 8-byte discriminator.
-pub const POOL_SIZE: usize = DISCRIMINATOR_SIZE + Pool::INIT_SPACE;
-
 /// Enum representing the different types of pools.
 ///
 /// Token pools are single-sided pools that hold SOL and NFTs can be sold into them.
@@ -20,8 +17,11 @@ pub const POOL_SIZE: usize = DISCRIMINATOR_SIZE + Pool::INIT_SPACE;
 ///
 /// Trade pools are double-sided pools that hold SOL and NFTs and can be used to trade between the two.
 #[repr(u8)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, InitSpace, PartialEq, Eq,
+)]
 pub enum PoolType {
+    #[default]
     Token = 0,
     NFT = 1,
     Trade = 2,
@@ -33,14 +33,19 @@ pub enum PoolType {
 ///
 /// Exponential curves have a price offset that increases or decreases exponentially.
 #[repr(u8)]
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, InitSpace, PartialEq, Eq,
+)]
 pub enum CurveType {
+    #[default]
     Linear = 0,
     Exponential = 1,
 }
 
 /// Configuration values for a pool define the type of pool, curve, and other parameters.
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, InitSpace, PartialEq, Eq)]
+#[derive(
+    AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, InitSpace, PartialEq, Eq,
+)]
 pub struct PoolConfig {
     pub pool_type: PoolType,
     pub curve_type: CurveType,
@@ -79,7 +84,7 @@ impl PoolConfig {
 
 /// Stats for a pool include the number of buys and sells, and the accumulated MM profit.
 #[derive(
-    AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, Default, InitSpace, PartialEq, Eq,
+    AnchorSerialize, AnchorDeserialize, Debug, Default, Clone, Copy, InitSpace, PartialEq, Eq,
 )]
 pub struct PoolStats {
     pub taker_sell_count: u32,
@@ -89,8 +94,8 @@ pub struct PoolStats {
 
 /// `Pool` is the main state account in the AMM program and represents the AMM pool where trades can happen.
 /// `Pool` accounts are Program Derived Addresses derived  from the seeds: `"pool"`, `owner`, and `identifier`.
-#[derive(InitSpace)]
 #[account]
+#[derive(Debug, InitSpace, Eq, PartialEq)]
 pub struct Pool {
     /// Pool version, used to control upgrades.
     pub version: u8,
@@ -150,7 +155,36 @@ pub struct Pool {
     pub _reserved: [u8; 100],
 }
 
+impl Default for Pool {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            bump: [1],
+            pool_id: [0; 32],
+            created_at: 0,
+            updated_at: 0,
+            expiry: 0,
+            owner: Pubkey::default(),
+            whitelist: Pubkey::default(),
+            rent_payer: Pubkey::default(),
+            currency: Pubkey::default(),
+            amount: 0,
+            price_offset: 0,
+            nfts_held: 0,
+            stats: PoolStats::default(),
+            shared_escrow: Pubkey::default(),
+            cosigner: Pubkey::default(),
+            maker_broker: Pubkey::default(),
+            max_taker_sell_count: 0,
+            config: PoolConfig::default(),
+            _reserved: [0; 100],
+        }
+    }
+}
+
 impl Pool {
+    pub const SIZE: usize = DISCRIMINATOR_SIZE + Pool::INIT_SPACE;
+
     /// Determines if a taker is able to sell into a pool.
     pub fn taker_allowed_to_sell(&self) -> Result<()> {
         //0 indicates no restriction on buy count / if no shared_escrow, not relevant
@@ -346,7 +380,7 @@ pub fn close_pool<'info>(
         throw_err!(ErrorCode::WrongOwner);
     }
 
-    let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
+    let pool_min_rent = Rent::get()?.minimum_balance(Pool::SIZE);
     let pool_lamports = pool.get_lamports();
 
     // Any SOL above the minimum rent/state bond goes to the owner.
@@ -390,7 +424,7 @@ pub fn update_pool_accounting(
             // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
             // Shared escrow pools don't have a SOL balance because the shared escrow account holds it.
             if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
-                let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_min_rent = Rent::get()?.minimum_balance(Pool::SIZE);
                 let pool_final_balance = pool.get_lamports();
                 let lamports_added =
                     unwrap_checked!({ pool_final_balance.checked_sub(pool_initial_balance) });
@@ -417,7 +451,7 @@ pub fn update_pool_accounting(
 
             // Update the pool's currency balance, by tracking additions and subtractions as a result of this trade.
             if pool.currency == Pubkey::default() && pool.shared_escrow == Pubkey::default() {
-                let pool_min_rent = Rent::get()?.minimum_balance(POOL_SIZE);
+                let pool_min_rent = Rent::get()?.minimum_balance(Pool::SIZE);
                 let pool_final_balance = pool.get_lamports();
                 let lamports_taken =
                     unwrap_checked!({ pool_initial_balance.checked_sub(pool_final_balance) });

@@ -23,7 +23,7 @@ pub struct DepositNftCore<'info> {
             transfer.pool.key().as_ref(),
         ],
         bump,
-        space = DEPOSIT_RECEIPT_SIZE,
+        space = NftDepositReceipt::SIZE,
     )]
     pub nft_receipt: Box<Account<'info, NftDepositReceipt>>,
 

@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "name": "amm_program",
   "docs": [
     "Program entrypoint"
@@ -19,13 +19,6 @@
       "name": "MAX_DELTA_BPS",
       "type": "u16",
       "value": "9999"
-    },
-    {
-      "name": "DEPOSIT_RECEIPT_SIZE",
-      "type": {
-        "defined": "usize"
-      },
-      "value": "8 + 1 + 32 * 2"
     }
   ],
   "instructions": [

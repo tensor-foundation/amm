@@ -1,3 +1,4 @@
+import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import {
   Account,
   Address,
@@ -62,6 +63,18 @@ import {
   getDepositSolInstruction,
 } from '../src/index.js';
 import { generateTreeOfSize } from './_merkle.js';
+
+export const COMPUTE_300K_IX = (() => {
+  return getSetComputeUnitLimitInstruction({
+    units: 300_000,
+  });
+})();
+
+export const COMPUTE_500K_IX = (() => {
+  return getSetComputeUnitLimitInstruction({
+    units: 500_000,
+  });
+})();
 
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
@@ -367,7 +380,6 @@ export async function createPool({
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ?? undefined,
     makerBroker: makerBroker ? some(makerBroker) : none(),
-    orderType: 0,
     expireInSec: expireInSec ?? null,
   });
 
@@ -430,7 +442,6 @@ export async function createPoolThrows({
     maxTakerSellCount: 0,
     cosigner: cosigner ? some(cosigner.address) : none(),
     sharedEscrow: sharedEscrow ?? undefined,
-    orderType: 0,
     expireInSec: null,
   });
 
