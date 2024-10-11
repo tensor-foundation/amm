@@ -7,7 +7,7 @@ use whitelist_program::{self, WhitelistV2};
 use crate::{
     constants::CURRENT_POOL_VERSION,
     error::ErrorCode,
-    state::{Pool, PoolConfig, POOL_SIZE},
+    state::{Pool, PoolConfig},
     PoolStats, PoolType, MAX_EXPIRY_SEC,
 };
 
@@ -42,7 +42,7 @@ pub struct CreatePool<'info> {
     #[account(
         init,
         payer = rent_payer,
-        space = POOL_SIZE,
+        space = Pool::SIZE,
         seeds = [
             b"pool",
             owner.key().as_ref(),

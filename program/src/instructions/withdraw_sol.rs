@@ -39,7 +39,7 @@ pub fn process_withdraw_sol<'info>(
     let pool = &mut ctx.accounts.pool;
 
     let rent = solana_program::rent::Rent::get()?;
-    let pool_min_rent = rent.minimum_balance(POOL_SIZE);
+    let pool_min_rent = rent.minimum_balance(Pool::SIZE);
 
     let current_pool_lamports = pool.to_account_info().get_lamports();
 
