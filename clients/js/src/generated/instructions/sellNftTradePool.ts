@@ -45,6 +45,7 @@ import {
   TokenStandard,
   resolveAuthorizationRulesProgramFromTokenStandard,
   resolveEditionFromTokenStandard,
+  resolveEscrowProgramFromSharedEscrow,
   resolveMetadata,
   resolvePoolAta,
   resolvePoolTokenRecordFromTokenStandard,
@@ -546,6 +547,12 @@ export async function getSellNftTradePoolInstructionAsync<
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
   }
+  if (!accounts.escrowProgram.value) {
+    accounts.escrowProgram = {
+      ...accounts.escrowProgram,
+      ...resolveEscrowProgramFromSharedEscrow(resolverScope),
+    };
+  }
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -973,6 +980,12 @@ export function getSellNftTradePoolInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
+  }
+  if (!accounts.escrowProgram.value) {
+    accounts.escrowProgram = {
+      ...accounts.escrowProgram,
+      ...resolveEscrowProgramFromSharedEscrow(resolverScope),
+    };
   }
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
