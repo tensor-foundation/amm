@@ -35,6 +35,7 @@ import {
   createDefaultTransaction,
   createKeyPairSigner,
   generateKeyPairSignerWithSol,
+  getBalance,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
@@ -681,12 +682,16 @@ export const assertTammNoop = async (
 export const getAndFundFeeVault = async (client: Client, pool: Address) => {
   const [feeVault] = await findFeeVaultPda({ address: pool });
 
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVaultBalance = await getBalance(client, feeVault);
+
+  // Fund fee vault with min rent lamports, if necessary.
+  if (feeVaultBalance < lamports(ZERO_ACCOUNT_RENT_LAMPORTS)) {
+    await airdropFactory(client)({
+      recipientAddress: feeVault,
+      lamports: lamports(ZERO_ACCOUNT_RENT_LAMPORTS - feeVaultBalance),
+      commitment: 'confirmed',
+    });
+  }
 
   return feeVault;
 };

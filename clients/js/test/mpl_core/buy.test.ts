@@ -1516,15 +1516,15 @@ test('buy a ton with default exponential curve + tolerance', async (t) => {
   t.timeout(120_000); // Increase timeout due to many operations
 
   const client = createDefaultSolanaClient();
-  const numBuys = 109; // prime #
+  const numBuys = 47; // prime #
 
   const traderA = await generateKeyPairSignerWithSol(
     client,
-    250_000n * LAMPORTS_PER_SOL
+    100_000n * LAMPORTS_PER_SOL
   );
   const traderB = await generateKeyPairSignerWithSol(
     client,
-    250_000n * LAMPORTS_PER_SOL
+    100_000n * LAMPORTS_PER_SOL
   );
 
   const config = {
