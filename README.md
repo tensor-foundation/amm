@@ -31,6 +31,18 @@ Check out the [Contributing Guide](./CONTRIBUTING.md) the learn more about how t
 
 ## Build
 
+### Prerequisites
+
+You need the following tools installed to build the project:
+
+- pnpm v9+
+- rust v1.78.0
+- node v18+
+- solana v1.17.23
+- anchor v0.29.0
+
+### Steps
+
 Install JavaScript dependencies:
 
 ```bash
