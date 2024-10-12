@@ -81,6 +81,46 @@ test('buy from NFT pool', async (t) => {
   });
 });
 
+test('buy from NFT pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('buy from Trade pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
 test('buy from NFT pool, pay brokers', async (t) => {
   const legacyTest = await setupLegacyTest({
     t,
@@ -732,6 +772,26 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   // Only one buy so the pool currency amount should just be the new lamports added.
   t.assert(updatedPoolAccount.data.amount === lamportsAdded);
+});
+
+test('buy from Token pool fails', async (t) => {
+  // Setup a Token pool, funded with SOL.
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  // The NFT receipt for this mint and pool doesn't exist so it should fail with an
+  // Anchor account not initialized error.
+  // It hits this constraint issue before the pool type check.
+  await testBuyNft(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+  });
 });
 
 test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
@@ -1615,11 +1675,11 @@ test('buy a ton with default exponential curve + tolerance', async (t) => {
 
   const traderA = await generateKeyPairSignerWithSol(
     client,
-    250_000n * LAMPORTS_PER_SOL
+    100_000n * LAMPORTS_PER_SOL
   );
   const traderB = await generateKeyPairSignerWithSol(
     client,
-    250_000n * LAMPORTS_PER_SOL
+    100_000n * LAMPORTS_PER_SOL
   );
 
   const config = {

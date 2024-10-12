@@ -74,6 +74,46 @@ test('buy from NFT pool', async (t) => {
   });
 });
 
+test('buy from NFT pool, wrong owner fails', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  coreTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('buy from Trade pool, wrong owner fails', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  coreTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
 test('buy from NFT pool, pay brokers', async (t) => {
   const coreTest = await setupCoreTest({
     t,
@@ -479,6 +519,26 @@ test('buy from Trade pool, max price lower than current price fails', async (t) 
       expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
     });
   }
+});
+
+test('buy from Token pool fails', async (t) => {
+  // Setup a Token pool, funded with SOL.
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  // The NFT receipt for this mint and pool doesn't exist so it should fail with an
+  // Anchor account not initialized error.
+  // It hits this constraint issue before the pool type check.
+  await testBuyNft(t, coreTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+  });
 });
 
 test('it can buy an NFT from a Trade pool w/ Merkle Root whitelist', async (t) => {
