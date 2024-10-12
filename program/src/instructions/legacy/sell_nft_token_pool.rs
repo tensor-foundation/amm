@@ -130,7 +130,6 @@ pub fn process_sell_nft_token_pool<'info>(
     });
 
     //STEP 1/2: SEND TO ESCROW
-    msg!("Sending NFT to pool escrow");
     transfer(*transfer_args, None)?;
 
     let signer_seeds: &[&[&[u8]]] = &[&[
@@ -141,7 +140,6 @@ pub fn process_sell_nft_token_pool<'info>(
     ]];
 
     //STEP 2/2: SEND FROM ESCROW
-    msg!("Sending NFT from pool escrow to owner");
     transfer(
         TransferArgs {
             payer: &ctx.accounts.trade.taker.to_account_info(),

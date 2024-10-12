@@ -97,10 +97,6 @@ export const getAndFundOwner = async (client: Client) => {
   return owner;
 };
 
-export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
-export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
-export const VIPER_ERROR__INTEGER_OVERFLOW = 1103;
-
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
@@ -126,16 +122,6 @@ export const TRANSACTION_SIGNATURE_FEE = 5_000n;
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
-
-export const TENSOR_ERROR__BAD_ROYALTIES_PCT = 15001;
-export const TENSOR_ERROR__INSUFFICIENT_BALANCE = 15002;
-export const TENSOR_ERROR__CREATOR_MISMATCH = 15003;
-export const TENSOR_ERROR__FAILED_LEAF_VERIFICATION = 15004;
-export const TENSOR_ERROR__ARITHMETIC_ERROR = 15005;
-export const TENSOR_ERROR__BAD_METADATA = 15006;
-export const TENSOR_ERROR__BAD_RULE_SET = 15007;
-export const TENSOR_ERROR__INVALID_CORE_ASSET = 15008;
-export const TENSOR_ERROR__INVALID_FEE_ACCOUNT = 15009;
 
 export interface TestSigners {
   nftOwner: KeyPairSigner;

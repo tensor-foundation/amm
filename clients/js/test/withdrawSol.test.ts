@@ -2,6 +2,7 @@ import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budge
 import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -20,7 +21,6 @@ import {
   isSol,
 } from '../src/index.js';
 import {
-  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   ONE_SOL,
   assertTokenNftOwnedBy,
   createPool,

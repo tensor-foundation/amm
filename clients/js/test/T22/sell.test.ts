@@ -12,6 +12,7 @@ import {
   createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
+  TENSOR_VIPER_ERROR__INTEGER_OVERFLOW,
   TOKEN22_PROGRAM_ID,
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
@@ -48,7 +49,6 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
   upsertMintProof,
-  VIPER_ERROR__INTEGER_OVERFLOW,
 } from '../_common';
 import { generateTreeOfSize } from '../_merkle';
 import { setupT22Test } from './_common';
@@ -1116,7 +1116,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   );
 
   // Should fail with an integer overflow error.
-  await expectCustomError(t, promise, VIPER_ERROR__INTEGER_OVERFLOW);
+  await expectCustomError(t, promise, TENSOR_VIPER_ERROR__INTEGER_OVERFLOW);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.

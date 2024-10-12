@@ -18,6 +18,7 @@ import {
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
   signAndSendTransaction,
+  TENSOR_VIPER_ERROR__INTEGER_OVERFLOW,
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
 import {
@@ -52,7 +53,6 @@ import {
   TestAction,
   tokenPoolConfig,
   tradePoolConfig,
-  VIPER_ERROR__INTEGER_OVERFLOW,
 } from '../_common.js';
 import { setupCoreTest } from './_common.js';
 
@@ -902,7 +902,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   );
 
   // Should fail with a price mismatch error.
-  await expectCustomError(t, promise, VIPER_ERROR__INTEGER_OVERFLOW);
+  await expectCustomError(t, promise, TENSOR_VIPER_ERROR__INTEGER_OVERFLOW);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.

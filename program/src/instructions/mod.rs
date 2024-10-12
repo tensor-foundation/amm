@@ -86,6 +86,7 @@ pub fn assert_decode_mint_proof_v2(
     Ok(mint_proof)
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Fees {
     pub taker_fee: u64,
     pub tamm_fee: u64,
@@ -94,6 +95,7 @@ pub struct Fees {
     pub creators_fee: u64,
 }
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct AmmFees {
     pub taker_fee: u64,
     pub tamm_fee: u64,

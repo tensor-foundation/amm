@@ -24,11 +24,11 @@ import {
   solCurrency,
 } from '../src/index.js';
 import {
-  createPoolAndFundSharedEscrow,
+  CURRENT_POOL_VERSION,
   createPool,
+  createPoolAndFundSharedEscrow,
   createPoolThrows,
   createWhitelistV2,
-  CURRENT_POOL_VERSION,
   getAndFundOwner,
   tokenPoolConfig,
   tradePoolConfig,

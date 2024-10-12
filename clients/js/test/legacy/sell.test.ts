@@ -1,4 +1,5 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
+import { getCreateAssociatedTokenIdempotentInstruction } from '@solana-program/token';
 import {
   Account,
   Address,
@@ -14,6 +15,9 @@ import {
   fetchMetadata,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  TENSOR_ERROR__BAD_ROYALTIES_PCT,
+  TENSOR_VIPER_ERROR__INTEGER_OVERFLOW,
   TSWAP_PROGRAM_ID,
   assertTokenNftOwnedBy,
   createDefaultSolanaClient,
@@ -50,7 +54,6 @@ import {
 import {
   DEFAULT_DELTA,
   TestAction,
-  VIPER_ERROR__INTEGER_OVERFLOW,
   assertTammNoop,
   createAndFundEscrow,
   createPool,
@@ -65,7 +68,211 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from '../_common.js';
-import { setupLegacyTest } from './_common.js';
+import { setupLegacyTest, testSell } from './_common.js';
+
+test('sell NFT into Token pool', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+});
+
+test('sell NFT into Token pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('sell NFT into Trade pool', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+});
+
+test('sell NFT into Trade pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('sell NFT into NFT pool fails', async (t) => {
+  // Setup a NFT pool, with a NFT deposited.
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const { client, signers, nft, testConfig, pool, whitelist } = legacyTest;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint } = nft;
+
+  // Initialize taker token account to get past that constraint check.
+  const [takerTa] = await findAtaPda({ mint, owner: nftOwner.address });
+  const takerTaIx = getCreateAssociatedTokenIdempotentInstruction({
+    payer: nftOwner,
+    ata: takerTa,
+    owner: nftOwner.address,
+    mint,
+  });
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(takerTaIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // The NFT receipt already exists, so creating it again fails.
+  await expectCustomError(t, promise, 0);
+});
+
+test('sell NFT into Token pool, pay brokers', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell NFT into Trade pool, pay brokers', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell into trade pool, pay optional royalties', async (t) => {
+  t.timeout(30_000);
+  for (const royaltyPct of [undefined, 0, 33, 50, 100]) {
+    const legacyTest = await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      fundPool: true,
+    });
+
+    await testSell(t, legacyTest, {
+      brokerPayments: false,
+      cosigner: false,
+      optionalRoyaltyPct: royaltyPct,
+      checkCreatorBalances: true,
+    });
+
+    t.pass(); // reset timeout
+  }
+
+  // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: true,
+    cosigner: false,
+    optionalRoyaltyPct: 101,
+    expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
+  });
+});
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -1297,7 +1504,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   );
 
   // Should fail with an integer overflow error.
-  await expectCustomError(t, promise, VIPER_ERROR__INTEGER_OVERFLOW);
+  await expectCustomError(t, promise, TENSOR_VIPER_ERROR__INTEGER_OVERFLOW);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.
