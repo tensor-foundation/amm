@@ -1,6 +1,6 @@
 {
   "name": "@tensor-foundation/amm",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Version 2 of the Tensor AMM program.",
   "sideEffects": false,
   "module": "./dist/src/index.mjs",
@@ -39,7 +39,7 @@
   "dependencies": {
     "@solana-program/token": "^0.2.0",
     "@solana/web3.js": "2.0.0-preview.3",
-    "@tensor-foundation/resolvers": "file:../../../toolkit/resolvers"
+    "@tensor-foundation/resolvers": "^0.2.4"
   },
   "devDependencies": {
     "@ava/typescript": "^4.1.0",

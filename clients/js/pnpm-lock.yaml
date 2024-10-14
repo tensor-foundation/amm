@@ -15,8 +15,8 @@ importers:
         specifier: 2.0.0-preview.3
         version: 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@tensor-foundation/resolvers':
-        specifier: file:../../../toolkit/resolvers
-        version: file:../../../toolkit/resolvers(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
+        specifier: ^0.2.4
+        version: 0.2.4(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
     devDependencies:
       '@ava/typescript':
         specifier: ^4.1.0
@@ -1752,8 +1752,8 @@ packages:
   '@tensor-foundation/mpl-token-metadata@0.5.0':
     resolution: {integrity: sha512-6kiLf5myc4qDiobuKHZLj1sBnfaaKfdIZeZbnucqIZuCO8P058VAyjzVEGpm2aw49l1Uxhuk0U+Qn3R1gf6Eww==}
 
-  '@tensor-foundation/resolvers@file:../../../toolkit/resolvers':
-    resolution: {directory: ../../../toolkit/resolvers, type: directory}
+  '@tensor-foundation/resolvers@0.2.4':
+    resolution: {integrity: sha512-HsUUqDXVIKC2CGKD1PNnHiQ1XvZcZfRNdllcGOlOlcc/uswC9OlMwa2WeMaN8spu+lHpC7i+Kn6qyz5IWY4fcA==}
     peerDependencies:
       '@solana/web3.js': 2.0.0-preview.3
 
@@ -7455,7 +7455,7 @@ snapshots:
       - utf-8-validate
       - ws
 
-  '@tensor-foundation/resolvers@file:../../../toolkit/resolvers(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
+  '@tensor-foundation/resolvers@0.2.4(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
     dependencies:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
 
