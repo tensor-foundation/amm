@@ -34,6 +34,7 @@ import {
   type WritableAccount,
   type WritableSignerAccount,
 } from '@solana/web3.js';
+import { resolveEscrowProgramFromSharedEscrow } from '@tensor-foundation/resolvers';
 import { resolveFeeVaultPdaFromPool } from '../../hooked';
 import { findAssetDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
@@ -368,6 +369,12 @@ export async function getSellNftTradePoolCoreInstructionAsync<
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
   }
+  if (!accounts.escrowProgram.value) {
+    accounts.escrowProgram = {
+      ...accounts.escrowProgram,
+      ...resolveEscrowProgramFromSharedEscrow(resolverScope),
+    };
+  }
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
       '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
@@ -615,6 +622,9 @@ export function getSellNftTradePoolCoreInstruction<
   // Original args.
   const args = { ...input };
 
+  // Resolver scope.
+  const resolverScope = { programAddress, accounts, args };
+
   // Resolve default values.
   if (!accounts.rentPayer.value) {
     accounts.rentPayer.value = expectSome(accounts.owner.value);
@@ -622,6 +632,12 @@ export function getSellNftTradePoolCoreInstruction<
   if (!accounts.ammProgram.value) {
     accounts.ammProgram.value =
       'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg' as Address<'TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg'>;
+  }
+  if (!accounts.escrowProgram.value) {
+    accounts.escrowProgram = {
+      ...accounts.escrowProgram,
+      ...resolveEscrowProgramFromSharedEscrow(resolverScope),
+    };
   }
   if (!accounts.nativeProgram.value) {
     accounts.nativeProgram.value =
