@@ -13,7 +13,7 @@
     {
       "name": "MAX_MM_FEES_BPS",
       "type": "u16",
-      "value": "9999"
+      "value": "7500"
     },
     {
       "name": "MAX_DELTA_BPS",

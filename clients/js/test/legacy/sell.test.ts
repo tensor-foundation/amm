@@ -49,8 +49,8 @@ import {
 } from '../../src/index.js';
 import {
   DEFAULT_DELTA,
+  MAX_MM_FEES_BPS,
   TestAction,
-  VIPER_ERROR__INTEGER_OVERFLOW,
   assertTammNoop,
   createAndFundEscrow,
   createPool,
@@ -1278,7 +1278,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   });
 
   // Pool owner edits the pool to update the mmFee to the maximum value.
-  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+  let newConfig = { ...tradePoolConfig, mmFeeBps: MAX_MM_FEES_BPS };
 
   let editPoolIx = getEditPoolInstruction({
     owner: poolOwner,
@@ -1296,8 +1296,8 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Should fail with an integer overflow error.
-  await expectCustomError(t, promise, VIPER_ERROR__INTEGER_OVERFLOW);
+  // Should fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.

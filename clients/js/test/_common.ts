@@ -122,6 +122,7 @@ export const BASIS_POINTS = 10_000n;
 export const HUNDRED_PERCENT = 100n;
 export const MAKER_BROKER_FEE_PCT = 80n;
 export const TRANSACTION_SIGNATURE_FEE = 5_000n;
+export const MAX_MM_FEES_BPS = 7500;
 
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
