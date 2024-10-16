@@ -24,11 +24,12 @@ import {
   solCurrency,
 } from '../src/index.js';
 import {
-  createPoolAndFundSharedEscrow,
+  CURRENT_POOL_VERSION,
+  MAX_MM_FEES_BPS,
   createPool,
+  createPoolAndFundSharedEscrow,
   createPoolThrows,
   createWhitelistV2,
-  CURRENT_POOL_VERSION,
   getAndFundOwner,
   tokenPoolConfig,
   tradePoolConfig,
@@ -341,7 +342,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
     owner: owner1,
     config: {
       ...tradePoolConfig,
-      mmFeeBps: 9_900, // should succeed
+      mmFeeBps: MAX_MM_FEES_BPS, // should succeed
     },
   });
 
@@ -351,7 +352,7 @@ test('it cannot init trade pool with no fees or high fees', async (t) => {
     owner: owner2,
     config: {
       ...tradePoolConfig,
-      mmFeeBps: 10_000, // too high, should fail
+      mmFeeBps: MAX_MM_FEES_BPS + 1, // too high, should fail
     },
     t,
     code: TENSOR_AMM_ERROR__FEES_TOO_HIGH,

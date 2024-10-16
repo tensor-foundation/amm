@@ -1,6 +1,9 @@
-# Amm
+# Tensor AMM Program
 
-Version 2 of the Tensor AMM program.
+## Overview
+
+The Tensor Foundation AMM program allows creating liquidity pools and swapping tokens in a permissionless and decentralized manner.
+Fees are split between the Tensor Protocol and brokers facilitating the transactions 50/50.
 
 ## Status
 

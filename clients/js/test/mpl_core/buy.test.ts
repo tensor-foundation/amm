@@ -39,6 +39,7 @@ import {
   ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
   BASIS_POINTS,
+  MAX_MM_FEES_BPS,
   TestAction,
   assertNftReceiptClosed,
   assertTammNoop,
@@ -946,7 +947,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
   });
 
   // Pool owner edits the pool to update the mmFee to the maximum value.
-  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+  let newConfig = { ...tradePoolConfig, mmFeeBps: MAX_MM_FEES_BPS };
 
   let editPoolIx = getEditPoolInstruction({
     owner: poolOwner,
