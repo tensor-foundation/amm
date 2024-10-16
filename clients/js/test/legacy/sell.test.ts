@@ -17,7 +17,6 @@ import {
 import {
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
   TENSOR_ERROR__BAD_ROYALTIES_PCT,
-  TENSOR_VIPER_ERROR__INTEGER_OVERFLOW,
   TSWAP_PROGRAM_ID,
   assertTokenNftOwnedBy,
   createDefaultSolanaClient,
@@ -53,6 +52,7 @@ import {
 } from '../../src/index.js';
 import {
   DEFAULT_DELTA,
+  MAX_MM_FEES_BPS,
   TestAction,
   assertTammNoop,
   createAndFundEscrow,
@@ -1485,7 +1485,7 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
   });
 
   // Pool owner edits the pool to update the mmFee to the maximum value.
-  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+  let newConfig = { ...tradePoolConfig, mmFeeBps: MAX_MM_FEES_BPS };
 
   let editPoolIx = getEditPoolInstruction({
     owner: poolOwner,
@@ -1503,8 +1503,8 @@ test('pool owner cannot perform a sandwich attack on a seller on a Trade pool', 
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  // Should fail with an integer overflow error.
-  await expectCustomError(t, promise, TENSOR_VIPER_ERROR__INTEGER_OVERFLOW);
+  // Should fail with a price mismatch error.
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__PRICE_MISMATCH);
 
   // Pool owner should not be able to increase the mmFee value at all when an exact price is being passed in by the buyer,
   // which is the case in this test.

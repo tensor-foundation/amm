@@ -50,6 +50,7 @@ import {
   expectCustomError,
   findAtaPda,
   getAndFundFeeVault,
+  MAX_MM_FEES_BPS,
   nftPoolConfig,
   TAKER_FEE_BPS,
   TestAction,
@@ -1245,7 +1246,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
   });
 
   // Pool owner edits the pool to update the mmFee to the maximum value.
-  let newConfig = { ...tradePoolConfig, mmFeeBps: 9999 };
+  let newConfig = { ...tradePoolConfig, mmFeeBps: MAX_MM_FEES_BPS };
 
   let editPoolIx = getEditPoolInstruction({
     owner: poolOwner,

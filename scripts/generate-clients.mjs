@@ -244,6 +244,17 @@ kinobi.update(
         "systemProgram",
       ),
     },
+    {
+      account: "escrowProgram",
+      ignoreIfOptional: false,
+      defaultValue: k.resolverValueNode(
+        "resolveEscrowProgramFromSharedEscrow",
+        {
+          importFrom: "resolvers",
+          dependsOn: [k.accountValueNode("sharedEscrow")],
+        },
+      ),
+    },
     // pNFT specific accounts
     {
       account: "tokenMetadataProgram",
