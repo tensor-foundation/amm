@@ -9,20 +9,26 @@ import {
 } from '@solana/web3.js';
 import {
   AssetV1,
+  createAsset,
   createDefaultAssetWithCollection,
   fetchAssetV1,
+  PluginAuthorityPairArgs,
+  VerifiedCreatorsArgs,
 } from '@tensor-foundation/mpl-core';
 import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import {
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
+  ONE_SOL,
   signAndSendTransaction,
+  TENSOR_ERROR__INVALID_CORE_ASSET,
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
 import {
   Mode,
   TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION,
+  TENSOR_WHITELIST_ERROR__FAILED_VOC_VERIFICATION,
 } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
@@ -54,7 +60,7 @@ import {
   tokenPoolConfig,
   tradePoolConfig,
 } from '../_common.js';
-import { setupCoreTest } from './_common.js';
+import { setupCoreTest, testSell } from './_common.js';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const {
@@ -506,6 +512,254 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
 
   // Need one assertion directly in test.
   t.pass();
+});
+
+test('sell NFT for FVC whitelist succeeds', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client);
+  const owner = await generateKeyPairSignerWithSol(client, 5n * ONE_SOL);
+  const nftOwner = await generateKeyPairSignerWithSol(client);
+
+  const config = tradePoolConfig;
+
+  const verifiedCreators: [VerifiedCreatorsArgs] = [
+    {
+      signatures: [
+        {
+          address: nftUpdateAuthority.address,
+          verified: true,
+        },
+      ],
+    },
+  ];
+
+  const plugins: PluginAuthorityPairArgs[] = [
+    {
+      plugin: {
+        __kind: 'VerifiedCreators',
+        fields: verifiedCreators,
+      },
+      authority: { __kind: 'UpdateAuthority' },
+    },
+  ];
+
+  // Mint NFT w/ verified creators plugin
+  const asset = await createAsset({
+    client,
+    payer: owner,
+    authority: nftUpdateAuthority,
+    owner: nftOwner.address,
+    plugins,
+    name: 'Test',
+    uri: 'https://test.com',
+  });
+
+  // Create whitelist with FVC where the NFT owner is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
+  });
+
+  // Create pool and whitelist
+  const { pool, cosigner } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+  });
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+
+  t.assert(poolAccount.data.config.poolType === PoolType.Trade);
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner,
+    lamports: ONE_SOL,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const feeVault = await getAndFundFeeVault(client, pool);
+
+  // 0.8x the starting price
+  const minPrice = (config.startingPrice * 8n) / 10n;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
+    owner: owner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    feeVault,
+    pool,
+    whitelist,
+    asset: asset.address,
+    cosigner,
+    minPrice,
+    // Remaining accounts
+    creators: [nftOwner.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now owned by the pool.
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: pool,
+    },
+  });
+});
+
+test('sell NFT for VOC whitelist succeeds', async (t) => {
+  const legacyTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+});
+
+test('sell NFT for MerkleTree whitelist succeeds', async (t) => {
+  const legacyTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    treeSize: 8,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+});
+
+test('sell for non-whitelisted NFT fails', async (t) => {
+  const {
+    client,
+    testConfig,
+    signers,
+    asset: wlAsset,
+    collection: wlCollection,
+    whitelist,
+    pool,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Create a NFT that is not whitelisted, it will be the wrong collection.
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer,
+    collectionAuthority: nftUpdateAuthority,
+    owner: nftOwner.address,
+  });
+
+  // Non-whitelisted NFT and non-wl collection
+  let sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(
+    t,
+    promise,
+    TENSOR_WHITELIST_ERROR__FAILED_VOC_VERIFICATION
+  );
+
+  // Non-whitelisted NFT + wl collection
+  sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: wlCollection.address,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Collection on asset doesn't match provided collection.
+  await expectCustomError(t, promise, TENSOR_ERROR__INVALID_CORE_ASSET);
+
+  // WL asset + non-wl collection
+  sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    asset: wlAsset.address,
+    collection: collection.address,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Collection on asset doesn't match provided collection.
+  await expectCustomError(t, promise, TENSOR_ERROR__INVALID_CORE_ASSET);
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {

@@ -76,6 +76,12 @@ export const COMPUTE_500K_IX = (() => {
   });
 })();
 
+export const COMPUTE_700K_IX = (() => {
+  return getSetComputeUnitLimitInstruction({
+    units: 700_000,
+  });
+})();
+
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
   51, 180, 184, 6, 77, 52, 36, 243, 28, 125, 104, 104, 114, 246, 166, 110, 5,

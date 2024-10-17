@@ -2,6 +2,7 @@ import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budge
 import {
   Account,
   Address,
+  IInstruction,
   appendTransactionMessageInstruction,
   pipe,
 } from '@solana/web3.js';
@@ -14,6 +15,7 @@ import {
 } from '@tensor-foundation/mpl-core';
 import {
   Client,
+  TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
   getBalance,
@@ -28,7 +30,10 @@ import {
   fetchMaybePool,
   fetchPool,
   getBuyNftCoreInstructionAsync,
+  getCurrentBidPriceSync,
   getDepositNftCoreInstructionAsync,
+  getSellNftTokenPoolCoreInstructionAsync,
+  getSellNftTradePoolCoreInstructionAsync,
 } from '../../src/index.js';
 import {
   BASIS_POINTS,
@@ -451,6 +456,234 @@ export async function testBuyNft(
       const expectedCreatorBalance =
         creatorStartingBalance +
         (royaltyFee * BigInt(creator.percentage)) / HUNDRED_PERCENT;
+      const creatorEndingBalance = await getBalance(client, creator.address);
+      t.assert(creatorEndingBalance === expectedCreatorBalance);
+    }
+  }
+
+  // Always check fee vault balance
+  // Fee vault gets fee split of taker fee + brokers fee if brokers are not passed in.
+  const expectedFeeVaultBalance =
+    feeVaultStartingBalance +
+    takerFee -
+    (tests.brokerPayments ? brokersFee : 0n);
+
+  // Fees can have a race-condition when many tests are run so this just needs to be higher or equal to the expected balance.
+  t.assert(feeVaultEndingBalance >= expectedFeeVaultBalance);
+}
+
+export interface SellMplCoreTests {
+  brokerPayments: boolean;
+  cosigner: boolean;
+  optionalRoyaltyPct?: number;
+  creators?: Creator[];
+  expectError?: number;
+  pNft?: boolean;
+  ruleset?: Address;
+  checkCreatorBalances?: boolean;
+}
+
+export async function testSell(
+  t: ExecutionContext,
+  params: MplCoreTest,
+  tests: SellMplCoreTests
+) {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    mintProof,
+  } = params;
+
+  const {
+    buyer,
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    cosigner,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { price: minPrice, sellerFeeBasisPoints } = testConfig;
+
+  const creators = tests.creators ?? [
+    { address: nftUpdateAuthority.address, percentage: 100 },
+  ];
+  const creatorAddresses = creators.map(({ address }) => address);
+
+  const makerBrokerStartingBalance = await getBalance(
+    client,
+    makerBroker.address
+  );
+  const takerBrokerStartingBalance = await getBalance(
+    client,
+    takerBroker.address
+  );
+  const creatorStartingBalances = await Promise.all(
+    creators.map(async (creator) => ({
+      creator,
+      balance: await getBalance(client, creator.address),
+    }))
+  );
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  const poolType = poolAccount.data.config.poolType;
+  const poolAmount = poolAccount.data.amount;
+
+  // Price before the sell.
+  // Exlude mm fee and royalties to get the raw price to calculate fees from.
+  const startingPrice = BigInt(
+    getCurrentBidPriceSync({
+      pool: poolAccount.data,
+      availableLamports: poolAmount,
+      royaltyFeeBps: 0,
+      extraOffset: 0,
+      excludeMMFee: true,
+    }) ?? 0n
+  );
+
+  const feeVaultStartingBalance = await getBalance(client, params.feeVault);
+
+  const optionalRoyaltyPct = tests.pNft
+    ? 100
+    : (tests.optionalRoyaltyPct ?? undefined);
+
+  let sellNftIx: IInstruction;
+
+  if (poolType === PoolType.Trade) {
+    // Sell NFT into pool
+    sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
+      owner: poolOwner.address, // pool owner
+      taker: nftOwner, // nft owner--the seller
+      pool,
+      whitelist,
+      asset: asset.address,
+      collection: collection.address,
+      mintProof,
+      minPrice,
+      makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
+      takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
+      cosigner: tests.cosigner ? cosigner : undefined,
+      escrowProgram: TSWAP_PROGRAM_ID,
+      // Remaining accounts
+      creators: creatorAddresses,
+    });
+  } else if (poolType === PoolType.Token) {
+    sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+      owner: poolOwner.address, // pool owner
+      taker: nftOwner, // nft owner--the seller
+      pool,
+      whitelist,
+      asset: asset.address,
+      collection: collection.address,
+      mintProof,
+      minPrice,
+      makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
+      takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
+      cosigner: tests.cosigner ? cosigner : undefined,
+      escrowProgram: TSWAP_PROGRAM_ID,
+      // Remaining accounts
+      creators: creatorAddresses,
+    });
+  } else {
+    throw new Error('Invalid pool type');
+  }
+
+  if (tests.expectError) {
+    const promise = pipe(
+      await createDefaultTransaction(client, buyer),
+      (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+
+    await expectCustomError(t, promise, tests.expectError);
+    return;
+  }
+
+  await pipe(
+    await createDefaultTransaction(client, buyer),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const feeVaultEndingBalance = await getBalance(client, params.feeVault);
+
+  // NFT is now owned by the pool or pool owner
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: poolType === PoolType.Trade ? pool : poolOwner.address,
+    },
+  });
+
+  if (poolType === PoolType.Token) {
+    // Pool is closed if there is not enough balance for it to buy another NFT.
+    if (poolAmount < startingPrice) {
+      // Pool is now closed as there are no more tokens left to sell.
+      const maybePool = await fetchMaybePool(client.rpc, pool);
+      t.assert(maybePool.exists === false);
+    }
+  }
+
+  if (poolType === PoolType.Trade) {
+    // Pool stats are updated
+    t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
+      address: pool,
+      data: {
+        stats: {
+          takerBuyCount: 0,
+          takerSellCount: 1,
+        },
+      },
+    });
+
+    // Deposit Receipt is created
+    await assertNftReceiptCreated({ t, client, pool, mint: asset.address });
+  }
+
+  const takerFee = (TAKER_FEE_BPS * startingPrice) / BASIS_POINTS;
+  const brokersFee = (BROKER_FEE_PCT * takerFee) / HUNDRED_PERCENT;
+  const makerBrokerFee = (brokersFee * MAKER_BROKER_FEE_PCT) / HUNDRED_PERCENT;
+  const takerBrokerFee = brokersFee - makerBrokerFee;
+  const royaltyFee = (sellerFeeBasisPoints * startingPrice) / BASIS_POINTS;
+  const appliedRoyaltyFee =
+    (royaltyFee * BigInt(optionalRoyaltyPct ?? 0)) / HUNDRED_PERCENT;
+
+  if (tests.brokerPayments) {
+    t.log('checking broker payments');
+    const expectedMakerBrokerBalance =
+      makerBrokerStartingBalance + makerBrokerFee;
+    const expectedTakerBrokerBalance =
+      takerBrokerStartingBalance + takerBrokerFee;
+
+    const makerBrokerEndingBalance = await getBalance(
+      client,
+      makerBroker.address
+    );
+    const takerBrokerEndingBalance = await getBalance(
+      client,
+      takerBroker.address
+    );
+
+    t.assert(makerBrokerEndingBalance === expectedMakerBrokerBalance);
+    t.assert(takerBrokerEndingBalance === expectedTakerBrokerBalance);
+  }
+
+  // Check verified creator balances for royalty payments if requested.
+  if (tests.checkCreatorBalances) {
+    for (const {
+      creator,
+      balance: creatorStartingBalance,
+    } of creatorStartingBalances) {
+      const expectedCreatorBalance =
+        creatorStartingBalance +
+        (appliedRoyaltyFee * BigInt(creator.percentage)) / HUNDRED_PERCENT;
       const creatorEndingBalance = await getBalance(client, creator.address);
       t.assert(creatorEndingBalance === expectedCreatorBalance);
     }

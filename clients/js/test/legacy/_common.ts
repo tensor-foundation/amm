@@ -46,6 +46,7 @@ import {
   assertTokenNftOwnedBy,
   BASIS_POINTS,
   BROKER_FEE_PCT,
+  COMPUTE_700K_IX,
   createAndFundEscrow,
   createPoolAndWhitelist,
   expectCustomError,
@@ -73,6 +74,7 @@ export interface LegacyTest {
   client: Client;
   signers: TestSigners;
   nft: Nft;
+  collection: Nft;
   testConfig: TestConfig;
   whitelist: Address;
   pool: Address;
@@ -321,6 +323,7 @@ export async function setupLegacyTest(
     client,
     signers: testSigners,
     nft,
+    collection,
     testConfig: {
       poolConfig: config,
       depositAmount,
@@ -337,6 +340,7 @@ export async function setupLegacyTest(
 
 export interface BuyLegacyTests {
   brokerPayments: boolean;
+  cosigner?: Address;
   optionalRoyaltyPct?: number;
   creators?: Creator[];
   expectError?: number;
@@ -352,8 +356,14 @@ export async function testBuy(
 ) {
   const { client, signers, nft, testConfig, pool } = params;
 
-  const { buyer, poolOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    signers;
+  const {
+    buyer,
+    poolOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+    cosigner,
+  } = signers;
   const { price: maxAmount, sellerFeeBasisPoints } = testConfig;
   const { mint } = nft;
 
@@ -405,10 +415,11 @@ export async function testBuy(
     maxAmount,
     makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
     takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
+    cosigner: tests.cosigner ? cosigner : undefined,
+    optionalRoyaltyPct,
     tokenStandard: tests.pNft
       ? TokenStandard.ProgrammableNonFungible
       : TokenStandard.NonFungible,
-    optionalRoyaltyPct,
     authorizationRules: tests.pNft ? tests.ruleset : undefined,
     // Remaining accounts
     creators: creators.map(({ address }) => address),
@@ -540,7 +551,8 @@ export async function testSell(
   params: LegacyTest,
   tests: SellLegacyTests
 ) {
-  const { client, signers, nft, testConfig, pool, whitelist } = params;
+  const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
+    params;
 
   const {
     buyer,
@@ -606,14 +618,19 @@ export async function testSell(
       pool,
       whitelist,
       mint,
+      mintProof,
+      minPrice,
       makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
       takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
       cosigner: tests.cosigner ? cosigner : undefined,
-      minPrice,
-      // Remaining accounts
-      creators: creatorAddresses,
       escrowProgram: TSWAP_PROGRAM_ID,
       optionalRoyaltyPct,
+      tokenStandard: tests.pNft
+        ? TokenStandard.ProgrammableNonFungible
+        : TokenStandard.NonFungible,
+      authorizationRules: tests.pNft ? tests.ruleset : undefined,
+      // Remaining accounts
+      creators: creatorAddresses,
     });
   } else if (poolType === PoolType.Token) {
     sellNftIx = await getSellNftTokenPoolInstructionAsync({
@@ -622,14 +639,19 @@ export async function testSell(
       pool,
       whitelist,
       mint,
+      mintProof,
+      minPrice,
       makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
       takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
       cosigner: tests.cosigner ? cosigner : undefined,
-      minPrice,
-      // Remaining accounts
-      creators: creatorAddresses,
       escrowProgram: TSWAP_PROGRAM_ID,
       optionalRoyaltyPct,
+      tokenStandard: tests.pNft
+        ? TokenStandard.ProgrammableNonFungible
+        : TokenStandard.NonFungible,
+      authorizationRules: tests.pNft ? tests.ruleset : undefined,
+      // Remaining accounts
+      creators: creatorAddresses,
     });
   } else {
     throw new Error('Invalid pool type');
@@ -648,11 +670,7 @@ export async function testSell(
 
   await pipe(
     await createDefaultTransaction(client, buyer),
-    (tx) =>
-      appendTransactionMessageInstruction(
-        getSetComputeUnitLimitInstruction({ units: 400_000 }),
-        tx
-      ),
+    (tx) => appendTransactionMessageInstruction(COMPUTE_700K_IX, tx),
     (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
@@ -701,6 +719,7 @@ export async function testSell(
     (royaltyFee * BigInt(optionalRoyaltyPct ?? 0)) / HUNDRED_PERCENT;
 
   if (tests.brokerPayments) {
+    t.log('checking broker payments');
     const expectedMakerBrokerBalance =
       makerBrokerStartingBalance + makerBrokerFee;
     const expectedTakerBrokerBalance =
