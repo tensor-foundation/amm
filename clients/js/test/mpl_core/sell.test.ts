@@ -26,6 +26,7 @@ import {
   TSWAP_PROGRAM_ID,
 } from '@tensor-foundation/test-helpers';
 import {
+  intoAddress,
   Mode,
   TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION,
   TENSOR_WHITELIST_ERROR__FAILED_VOC_VERIFICATION,
@@ -59,7 +60,9 @@ import {
   TestAction,
   tokenPoolConfig,
   tradePoolConfig,
+  upsertMintProof,
 } from '../_common.js';
+import { generateTreeOfSize } from '../_merkle.js';
 import { setupCoreTest, testSell } from './_common.js';
 
 test('it can sell an NFT into a Trade pool', async (t) => {
@@ -760,6 +763,160 @@ test('sell for non-whitelisted NFT fails', async (t) => {
 
   // Collection on asset doesn't match provided collection.
   await expectCustomError(t, promise, TENSOR_ERROR__INVALID_CORE_ASSET);
+});
+
+test('fail to sell merkle proof whitelisted NFT into FVC pool', async (t) => {
+  const {
+    client,
+    signers,
+    pool: fvcPool,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    whitelistMode: Mode.FVC,
+  });
+
+  // Mint NFT
+  const sellerFeeBasisPoints = 100;
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer: signers.nftUpdateAuthority,
+    collectionAuthority: signers.nftUpdateAuthority,
+    owner: signers.nftOwner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: signers.nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: sellerFeeBasisPoints,
+    },
+  });
+
+  // Setup a merkle tree with our mint as a leaf
+  const {
+    root,
+    proofs: [p],
+  } = await generateTreeOfSize(10, [asset.address]);
+  const conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+
+  // Create a whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: signers.nftUpdateAuthority,
+    conditions,
+  });
+
+  const { mintProof } = await upsertMintProof({
+    client,
+    payer: signers.nftUpdateAuthority,
+    mint: asset.address,
+    whitelist,
+    proof: p.proof,
+  });
+
+  // Try to sell our merkle tree whitelisted NFT into a FVC pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: signers.poolOwner.address,
+    taker: signers.nftOwner,
+    pool: fvcPool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    mintProof,
+    minPrice: 0n,
+    creators: [signers.nftUpdateAuthority.address],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_WHITELIST);
+});
+
+test('fail to sell merkle proof whitelisted NFT into VOC pool', async (t) => {
+  const {
+    client,
+    signers,
+    pool: fvcPool,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  // Mint NFT
+  const sellerFeeBasisPoints = 100;
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer: signers.nftUpdateAuthority,
+    collectionAuthority: signers.nftUpdateAuthority,
+    owner: signers.nftOwner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: signers.nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: sellerFeeBasisPoints,
+    },
+  });
+
+  // Setup a merkle tree with our mint as a leaf
+  const {
+    root,
+    proofs: [p],
+  } = await generateTreeOfSize(10, [asset.address]);
+  const conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+
+  // Create a whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: signers.nftUpdateAuthority,
+    conditions,
+  });
+
+  const { mintProof } = await upsertMintProof({
+    client,
+    payer: signers.nftUpdateAuthority,
+    mint: asset.address,
+    whitelist,
+    proof: p.proof,
+  });
+
+  // Try to sell our merkle tree whitelisted NFT into a VOC pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: signers.poolOwner.address,
+    taker: signers.nftOwner,
+    pool: fvcPool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    mintProof,
+    minPrice: 0n,
+    creators: [signers.nftUpdateAuthority.address],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
