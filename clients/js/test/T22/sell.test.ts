@@ -8,6 +8,7 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   ANCHOR_ERROR__CONSTRAINT_TOKEN_MINT,
   createDefaultTransaction,
   createT22NftWithRoyalties,
@@ -31,6 +32,7 @@ import {
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_POOL_TYPE,
   TENSOR_AMM_ERROR__WRONG_WHITELIST,
 } from '../../src';
 import {
@@ -53,231 +55,6 @@ import {
 } from '../_common';
 import { generateTreeOfSize } from '../_merkle';
 import { setupT22Test, testSell } from './_common';
-
-test('it can sell a T22 NFT into a Trade pool', async (t) => {
-  const {
-    client,
-    signers,
-    nft,
-    testConfig,
-    whitelist,
-    pool,
-    feeVault,
-    mintProof,
-  } = await setupT22Test({
-    t,
-    poolType: PoolType.Trade,
-    action: TestAction.Sell,
-    useMakerBroker: true,
-  });
-
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    signers;
-
-  const {
-    poolConfig,
-    depositAmount,
-    price: minPrice,
-    sellerFeeBasisPoints,
-  } = testConfig;
-
-  const { mint, extraAccountMetas } = nft;
-
-  // Balance of pool before any sales operations, but including the SOL deposit.
-  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
-
-  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-
-  const startingUpdateAuthorityBalance = BigInt(
-    (await client.rpc.getBalance(nftUpdateAuthority.address).send()).value
-  );
-
-  // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
-    owner: poolOwner.address, // pool owner
-    taker: nftOwner, // nft owner--the seller
-    pool,
-    whitelist,
-    mint,
-    mintProof,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
-    minPrice,
-    escrowProgram: TSWAP_PROGRAM_ID,
-    tokenProgram: TOKEN22_PROGRAM_ID,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
-    transferHookAccounts: extraAccountMetas.map((a) => a.address),
-  });
-
-  const computeIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionMessageInstruction(computeIx, tx),
-    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
-
-  // NFT is now owned by the pool.
-  await assertTokenNftOwnedBy({
-    t,
-    client,
-    mint,
-    owner: pool,
-    tokenProgramAddress: TOKEN22_PROGRAM_ID,
-  });
-
-  // Deposit Receipt should be created
-  await assertNftReceiptCreated({ t, client, mint, pool });
-
-  // Pool stats are updated
-  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
-    address: pool,
-    data: {
-      stats: {
-        takerBuyCount: 0,
-        takerSellCount: 1,
-      },
-    },
-  });
-
-  // This is a Trade pool without a shared escrow, so funds come from the pool.
-
-  // Because this is a trade pool sell, our starting price is shifted down one delta.
-  const price = poolConfig.startingPrice - poolConfig.delta;
-
-  // Fee vault balance increases by half the taker fee, since we also pay maker and taker broker.
-  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-  t.assert(
-    endingFeeVaultBalance >=
-      startingFeeVaultBalance + (price * (TAKER_FEE_BPS / 2n)) / BASIS_POINTS
-  );
-
-  // The pool pays out the current_price - mm_fees, if compounded.
-  // In this case, no compounding, so the pool pays out the full price.
-  const lamportsTaken = price;
-
-  t.assert(postPoolBalance === prePoolBalance - lamportsTaken);
-
-  const updatedPoolAccount = await fetchPool(client.rpc, pool);
-
-  // Ensure it's a SOL currency.
-  t.assert(isSol(updatedPoolAccount.data.currency));
-
-  // Only one sell, so the currency amount should be the deposit - lamportsTaken for the sale.
-  t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
-
-  // Check that the royalties were paid correctly
-  const endingUpdateAuthorityBalance = BigInt(
-    (await client.rpc.getBalance(nftUpdateAuthority.address).send()).value
-  );
-  const expectedEndingUpdateAuthorityBalance =
-    startingUpdateAuthorityBalance +
-    (price * sellerFeeBasisPoints) / BASIS_POINTS;
-
-  t.assert(
-    endingUpdateAuthorityBalance === expectedEndingUpdateAuthorityBalance
-  );
-});
-
-test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
-  const {
-    client,
-    signers,
-    nft,
-    testConfig,
-    whitelist,
-    pool,
-    mintProof,
-    sharedEscrow,
-  } = await setupT22Test({
-    t,
-    poolType: PoolType.Trade,
-    action: TestAction.Sell,
-    useSharedEscrow: true,
-    useMakerBroker: true,
-  });
-
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    signers;
-
-  const { poolConfig, price: minPrice } = testConfig;
-
-  const { mint, extraAccountMetas } = nft;
-
-  // Starting balance of the shared escrow.
-  const preSharedEscrowBalance = (
-    await client.rpc.getBalance(sharedEscrow!).send()
-  ).value;
-
-  // Sell NFT into pool
-  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
-    owner: poolOwner.address, // pool owner
-    taker: nftOwner, // nft owner--the seller
-    pool,
-    whitelist,
-    mint,
-    mintProof,
-    sharedEscrow,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
-    minPrice,
-    escrowProgram: TSWAP_PROGRAM_ID,
-    tokenProgram: TOKEN22_PROGRAM_ID,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
-    transferHookAccounts: extraAccountMetas.map((a) => a.address),
-  });
-
-  const computeIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionMessageInstruction(computeIx, tx),
-    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  const postSharedEscrowBalance = (
-    await client.rpc.getBalance(sharedEscrow!).send()
-  ).value;
-
-  // NFT is now owned by the pool.
-  await assertTokenNftOwnedBy({
-    t,
-    client,
-    mint,
-    owner: pool,
-    tokenProgramAddress: TOKEN22_PROGRAM_ID,
-  });
-
-  // This is a linear Trade pool with a shared escrow, so funds come from the escrow.
-  //
-  // Because this is a sell our starting price is shifted down one delta.
-  const price = poolConfig.startingPrice - poolConfig.delta;
-
-  // Compounding is off so the shared escrow loses the full price.
-  const lamportsTaken = price;
-
-  t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
-
-  const updatedPoolAccount = await fetchPool(client.rpc, pool);
-
-  // Ensure it's a SOL currency.
-  t.assert(isSol(updatedPoolAccount.data.currency));
-
-  // Shared escrow pools should have an amount of 0.
-  t.assert(updatedPoolAccount.data.amount === 0n);
-});
 
 test('it can sell a T22 NFT into a Token pool', async (t) => {
   const {
@@ -416,6 +193,383 @@ test('it can sell a T22 NFT into a Token pool', async (t) => {
       startingUpdateAuthorityBalance +
         (poolConfig.startingPrice * sellerFeeBasisPoints) / BASIS_POINTS
   );
+});
+
+test('sell NFT into Token pool, wrong owner fails', async (t) => {
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  t22Test.signers.poolOwner = wrongOwner;
+
+  await testSell(t, t22Test, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('it can sell a T22 NFT into a Trade pool', async (t) => {
+  const {
+    client,
+    signers,
+    nft,
+    testConfig,
+    whitelist,
+    pool,
+    feeVault,
+    mintProof,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
+
+  const {
+    poolConfig,
+    depositAmount,
+    price: minPrice,
+    sellerFeeBasisPoints,
+  } = testConfig;
+
+  const { mint, extraAccountMetas } = nft;
+
+  // Balance of pool before any sales operations, but including the SOL deposit.
+  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
+
+  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+
+  const startingUpdateAuthorityBalance = BigInt(
+    (await client.rpc.getBalance(nftUpdateAuthority.address).send()).value
+  );
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    mintProof,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
+    minPrice,
+    escrowProgram: TSWAP_PROGRAM_ID,
+    tokenProgram: TOKEN22_PROGRAM_ID,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
+
+  // NFT is now owned by the pool.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: pool,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
+  });
+
+  // Deposit Receipt should be created
+  await assertNftReceiptCreated({ t, client, mint, pool });
+
+  // Pool stats are updated
+  t.like(await fetchPool(client.rpc, pool), <Account<Pool, Address>>{
+    address: pool,
+    data: {
+      stats: {
+        takerBuyCount: 0,
+        takerSellCount: 1,
+      },
+    },
+  });
+
+  // This is a Trade pool without a shared escrow, so funds come from the pool.
+
+  // Because this is a trade pool sell, our starting price is shifted down one delta.
+  const price = poolConfig.startingPrice - poolConfig.delta;
+
+  // Fee vault balance increases by half the taker fee, since we also pay maker and taker broker.
+  const endingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  t.assert(
+    endingFeeVaultBalance >=
+      startingFeeVaultBalance + (price * (TAKER_FEE_BPS / 2n)) / BASIS_POINTS
+  );
+
+  // The pool pays out the current_price - mm_fees, if compounded.
+  // In this case, no compounding, so the pool pays out the full price.
+  const lamportsTaken = price;
+
+  t.assert(postPoolBalance === prePoolBalance - lamportsTaken);
+
+  const updatedPoolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(updatedPoolAccount.data.currency));
+
+  // Only one sell, so the currency amount should be the deposit - lamportsTaken for the sale.
+  t.assert(updatedPoolAccount.data.amount === depositAmount - lamportsTaken);
+
+  // Check that the royalties were paid correctly
+  const endingUpdateAuthorityBalance = BigInt(
+    (await client.rpc.getBalance(nftUpdateAuthority.address).send()).value
+  );
+  const expectedEndingUpdateAuthorityBalance =
+    startingUpdateAuthorityBalance +
+    (price * sellerFeeBasisPoints) / BASIS_POINTS;
+
+  t.assert(
+    endingUpdateAuthorityBalance === expectedEndingUpdateAuthorityBalance
+  );
+});
+
+test('sell NFT into Trade pool, wrong owner fails', async (t) => {
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  t22Test.signers.poolOwner = wrongOwner;
+
+  await testSell(t, t22Test, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('sell NFT into Token pool, pay brokers', async (t) => {
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, t22Test, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell NFT into Trade pool, pay brokers', async (t) => {
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, t22Test, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell_nft_token_pool fails on trade pool', async (t) => {
+  // Setup a Trade pool with funds.
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { client, signers, nft, testConfig, pool, whitelist } = t22Test;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint, extraAccountMetas } = nft;
+
+  // Try to use the wrong instruction.
+  const sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+});
+
+test('sell_nft_trade_pool fails on token pool', async (t) => {
+  // Setup a Token pool with funds.
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { client, signers, nft, testConfig, pool, whitelist } = t22Test;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+  const { mint, extraAccountMetas } = nft;
+
+  // Try to use the wrong instruction.
+  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+});
+
+test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
+  const {
+    client,
+    signers,
+    nft,
+    testConfig,
+    whitelist,
+    pool,
+    mintProof,
+    sharedEscrow,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useSharedEscrow: true,
+    useMakerBroker: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
+
+  const { poolConfig, price: minPrice } = testConfig;
+
+  const { mint, extraAccountMetas } = nft;
+
+  // Starting balance of the shared escrow.
+  const preSharedEscrowBalance = (
+    await client.rpc.getBalance(sharedEscrow!).send()
+  ).value;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolT22InstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    mintProof,
+    sharedEscrow,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
+    minPrice,
+    escrowProgram: TSWAP_PROGRAM_ID,
+    tokenProgram: TOKEN22_PROGRAM_ID,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const postSharedEscrowBalance = (
+    await client.rpc.getBalance(sharedEscrow!).send()
+  ).value;
+
+  // NFT is now owned by the pool.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint,
+    owner: pool,
+    tokenProgramAddress: TOKEN22_PROGRAM_ID,
+  });
+
+  // This is a linear Trade pool with a shared escrow, so funds come from the escrow.
+  //
+  // Because this is a sell our starting price is shifted down one delta.
+  const price = poolConfig.startingPrice - poolConfig.delta;
+
+  // Compounding is off so the shared escrow loses the full price.
+  const lamportsTaken = price;
+
+  t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
+
+  const updatedPoolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(updatedPoolAccount.data.currency));
+
+  // Shared escrow pools should have an amount of 0.
+  t.assert(updatedPoolAccount.data.amount === 0n);
 });
 
 test('token pool autocloses when currency amount drops below current price', async (t) => {

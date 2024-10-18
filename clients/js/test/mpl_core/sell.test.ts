@@ -11,15 +11,17 @@ import {
   AssetV1,
   createAsset,
   createDefaultAssetWithCollection,
+  Creator,
   fetchAssetV1,
   PluginAuthorityPairArgs,
   VerifiedCreatorsArgs,
 } from '@tensor-foundation/mpl-core';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
+  getBalance,
   ONE_SOL,
   signAndSendTransaction,
   TENSOR_ERROR__INVALID_CORE_ASSET,
@@ -47,6 +49,7 @@ import {
   TENSOR_AMM_ERROR__PRICE_MISMATCH,
   TENSOR_AMM_ERROR__WRONG_COSIGNER,
   TENSOR_AMM_ERROR__WRONG_MAKER_BROKER,
+  TENSOR_AMM_ERROR__WRONG_POOL_TYPE,
   TENSOR_AMM_ERROR__WRONG_WHITELIST,
 } from '../../src/index.js';
 import {
@@ -64,6 +67,116 @@ import {
 } from '../_common.js';
 import { generateTreeOfSize } from '../_merkle.js';
 import { setupCoreTest, testSell } from './_common.js';
+
+test('it can sell an NFT into a Token pool', async (t) => {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    feeVault,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    compoundFees: false,
+    fundPool: true,
+  });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
+    signers;
+  const { poolConfig, price: minPrice, depositAmount } = testConfig;
+
+  // Balance of pool before any sales operations, but including the SOL deposit.
+  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
+
+  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
+
+  // NFT is now owned by the pool owner.
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: poolOwner.address,
+    },
+  });
+
+  // Fee vault balance increases.
+  const postSaleFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
+    .value;
+  t.assert(postSaleFeeVaultBalance > startingFeeVaultBalance);
+
+  // This is a Token pool without a shared escrow, so funds come from the pool.
+  // Token pools do not get the mmFee.
+  t.assert(postPoolBalance === prePoolBalance - poolConfig.startingPrice);
+
+  const updatedPoolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(updatedPoolAccount.data.currency));
+
+  // Only one sell, so the currency amount should be the deposit - price for the sale.
+  t.assert(
+    updatedPoolAccount.data.amount === depositAmount - poolConfig.startingPrice
+  );
+});
+
+test('sell NFT into Token pool, wrong owner fails', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  coreTest.signers.poolOwner = wrongOwner;
+
+  await testSell(t, coreTest, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
 
 test('it can sell an NFT into a Trade pool', async (t) => {
   const {
@@ -174,6 +287,198 @@ test('it can sell an NFT into a Trade pool', async (t) => {
   });
 });
 
+test('sell NFT into Trade pool, wrong owner fails', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  coreTest.signers.poolOwner = wrongOwner;
+
+  await testSell(t, coreTest, {
+    brokerPayments: false,
+    cosigner: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('sell NFT into Token pool, pay brokers', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, coreTest, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell NFT into Trade pool, pay brokers', async (t) => {
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: true,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+  });
+
+  await testSell(t, coreTest, {
+    brokerPayments: true,
+    cosigner: false,
+  });
+});
+
+test('sell_nft_token_pool fails on trade pool', async (t) => {
+  // Setup a Trade pool with funds.
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    coreTest;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Try to use the wrong instruction.
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+});
+
+test('sell_nft_trade_pool fails on token pool', async (t) => {
+  // Setup a Token pool with funds.
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  const { client, signers, asset, collection, testConfig, pool, whitelist } =
+    coreTest;
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Try to use the wrong instruction.
+  const sellNftIx = await getSellNftTradePoolCoreInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+});
+
+test.only('sell into Token pool, skip non-rent-exempt creators', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Fund the first 3 creators with 1 SOL so they're rent exempt.
+  const creatorSigners = await Promise.all(
+    Array.from({ length: 3 }, () => generateKeyPairSignerWithSol(client))
+  );
+  // Add two more creators to the end of the array that are not rent exempt.
+  creatorSigners.push(
+    ...(await Promise.all(
+      Array.from({ length: 2 }, () => generateKeyPairSigner())
+    ))
+  );
+
+  let creators: Creator[] = creatorSigners.map(({ address }) => ({
+    address,
+    percentage: 20,
+  }));
+
+  // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
+  let config = structuredClone(tokenPoolConfig);
+  config.startingPrice = 10000n;
+  config.delta = config.startingPrice / 10n;
+
+  const coreTest = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    creators,
+    poolConfig: config,
+    treeSize: 10_000,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  const creatorStartingBalances = await Promise.all(
+    creatorSigners.map((c) => getBalance(client, c.address))
+  );
+
+  await testSell(t, coreTest, {
+    brokerPayments: false,
+    cosigner: false,
+    creators, // pass in the verified creators
+    checkCreatorBalances: false,
+  });
+
+  // First three creators should have a higher balance.
+  for (const [i, creator] of creatorSigners.slice(0, 3).entries()) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance > creatorStartingBalances[i]);
+  }
+
+  // Last two creators should have 0 balance.
+  for (const creator of creatorSigners.slice(-2)) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance === 0n);
+  }
+});
+
 test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const {
     client,
@@ -262,95 +567,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   // Shared escrow pools should have an amount of 0.
   t.assert(updatedPoolAccount.data.amount === 0n);
-});
-
-test('it can sell an NFT into a Token pool', async (t) => {
-  const {
-    client,
-    signers,
-    asset,
-    collection,
-    testConfig,
-    pool,
-    whitelist,
-    feeVault,
-  } = await setupCoreTest({
-    t,
-    poolType: PoolType.Token,
-    action: TestAction.Sell,
-    useMakerBroker: true,
-    useSharedEscrow: false,
-    compoundFees: false,
-    fundPool: true,
-  });
-
-  const { poolOwner, nftOwner, nftUpdateAuthority, makerBroker, takerBroker } =
-    signers;
-  const { poolConfig, price: minPrice, depositAmount } = testConfig;
-
-  // Balance of pool before any sales operations, but including the SOL deposit.
-  const prePoolBalance = (await client.rpc.getBalance(pool).send()).value;
-
-  const startingFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-
-  // Sell NFT into pool
-  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
-    owner: poolOwner.address, // pool owner
-    taker: nftOwner, // nft owner--the seller
-    pool,
-    whitelist,
-    asset: asset.address,
-    collection: collection.address,
-    makerBroker: makerBroker.address,
-    takerBroker: takerBroker.address,
-    minPrice,
-    // Remaining accounts
-    creators: [nftUpdateAuthority.address],
-    escrowProgram: TSWAP_PROGRAM_ID,
-  });
-
-  const computeIx = getSetComputeUnitLimitInstruction({
-    units: 400_000,
-  });
-
-  await pipe(
-    await createDefaultTransaction(client, nftOwner),
-    (tx) => appendTransactionMessageInstruction(computeIx, tx),
-    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
-    (tx) => signAndSendTransaction(client, tx)
-  );
-
-  const postPoolBalance = (await client.rpc.getBalance(pool).send()).value;
-
-  // NFT is now owned by the pool owner.
-  t.like(await fetchAssetV1(client.rpc, asset.address), <
-    Account<AssetV1, Address>
-  >{
-    address: asset.address,
-    data: {
-      owner: poolOwner.address,
-    },
-  });
-
-  // Fee vault balance increases.
-  const postSaleFeeVaultBalance = (await client.rpc.getBalance(feeVault).send())
-    .value;
-  t.assert(postSaleFeeVaultBalance > startingFeeVaultBalance);
-
-  // This is a Token pool without a shared escrow, so funds come from the pool.
-  // Token pools do not get the mmFee.
-  t.assert(postPoolBalance === prePoolBalance - poolConfig.startingPrice);
-
-  const updatedPoolAccount = await fetchPool(client.rpc, pool);
-
-  // Ensure it's a SOL currency.
-  t.assert(isSol(updatedPoolAccount.data.currency));
-
-  // Only one sell, so the currency amount should be the deposit - price for the sale.
-  t.assert(
-    updatedPoolAccount.data.amount === depositAmount - poolConfig.startingPrice
-  );
 });
 
 test('token pool autocloses when currency amount drops below current price', async (t) => {
@@ -1149,8 +1365,7 @@ test('it can sell a NFT into a trade pool and pay the correct amount of royaltie
 
   const creator = {
     address: nftUpdateAuthority.address,
-    verified: true,
-    share: 100,
+    percentage: 100,
   } as Creator;
 
   const config = tradePoolConfig;

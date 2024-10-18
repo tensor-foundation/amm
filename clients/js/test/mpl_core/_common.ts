@@ -76,6 +76,7 @@ export interface MplCoreTest {
 export async function setupCoreTest(
   params: SetupTestParams & {
     creators?: Creator[];
+    poolConfig?: PoolConfig | null;
   }
 ): Promise<MplCoreTest> {
   const {
@@ -89,6 +90,7 @@ export async function setupCoreTest(
     useCosigner = false,
     compoundFees = false,
     fundPool = true,
+    poolConfig,
   } = params;
   const client = createDefaultSolanaClient();
   const testSigners = await getTestSigners(client);
@@ -132,27 +134,32 @@ export async function setupCoreTest(
 
   let startingPrice;
 
-  switch (poolType) {
-    case PoolType.Trade:
-      config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
-      // Sells on trade pools need to to have the price shifted down by 1 step.
-      if (action === TestAction.Sell) {
-        startingPrice = config.startingPrice - config.delta;
-      } else {
+  if (!poolConfig) {
+    switch (poolType) {
+      case PoolType.Trade:
+        config = { ...tradePoolConfig, mmCompoundFees: compoundFees };
+        // Sells on trade pools need to to have the price shifted down by 1 step.
+        if (action === TestAction.Sell) {
+          startingPrice = config.startingPrice - config.delta;
+        } else {
+          startingPrice = config.startingPrice;
+        }
+        mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
+        break;
+      case PoolType.Token:
+        config = tokenPoolConfig;
         startingPrice = config.startingPrice;
-      }
-      mmFees = (startingPrice * BigInt(config.mmFeeBps ?? 0)) / BASIS_POINTS;
-      break;
-    case PoolType.Token:
-      config = tokenPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    case PoolType.NFT:
-      config = nftPoolConfig;
-      startingPrice = config.startingPrice;
-      break;
-    default:
-      throw new Error('Invalid pool type');
+        break;
+      case PoolType.NFT:
+        config = nftPoolConfig;
+        startingPrice = config.startingPrice;
+        break;
+      default:
+        throw new Error('Invalid pool type');
+    }
+  } else {
+    config = poolConfig;
+    startingPrice = poolConfig.startingPrice;
   }
 
   const royalties =
