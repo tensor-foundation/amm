@@ -418,7 +418,7 @@ test('sell_nft_trade_pool fails on token pool', async (t) => {
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
 });
 
-test.only('sell into Token pool, skip non-rent-exempt creators', async (t) => {
+test('sell into Token pool, skip non-rent-exempt creators', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Fund the first 3 creators with 1 SOL so they're rent exempt.
