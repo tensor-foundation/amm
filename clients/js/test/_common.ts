@@ -692,7 +692,8 @@ export const getAndFundFeeVault = async (client: Client, pool: Address) => {
 export const createAndFundEscrow = async (
   client: Client,
   owner: KeyPairSigner,
-  marginNr: number
+  marginNr: number,
+  depositAmount?: bigint
 ) => {
   const tswapOwner = await getAndFundOwner(client);
 
@@ -725,7 +726,7 @@ export const createAndFundEscrow = async (
     owner,
     tswap,
     marginAccount,
-    lamports: ONE_SOL,
+    lamports: depositAmount ?? ONE_SOL,
   });
 
   await pipe(

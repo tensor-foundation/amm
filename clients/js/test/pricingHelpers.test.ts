@@ -83,7 +83,6 @@ test('getCurrentBidPrice handles shared escrow correctly', async (t) => {
     useSharedEscrow: true,
     useMakerBroker: false,
     action: TestAction.Sell,
-    depositAmount: 0n,
     poolConfig: config,
   });
 

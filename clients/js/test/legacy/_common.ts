@@ -14,6 +14,7 @@ import {
   Creator,
   fetchMetadata,
   Nft,
+  NftData,
   TokenStandard,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
@@ -86,10 +87,12 @@ export interface LegacyTest {
 export async function setupLegacyTest(
   params: SetupTestParams & {
     creators?: Creator[] & { signers?: KeyPairSigner[] };
+    sellerFeeBasisPoints?: number;
     pNft?: boolean;
     ruleset?: Address;
     signerFunds?: bigint;
     poolConfig?: PoolConfig | null;
+    nftData?: NftData;
   }
 ): Promise<LegacyTest> {
   const {
@@ -204,7 +207,12 @@ export async function setupLegacyTest(
 
   if (useSharedEscrow) {
     // Create a shared escrow account.
-    sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
+    sharedEscrow = await createAndFundEscrow(
+      client,
+      poolOwner,
+      1,
+      depositAmount
+    );
   }
 
   let conditions: Condition[] = [];
@@ -543,7 +551,9 @@ export interface SellLegacyTests {
   expectError?: number;
   pNft?: boolean;
   ruleset?: Address;
+  whitelist?: Address;
   checkCreatorBalances?: boolean;
+  useSharedEscrow?: boolean;
 }
 
 export async function testSell(
@@ -551,8 +561,16 @@ export async function testSell(
   params: LegacyTest,
   tests: SellLegacyTests
 ) {
-  const { client, signers, nft, testConfig, pool, whitelist, mintProof } =
-    params;
+  const {
+    client,
+    signers,
+    nft,
+    testConfig,
+    pool,
+    whitelist,
+    mintProof,
+    sharedEscrow,
+  } = params;
 
   const {
     buyer,
@@ -616,13 +634,14 @@ export async function testSell(
       owner: poolOwner.address, // pool owner
       taker: nftOwner, // nft owner--the seller
       pool,
-      whitelist,
+      whitelist: tests.whitelist ?? whitelist, // override whitelist if passed in
       mint,
       mintProof,
       minPrice,
       makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
       takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
       cosigner: tests.cosigner ? cosigner : undefined,
+      sharedEscrow: tests.useSharedEscrow ? sharedEscrow : undefined,
       escrowProgram: TSWAP_PROGRAM_ID,
       optionalRoyaltyPct,
       tokenStandard: tests.pNft
@@ -637,13 +656,14 @@ export async function testSell(
       owner: poolOwner.address, // pool owner
       taker: nftOwner, // nft owner--the seller
       pool,
-      whitelist,
+      whitelist: tests.whitelist ?? whitelist, // override whitelist if passed in
       mint,
       mintProof,
       minPrice,
       makerBroker: tests.brokerPayments ? makerBroker.address : undefined,
       takerBroker: tests.brokerPayments ? takerBroker.address : undefined,
       cosigner: tests.cosigner ? cosigner : undefined,
+      sharedEscrow: tests.useSharedEscrow ? sharedEscrow : undefined,
       escrowProgram: TSWAP_PROGRAM_ID,
       optionalRoyaltyPct,
       tokenStandard: tests.pNft

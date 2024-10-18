@@ -19,11 +19,16 @@ import {
   fetchMetadata,
   getUnverifyInstruction,
   getVerifyInstruction,
+  printSupply,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   ANCHOR_ERROR__CONSTRAINT_SEEDS,
   ANCHOR_ERROR__CONSTRAINT_TOKEN_MINT,
+  LAMPORTS_PER_SOL,
+  ONE_SOL,
   TENSOR_ERROR__BAD_ROYALTIES_PCT,
+  TENSOR_ERROR__INSUFFICIENT_BALANCE,
+  TENSOR_VIPER_ERROR__INTEGER_OVERFLOW,
   TSWAP_PROGRAM_ID,
   assertTokenNftOwnedBy,
   createDefaultSolanaClient,
@@ -52,6 +57,7 @@ import {
   fetchMaybePool,
   fetchPool,
   getCurrentBidPrice,
+  getCurrentBidPriceSync,
   getDepositSolInstruction,
   getEditPoolInstruction,
   getSellNftTokenPoolInstructionAsync,
@@ -59,6 +65,8 @@ import {
   isSol,
 } from '../../src/index.js';
 import {
+  COMPUTE_500K_IX,
+  COMPUTE_700K_IX,
   DEFAULT_DELTA,
   MAX_MM_FEES_BPS,
   TestAction,
@@ -307,6 +315,122 @@ test('sell into trade pool, pay optional royalties', async (t) => {
   });
 });
 
+test('sell pNFT into Token pool, pay low and high royalties', async (t) => {
+  t.timeout(30_000);
+  // Setup a Trade pool with funds.
+  const client = createDefaultSolanaClient();
+  const testSigners = await getTestSigners(client, 10n * ONE_SOL);
+
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } = testSigners;
+
+  const config = structuredClone(tokenPoolConfig);
+
+  // Create whitelist with FVC where the NFT update authority is the FVC.
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: poolOwner,
+    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
+  });
+
+  // Create pool w/ cosigner
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: poolOwner,
+    config,
+  });
+
+  // Deposit SOL
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: poolOwner,
+    lamports: 9n * ONE_SOL,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, poolOwner),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  const nftData = {
+    name: 'Example NFT',
+    symbol: 'EXNFT',
+    uri: 'https://example.com/nft',
+    sellerFeeBasisPoints: 0,
+    creators: [
+      {
+        address: nftUpdateAuthority.address,
+        verified: true,
+        share: 100,
+      },
+    ],
+    printSupply: printSupply('Zero'),
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
+  };
+
+  // Sell NFTs into pool at various royalties basis points.
+  for (const royaltyBps of [1, 50, 3000, 9000]) {
+    // Mint NFT
+    const nft = await createDefaultNft({
+      client,
+      payer,
+      authority: nftUpdateAuthority,
+      owner: nftOwner.address,
+      data: { ...nftData, sellerFeeBasisPoints: royaltyBps },
+      standard: TokenStandard.ProgrammableNonFungible,
+      creators: [
+        {
+          address: nftUpdateAuthority.address,
+          share: 100,
+          verified: true,
+        },
+      ],
+    });
+
+    const poolAccount = await fetchPool(client.rpc, pool);
+
+    const price = getCurrentBidPriceSync({
+      pool: poolAccount.data,
+      availableLamports: poolAccount.data.amount,
+      royaltyFeeBps: royaltyBps,
+      extraOffset: 0,
+      excludeMMFee: true,
+    });
+
+    const creatorStartingBalance = await getBalance(
+      client,
+      nftUpdateAuthority.address
+    );
+
+    // Sell NFT into pool
+    const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+      owner: poolOwner.address,
+      taker: nftOwner,
+      pool,
+      mint: nft.mint,
+      whitelist,
+      minPrice: price!,
+      tokenStandard: TokenStandard.ProgrammableNonFungible,
+      creators: [nftUpdateAuthority.address],
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, nftOwner),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+      (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+
+    const creatorEndingBalance = await getBalance(
+      client,
+      nftUpdateAuthority.address
+    );
+
+    t.assert(creatorEndingBalance > creatorStartingBalance);
+  }
+});
+
 test('sell pNFT into Token pool, pay full royalties', async (t) => {
   const legacyTest = await setupLegacyTest({
     t,
@@ -514,6 +638,122 @@ test('sell into Token pool, min price higher than current price fails', async (t
   }
 });
 
+test('sell below 0 is not possible ', async (t) => {
+  // sell nfts into the pool until the pool price would go negative
+  const startingPrice = tradePoolConfig.startingPrice;
+  const delta = tradePoolConfig.delta;
+
+  // Deposit amount should be enough to pay for 2 nfts
+  const depositAmount = 2n * startingPrice + delta;
+
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    depositAmount,
+    whitelistMode: Mode.FVC,
+  });
+
+  // Should succeed
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+
+  // Mint next nft
+  const nft2 = await createDefaultNft({
+    client: legacyTest.client,
+    payer: legacyTest.signers.poolOwner,
+    authority: legacyTest.signers.nftUpdateAuthority,
+    owner: legacyTest.signers.nftOwner.address,
+    standard: TokenStandard.NonFungible,
+    creators: [
+      {
+        address: legacyTest.signers.nftUpdateAuthority.address,
+        share: 100,
+        verified: true,
+      },
+    ],
+  });
+
+  const poolAccount = await fetchPool(legacyTest.client.rpc, legacyTest.pool);
+  const poolAmount = poolAccount.data.amount;
+
+  // Get next price
+  const currentPrice = BigInt(
+    getCurrentBidPriceSync({
+      pool: poolAccount.data,
+      availableLamports: poolAmount,
+      royaltyFeeBps: 100,
+      extraOffset: 0,
+      excludeMMFee: false,
+    }) ?? 0n
+  );
+
+  // Should succeed
+  let sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: legacyTest.signers.poolOwner.address, // pool owner
+    taker: legacyTest.signers.nftOwner, // nft owner--the seller
+    pool: legacyTest.pool,
+    whitelist: legacyTest.whitelist, // override whitelist if passed in
+    mint: nft2.mint,
+    minPrice: currentPrice,
+    // Remaining accounts
+    creators: [legacyTest.signers.nftUpdateAuthority.address],
+  });
+
+  await pipe(
+    await createDefaultTransaction(
+      legacyTest.client,
+      legacyTest.signers.nftOwner
+    ),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(legacyTest.client, tx)
+  );
+
+  // Mint next nft
+  const nft3 = await createDefaultNft({
+    client: legacyTest.client,
+    payer: legacyTest.signers.poolOwner,
+    authority: legacyTest.signers.nftUpdateAuthority,
+    owner: legacyTest.signers.nftOwner.address,
+    standard: TokenStandard.NonFungible,
+    creators: [
+      {
+        address: legacyTest.signers.nftUpdateAuthority.address,
+        share: 100,
+        verified: true,
+      },
+    ],
+  });
+
+  // Should fail
+  sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: legacyTest.signers.poolOwner.address, // pool owner
+    taker: legacyTest.signers.nftOwner, // nft owner--the seller
+    pool: legacyTest.pool,
+    whitelist: legacyTest.whitelist, // override whitelist if passed in
+    mint: nft3.mint,
+    minPrice: 0, // spoof min price to get past price mismatch check
+    // Remaining accounts
+    creators: [legacyTest.signers.nftUpdateAuthority.address],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(
+      legacyTest.client,
+      legacyTest.signers.nftOwner
+    ),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(legacyTest.client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_VIPER_ERROR__INTEGER_OVERFLOW);
+});
+
 test('sell into Token pool, skip non-rent-exempt creators', async (t) => {
   const client = createDefaultSolanaClient();
 
@@ -535,7 +775,7 @@ test('sell into Token pool, skip non-rent-exempt creators', async (t) => {
   }));
 
   // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
-  let config = tokenPoolConfig;
+  let config = structuredClone(tokenPoolConfig);
   config.startingPrice = 10000n;
   config.delta = config.startingPrice / 10n;
 
@@ -723,6 +963,8 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
 
+  console.log('postSharedEscrowBalance', postSharedEscrowBalance);
+
   const updatedPoolAccount = await fetchPool(client.rpc, pool);
 
   // Ensure it's a SOL currency.
@@ -730,6 +972,30 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
 
   // Shared escrow pools should have an amount of 0.
   t.assert(updatedPoolAccount.data.amount === 0n);
+});
+
+test('sell into shared escrow pool cannot eat into escrow account rent', async (t) => {
+  // We want to deposit not quite enough sol to pay for the NFT so it tries to eat into the escrow account's rent.
+  const depositAmount = tokenPoolConfig.startingPrice - 1_000_000n;
+
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: true,
+    fundPool: true,
+    depositAmount,
+    whitelistMode: Mode.FVC,
+  });
+
+  await testSell(t, legacyTest, {
+    brokerPayments: false,
+    cosigner: false,
+    checkCreatorBalances: false,
+    useSharedEscrow: true,
+    expectError: TENSOR_ERROR__INSUFFICIENT_BALANCE,
+  });
 });
 
 test('token pool autocloses when currency amount drops below current price', async (t) => {
@@ -1394,6 +1660,48 @@ test('fail to sell merkle proof whitelisted NFT into VOC pool', async (t) => {
   );
 
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_WHITELIST);
+});
+
+test('sell NFT w/ valid whitelist for pool A fails on pool B and vice versa', async (t) => {
+  const legacyTestA = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    pNft: true,
+    whitelistMode: Mode.VOC,
+  });
+  const whitelistA = legacyTestA.whitelist;
+
+  const legacyTestB = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    pNft: true,
+    whitelistMode: Mode.FVC,
+  });
+  const whitelistB = legacyTestB.whitelist;
+
+  await testSell(t, legacyTestA, {
+    brokerPayments: false,
+    cosigner: false,
+    pNft: true,
+    whitelist: whitelistB,
+    expectError: TENSOR_AMM_ERROR__WRONG_WHITELIST,
+  });
+
+  await testSell(t, legacyTestB, {
+    brokerPayments: false,
+    cosigner: false,
+    pNft: true,
+    whitelist: whitelistA,
+    expectError: TENSOR_AMM_ERROR__WRONG_WHITELIST,
+  });
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
@@ -2171,4 +2479,305 @@ test('token pool with makerBroker set requires passing the account in & fails w/
 
   // Should fail with a missing makerBroker error.
   await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_MAKER_BROKER);
+});
+
+test('alternate deposits & sells', async (t) => {
+  t.timeout(25_000);
+  const client = createDefaultSolanaClient();
+  const numSells = 10;
+
+  for (const poolType of [PoolType.Token, PoolType.Trade]) {
+    for (const curveType of [CurveType.Linear, CurveType.Exponential]) {
+      const traderA = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+      const traderB = await generateKeyPairSignerWithSol(
+        client,
+        100n * LAMPORTS_PER_SOL
+      );
+
+      const config = {
+        poolType,
+        curveType,
+        startingPrice: 1_238_923_843n,
+        delta:
+          curveType === CurveType.Linear
+            ? 1_238_923_843n / BigInt(numSells)
+            : 1021n,
+        mmCompoundFees: true,
+        mmFeeBps: poolType === PoolType.Trade ? 0 : null,
+      };
+
+      t.log('minting nfts');
+
+      // Prepare multiple NFTs
+      const nfts = await Promise.all(
+        Array(numSells)
+          .fill(null)
+          .map(async () => {
+            const { mint, metadata } = await createDefaultNft({
+              client,
+              payer: traderB,
+              authority: traderB,
+              owner: traderB.address,
+            });
+            const [ataA] = await findAtaPda({ mint, owner: traderA.address });
+            const [ataB] = await findAtaPda({ mint, owner: traderB.address });
+            return { mint, metadata, ataA, ataB };
+          })
+      );
+
+      const { sellerFeeBasisPoints } = (
+        await fetchMetadata(client.rpc, nfts[0].metadata)
+      ).data;
+
+      t.log('creating whitelist and pool');
+
+      // Prepare whitelist and pool
+      const { whitelist } = await createWhitelistV2({
+        client,
+        updateAuthority: traderA,
+        conditions: [{ mode: Mode.FVC, value: traderB.address }],
+      });
+
+      const { pool } = await createPool({
+        client,
+        whitelist,
+        owner: traderA,
+        config,
+      });
+
+      t.log('depositing SOL');
+
+      // Deposit SOL to the pool
+      const depositAmount = config.startingPrice * BigInt(numSells) * 2n;
+      const depositSolIx = getDepositSolInstruction({
+        pool,
+        owner: traderA,
+        lamports: depositAmount,
+      });
+
+      await pipe(
+        await createDefaultTransaction(client, traderA),
+        (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+        (tx) => signAndSendTransaction(client, tx)
+      );
+
+      // Sell NFTs sequentially
+      let sellCount = 0;
+
+      let poolData = await fetchPool(client.rpc, pool);
+
+      // Alternate between deposits and sells
+      for (let i = 0; i < numSells; i++) {
+        if (i % 2 === 0 || i === numSells - 1) {
+          t.log('selling nft');
+
+          // Sell NFT
+          const nftToSell = nfts[sellCount];
+          poolData = await fetchPool(client.rpc, pool);
+          const currPrice = getCurrentBidPriceSync({
+            pool: poolData.data,
+            availableLamports: poolData.data.amount,
+            royaltyFeeBps: sellerFeeBasisPoints,
+            extraOffset: 0,
+            excludeMMFee: poolType === PoolType.Token ? true : false,
+          });
+
+          let sellNftIx: IInstruction;
+
+          if (poolType === PoolType.Token) {
+            sellNftIx = await getSellNftTokenPoolInstructionAsync({
+              owner: traderA.address,
+              taker: traderB,
+              pool,
+              whitelist,
+              mint: nftToSell.mint,
+              minPrice: currPrice ?? 0n,
+              creators: [traderB.address],
+            });
+          } else {
+            sellNftIx = await getSellNftTradePoolInstructionAsync({
+              owner: traderA.address,
+              taker: traderB,
+              pool,
+              whitelist,
+              mint: nftToSell.mint,
+              minPrice: currPrice ?? 0n,
+              creators: [traderB.address],
+            });
+          }
+
+          await pipe(
+            await createDefaultTransaction(client, traderB),
+            (tx) => appendTransactionMessageInstruction(COMPUTE_700K_IX, tx),
+            (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+            (tx) => signAndSendTransaction(client, tx)
+          );
+          sellCount++;
+        } else {
+          t.log('depositing SOL');
+
+          // Deposit more SOL
+          const additionalDeposit = config.startingPrice * 2n;
+          const depositMoreSolIx = getDepositSolInstruction({
+            pool,
+            owner: traderA,
+            lamports: additionalDeposit,
+          });
+          await pipe(
+            await createDefaultTransaction(client, traderA),
+            (tx) => appendTransactionMessageInstruction(depositMoreSolIx, tx),
+            (tx) => signAndSendTransaction(client, tx)
+          );
+        }
+      }
+
+      // Check NFTs have been transferred correctly
+      for (let i = 0; i < sellCount; i++) {
+        await assertTokenNftOwnedBy({
+          t,
+          client,
+          mint: nfts[i].mint,
+          owner: poolType === PoolType.Token ? traderA.address : pool,
+        });
+      }
+
+      // Check remaining NFTs are still with traderB
+      for (let i = sellCount; i < numSells; i++) {
+        await assertTokenNftOwnedBy({
+          t,
+          client,
+          mint: nfts[i].mint,
+          owner: traderB.address,
+        });
+      }
+
+      // Check SOL balance in the pool
+      poolData = await fetchPool(client.rpc, pool);
+      t.assert(poolData.data.amount > 0n);
+    }
+  }
+});
+
+test('sell a ton with default exponential curve + tolerance', async (t) => {
+  t.timeout(120_000); // Increase timeout due to many operations
+
+  const client = createDefaultSolanaClient();
+  const numSells = 47; // prime #
+
+  const traderA = await generateKeyPairSignerWithSol(
+    client,
+    100_000n * LAMPORTS_PER_SOL
+  );
+  const traderB = await generateKeyPairSignerWithSol(
+    client,
+    100_000n * LAMPORTS_PER_SOL
+  );
+
+  const config = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Exponential,
+    startingPrice: 2_083_195_757n, // ~2 SOL (prime #)
+    delta: 877n, // 8.77% (prime #)
+    mmCompoundFees: true,
+    mmFeeBps: null,
+  };
+
+  t.log('minting nfts');
+
+  // Prepare multiple NFTs
+  const nfts = await Promise.all(
+    Array(numSells)
+      .fill(null)
+      .map(async () => {
+        const { mint, metadata } = await createDefaultNft({
+          client,
+          payer: traderB,
+          authority: traderB,
+          owner: traderB.address,
+        });
+        const [ataA] = await findAtaPda({ mint, owner: traderA.address });
+        const [ataB] = await findAtaPda({ mint, owner: traderB.address });
+        return { mint, metadata, ataA, ataB };
+      })
+  );
+
+  t.log('creating whitelist and pool');
+
+  // Prepare whitelist and pool
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: traderA,
+    conditions: [{ mode: Mode.FVC, value: traderB.address }],
+  });
+
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: traderA,
+    config,
+  });
+
+  t.log('depositing SOL');
+
+  // Deposit SOL to the pool
+  const depositAmount = config.startingPrice * BigInt(numSells) * 2n; // Deposit enough for all sells
+  const depositSolIx = getDepositSolInstruction({
+    pool,
+    owner: traderA,
+    lamports: depositAmount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, traderA),
+    (tx) => appendTransactionMessageInstruction(depositSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  t.log('selling nfts');
+
+  // Sell NFTs sequentially
+  for (const [sellCount, nft] of nfts.entries()) {
+    const poolData = await fetchPool(client.rpc, pool);
+    const currPrice = getCurrentBidPriceSync({
+      pool: poolData.data,
+      availableLamports: poolData.data.amount,
+      royaltyFeeBps: 0, // Assuming no royalties for simplicity
+      extraOffset: 0,
+      excludeMMFee: true,
+    });
+
+    t.log(`selling nft ${sellCount + 1} at price ${currPrice}`);
+
+    const sellNftIx = await getSellNftTokenPoolInstructionAsync({
+      owner: traderA.address,
+      taker: traderB,
+      pool,
+      whitelist,
+      mint: nft.mint,
+      minPrice: currPrice ?? 0n,
+      creators: [traderB.address],
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderB),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+      (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('verifying nft ownership');
+
+  // Check NFTs have been transferred correctly
+  for (const nft of nfts) {
+    await assertTokenNftOwnedBy({
+      t,
+      client,
+      mint: nft.mint,
+      owner: traderA.address,
+    });
+  }
 });
