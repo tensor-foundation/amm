@@ -1,6 +1,9 @@
 import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget';
 import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
-import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
+import {
+  TokenStandard,
+  createDefaultNft,
+} from '@tensor-foundation/mpl-token-metadata';
 import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
@@ -12,6 +15,7 @@ import { Mode } from '@tensor-foundation/whitelist';
 import test from 'ava';
 import {
   PoolType,
+  TENSOR_AMM_ERROR__WRONG_POOL_TYPE,
   fetchMaybeNftDepositReceipt,
   fetchPool,
   findNftDepositReceiptPda,
@@ -21,7 +25,9 @@ import {
   getWithdrawNftInstructionAsync,
 } from '../../src/index.js';
 import {
+  COMPUTE_500K_IX,
   ONE_SOL,
+  TestAction,
   createPool,
   createWhitelistV2,
   expectCustomError,
@@ -31,6 +37,7 @@ import {
   getTokenOwner,
   tradePoolConfig,
 } from '../_common.js';
+import { COMPAT_RULESET, setupLegacyTest } from './_common.js';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -128,7 +135,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   t.assert(tokenOwner === pool);
 
   // Withdraw NFT from pool
-  const buyNftIx = await getWithdrawNftInstructionAsync({
+  const withdrawNftIx = await getWithdrawNftInstructionAsync({
     owner,
     pool,
     mint,
@@ -136,7 +143,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -251,4 +258,106 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
 
   t.assert(tokenAmountAfter === 1n);
   t.assert(tokenOwnerAfter === pool);
+});
+
+test('deposit and immediately withdraw w/ no sell or buy', async (t) => {
+  const { client, pool, signers, nft } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const withdrawNftIx = await getWithdrawNftInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    mint: nft.mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+});
+
+test('withdraw from a token pool fails', async (t) => {
+  const { client, pool, signers, nft } = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const withdrawNftIx = await getWithdrawNftInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    mint: nft.mint,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+});
+
+test('withdraw pNFT w/ no ruleset', async (t) => {
+  const { client, pool, signers, nft } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    pNft: true,
+  });
+
+  const withdrawNftIx = await getWithdrawNftInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    mint: nft.mint,
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+});
+
+test('withdraw pNFT w/ compat ruleset', async (t) => {
+  const { client, pool, signers, nft } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+    pNft: true,
+    ruleset: COMPAT_RULESET,
+  });
+
+  const withdrawNftIx = await getWithdrawNftInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    mint: nft.mint,
+    authorizationRules: COMPAT_RULESET,
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
 });

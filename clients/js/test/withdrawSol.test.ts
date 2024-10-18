@@ -14,6 +14,7 @@ import test from 'ava';
 import {
   PoolType,
   TENSOR_AMM_ERROR__POOL_INSUFFICIENT_RENT,
+  TENSOR_AMM_ERROR__WRONG_POOL_TYPE,
   fetchPool,
   getDepositSolInstruction,
   getSellNftTradePoolInstructionAsync,
@@ -22,6 +23,7 @@ import {
 } from '../src/index.js';
 import {
   ONE_SOL,
+  TestAction,
   assertTokenNftOwnedBy,
   createPool,
   createPoolAndWhitelist,
@@ -30,6 +32,7 @@ import {
   getAndFundFeeVault,
   tradePoolConfig,
 } from './_common.js';
+import { setupLegacyTest } from './legacy/_common.js';
 
 test('it can withdraw Sol from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -314,4 +317,29 @@ test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   // And the pool still has the deposit amount remaining
   const poolAccount = await fetchPool(client.rpc, pool);
   t.assert(poolAccount.data.amount === depositAmount);
+});
+
+test('withdraw SOL from a NFT pool fails', async (t) => {
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const withdrawSolIx = await getWithdrawSolInstruction({
+    owner: signers.poolOwner,
+    pool,
+    lamports: 1n,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
 });
