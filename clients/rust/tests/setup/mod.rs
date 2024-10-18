@@ -21,6 +21,36 @@ pub const ONE_SOL_LAMPORTS: u64 = 1_000_000_000;
 pub const ONE_WEEK: u64 = 60 * 60 * 24 * 7;
 pub const ONE_YEAR: u64 = ONE_WEEK * 52;
 
+pub const ANCHOR_ERROR_ACCOUNT_NOT_SIGNER: u32 = 3010;
+
+#[macro_export]
+macro_rules! assert_custom_error {
+    ($error:expr, $num:expr) => {
+        match $error {
+            BanksClientError::TransactionError(TransactionError::InstructionError(
+                0,
+                InstructionError::Custom(x),
+            )) => {
+                let error_code = x as u32;
+                if error_code == $num {
+                    assert!(true)
+                } else {
+                    assert!(
+                        false,
+                        "Expected custom instruction error code {}, but got {}",
+                        $num, error_code
+                    )
+                }
+            }
+            err => assert!(
+                false,
+                "Expected custom instruction error but got '{:#?}'",
+                err
+            ),
+        };
+    };
+}
+
 lazy_static::lazy_static! {
     pub static ref TEST_OWNER: Keypair = Keypair::new();
 }

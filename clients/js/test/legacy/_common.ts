@@ -355,6 +355,7 @@ export interface BuyLegacyTests {
   pNft?: boolean;
   ruleset?: Address;
   checkCreatorBalances?: boolean;
+  nftReceipt?: Address;
 }
 
 export async function testBuy(
@@ -431,6 +432,7 @@ export async function testBuy(
     authorizationRules: tests.pNft ? tests.ruleset : undefined,
     // Remaining accounts
     creators: creators.map(({ address }) => address),
+    nftReceipt: tests.nftReceipt ?? undefined,
   });
 
   if (tests.expectError) {
