@@ -4,6 +4,7 @@ import {
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
   generateKeyPairSigner,
+  isSome,
   pipe,
 } from '@solana/web3.js';
 import {
@@ -17,7 +18,10 @@ import {
 } from '@tensor-foundation/mpl-token-metadata';
 import { findAssociatedTokenAccountPda } from '@tensor-foundation/resolvers';
 import {
+  ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   LAMPORTS_PER_SOL,
+  TENSOR_ERROR__BAD_ROYALTIES_PCT,
   TOKEN_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -44,11 +48,9 @@ import {
   isSol,
 } from '../../src/index.js';
 import {
-  ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
-  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   BASIS_POINTS,
+  COMPUTE_500K_IX,
   MAX_MM_FEES_BPS,
-  TENSOR_ERROR__BAD_ROYALTIES_PCT,
   TestAction,
   assertTammNoop,
   assertTokenNftOwnedBy,
@@ -63,13 +65,7 @@ import {
   tradePoolConfig,
   upsertMintProof,
 } from '../_common.js';
-import { COMPAT_RULESET, setupLegacyTest, testBuyNft } from './_common.js';
-
-// TODO: add tests for:
-// - buyNft alternate deposits and buys
-// - buyNft buy a ton with default exponential curve + tolerance
-// buy pNft from nft pool (no ruleset)
-// MAX ACC CHECK: buy pNft from trade pool (1 ruleset) (should require LUT) (margin)
+import { COMPAT_RULESET, setupLegacyTest, testBuy } from './_common.js';
 
 test('buy from NFT pool', async (t) => {
   const legacyTest = await setupLegacyTest({
@@ -81,8 +77,48 @@ test('buy from NFT pool', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
+  });
+});
+
+test('buy from NFT pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuy(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
+  });
+});
+
+test('buy from Trade pool, wrong owner fails', async (t) => {
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const wrongOwner = await generateKeyPairSigner();
+  legacyTest.signers.poolOwner = wrongOwner;
+
+  // The seeds derivation will fail.
+  await testBuy(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__CONSTRAINT_SEEDS,
   });
 });
 
@@ -96,7 +132,7 @@ test('buy from NFT pool, pay brokers', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: true,
   });
 });
@@ -113,9 +149,10 @@ test('buy from NFT pool, pay optional royalties', async (t) => {
       fundPool: false,
     });
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: true,
       optionalRoyaltyPct: royaltyPct,
+      checkCreatorBalances: true,
     });
 
     t.pass(); // reset timeout
@@ -131,7 +168,7 @@ test('buy from NFT pool, pay optional royalties', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: true,
     optionalRoyaltyPct: 101,
     expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
@@ -161,7 +198,7 @@ test('buy from NFT pool, max creators large proof', async (t) => {
     whitelistMode: Mode.MerkleTree,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
     creators,
   });
@@ -181,11 +218,16 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     ))
   );
 
-  const creators: Creator[] = creatorSigners.map(({ address }) => ({
+  let creators: Creator[] = creatorSigners.map(({ address }) => ({
     address,
     verified: false, // have to set this to false so creating the NFT will work
     share: 20,
   }));
+
+  // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
+  let config = nftPoolConfig;
+  config.startingPrice = 10000n;
+  config.delta = config.startingPrice / 10n;
 
   const legacyTest = await setupLegacyTest({
     t,
@@ -195,14 +237,15 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     useSharedEscrow: false,
     fundPool: false,
     creators,
+    poolConfig: config,
     treeSize: 10_000,
     whitelistMode: Mode.MerkleTree,
+    pNft: true,
   });
 
   const verifyCreatorIxs: IInstruction[] = [];
 
   for (const creator of creatorSigners ?? []) {
-    // If verified and not the update authority which is already signing, verify.
     verifyCreatorIxs.push(
       getVerifyInstruction({
         authority: creator,
@@ -218,10 +261,33 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await testBuyNft(t, legacyTest, {
+  // Ensure creators are now verified.
+  const md = await fetchMetadata(client.rpc, legacyTest.nft.metadata);
+
+  if (isSome(md.data.creators)) {
+    creators = md.data.creators.value;
+  } else {
+    creators = [];
+  }
+
+  t.assert(creators.every((c) => c.verified));
+
+  const creatorStartingBalances = await Promise.all(
+    creatorSigners.map((c) => getBalance(client, c.address))
+  );
+
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
-    creators,
+    creators, // pass in the verified creators
+    checkCreatorBalances: false,
+    pNft: true,
   });
+
+  // First three creators should have a higher balance.
+  for (const [i, creator] of creatorSigners.slice(0, 3).entries()) {
+    const balance = await getBalance(client, creator.address);
+    t.assert(balance > creatorStartingBalances[i]);
+  }
 
   // Last two creators should have 0 balance.
   for (const creator of creatorSigners.slice(-2)) {
@@ -245,7 +311,7 @@ test('buy from NFT pool, max price higher than current price succeeds', async (t
     // We multiply by the pre-configured maxPrice which includes the royalties.
     legacyTest.testConfig.price = (legacyTest.testConfig.price * adjust) / 100n;
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: false,
     });
   }
@@ -267,7 +333,7 @@ test('buy from NFT pool, max price lower than current price fails', async (t) =>
     legacyTest.testConfig.price =
       (legacyTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: false,
       expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
     });
@@ -285,7 +351,7 @@ test('buy pNFT from NFT pool, no ruleset', async (t) => {
     pNft: true,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
     pNft: true,
   });
@@ -303,7 +369,7 @@ test('buy pNFT from NFT pool, compat ruleset', async (t) => {
     ruleset: COMPAT_RULESET,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
     pNft: true,
     ruleset: COMPAT_RULESET,
@@ -520,7 +586,7 @@ test('buy from Trade pool', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
   });
 });
@@ -535,7 +601,7 @@ test('buy from Trade pool, pay brokers', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: true,
   });
 });
@@ -552,7 +618,7 @@ test('buy from Trade pool, pay optional royalties', async (t) => {
       fundPool: false,
     });
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: true,
       optionalRoyaltyPct: royaltyPct,
     });
@@ -570,7 +636,7 @@ test('buy from Trade pool, pay optional royalties', async (t) => {
     fundPool: false,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: true,
     optionalRoyaltyPct: 101,
     expectError: TENSOR_ERROR__BAD_ROYALTIES_PCT,
@@ -592,7 +658,7 @@ test('buy from Trade pool, max price higher than current price succeeds', async 
     // We multiply by the pre-configured maxPrice which includes the mm fee and royalties.
     legacyTest.testConfig.price = (legacyTest.testConfig.price * adjust) / 100n;
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: false,
     });
   }
@@ -614,7 +680,7 @@ test('buy from Trade pool, max price lower than current price fails', async (t) 
     legacyTest.testConfig.price =
       (legacyTest.testConfig.poolConfig.startingPrice * adjust) / 100n;
 
-    await testBuyNft(t, legacyTest, {
+    await testBuy(t, legacyTest, {
       brokerPayments: false,
       expectError: TENSOR_AMM_ERROR__PRICE_MISMATCH,
     });
@@ -632,7 +698,7 @@ test('buy pNFT from Trade pool, compat ruleset', async (t) => {
     pNft: true,
   });
 
-  await testBuyNft(t, legacyTest, {
+  await testBuy(t, legacyTest, {
     brokerPayments: false,
     pNft: true,
   });
@@ -708,6 +774,26 @@ test('buying NFT from a trade pool increases currency amount', async (t) => {
 
   // Only one buy so the pool currency amount should just be the new lamports added.
   t.assert(updatedPoolAccount.data.amount === lamportsAdded);
+});
+
+test('buy from Token pool fails', async (t) => {
+  // Setup a Token pool, funded with SOL.
+  const legacyTest = await setupLegacyTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  // The NFT receipt for this mint and pool doesn't exist so it should fail with an
+  // Anchor account not initialized error.
+  // It hits this constraint issue before the pool type check.
+  await testBuy(t, legacyTest, {
+    brokerPayments: false,
+    expectError: ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED,
+  });
 });
 
 test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
@@ -1580,5 +1666,126 @@ test('alternate deposits & buys', async (t) => {
       poolData = await fetchPool(client.rpc, pool);
       t.assert(poolData.data.nftsHeld === depositCount - buyCount);
     }
+  }
+});
+
+test('buy a ton with default exponential curve + tolerance', async (t) => {
+  t.timeout(120_000); // Increase timeout due to many operations
+
+  const client = createDefaultSolanaClient();
+  const numBuys = 47; // prime #
+
+  const traderA = await generateKeyPairSignerWithSol(
+    client,
+    100_000n * LAMPORTS_PER_SOL
+  );
+  const traderB = await generateKeyPairSignerWithSol(
+    client,
+    100_000n * LAMPORTS_PER_SOL
+  );
+
+  const config = {
+    poolType: PoolType.NFT,
+    curveType: CurveType.Exponential,
+    startingPrice: 2_083_195_757n, // ~2 SOL (prime #)
+    delta: 877n, // 8.77% (prime #)
+    mmCompoundFees: true,
+    mmFeeBps: null,
+  };
+
+  t.log('minting nfts');
+
+  // Prepare multiple NFTs
+  const nfts = await Promise.all(
+    Array(numBuys)
+      .fill(null)
+      .map(async () => {
+        const { mint, metadata } = await createDefaultNft({
+          client,
+          payer: traderA,
+          authority: traderA,
+          owner: traderA.address,
+        });
+        const [ataA] = await findAtaPda({ mint, owner: traderA.address });
+        const [ataB] = await findAtaPda({ mint, owner: traderB.address });
+        return { mint, metadata, ataA, ataB };
+      })
+  );
+
+  t.log('creating whitelist and pool');
+
+  // Prepare whitelist and pool
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: traderA,
+    conditions: [{ mode: Mode.FVC, value: traderA.address }],
+  });
+
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: traderA,
+    config,
+  });
+
+  t.log('depositing nfts');
+
+  // Deposit all NFTs
+  for (const nft of nfts) {
+    const depositNftIx = await getDepositNftInstructionAsync({
+      owner: traderA,
+      pool,
+      whitelist,
+      mint: nft.mint,
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderA),
+      (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('buying nfts');
+
+  // Buy NFTs sequentially
+  for (const [buyCount, nft] of nfts.entries()) {
+    const poolData = await fetchPool(client.rpc, pool);
+    const currPrice = getCurrentAskPrice({
+      pool: poolData.data,
+      royaltyFeeBps: 0, // Assuming no royalties for simplicity
+      extraOffset: 1,
+      excludeMMFee: true,
+    });
+
+    t.log(`buying nft ${buyCount + 1} at price ${currPrice}`);
+
+    const buyNftIx = await getBuyNftInstructionAsync({
+      owner: traderA.address,
+      taker: traderB,
+      pool,
+      mint: nft.mint,
+      maxAmount: currPrice ?? 0n,
+      creators: [traderA.address],
+    });
+
+    await pipe(
+      await createDefaultTransaction(client, traderB),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+      (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+      (tx) => signAndSendTransaction(client, tx)
+    );
+  }
+
+  t.log('verifying nft ownership');
+
+  // Check NFTs have been transferred correctly
+  for (const nft of nfts) {
+    await assertTokenNftOwnedBy({
+      t,
+      client,
+      mint: nft.mint,
+      owner: traderB.address,
+    });
   }
 });

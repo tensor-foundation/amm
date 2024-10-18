@@ -27,7 +27,6 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -36,6 +35,7 @@ import {
   createDefaultTransaction,
   createKeyPairSigner,
   generateKeyPairSignerWithSol,
+  getBalance,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
@@ -76,6 +76,12 @@ export const COMPUTE_500K_IX = (() => {
   });
 })();
 
+export const COMPUTE_700K_IX = (() => {
+  return getSetComputeUnitLimitInstruction({
+    units: 700_000,
+  });
+})();
+
 const OWNER_BYTES = [
   75, 111, 93, 80, 59, 171, 168, 79, 238, 255, 9, 233, 236, 194, 196, 73, 76, 2,
   51, 180, 184, 6, 77, 52, 36, 243, 28, 125, 104, 104, 114, 246, 166, 110, 5,
@@ -96,10 +102,6 @@ export const getAndFundOwner = async (client: Client) => {
 
   return owner;
 };
-
-export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
-export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
-export const VIPER_ERROR__INTEGER_OVERFLOW = 1103;
 
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
@@ -123,20 +125,10 @@ export const HUNDRED_PERCENT = 100n;
 export const MAKER_BROKER_FEE_PCT = 80n;
 export const TRANSACTION_SIGNATURE_FEE = 5_000n;
 export const MAX_MM_FEES_BPS = 7500;
-
+export const MAX_DELTA_BPS = 9999n;
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
-
-export const TENSOR_ERROR__BAD_ROYALTIES_PCT = 15001;
-export const TENSOR_ERROR__INSUFFICIENT_BALANCE = 15002;
-export const TENSOR_ERROR__CREATOR_MISMATCH = 15003;
-export const TENSOR_ERROR__FAILED_LEAF_VERIFICATION = 15004;
-export const TENSOR_ERROR__ARITHMETIC_ERROR = 15005;
-export const TENSOR_ERROR__BAD_METADATA = 15006;
-export const TENSOR_ERROR__BAD_RULE_SET = 15007;
-export const TENSOR_ERROR__INVALID_CORE_ASSET = 15008;
-export const TENSOR_ERROR__INVALID_FEE_ACCOUNT = 15009;
 
 export interface TestSigners {
   nftOwner: KeyPairSigner;
@@ -683,12 +675,16 @@ export const assertTammNoop = async (
 export const getAndFundFeeVault = async (client: Client, pool: Address) => {
   const [feeVault] = await findFeeVaultPda({ address: pool });
 
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVaultBalance = await getBalance(client, feeVault);
+
+  // Fund fee vault with min rent lamports, if necessary.
+  if (feeVaultBalance < lamports(ZERO_ACCOUNT_RENT_LAMPORTS)) {
+    await airdropFactory(client)({
+      recipientAddress: feeVault,
+      lamports: lamports(ZERO_ACCOUNT_RENT_LAMPORTS - feeVaultBalance),
+      commitment: 'confirmed',
+    });
+  }
 
   return feeVault;
 };
@@ -696,7 +692,8 @@ export const getAndFundFeeVault = async (client: Client, pool: Address) => {
 export const createAndFundEscrow = async (
   client: Client,
   owner: KeyPairSigner,
-  marginNr: number
+  marginNr: number,
+  depositAmount?: bigint
 ) => {
   const tswapOwner = await getAndFundOwner(client);
 
@@ -729,7 +726,7 @@ export const createAndFundEscrow = async (
     owner,
     tswap,
     marginAccount,
-    lamports: ONE_SOL,
+    lamports: depositAmount ?? ONE_SOL,
   });
 
   await pipe(
@@ -825,7 +822,6 @@ export interface SetupTestParams {
   action: TestAction;
   whitelistMode?: Mode;
   treeSize?: number;
-  creators?: Creator[] & { signers?: KeyPairSigner[] };
   depositAmount?: bigint;
   useMakerBroker?: boolean;
   useSharedEscrow?: boolean;
