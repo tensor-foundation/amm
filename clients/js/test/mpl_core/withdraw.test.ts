@@ -6,6 +6,13 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  AssetV1,
+  PluginAuthorityPairArgs,
+  VerifiedCreatorsArgs,
+  createAsset,
+  fetchAssetV1,
+} from '@tensor-foundation/mpl-core';
+import {
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -32,13 +39,6 @@ import {
   getAndFundFeeVault,
   tradePoolConfig,
 } from '../_common.js';
-import {
-  AssetV1,
-  createAsset,
-  fetchAssetV1,
-  PluginAuthorityPairArgs,
-  VerifiedCreatorsArgs,
-} from '@tensor-foundation/mpl-core';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();

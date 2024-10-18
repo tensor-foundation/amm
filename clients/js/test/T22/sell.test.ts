@@ -8,6 +8,7 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  ANCHOR_ERROR__CONSTRAINT_TOKEN_MINT,
   createDefaultTransaction,
   createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
@@ -51,7 +52,7 @@ import {
   upsertMintProof,
 } from '../_common';
 import { generateTreeOfSize } from '../_merkle';
-import { setupT22Test } from './_common';
+import { setupT22Test, testSell } from './_common';
 
 test('it can sell a T22 NFT into a Trade pool', async (t) => {
   const {
@@ -579,6 +580,294 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
   );
 
   assertTammNoop(t, client, sig);
+});
+
+test('sell NFT for MerkleTree whitelist succeeds', async (t) => {
+  const t22Test = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+  });
+
+  await testSell(t, t22Test, {
+    brokerPayments: false,
+    cosigner: false,
+  });
+});
+
+test('sell for non-whitelisted NFT fails', async (t) => {
+  const {
+    client,
+    testConfig,
+    signers,
+    nft: wlNft,
+    whitelist,
+    mintProof,
+    pool,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    useCosigner: false,
+    fundPool: true,
+    treeSize: 8,
+    whitelistMode: Mode.MerkleTree,
+  });
+
+  const { payer, poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { price: minPrice } = testConfig;
+
+  // Create a NFT that is not whitelisted, it will be the wrong collection.
+  const sellerFeeBasisPoints = 500n;
+  const {
+    mint: nonWlMint,
+    extraAccountMetas,
+    ownerAta,
+  } = await createT22NftWithRoyalties({
+    client,
+    payer,
+    owner: nftOwner.address, // Same owner as the NFT that is legitimately in the whitelist
+    mintAuthority: nftUpdateAuthority, // Same authority as legitimate NFT
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: '_ro_' + nftUpdateAuthority.address,
+      value: sellerFeeBasisPoints.toString(),
+    },
+  });
+
+  // Non-whitelisted NFT + matching ata
+  let sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    mint: nonWlMint,
+    mintProof,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  let promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__BAD_MINT_PROOF);
+
+  // Non-whitelisted NFT + wl NFT ata
+  sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    mint: wlNft.mint,
+    mintProof,
+    takerTa: ownerAta,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_TOKEN_MINT);
+
+  // WL NFT mint + non-matching ata
+  sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: poolOwner.address,
+    taker: nftOwner,
+    pool,
+    whitelist,
+    mint: wlNft.mint,
+    mintProof,
+    takerTa: ownerAta,
+    minPrice,
+    creators: [nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_TOKEN_MINT);
+});
+
+test('fail to sell merkle proof whitelisted NFT into FVC pool', async (t) => {
+  const {
+    client,
+    signers,
+    pool: fvcPool,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    whitelistMode: Mode.FVC,
+  });
+
+  // Mint NFT
+  const sellerFeeBasisPoints = 500n;
+  const { mint, extraAccountMetas } = await createT22NftWithRoyalties({
+    client,
+    payer: signers.nftUpdateAuthority,
+    owner: signers.nftOwner.address, // Same owner as the NFT that is legitimately in the whitelist
+    mintAuthority: signers.nftUpdateAuthority, // Same authority as legitimate NFT
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: '_ro_' + signers.nftUpdateAuthority.address,
+      value: sellerFeeBasisPoints.toString(),
+    },
+  });
+
+  // Setup a merkle tree with our mint as a leaf
+  const {
+    root,
+    proofs: [p],
+  } = await generateTreeOfSize(10, [mint]);
+  const conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+
+  // Create a whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: signers.nftUpdateAuthority,
+    conditions,
+  });
+
+  const { mintProof } = await upsertMintProof({
+    client,
+    payer: signers.nftUpdateAuthority,
+    mint,
+    whitelist,
+    proof: p.proof,
+  });
+
+  // Try to sell our merkle tree whitelisted NFT into a FVC pool
+  const sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: signers.poolOwner.address,
+    taker: signers.nftOwner,
+    pool: fvcPool,
+    whitelist,
+    mint,
+    mintProof,
+    minPrice: 0n,
+    creators: [signers.nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_WHITELIST);
+});
+
+test('fail to sell merkle proof whitelisted NFT into VOC pool', async (t) => {
+  const {
+    client,
+    signers,
+    pool: fvcPool,
+  } = await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Sell,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  // Mint NFT
+  const sellerFeeBasisPoints = 500n;
+  const { mint, extraAccountMetas } = await createT22NftWithRoyalties({
+    client,
+    payer: signers.nftUpdateAuthority,
+    owner: signers.nftOwner.address, // Same owner as the NFT that is legitimately in the whitelist
+    mintAuthority: signers.nftUpdateAuthority, // Same authority as legitimate NFT
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: '_ro_' + signers.nftUpdateAuthority.address,
+      value: sellerFeeBasisPoints.toString(),
+    },
+  });
+
+  // Setup a merkle tree with our mint as a leaf
+  const {
+    root,
+    proofs: [p],
+  } = await generateTreeOfSize(10, [mint]);
+  const conditions = [{ mode: Mode.MerkleTree, value: intoAddress(root) }];
+
+  // Create a whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: signers.nftUpdateAuthority,
+    conditions,
+  });
+
+  const { mintProof } = await upsertMintProof({
+    client,
+    payer: signers.nftUpdateAuthority,
+    mint,
+    whitelist,
+    proof: p.proof,
+  });
+
+  // Try to sell our merkle tree whitelisted NFT into a VOC pool
+  const sellNftIx = await getSellNftTokenPoolT22InstructionAsync({
+    owner: signers.poolOwner.address,
+    taker: signers.nftOwner,
+    pool: fvcPool,
+    whitelist,
+    mint,
+    mintProof,
+    minPrice: 0n,
+    creators: [signers.nftUpdateAuthority.address],
+    transferHookAccounts: extraAccountMetas.map((a) => a.address),
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, signers.nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_WHITELIST);
 });
 
 test('it can sell an NFT into a trade pool w/ set cosigner', async (t) => {
