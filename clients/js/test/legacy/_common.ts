@@ -191,7 +191,7 @@ export async function setupLegacyTest(
   const royalties =
     (startingPrice * BigInt(sellerFeeBasisPoints)) / BASIS_POINTS;
 
-  const depositAmount = dA ?? config.startingPrice * 10n;
+  const depositAmount = dA ?? ONE_SOL;
 
   // Check the token account has correct mint, amount and owner.
   t.like(await fetchToken(client.rpc, ownerAta), <Account<Token>>{

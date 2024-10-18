@@ -35,6 +35,7 @@ import {
 } from '../src';
 import {
   COMPUTE_500K_IX,
+  COMPUTE_700K_IX,
   expectCustomError,
   ONE_SOL,
   TestAction,
@@ -883,6 +884,7 @@ async function sellNftsIntoPool(
 
     await pipe(
       await createDefaultTransaction(client, nftOwner),
+      (tx) => appendTransactionMessageInstruction(COMPUTE_700K_IX, tx),
       (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
       (tx) => signAndSendTransaction(client, tx)
     );
