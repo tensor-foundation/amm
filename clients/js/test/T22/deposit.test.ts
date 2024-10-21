@@ -31,11 +31,33 @@ import {
   createPool,
   createWhitelistV2,
   errorLogsContain,
+  TestAction,
   upsertMintProof,
 } from '../_common.js';
 import { generateTreeOfSize } from '../_merkle.js';
+import { setupT22Test } from './_common.js';
 
-test('it can deposit a whitelisted NFT', async (t) => {
+test('it can deposit a NFT into a Trade pool w/ Merkle Tree mode', async (t) => {
+  await setupT22Test({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('it can deposit a NFT into a NFT pool w/ Merkle Tree mode', async (t) => {
+  await setupT22Test({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('not passing in transfer hook accounts fails', async (t) => {
   const client = createDefaultSolanaClient();
 
   // Pool, whitelist and NFT owner.

@@ -108,7 +108,6 @@ export async function setupCoreTest(
 
   let sellerFeeBasisPoints = 500;
 
-  // Mint NFT
   const [asset, collection] = await createDefaultAssetWithCollection({
     client,
     payer,

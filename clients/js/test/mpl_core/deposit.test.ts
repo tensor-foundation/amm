@@ -2,7 +2,6 @@ import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createAsset,
   createDefaultAsset,
-  createDefaultAssetWithCollection,
   PluginAuthorityPairArgs,
   VerifiedCreatorsArgs,
 } from '@tensor-foundation/mpl-core';
@@ -31,77 +30,184 @@ import {
   PoolConfig,
   PoolType,
 } from '../../src/index.js';
-import { createPool, createWhitelistV2 } from '../_common.js';
+import {
+  createPool,
+  createPoolAndWhitelist,
+  createWhitelistV2,
+  getTestSigners,
+  nftPoolConfig,
+  TestAction,
+  tradePoolConfig,
+} from '../_common.js';
+import { setupCoreTest } from './_common.js';
 
-test('it can deposit a whitelisted NFT', async (t) => {
+test('it can deposit a NFT into a Trade pool w/ FVC mode', async (t) => {
   const client = createDefaultSolanaClient();
+  const testSigners = await getTestSigners(client);
 
-  // Pool, whitelist and NFT owner.
-  const owner = await generateKeyPairSignerWithSol(client);
-  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client);
+  const { payer, nftUpdateAuthority, nftOwner: owner } = testSigners;
 
-  const sellerFeeBasisPoints = 500n;
-
-  // Mint asset
-  const [asset, collection] = await createDefaultAssetWithCollection({
-    client,
-    payer: owner,
-    collectionAuthority: nftUpdateAuthority,
-    owner: owner.address,
-    royalties: {
-      creators: [
-        {
-          percentage: 100,
-          address: nftUpdateAuthority.address,
-        },
-      ],
-      basisPoints: Number(sellerFeeBasisPoints),
+  // We need to create the verified creators plugin on the asset.
+  const verifiedCreators: [VerifiedCreatorsArgs] = [
+    {
+      signatures: [{ address: nftUpdateAuthority.address, verified: true }],
     },
+  ];
+
+  const plugins: PluginAuthorityPairArgs[] = [
+    {
+      plugin: {
+        __kind: 'VerifiedCreators',
+        fields: verifiedCreators,
+      },
+      authority: { __kind: 'UpdateAuthority' },
+    },
+  ];
+
+  // Mint NFT w/ verified creators plugin
+  const asset = await createAsset({
+    client,
+    payer,
+    authority: nftUpdateAuthority,
+    owner: owner.address,
+    plugins,
+    name: 'Test',
+    uri: 'https://test.com',
   });
 
-  const config: PoolConfig = {
-    poolType: PoolType.Trade,
-    curveType: CurveType.Linear,
-    startingPrice: 1_000_000n,
-    delta: 0n,
-    mmCompoundFees: false,
-    mmFeeBps: 100,
-  };
-
-  const merkleTreeConditions = [{ mode: Mode.VOC, value: collection.address }];
-
-  // Create whitelist with FVC
-  // use a separate keypair so NFT isn't part of this whitelist
-  const { whitelist } = await createWhitelistV2({
+  // Create a whitelist and a funded pool.
+  const { whitelist, pool } = await createPoolAndWhitelist({
     client,
-    updateAuthority: owner,
-    conditions: merkleTreeConditions,
-  });
-
-  // Create pool and whitelist
-  const { pool } = await createPool({
-    client,
-    whitelist,
+    payer,
     owner,
-    config,
+    config: tradePoolConfig,
+    depositAmount: tradePoolConfig.startingPrice * 10n,
+    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
+    funded: false,
   });
 
-  // Deposit NFT, should succeed
-  const depositNftIx = await getDepositNftCoreInstructionAsync({
+  // Deposit
+  const depositIx = await getDepositNftCoreInstructionAsync({
     owner,
     pool,
     whitelist,
     asset: asset.address,
-    collection: collection.address,
   });
 
   await pipe(
-    await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    await createDefaultTransaction(client, payer),
+    (tx) => appendTransactionMessageInstruction(depositIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
   t.pass();
+});
+
+test('it can deposit a NFT into a Trade pool w/ VOC mode', async (t) => {
+  await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a NFT into a Trade pool w/ Merkle Tree mode', async (t) => {
+  await setupCoreTest({
+    t,
+    poolType: PoolType.Trade,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
+});
+
+test('it can deposit a NFT into a NFT pool w/ FVC mode', async (t) => {
+  const client = createDefaultSolanaClient();
+  const testSigners = await getTestSigners(client);
+
+  const { payer, nftUpdateAuthority, nftOwner: owner } = testSigners;
+
+  // We need to create the verified creators plugin on the asset.
+  const verifiedCreators: [VerifiedCreatorsArgs] = [
+    {
+      signatures: [
+        {
+          address: nftUpdateAuthority.address,
+          verified: true,
+        },
+      ],
+    },
+  ];
+
+  const plugins: PluginAuthorityPairArgs[] = [
+    {
+      plugin: {
+        __kind: 'VerifiedCreators',
+        fields: verifiedCreators,
+      },
+      authority: { __kind: 'UpdateAuthority' },
+    },
+  ];
+
+  // Mint NFT w/ verified creators plugin
+  const asset = await createAsset({
+    client,
+    payer,
+    authority: nftUpdateAuthority,
+    owner: owner.address,
+    plugins,
+    name: 'Test',
+    uri: 'https://test.com',
+  });
+
+  // Create a whitelist and a funded pool.
+  const { whitelist, pool } = await createPoolAndWhitelist({
+    client,
+    payer,
+    owner,
+    config: nftPoolConfig,
+    depositAmount: nftPoolConfig.startingPrice * 10n,
+    conditions: [{ mode: Mode.FVC, value: nftUpdateAuthority.address }],
+    funded: false,
+  });
+
+  // Deposit
+  const depositIx = await getDepositNftCoreInstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    asset: asset.address,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, payer),
+    (tx) => appendTransactionMessageInstruction(depositIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  t.pass();
+});
+
+test('it can deposit a NFT into a NFT pool w/ VOC mode', async (t) => {
+  await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+});
+
+test('it can deposit a NFT into a NFT pool w/ Merkle Tree mode', async (t) => {
+  await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.MerkleTree,
+  });
 });
 
 test('deposit non-whitelisted NFT fails', async (t) => {
