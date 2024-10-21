@@ -2,6 +2,7 @@ import { appendTransactionMessageInstruction, pipe } from '@solana/web3.js';
 import {
   createAsset,
   createDefaultAsset,
+  createDefaultAssetWithCollection,
   PluginAuthorityPairArgs,
   VerifiedCreatorsArgs,
 } from '@tensor-foundation/mpl-core';
@@ -31,6 +32,77 @@ import {
   PoolType,
 } from '../../src/index.js';
 import { createPool, createWhitelistV2 } from '../_common.js';
+
+test('it can deposit a whitelisted NFT', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool, whitelist and NFT owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+  const nftUpdateAuthority = await generateKeyPairSignerWithSol(client);
+
+  const sellerFeeBasisPoints = 500n;
+
+  // Mint asset
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer: owner,
+    collectionAuthority: nftUpdateAuthority,
+    owner: owner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: nftUpdateAuthority.address,
+        },
+      ],
+      basisPoints: Number(sellerFeeBasisPoints),
+    },
+  });
+
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000n,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: 100,
+  };
+
+  const merkleTreeConditions = [{ mode: Mode.VOC, value: collection.address }];
+
+  // Create whitelist with FVC
+  // use a separate keypair so NFT isn't part of this whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: merkleTreeConditions,
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+  });
+
+  // Deposit NFT, should succeed
+  const depositNftIx = await getDepositNftCoreInstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  t.pass();
+});
 
 test('deposit non-whitelisted NFT fails', async (t) => {
   const client = createDefaultSolanaClient();

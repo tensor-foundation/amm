@@ -10,6 +10,7 @@ import {
 import {
   fetchWhitelistV2,
   getUpdateWhitelistV2Instruction,
+  intoAddress,
   Mode,
   operation,
   TENSOR_WHITELIST_ERROR__FAILED_FVC_VERIFICATION,
@@ -25,7 +26,125 @@ import {
   PoolConfig,
   PoolType,
 } from '../../src/index.js';
-import { createPool, createWhitelistV2 } from '../_common.js';
+import {
+  COMPUTE_500K_IX,
+  createPool,
+  createWhitelistV2,
+  errorLogsContain,
+  upsertMintProof,
+} from '../_common.js';
+import { generateTreeOfSize } from '../_merkle.js';
+
+test('it can deposit a whitelisted NFT', async (t) => {
+  const client = createDefaultSolanaClient();
+
+  // Pool, whitelist and NFT owner.
+  const owner = await generateKeyPairSignerWithSol(client);
+
+  const sellerFeeBasisPoints = 500n;
+
+  // Mint NFT
+  const { mint, extraAccountMetas } = await createT22NftWithRoyalties({
+    client,
+    payer: owner,
+    owner: owner.address,
+    mintAuthority: owner,
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: '_ro_' + owner.address,
+      value: sellerFeeBasisPoints.toString(),
+    },
+  });
+
+  const config: PoolConfig = {
+    poolType: PoolType.Trade,
+    curveType: CurveType.Linear,
+    startingPrice: 1_000_000n,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: 100,
+  };
+
+  // Setup a merkle tree with our mint as a leaf
+  const {
+    root,
+    proofs: [p],
+  } = await generateTreeOfSize(10, [mint]);
+
+  const merkleTreeConditions = [
+    { mode: Mode.MerkleTree, value: intoAddress(root) },
+  ];
+
+  // Create whitelist with FVC
+  // use a separate keypair so NFT isn't part of this whitelist
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority: owner,
+    conditions: merkleTreeConditions,
+  });
+
+  // Create pool and whitelist
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner,
+    config,
+  });
+
+  // Create the mint proof for the whitelist.
+  const { mintProof } = await upsertMintProof({
+    client,
+    payer: owner,
+    mint,
+    whitelist,
+    proof: p.proof,
+  });
+
+  // Deposit NFT, missing transfer hook accounts
+  let depositNftIx = await getDepositNftT22InstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    mint,
+    mintProof,
+    transferHookAccounts: [],
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(COMPUTE_500K_IX, tx),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await errorLogsContain(
+    t,
+    promise,
+    'An account required by the instruction is missing'
+  );
+
+  // Succeeds.
+  depositNftIx = await getDepositNftT22InstructionAsync({
+    owner,
+    pool,
+    whitelist,
+    mint,
+    mintProof,
+    transferHookAccounts: extraAccountMetas.map((m) => m.address),
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, owner),
+    (tx) => appendTransactionMessageInstruction(depositNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+});
 
 test('deposit non-whitelisted NFT fails', async (t) => {
   const client = createDefaultSolanaClient();
