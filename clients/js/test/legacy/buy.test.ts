@@ -50,6 +50,7 @@ import {
 import {
   BASIS_POINTS,
   COMPUTE_500K_IX,
+  HUNDRED_PERCENT,
   MAX_MM_FEES_BPS,
   TestAction,
   assertTammNoop,
@@ -225,7 +226,7 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
   }));
 
   // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
-  let config = nftPoolConfig;
+  let config = structuredClone(nftPoolConfig);
   config.startingPrice = 10000n;
   config.delta = config.startingPrice / 10n;
 
@@ -272,8 +273,10 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
 
   t.assert(creators.every((c) => c.verified));
 
+  const sellerFeeBasisPoints = md.data.sellerFeeBasisPoints;
+
   const creatorStartingBalances = await Promise.all(
-    creatorSigners.map((c) => getBalance(client, c.address))
+    creators.map((c) => getBalance(client, c.address))
   );
 
   await testBuy(t, legacyTest, {
@@ -283,10 +286,15 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
     pNft: true,
   });
 
-  // First three creators should have a higher balance.
-  for (const [i, creator] of creatorSigners.slice(0, 3).entries()) {
+  // First three creators should recieved expected royalties amount.
+  const royaltyFee =
+    (config.startingPrice * BigInt(sellerFeeBasisPoints)) / BASIS_POINTS;
+
+  for (const [i, creator] of creators.slice(0, 3).entries()) {
+    const expectedRoyalties =
+      (royaltyFee * BigInt(creator.share)) / HUNDRED_PERCENT;
     const balance = await getBalance(client, creator.address);
-    t.assert(balance > creatorStartingBalances[i]);
+    t.assert(balance === creatorStartingBalances[i] + expectedRoyalties);
   }
 
   // Last two creators should have 0 balance.
