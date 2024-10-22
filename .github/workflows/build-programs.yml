@@ -13,12 +13,12 @@ on:
     inputs:
       rust:
         description: Rust version
-        default: 1.75.0
+        default: 1.78.0
         required: true
         type: string
       solana:
         description: Solana version
-        default: 1.17.22
+        default: 1.17.34
         required: true
         type: string
       node:
@@ -58,7 +58,7 @@ jobs:
           toolchain: ${{ inputs.rust || env.RUST_VERSION }}
 
       - name: Install Solana
-        uses: tensor-foundation/actions/install-solana@v2
+        uses: tensor-foundation/actions/install-solana@v2.1
         with:
           version: ${{ inputs.solana || env.SOLANA_VERSION }}
           cache: ${{ env.CACHE }}
