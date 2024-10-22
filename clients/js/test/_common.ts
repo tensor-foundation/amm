@@ -56,6 +56,7 @@ import {
   PoolConfig,
   PoolType,
   fetchMaybeNftDepositReceipt,
+  fetchMaybePool,
   fetchNftDepositReceipt,
   findNftDepositReceiptPda,
   findPoolPda,
@@ -915,6 +916,16 @@ export async function assertNftReceiptClosed(params: DepositReceiptParams) {
     nftReceipt
   );
   t.assert(maybeNftReceipt.exists === false);
+}
+
+// Asserts that a pool is closed.
+export async function assertPoolClosed(
+  t: ExecutionContext,
+  client: Client,
+  pool: Address
+) {
+  const poolAccount = await fetchMaybePool(client.rpc, pool);
+  t.assert(poolAccount.exists === false);
 }
 
 export async function createProofWhitelist(

@@ -5,7 +5,9 @@ import {
   createDefaultNft,
 } from '@tensor-foundation/mpl-token-metadata';
 import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   TSWAP_PROGRAM_ID,
+  assertTokenNftOwnedBy,
   createDefaultSolanaClient,
   createDefaultTransaction,
   generateKeyPairSignerWithSol,
@@ -28,6 +30,7 @@ import {
   COMPUTE_500K_IX,
   ONE_SOL,
   TestAction,
+  assertNftReceiptClosed,
   createPool,
   createWhitelistV2,
   expectCustomError,
@@ -258,6 +261,68 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
 
   t.assert(tokenAmountAfter === 1n);
   t.assert(tokenOwnerAfter === pool);
+});
+
+test('it can withdraw an NFT from a NFT pool', async (t) => {
+  const { client, pool, nft, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+
+  // Withdraw NFT from pool
+  const buyNftIx = await getWithdrawNftInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    mint: nft.mint,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now custodied by the owner again.
+  await assertTokenNftOwnedBy({
+    t,
+    client,
+    mint: nft.mint,
+    owner: signers.poolOwner.address,
+  });
+
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint: nft.mint, pool });
+});
+
+test('it cannot withdraw an NFT from a NFT pool with wrong owner', async (t) => {
+  const { client, pool, nft } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+
+  const notPoolOwner = await generateKeyPairSignerWithSol(client);
+
+  // Withdraw NFT from pool
+  const buyNftIx = await getWithdrawNftInstructionAsync({
+    owner: notPoolOwner,
+    pool,
+    mint: nft.mint,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, notPoolOwner),
+    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Throws constraint seeds error
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
 });
 
 test('deposit and immediately withdraw w/ no sell or buy', async (t) => {

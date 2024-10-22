@@ -33,6 +33,7 @@ import {
   tradePoolConfig,
 } from './_common.js';
 import { setupLegacyTest } from './legacy/_common.js';
+import { setupCoreTest } from './mpl_core/_common.js';
 
 test('it can withdraw Sol from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -317,6 +318,69 @@ test('it cannot withdraw from a pool with incorrect owner', async (t) => {
   // And the pool still has the deposit amount remaining
   const poolAccount = await fetchPool(client.rpc, pool);
   t.assert(poolAccount.data.amount === depositAmount);
+});
+
+test('it can withdraw an SOL from a Token pool, and currency amount decreases', async (t) => {
+  const { client, pool, signers } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  let poolAccount = await fetchPool(client.rpc, pool);
+
+  // Withdraw SOL from pool
+  const withdrawSolIx = getWithdrawSolInstruction({
+    owner: signers.poolOwner,
+    pool,
+    lamports: poolAccount.data.amount,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Pool is still open.
+  poolAccount = await fetchPool(client.rpc, pool);
+
+  // Ensure it's a SOL currency.
+  t.assert(isSol(poolAccount.data.currency));
+
+  // Currency amount should be 0 as we withdraw all the SOL except rent amount.
+  t.assert(poolAccount.data.amount === 0n);
+});
+
+test('it cannot withdraw a SOL from a Token pool with incorrect owner', async (t) => {
+  const { client, pool } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    fundPool: true,
+    whitelistMode: Mode.VOC,
+  });
+
+  const notOwner = await generateKeyPairSignerWithSol(client);
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+
+  // Withdraw SOL from pool
+  const withdrawSolIx = getWithdrawSolInstruction({
+    owner: notOwner,
+    pool,
+    lamports: poolAccount.data.amount,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, notOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawSolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
 });
 
 test('withdraw SOL from a NFT pool fails', async (t) => {
