@@ -37,6 +37,7 @@
   "author": "Tensor Protocol Foundation <maintainers@tensor.foundation>",
   "license": "Apache-2.0",
   "dependencies": {
+    "@solana-program/system": "^0.5.3",
     "@solana-program/token": "^0.2.0",
     "@solana/web3.js": "2.0.0-preview.3",
     "@tensor-foundation/resolvers": "^0.2.4"

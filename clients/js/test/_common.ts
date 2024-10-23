@@ -11,6 +11,7 @@ import {
   airdropFactory,
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
+  createAddressWithSeed,
   generateKeyPairSigner,
   getAddressEncoder,
   getProgramDerivedAddress,
@@ -27,6 +28,8 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
+import { createDefaultAssetWithCollection } from '@tensor-foundation/mpl-core';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -34,6 +37,7 @@ import {
   TOKEN_PROGRAM_ID,
   createDefaultTransaction,
   createKeyPairSigner,
+  createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
   getBalance,
   signAndSendTransaction,
@@ -130,6 +134,21 @@ export const MAX_DELTA_BPS = 9999n;
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
+
+export const MARGIN_WITHDRAW_CPI_PROGRAM_ADDRESS =
+  '6yJwyDaYK2q9gMLtRnJukEpskKsNzMAqiCRikRaP2g1F' as Address<'6yJwyDaYK2q9gMLtRnJukEpskKsNzMAqiCRikRaP2g1F'>;
+
+export async function idlAddress(programAddress: Address): Promise<Address> {
+  const seed = 'anchor:idl';
+  const base = (
+    await getProgramDerivedAddress({ programAddress, seeds: [] })
+  )[0];
+  return await createAddressWithSeed({
+    baseAddress: base,
+    seed,
+    programAddress,
+  });
+}
 
 export interface TestSigners {
   nftOwner: KeyPairSigner;
@@ -950,3 +969,76 @@ export async function createProofWhitelist(
 
   return { whitelist, proofs };
 }
+
+export const initTswap = async (client: Client) => {
+  const tswapOwner = await getAndFundOwner(client);
+
+  const tswap = TSWAP_SINGLETON;
+
+  const initTswapIx = getInitUpdateTswapInstruction({
+    tswap,
+    owner: tswapOwner,
+    newOwner: tswapOwner,
+    feeVault: DEFAULT_PUBKEY, // Dummy fee vault
+    cosigner: tswapOwner,
+    config: { feeBps: 0 },
+  });
+  await pipe(
+    await createDefaultTransaction(client, tswapOwner),
+    (tx) => appendTransactionMessageInstruction(initTswapIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+};
+
+export const mintLegacyCoreAndT22 = async ({
+  client,
+  owner,
+  mintAuthority,
+}: {
+  client: Client;
+  owner: KeyPairSigner;
+  mintAuthority: KeyPairSigner;
+}) => {
+  // Legacy:
+  const { mint } = await createDefaultNft({
+    client,
+    owner: owner.address,
+    payer: owner,
+    authority: mintAuthority,
+  });
+  // Core:
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer: owner,
+    collectionAuthority: mintAuthority,
+    owner: owner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: mintAuthority.address,
+        },
+      ],
+      basisPoints: 0,
+    },
+  });
+  // T22:
+  const t22Nft = await createT22NftWithRoyalties({
+    client,
+    payer: owner,
+    owner: owner.address,
+    mintAuthority,
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: mintAuthority.address,
+      value: '0',
+    },
+  });
+  return { legacy: mint, core: { asset, collection }, t22: t22Nft };
+};

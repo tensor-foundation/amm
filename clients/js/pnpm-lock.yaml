@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@solana-program/system':
+        specifier: ^0.5.3
+        version: 0.5.3(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
       '@solana-program/token':
         specifier: ^0.2.0
         version: 0.2.1(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
@@ -1466,6 +1469,11 @@ packages:
     resolution: {integrity: sha512-TBR/NjAOn7kt1g1aZcUka6yk+n70/EcXO0cPL+lXCIfzqL5/3u1ko0UOLmdyCrs13jVheI+zeKmyR4Ft1Yz2fQ==}
     peerDependencies:
       '@solana/web3.js': 2.0.0-preview.3
+
+  '@solana-program/system@0.5.3':
+    resolution: {integrity: sha512-SOHJGKsjUUA2Puw2TDsI6Si1fFl2WaXB2+/e3Gqv45D2Qf0ilxuIfBR3DcPD2A2WRm/xxTgerkVkBVmtNw3yYQ==}
+    peerDependencies:
+      '@solana/web3.js': 2.0.0-rc.1
 
   '@solana-program/token@0.2.0':
     resolution: {integrity: sha512-2W3ylIdgwx/5k4P2RB/tvOhZD08GSQ86Iakxl/k280V5swM7wX8JwUgWSxpQOBl10tQmuA3EYleGkcrdCYyepg==}
@@ -6709,7 +6717,7 @@ snapshots:
   '@npmcli/fs@1.1.1':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.3.8
+      semver: 7.6.3
 
   '@npmcli/move-file@1.1.2':
     dependencies:
@@ -6816,6 +6824,10 @@ snapshots:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
 
   '@solana-program/system@0.3.3(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
+    dependencies:
+      '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+
+  '@solana-program/system@0.5.3(@solana/web3.js@2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
     dependencies:
       '@solana/web3.js': 2.0.0-preview.3(fastestsmallesttextencoderdecoder@1.0.22)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
 
@@ -7839,7 +7851,7 @@ snapshots:
       recast: 0.21.5
       remark-frontmatter: 4.0.1
       remark-mdx-frontmatter: 1.1.1
-      semver: 7.3.8
+      semver: 7.6.3
       sort-package-json: 1.57.0
       tar-fs: 2.1.1
       tsconfig-paths: 4.2.0
@@ -9513,7 +9525,7 @@ snapshots:
       '@types/glob': 7.2.0
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.2.11
+      fast-glob: 3.3.2
       glob: 7.2.3
       ignore: 5.3.2
       merge2: 1.4.1
