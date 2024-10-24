@@ -37,6 +37,7 @@
   "author": "Tensor Protocol Foundation <maintainers@tensor.foundation>",
   "license": "Apache-2.0",
   "dependencies": {
+    "@solana-program/system": "^0.5.3",
     "@solana-program/token": "^0.2.0",
     "@solana/web3.js": "2.0.0-preview.3",
     "@tensor-foundation/resolvers": "^0.2.4"
@@ -49,7 +50,7 @@
     "@tensor-foundation/escrow": "^0.1.0",
     "@tensor-foundation/mpl-core": "^0.3.0",
     "@tensor-foundation/mpl-token-metadata": "^0.5.0",
-    "@tensor-foundation/test-helpers": "^0.4.1",
+    "@tensor-foundation/test-helpers": "^0.5.0",
     "@tensor-foundation/whitelist": "^0.3.0",
     "@types/node": "20.12.7",
     "@types/uuid": "^9.0.8",

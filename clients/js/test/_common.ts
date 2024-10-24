@@ -11,6 +11,7 @@ import {
   airdropFactory,
   appendTransactionMessageInstruction,
   appendTransactionMessageInstructions,
+  createAddressWithSeed,
   generateKeyPairSigner,
   getAddressEncoder,
   getProgramDerivedAddress,
@@ -27,7 +28,8 @@ import {
   getInitMarginAccountInstruction,
   getInitUpdateTswapInstruction,
 } from '@tensor-foundation/escrow';
-import { Creator } from '@tensor-foundation/mpl-token-metadata';
+import { createDefaultAssetWithCollection } from '@tensor-foundation/mpl-core';
+import { createDefaultNft } from '@tensor-foundation/mpl-token-metadata';
 import { findFeeVaultPda } from '@tensor-foundation/resolvers';
 import {
   ASSOCIATED_TOKEN_ACCOUNTS_PROGRAM_ID,
@@ -35,7 +37,9 @@ import {
   TOKEN_PROGRAM_ID,
   createDefaultTransaction,
   createKeyPairSigner,
+  createT22NftWithRoyalties,
   generateKeyPairSignerWithSol,
+  getBalance,
   signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
@@ -56,6 +60,7 @@ import {
   PoolConfig,
   PoolType,
   fetchMaybeNftDepositReceipt,
+  fetchMaybePool,
   fetchNftDepositReceipt,
   findNftDepositReceiptPda,
   findPoolPda,
@@ -73,6 +78,12 @@ export const COMPUTE_300K_IX = (() => {
 export const COMPUTE_500K_IX = (() => {
   return getSetComputeUnitLimitInstruction({
     units: 500_000,
+  });
+})();
+
+export const COMPUTE_700K_IX = (() => {
+  return getSetComputeUnitLimitInstruction({
+    units: 700_000,
   });
 })();
 
@@ -97,10 +108,6 @@ export const getAndFundOwner = async (client: Client) => {
   return owner;
 };
 
-export const ANCHOR_ERROR__CONSTRAINT_SEEDS = 2006;
-export const ANCHOR_ERROR__ACCOUNT_NOT_INITIALIZED = 3012;
-export const VIPER_ERROR__INTEGER_OVERFLOW = 1103;
-
 export const DEFAULT_PUBKEY: Address = address(
   '11111111111111111111111111111111'
 );
@@ -123,20 +130,25 @@ export const HUNDRED_PERCENT = 100n;
 export const MAKER_BROKER_FEE_PCT = 80n;
 export const TRANSACTION_SIGNATURE_FEE = 5_000n;
 export const MAX_MM_FEES_BPS = 7500;
-
+export const MAX_DELTA_BPS = 9999n;
 export const TSWAP_SINGLETON: Address = address(
   '4zdNGgAtFsW1cQgHqkiWyRsxaAgxrSRRynnuunxzjxue'
 );
 
-export const TENSOR_ERROR__BAD_ROYALTIES_PCT = 15001;
-export const TENSOR_ERROR__INSUFFICIENT_BALANCE = 15002;
-export const TENSOR_ERROR__CREATOR_MISMATCH = 15003;
-export const TENSOR_ERROR__FAILED_LEAF_VERIFICATION = 15004;
-export const TENSOR_ERROR__ARITHMETIC_ERROR = 15005;
-export const TENSOR_ERROR__BAD_METADATA = 15006;
-export const TENSOR_ERROR__BAD_RULE_SET = 15007;
-export const TENSOR_ERROR__INVALID_CORE_ASSET = 15008;
-export const TENSOR_ERROR__INVALID_FEE_ACCOUNT = 15009;
+export const MARGIN_WITHDRAW_CPI_PROGRAM_ADDRESS =
+  '6yJwyDaYK2q9gMLtRnJukEpskKsNzMAqiCRikRaP2g1F' as Address<'6yJwyDaYK2q9gMLtRnJukEpskKsNzMAqiCRikRaP2g1F'>;
+
+export async function idlAddress(programAddress: Address): Promise<Address> {
+  const seed = 'anchor:idl';
+  const base = (
+    await getProgramDerivedAddress({ programAddress, seeds: [] })
+  )[0];
+  return await createAddressWithSeed({
+    baseAddress: base,
+    seed,
+    programAddress,
+  });
+}
 
 export interface TestSigners {
   nftOwner: KeyPairSigner;
@@ -683,12 +695,16 @@ export const assertTammNoop = async (
 export const getAndFundFeeVault = async (client: Client, pool: Address) => {
   const [feeVault] = await findFeeVaultPda({ address: pool });
 
-  // Fund fee vault with min rent lamports.
-  await airdropFactory(client)({
-    recipientAddress: feeVault,
-    lamports: lamports(890880n),
-    commitment: 'confirmed',
-  });
+  const feeVaultBalance = await getBalance(client, feeVault);
+
+  // Fund fee vault with min rent lamports, if necessary.
+  if (feeVaultBalance < lamports(ZERO_ACCOUNT_RENT_LAMPORTS)) {
+    await airdropFactory(client)({
+      recipientAddress: feeVault,
+      lamports: lamports(ZERO_ACCOUNT_RENT_LAMPORTS - feeVaultBalance),
+      commitment: 'confirmed',
+    });
+  }
 
   return feeVault;
 };
@@ -696,7 +712,8 @@ export const getAndFundFeeVault = async (client: Client, pool: Address) => {
 export const createAndFundEscrow = async (
   client: Client,
   owner: KeyPairSigner,
-  marginNr: number
+  marginNr: number,
+  depositAmount?: bigint
 ) => {
   const tswapOwner = await getAndFundOwner(client);
 
@@ -729,7 +746,7 @@ export const createAndFundEscrow = async (
     owner,
     tswap,
     marginAccount,
-    lamports: ONE_SOL,
+    lamports: depositAmount ?? ONE_SOL,
   });
 
   await pipe(
@@ -825,7 +842,6 @@ export interface SetupTestParams {
   action: TestAction;
   whitelistMode?: Mode;
   treeSize?: number;
-  creators?: Creator[] & { signers?: KeyPairSigner[] };
   depositAmount?: bigint;
   useMakerBroker?: boolean;
   useSharedEscrow?: boolean;
@@ -921,6 +937,16 @@ export async function assertNftReceiptClosed(params: DepositReceiptParams) {
   t.assert(maybeNftReceipt.exists === false);
 }
 
+// Asserts that a pool is closed.
+export async function assertPoolClosed(
+  t: ExecutionContext,
+  client: Client,
+  pool: Address
+) {
+  const poolAccount = await fetchMaybePool(client.rpc, pool);
+  t.assert(poolAccount.exists === false);
+}
+
 export async function createProofWhitelist(
   client: Client,
   updateAuthority: KeyPairSigner,
@@ -943,3 +969,76 @@ export async function createProofWhitelist(
 
   return { whitelist, proofs };
 }
+
+export const initTswap = async (client: Client) => {
+  const tswapOwner = await getAndFundOwner(client);
+
+  const tswap = TSWAP_SINGLETON;
+
+  const initTswapIx = getInitUpdateTswapInstruction({
+    tswap,
+    owner: tswapOwner,
+    newOwner: tswapOwner,
+    feeVault: DEFAULT_PUBKEY, // Dummy fee vault
+    cosigner: tswapOwner,
+    config: { feeBps: 0 },
+  });
+  await pipe(
+    await createDefaultTransaction(client, tswapOwner),
+    (tx) => appendTransactionMessageInstruction(initTswapIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+};
+
+export const mintLegacyCoreAndT22 = async ({
+  client,
+  owner,
+  mintAuthority,
+}: {
+  client: Client;
+  owner: KeyPairSigner;
+  mintAuthority: KeyPairSigner;
+}) => {
+  // Legacy:
+  const { mint } = await createDefaultNft({
+    client,
+    owner: owner.address,
+    payer: owner,
+    authority: mintAuthority,
+  });
+  // Core:
+  const [asset, collection] = await createDefaultAssetWithCollection({
+    client,
+    payer: owner,
+    collectionAuthority: mintAuthority,
+    owner: owner.address,
+    royalties: {
+      creators: [
+        {
+          percentage: 100,
+          address: mintAuthority.address,
+        },
+      ],
+      basisPoints: 0,
+    },
+  });
+  // T22:
+  const t22Nft = await createT22NftWithRoyalties({
+    client,
+    payer: owner,
+    owner: owner.address,
+    mintAuthority,
+    freezeAuthority: null,
+    decimals: 0,
+    data: {
+      name: 'Test Token',
+      symbol: 'TT',
+      uri: 'https://example.com',
+    },
+    royalties: {
+      key: mintAuthority.address,
+      value: '0',
+    },
+  });
+  return { legacy: mint, core: { asset, collection }, t22: t22Nft };
+};

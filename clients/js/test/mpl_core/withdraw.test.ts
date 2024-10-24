@@ -6,6 +6,14 @@ import {
   pipe,
 } from '@solana/web3.js';
 import {
+  AssetV1,
+  PluginAuthorityPairArgs,
+  VerifiedCreatorsArgs,
+  createAsset,
+  fetchAssetV1,
+} from '@tensor-foundation/mpl-core';
+import {
+  ANCHOR_ERROR__CONSTRAINT_SEEDS,
   TSWAP_PROGRAM_ID,
   createDefaultSolanaClient,
   createDefaultTransaction,
@@ -26,19 +34,15 @@ import {
 } from '../../src/index.js';
 import {
   ONE_SOL,
+  TestAction,
+  assertNftReceiptClosed,
   createPool,
   createWhitelistV2,
   expectCustomError,
   getAndFundFeeVault,
   tradePoolConfig,
 } from '../_common.js';
-import {
-  AssetV1,
-  createAsset,
-  fetchAssetV1,
-  PluginAuthorityPairArgs,
-  VerifiedCreatorsArgs,
-} from '@tensor-foundation/mpl-core';
+import { setupCoreTest } from './_common.js';
 
 test('it can withdraw an NFT from a Trade pool', async (t) => {
   const client = createDefaultSolanaClient();
@@ -155,7 +159,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
   });
 
   // Withdraw NFT from pool
-  const buyNftIx = await getWithdrawNftCoreInstructionAsync({
+  const withdrawNftIx = await getWithdrawNftCoreInstructionAsync({
     owner,
     pool,
     asset: asset.address,
@@ -163,7 +167,7 @@ test('it can withdraw an NFT from a Trade pool', async (t) => {
 
   await pipe(
     await createDefaultTransaction(client, owner),
-    (tx) => appendTransactionMessageInstruction(buyNftIx, tx),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
@@ -295,4 +299,70 @@ test('it cannot withdraw an NFT from a Trade pool with wrong owner', async (t) =
       owner: pool,
     },
   });
+});
+
+test('it can withdraw an NFT from a NFT pool', async (t) => {
+  const { client, pool, asset, collection, signers } = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+
+  // Withdraw NFT from pool
+  const withdrawNftIx = await getWithdrawNftCoreInstructionAsync({
+    owner: signers.poolOwner,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // NFT is now custodied by the owner again.
+  t.like(await fetchAssetV1(client.rpc, asset.address), <
+    Account<AssetV1, Address>
+  >{
+    address: asset.address,
+    data: {
+      owner: signers.poolOwner.address,
+    },
+  });
+
+  // NFT deposit receipt is closed.
+  await assertNftReceiptClosed({ t, client, mint: asset.address, pool });
+});
+
+test('it cannot withdraw an NFT from a NFT pool with wrong owner', async (t) => {
+  const { client, pool, asset, collection } = await setupCoreTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    fundPool: false,
+    whitelistMode: Mode.VOC,
+  });
+
+  const notPoolOwner = await generateKeyPairSignerWithSol(client);
+
+  // Withdraw NFT from pool
+  const withdrawNftIx = await getWithdrawNftCoreInstructionAsync({
+    owner: notPoolOwner,
+    pool,
+    asset: asset.address,
+    collection: collection.address,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, notPoolOwner),
+    (tx) => appendTransactionMessageInstruction(withdrawNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Throws constraint seeds error
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
 });
