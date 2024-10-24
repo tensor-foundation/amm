@@ -114,7 +114,6 @@ pub struct TradeShared<'info> {
             pool.pool_id.as_ref(),
         ],
         bump = pool.bump[0],
-        has_one = owner @ ErrorCode::WrongOwner,
         has_one = rent_payer @ ErrorCode::WrongRentPayer,
         constraint = pool.version == CURRENT_POOL_VERSION @ ErrorCode::WrongPoolVersion,
         constraint = pool.expiry >= Clock::get()?.unix_timestamp @ ErrorCode::ExpiredPool,
