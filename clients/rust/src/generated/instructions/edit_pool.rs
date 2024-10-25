@@ -5,7 +5,7 @@
 //! <https://github.com/kinobi-so/kinobi>
 //!
 
-use crate::generated::types::PoolConfig;
+use crate::generated::types::EditPoolConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;
@@ -79,8 +79,9 @@ impl Default for EditPoolInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EditPoolInstructionArgs {
-    pub new_config: Option<PoolConfig>,
+    pub new_config: Option<EditPoolConfig>,
     pub cosigner: Option<Pubkey>,
+    pub maker_broker: Option<Pubkey>,
     pub expire_in_sec: Option<u64>,
     pub max_taker_sell_count: Option<u32>,
     pub reset_price_offset: bool,
@@ -98,8 +99,9 @@ pub struct EditPoolBuilder {
     owner: Option<solana_program::pubkey::Pubkey>,
     pool: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    new_config: Option<PoolConfig>,
+    new_config: Option<EditPoolConfig>,
     cosigner: Option<Pubkey>,
+    maker_broker: Option<Pubkey>,
     expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
     reset_price_offset: Option<bool>,
@@ -131,7 +133,7 @@ impl EditPoolBuilder {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn new_config(&mut self, new_config: PoolConfig) -> &mut Self {
+    pub fn new_config(&mut self, new_config: EditPoolConfig) -> &mut Self {
         self.new_config = Some(new_config);
         self
     }
@@ -139,6 +141,12 @@ impl EditPoolBuilder {
     #[inline(always)]
     pub fn cosigner(&mut self, cosigner: Pubkey) -> &mut Self {
         self.cosigner = Some(cosigner);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn maker_broker(&mut self, maker_broker: Pubkey) -> &mut Self {
+        self.maker_broker = Some(maker_broker);
         self
     }
     /// `[optional argument]`
@@ -188,6 +196,7 @@ impl EditPoolBuilder {
         let args = EditPoolInstructionArgs {
             new_config: self.new_config.clone(),
             cosigner: self.cosigner.clone(),
+            maker_broker: self.maker_broker.clone(),
             expire_in_sec: self.expire_in_sec.clone(),
             max_taker_sell_count: self.max_taker_sell_count.clone(),
             reset_price_offset: self
@@ -338,6 +347,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
             system_program: None,
             new_config: None,
             cosigner: None,
+            maker_broker: None,
             expire_in_sec: None,
             max_taker_sell_count: None,
             reset_price_offset: None,
@@ -368,7 +378,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn new_config(&mut self, new_config: PoolConfig) -> &mut Self {
+    pub fn new_config(&mut self, new_config: EditPoolConfig) -> &mut Self {
         self.instruction.new_config = Some(new_config);
         self
     }
@@ -376,6 +386,12 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn cosigner(&mut self, cosigner: Pubkey) -> &mut Self {
         self.instruction.cosigner = Some(cosigner);
+        self
+    }
+    /// `[optional argument]`
+    #[inline(always)]
+    pub fn maker_broker(&mut self, maker_broker: Pubkey) -> &mut Self {
+        self.instruction.maker_broker = Some(maker_broker);
         self
     }
     /// `[optional argument]`
@@ -439,6 +455,7 @@ impl<'a, 'b> EditPoolCpiBuilder<'a, 'b> {
         let args = EditPoolInstructionArgs {
             new_config: self.instruction.new_config.clone(),
             cosigner: self.instruction.cosigner.clone(),
+            maker_broker: self.instruction.maker_broker.clone(),
             expire_in_sec: self.instruction.expire_in_sec.clone(),
             max_taker_sell_count: self.instruction.max_taker_sell_count.clone(),
             reset_price_offset: self
@@ -473,8 +490,9 @@ struct EditPoolCpiBuilderInstruction<'a, 'b> {
     owner: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     pool: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    new_config: Option<PoolConfig>,
+    new_config: Option<EditPoolConfig>,
     cosigner: Option<Pubkey>,
+    maker_broker: Option<Pubkey>,
     expire_in_sec: Option<u64>,
     max_taker_sell_count: Option<u32>,
     reset_price_offset: Option<bool>,

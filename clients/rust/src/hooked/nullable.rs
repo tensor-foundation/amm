@@ -47,6 +47,10 @@ impl<T: BorshSerialize + BorshDeserialize + Default + PartialEq> NullableNumber<
         Self(value)
     }
 
+    pub fn into_base(self) -> T {
+        self.0
+    }
+
     pub fn to_option(&self) -> Option<&T> {
         if self.0 == T::default() {
             None

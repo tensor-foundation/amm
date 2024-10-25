@@ -17,7 +17,7 @@ use tensor_amm::{
         CloseExpiredPool, ClosePool, DepositSol, DepositSolInstructionArgs, EditPool,
         EditPoolInstructionArgs,
     },
-    types::{CurveType, PoolConfig},
+    types::{CurveType, EditPoolConfig},
 };
 
 use crate::setup::{
@@ -411,11 +411,12 @@ async fn edit_pool() {
     let pool_data = Pool::deserialize(&mut account_data).unwrap();
     assert_eq!(pool_data.config, config);
 
-    let new_config = PoolConfig {
+    let new_config = EditPoolConfig {
         curve_type: CurveType::Exponential,
         starting_price: 10,
         delta: 3,
-        ..config
+        mm_compound_fees: false,
+        mm_fee_bps: 0,
     };
 
     let ix = EditPool {
@@ -426,6 +427,7 @@ async fn edit_pool() {
     .instruction(EditPoolInstructionArgs {
         new_config: Some(new_config.clone()),
         cosigner: None,
+        maker_broker: None,
         max_taker_sell_count: None,
         expire_in_sec: None,
         reset_price_offset: true,
@@ -447,7 +449,10 @@ async fn edit_pool() {
 
     let mut account_data = account.data.as_ref();
     let pool_data = Pool::deserialize(&mut account_data).unwrap();
-    assert_eq!(pool_data.config, new_config);
+    assert_eq!(
+        pool_data.config,
+        new_config.into_pool_config(tensor_amm::types::PoolType::Token)
+    );
 }
 
 #[tokio::test]
@@ -500,11 +505,12 @@ async fn edit_pool_owner_must_sign() {
     let pool_data = Pool::deserialize(&mut account_data).unwrap();
     assert_eq!(pool_data.config, config);
 
-    let new_config = PoolConfig {
+    let new_config = EditPoolConfig {
         curve_type: CurveType::Exponential,
         starting_price: 10,
         delta: 3,
-        ..config
+        mm_compound_fees: config.mm_compound_fees,
+        mm_fee_bps: config.mm_fee_bps.into_base(),
     };
 
     let mut ix = EditPool {
@@ -515,6 +521,7 @@ async fn edit_pool_owner_must_sign() {
     .instruction(EditPoolInstructionArgs {
         new_config: Some(new_config.clone()),
         cosigner: None,
+        maker_broker: None,
         max_taker_sell_count: None,
         expire_in_sec: None,
         reset_price_offset: true,

@@ -2,10 +2,14 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::accounts::Pool;
 use crate::errors::TensorAmmError;
-use crate::types::{CurveType, Direction, PoolStats, PoolType, TakerSide};
+use crate::types::{
+    CurveType, Direction, EditPoolConfig, PoolConfig, PoolStats, PoolType, TakerSide,
+};
 use crate::HUNDRED_PCT_BPS;
 
 use spl_math::precise_number::PreciseNumber;
+
+use super::NullableNumber;
 
 #[allow(clippy::derivable_impls)]
 impl Default for PoolStats {
@@ -128,6 +132,19 @@ impl Display for CurveType {
         match self {
             CurveType::Linear => write!(f, "Linear"),
             CurveType::Exponential => write!(f, "Exponential"),
+        }
+    }
+}
+
+impl EditPoolConfig {
+    pub fn into_pool_config(self, pool_type: PoolType) -> PoolConfig {
+        PoolConfig {
+            pool_type,
+            curve_type: self.curve_type,
+            starting_price: self.starting_price,
+            delta: self.delta,
+            mm_compound_fees: self.mm_compound_fees,
+            mm_fee_bps: NullableNumber::new(self.mm_fee_bps),
         }
     }
 }
