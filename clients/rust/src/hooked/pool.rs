@@ -61,7 +61,7 @@ impl Pool {
                     .ok_or(TensorAmmError::ArithmeticError)?;
 
                 let factor = PreciseNumber::new(
-                    (HUNDRED_PCT_BPS as u64)
+                    (HUNDRED_PCT_BPS)
                         .checked_add(self.config.delta)
                         .ok_or(TensorAmmError::ArithmeticError)?
                         .into(),
@@ -112,6 +112,20 @@ impl Pool {
             // Invalid combinations of pool type and side.
             _ => Err(TensorAmmError::WrongPoolType),
         }
+    }
+
+    /// Calculate the fee the MM receives when providing liquidity to a two-sided pool.
+    pub fn calc_mm_fee(&self, current_price: u64) -> Result<u64, TensorAmmError> {
+        let fee = match self.config.pool_type {
+            PoolType::Trade => (self.config.mm_fee_bps.into_base() as u64)
+                .checked_mul(current_price)
+                .ok_or(TensorAmmError::ArithmeticError)?
+                .checked_div(HUNDRED_PCT_BPS)
+                .ok_or(TensorAmmError::ArithmeticError)?,
+            PoolType::NFT | PoolType::Token => 0, // No mm fees for NFT or Token pools
+        };
+
+        Ok(fee)
     }
 }
 

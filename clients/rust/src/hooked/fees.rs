@@ -17,7 +17,7 @@ pub fn calc_fees(amount: u64) -> Result<Fees, TensorAmmError> {
     let taker_fee = TAKER_FEE_BPS
         .checked_mul(amount)
         .ok_or(TensorAmmError::ArithmeticError)?
-        .checked_div(HUNDRED_PCT_BPS as u64)
+        .checked_div(HUNDRED_PCT_BPS)
         .ok_or(TensorAmmError::ArithmeticError)?;
 
     // Broker fees are a percentage of the taker fee.
