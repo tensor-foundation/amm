@@ -9,8 +9,6 @@ use crate::HUNDRED_PCT_BPS;
 
 use spl_math::precise_number::PreciseNumber;
 
-use super::NullableNumber;
-
 #[allow(clippy::derivable_impls)]
 impl Default for PoolStats {
     fn default() -> Self {
@@ -144,7 +142,7 @@ impl EditPoolConfig {
             starting_price: self.starting_price,
             delta: self.delta,
             mm_compound_fees: self.mm_compound_fees,
-            mm_fee_bps: NullableNumber::new(self.mm_fee_bps),
+            mm_fee_bps: self.mm_fee_bps,
         }
     }
 }

@@ -18,6 +18,7 @@ use tensor_amm::{
         EditPoolInstructionArgs,
     },
     types::{CurveType, EditPoolConfig},
+    NullableU16,
 };
 
 use crate::setup::{
@@ -416,7 +417,7 @@ async fn edit_pool() {
         starting_price: 10,
         delta: 3,
         mm_compound_fees: false,
-        mm_fee_bps: 0,
+        mm_fee_bps: NullableU16::none(),
     };
 
     let ix = EditPool {
@@ -510,7 +511,7 @@ async fn edit_pool_owner_must_sign() {
         starting_price: 10,
         delta: 3,
         mm_compound_fees: config.mm_compound_fees,
-        mm_fee_bps: config.mm_fee_bps.into_base(),
+        mm_fee_bps: config.mm_fee_bps,
     };
 
     let mut ix = EditPool {
