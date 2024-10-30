@@ -2,7 +2,9 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::accounts::Pool;
 use crate::errors::TensorAmmError;
-use crate::types::{CurveType, Direction, PoolStats, PoolType, TakerSide};
+use crate::types::{
+    CurveType, Direction, EditPoolConfig, PoolConfig, PoolStats, PoolType, TakerSide,
+};
 use crate::HUNDRED_PCT_BPS;
 
 use spl_math::precise_number::PreciseNumber;
@@ -59,7 +61,7 @@ impl Pool {
                     .ok_or(TensorAmmError::ArithmeticError)?;
 
                 let factor = PreciseNumber::new(
-                    (HUNDRED_PCT_BPS as u64)
+                    (HUNDRED_PCT_BPS)
                         .checked_add(self.config.delta)
                         .ok_or(TensorAmmError::ArithmeticError)?
                         .into(),
@@ -111,6 +113,20 @@ impl Pool {
             _ => Err(TensorAmmError::WrongPoolType),
         }
     }
+
+    /// Calculate the fee the MM receives when providing liquidity to a two-sided pool.
+    pub fn calc_mm_fee(&self, current_price: u64) -> Result<u64, TensorAmmError> {
+        let fee = match self.config.pool_type {
+            PoolType::Trade => (self.config.mm_fee_bps.into_base() as u64)
+                .checked_mul(current_price)
+                .ok_or(TensorAmmError::ArithmeticError)?
+                .checked_div(HUNDRED_PCT_BPS)
+                .ok_or(TensorAmmError::ArithmeticError)?,
+            PoolType::NFT | PoolType::Token => 0, // No mm fees for NFT or Token pools
+        };
+
+        Ok(fee)
+    }
 }
 
 impl Display for PoolType {
@@ -128,6 +144,19 @@ impl Display for CurveType {
         match self {
             CurveType::Linear => write!(f, "Linear"),
             CurveType::Exponential => write!(f, "Exponential"),
+        }
+    }
+}
+
+impl EditPoolConfig {
+    pub fn into_pool_config(self, pool_type: PoolType) -> PoolConfig {
+        PoolConfig {
+            pool_type,
+            curve_type: self.curve_type,
+            starting_price: self.starting_price,
+            delta: self.delta,
+            mm_compound_fees: self.mm_compound_fees,
+            mm_fee_bps: self.mm_fee_bps,
         }
     }
 }

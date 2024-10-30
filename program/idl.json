@@ -1,5 +1,5 @@
 {
-  "version": "0.7.1",
+  "version": "0.8.0",
   "name": "amm_program",
   "docs": [
     "Program entrypoint"
@@ -3370,12 +3370,18 @@
             "name": "newConfig",
             "type": {
               "option": {
-                "defined": "PoolConfig"
+                "defined": "EditPoolConfig"
               }
             }
           },
           {
             "name": "cosigner",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "makerBroker",
             "type": {
               "option": "publicKey"
             }
@@ -3395,6 +3401,36 @@
           {
             "name": "resetPriceOffset",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EditPoolConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "curveType",
+            "type": {
+              "defined": "CurveType"
+            }
+          },
+          {
+            "name": "startingPrice",
+            "type": "u64"
+          },
+          {
+            "name": "delta",
+            "type": "u64"
+          },
+          {
+            "name": "mmCompoundFees",
+            "type": "bool"
+          },
+          {
+            "name": "mmFeeBps",
+            "type": "u16"
           }
         ]
       }

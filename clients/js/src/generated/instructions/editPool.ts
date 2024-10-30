@@ -46,10 +46,10 @@ import {
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import { getAccountMetaFactory, type ResolvedAccount } from '../shared';
 import {
-  getPoolConfigDecoder,
-  getPoolConfigEncoder,
-  type PoolConfig,
-  type PoolConfigArgs,
+  getEditPoolConfigDecoder,
+  getEditPoolConfigEncoder,
+  type EditPoolConfig,
+  type EditPoolConfigArgs,
 } from '../types';
 
 export type EditPoolInstruction<
@@ -80,16 +80,18 @@ export type EditPoolInstruction<
 
 export type EditPoolInstructionData = {
   discriminator: ReadonlyUint8Array;
-  newConfig: Option<PoolConfig>;
+  newConfig: Option<EditPoolConfig>;
   cosigner: Option<Address>;
+  makerBroker: Option<Address>;
   expireInSec: Option<bigint>;
   maxTakerSellCount: Option<number>;
   resetPriceOffset: boolean;
 };
 
 export type EditPoolInstructionDataArgs = {
-  newConfig: OptionOrNullable<PoolConfigArgs>;
+  newConfig: OptionOrNullable<EditPoolConfigArgs>;
   cosigner?: OptionOrNullable<Address>;
+  makerBroker?: OptionOrNullable<Address>;
   expireInSec?: OptionOrNullable<number | bigint>;
   maxTakerSellCount?: OptionOrNullable<number>;
   resetPriceOffset: boolean;
@@ -99,8 +101,9 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['newConfig', getOptionEncoder(getPoolConfigEncoder())],
+      ['newConfig', getOptionEncoder(getEditPoolConfigEncoder())],
       ['cosigner', getOptionEncoder(getAddressEncoder())],
+      ['makerBroker', getOptionEncoder(getAddressEncoder())],
       ['expireInSec', getOptionEncoder(getU64Encoder())],
       ['maxTakerSellCount', getOptionEncoder(getU32Encoder())],
       ['resetPriceOffset', getBooleanEncoder()],
@@ -109,6 +112,7 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
       ...value,
       discriminator: new Uint8Array([50, 174, 34, 36, 3, 166, 29, 204]),
       cosigner: value.cosigner ?? none(),
+      makerBroker: value.makerBroker ?? none(),
       expireInSec: value.expireInSec ?? none(),
       maxTakerSellCount: value.maxTakerSellCount ?? none(),
     })
@@ -118,8 +122,9 @@ export function getEditPoolInstructionDataEncoder(): Encoder<EditPoolInstruction
 export function getEditPoolInstructionDataDecoder(): Decoder<EditPoolInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['newConfig', getOptionDecoder(getPoolConfigDecoder())],
+    ['newConfig', getOptionDecoder(getEditPoolConfigDecoder())],
     ['cosigner', getOptionDecoder(getAddressDecoder())],
+    ['makerBroker', getOptionDecoder(getAddressDecoder())],
     ['expireInSec', getOptionDecoder(getU64Decoder())],
     ['maxTakerSellCount', getOptionDecoder(getU32Decoder())],
     ['resetPriceOffset', getBooleanDecoder()],
@@ -149,6 +154,7 @@ export type EditPoolInput<
   systemProgram?: Address<TAccountSystemProgram>;
   newConfig: EditPoolInstructionDataArgs['newConfig'];
   cosigner?: EditPoolInstructionDataArgs['cosigner'];
+  makerBroker?: EditPoolInstructionDataArgs['makerBroker'];
   expireInSec?: EditPoolInstructionDataArgs['expireInSec'];
   maxTakerSellCount?: EditPoolInstructionDataArgs['maxTakerSellCount'];
   resetPriceOffset: EditPoolInstructionDataArgs['resetPriceOffset'];

@@ -7,11 +7,34 @@ use crate::{error::ErrorCode, *};
 /// Edit pool arguments.
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct EditPoolArgs {
-    pub new_config: Option<PoolConfig>,
+    pub new_config: Option<EditPoolConfig>,
     pub cosigner: Option<Pubkey>,
+    pub maker_broker: Option<Pubkey>,
     pub expire_in_sec: Option<u64>,
     pub max_taker_sell_count: Option<u32>,
     pub reset_price_offset: bool,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
+pub struct EditPoolConfig {
+    pub curve_type: CurveType,
+    pub starting_price: u64,
+    pub delta: u64,
+    pub mm_compound_fees: bool,
+    pub mm_fee_bps: u16,
+}
+
+impl EditPoolConfig {
+    pub fn into_pool_config(self, pool_type: PoolType) -> PoolConfig {
+        PoolConfig {
+            pool_type,
+            curve_type: self.curve_type,
+            starting_price: self.starting_price,
+            delta: self.delta,
+            mm_compound_fees: self.mm_compound_fees,
+            mm_fee_bps: self.mm_fee_bps,
+        }
+    }
 }
 
 /// Instruction accounts.
@@ -39,10 +62,13 @@ pub struct EditPool<'info> {
 }
 
 impl<'info> EditPool<'info> {
-    fn validate_pool_config(&self, new_config: Option<PoolConfig>) -> Result<()> {
-        let new_config = match new_config {
-            Some(config) => config,
-            None => return Ok(()),
+    fn validate_pool_config(
+        &self,
+        edit_config: Option<EditPoolConfig>,
+    ) -> Result<Option<PoolConfig>> {
+        let new_config = match edit_config {
+            Some(config) => config.into_pool_config(self.pool.config.pool_type),
+            None => return Ok(None),
         };
 
         //cannot change pool type
@@ -50,21 +76,28 @@ impl<'info> EditPool<'info> {
             throw_err!(ErrorCode::WrongPoolType);
         }
 
-        new_config.validate()
+        new_config.validate()?;
+
+        Ok(Some(new_config))
     }
 }
 
 /// Edit an existing pool.
-#[access_control(ctx.accounts.validate_pool_config(args.new_config))]
 pub fn process_edit_pool(ctx: Context<EditPool>, args: EditPoolArgs) -> Result<()> {
+    let new_config = ctx.accounts.validate_pool_config(args.new_config)?;
+
     let pool = &mut ctx.accounts.pool;
 
-    if let Some(new_config) = args.new_config {
+    if let Some(new_config) = new_config {
         pool.config = new_config;
     }
 
     if let Some(cosigner) = args.cosigner {
         pool.cosigner = cosigner;
+    }
+
+    if let Some(maker_broker) = args.maker_broker {
+        pool.maker_broker = maker_broker;
     }
 
     if let Some(max_taker_sell_count) = args.max_taker_sell_count {

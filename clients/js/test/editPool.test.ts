@@ -30,7 +30,6 @@ import {
   TENSOR_AMM_ERROR__FEES_NOT_ALLOWED,
   TENSOR_AMM_ERROR__FEES_TOO_HIGH,
   TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL,
-  TENSOR_AMM_ERROR__WRONG_POOL_TYPE,
   fetchPool,
   findNftDepositReceiptPda,
   getCurrentBidPriceSync,
@@ -119,6 +118,39 @@ test('can edit pool with new cosigner', async (t) => {
   });
 });
 
+test('can edit pool with new maker broker', async (t) => {
+  const { client, pool, signers } = await setupLegacyTest({
+    t,
+    poolType: PoolType.NFT,
+    action: TestAction.Buy,
+    useMakerBroker: false,
+    useSharedEscrow: false,
+    fundPool: false,
+  });
+
+  const newMakerBroker = (await generateKeyPairSigner()).address;
+
+  const editPoolIx = getEditPoolInstruction({
+    owner: signers.poolOwner,
+    pool,
+    makerBroker: newMakerBroker,
+    newConfig: null,
+    resetPriceOffset: false,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, signers.poolOwner),
+    (tx) => appendTransactionMessageInstruction(editPoolIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  t.like(await fetchPool(client.rpc, pool), {
+    data: {
+      makerBroker: newMakerBroker,
+    },
+  });
+});
+
 test('it can edit a pool w/ a new expiry date', async (t) => {
   const client = createDefaultSolanaClient();
   const updateAuthority = await generateKeyPairSignerWithSol(client);
@@ -195,24 +227,35 @@ test('cannot change pool type', async (t) => {
     fundPool: false,
   });
 
-  const newConfig = structuredClone(nftPoolConfig);
-  newConfig.poolType = PoolType.Token;
+  const editConfig = {
+    curveType: nftPoolConfig.curveType,
+    startingPrice: nftPoolConfig.startingPrice,
+    delta: nftPoolConfig.delta,
+    mmCompoundFees: nftPoolConfig.mmCompoundFees,
+    mmFeeBps: nftPoolConfig.mmFeeBps,
+  };
 
   const editPoolIx = getEditPoolInstruction({
     owner: signers.poolOwner,
     pool,
     expireInSec: 2 * ONE_WEEK,
-    newConfig,
+    newConfig: editConfig,
     resetPriceOffset: false,
   });
 
-  const promise = pipe(
+  await pipe(
     await createDefaultTransaction(client, signers.poolOwner),
     (tx) => appendTransactionMessageInstruction(editPoolIx, tx),
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  await expectCustomError(t, promise, TENSOR_AMM_ERROR__WRONG_POOL_TYPE);
+  t.like(await fetchPool(client.rpc, pool), {
+    data: {
+      config: {
+        poolType: PoolType.NFT,
+      },
+    },
+  });
 });
 
 test('cannot set mm fee bps on a non-trade pool', async (t) => {
