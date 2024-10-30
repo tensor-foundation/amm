@@ -9,22 +9,15 @@ use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee, calc_fees, escrow, is_royalty_enforced, shard_num,
-    token_2022::validate_mint, token_metadata::assert_decode_metadata, transfer_creators_fee,
-    transfer_lamports, transfer_lamports_checked, CalcFeesArgs, CreatorFeeMode, FromAcc,
-    FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
+    calc_creators_fee, calc_fees, escrow, is_royalty_enforced, metaplex_core::validate_core_asset,
+    shard_num, token_2022::validate_mint, token_metadata::assert_decode_metadata,
+    transfer_creators_fee, transfer_lamports, transfer_lamports_checked, CalcFeesArgs,
+    CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
 };
 use tensor_vipers::{throw_err, unwrap_checked, unwrap_int, unwrap_opt};
 use whitelist_program::{FullMerkleProof, WhitelistV2};
 
 use super::constants::TFEE_PROGRAM_ID;
-
-use mpl_core::{
-    accounts::BaseAssetV1,
-    fetch_plugin,
-    types::{PluginType, Royalties, UpdateAuthority, VerifiedCreators},
-};
-use tensor_toolbox::metaplex_core::validate_asset;
 
 use crate::{error::ErrorCode, *};
 
@@ -637,7 +630,7 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
 
 impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
     fn validate_asset(&self) -> Result<AmmAsset> {
-        let royalties = validate_asset(
+        let asset = validate_core_asset(
             &self.asset.to_account_info(),
             self.collection
                 .as_ref()
@@ -645,47 +638,30 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
                 .as_ref(),
         )?;
 
-        let royalty_fee = if let Some(Royalties { basis_points, .. }) = royalties {
-            basis_points
-        } else {
-            0
-        };
+        let collection = asset.collection.map(|address| Collection {
+            key: address,
+            verified: true, // mpl-core collections are always verified
+        });
 
-        let asset = BaseAssetV1::try_from(self.asset.as_ref())?;
-
-        // Fetch the verified creators from the MPL Core asset and map into the expected type.
-        let verified_creators: Option<Vec<Creator>> =
-            fetch_plugin::<BaseAssetV1, VerifiedCreators>(
-                &self.asset.to_account_info(),
-                PluginType::VerifiedCreators,
-            )
-            .map(|(_, verified_creators, _)| {
-                verified_creators
-                    .signatures
-                    .into_iter()
+        // Map to legacy creators type
+        let whitelist_creators: Option<Vec<Creator>> =
+            asset.whitelist_creators.as_ref().map(|creators| {
+                creators
+                    .iter()
                     .map(|c| Creator {
                         address: c.address,
                         share: 0, // No share on VerifiedCreators on MPL Core assets. This is separate from creators used in royalties.
                         verified: c.verified,
                     })
                     .collect()
-            })
-            .ok();
+            });
 
-        let collection = match asset.update_authority {
-            UpdateAuthority::Collection(address) => Some(Collection {
-                key: address,
-                verified: true, // mpl-core collections are always verified
-            }),
-            _ => None,
-        };
-
-        let royalty_creators = royalties.map(|r| {
-            r.creators
+        let royalty_creators = asset.royalty_creators.map(|creators| {
+            creators
                 .into_iter()
-                .map(|creator| Creator {
-                    address: creator.address,
-                    share: creator.percentage,
+                .map(|c| Creator {
+                    address: c.address,
+                    share: c.percentage,
                     verified: false, // mpl-core does not have a concept of "verified" creator for royalties
                 })
                 .collect()
@@ -694,9 +670,9 @@ impl<'info> ValidateAsset<'info> for MplCoreShared<'info> {
         Ok(AmmAsset {
             pubkey: self.asset.key(),
             collection,
-            whitelist_creators: verified_creators,
+            whitelist_creators,
             royalty_creators,
-            seller_fee_basis_points: royalty_fee,
+            seller_fee_basis_points: asset.royalty_fee_bps,
             royalty_enforced: true,
         })
     }
