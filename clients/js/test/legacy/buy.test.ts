@@ -1416,6 +1416,7 @@ test('pool owner cannot perform a sandwich attack on the buyer on a Trade pool',
     maxAmount, // Exact price + mm_fees + royalties
     // Remaining accounts
     creators: [nftUpdateAuthority.address],
+    tokenStandard: TokenStandard.ProgrammableNonFungible,
   });
 
   // Pool owner edits the pool to update the mmFee to the maximum value.

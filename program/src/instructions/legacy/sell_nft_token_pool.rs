@@ -85,17 +85,6 @@ pub fn process_sell_nft_token_pool<'info>(
 
     let owner = ctx.accounts.trade.owner.to_account_info();
 
-    let fees = ctx.accounts.trade.calculate_fees(
-        asset.seller_fee_basis_points,
-        min_price,
-        TakerSide::Sell,
-        if asset.royalty_enforced {
-            Some(100)
-        } else {
-            optional_royalty_pct
-        },
-    )?;
-
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
     let owner_pubkey = ctx.accounts.trade.owner.key();
 
@@ -187,9 +176,14 @@ pub fn process_sell_nft_token_pool<'info>(
     ))?;
     // --------------------------------------- end pnft
 
-    ctx.accounts
-        .trade
-        .pay_seller_fees(asset, fees, ctx.remaining_accounts)?;
+    ctx.accounts.trade.pay_seller_fees(
+        PayFeeArgs {
+            asset,
+            user_price: min_price,
+            optional_royalty_pct,
+        },
+        ctx.remaining_accounts,
+    )?;
 
     update_pool_accounting(
         &mut ctx.accounts.trade.pool,

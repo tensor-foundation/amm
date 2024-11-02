@@ -47,13 +47,6 @@ pub fn process_buy_nft_core<'info>(
     let pool = ctx.accounts.trade.pool.to_account_info();
     let owner = ctx.accounts.trade.owner.to_account_info();
 
-    let fees = ctx.accounts.trade.calculate_fees(
-        asset.seller_fee_basis_points,
-        max_amount,
-        TakerSide::Buy,
-        Some(100), // royalties enforced
-    )?;
-
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
     let owner_pubkey = ctx.accounts.trade.owner.key();
 
@@ -73,9 +66,14 @@ pub fn process_buy_nft_core<'info>(
         .collection(ctx.accounts.core.collection.as_ref().map(|c| c.as_ref()))
         .invoke_signed(signer_seeds)?;
 
-    ctx.accounts
-        .trade
-        .pay_buyer_fees(asset, fees, ctx.remaining_accounts)?;
+    ctx.accounts.trade.pay_buyer_fees(
+        PayFeeArgs {
+            asset,
+            user_price: max_amount,
+            optional_royalty_pct: Some(100),
+        },
+        ctx.remaining_accounts,
+    )?;
 
     // Close the NFT receipt account.
     close_account(
