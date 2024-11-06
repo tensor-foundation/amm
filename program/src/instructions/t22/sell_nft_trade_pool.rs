@@ -79,6 +79,13 @@ pub fn process_sell_nft_trade_pool_t22<'info>(
 ) -> Result<()> {
     let asset = ctx.accounts.pre_process_checks()?;
 
+    let fees = ctx.accounts.trade.calculate_fees(
+        asset.seller_fee_basis_points,
+        min_price,
+        TakerSide::Sell,
+        Some(100),
+    )?;
+
     let pool_initial_balance = ctx.accounts.trade.pool.get_lamports();
 
     // Transfer to the pool.
@@ -104,14 +111,9 @@ pub fn process_sell_nft_trade_pool_t22<'info>(
         ctx.accounts.taker_ta.to_account_info(),
     ))?;
 
-    ctx.accounts.trade.pay_seller_fees(
-        PayFeeArgs {
-            asset,
-            user_price: min_price,
-            optional_royalty_pct: Some(100),
-        },
-        &creator_accounts,
-    )?;
+    ctx.accounts
+        .trade
+        .pay_seller_fees(asset, fees, &creator_accounts)?;
 
     update_pool_accounting(
         &mut ctx.accounts.trade.pool,

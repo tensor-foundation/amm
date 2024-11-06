@@ -26,12 +26,6 @@ use crate::{error::ErrorCode, *};
 /// Shared accounts for transfer instructions: deposit & withdraw
 /// Mint and token accounts are not included here as the AMM program supports multiple types of
 /// NFTs, not all of which are SPL token based.
-///
-/// Handlers using this struct must perform the folowing checks in the `pre_process_checks` function,
-/// as these are not covered by Anchor constraints:
-/// - validate_asset (all)
-/// - verify_whitelist (for deposits)
-/// - pool expiration (for deposits)
 #[derive(Accounts)]
 pub struct TransferShared<'info> {
     /// The owner of the pool and the NFT.
@@ -71,13 +65,6 @@ pub struct TransferShared<'info> {
 /// Shared accounts for trade instructions: buy & sell
 /// Mint and token accounts are not included here as the AMM program supports multiple types of
 /// NFTs, not all of which are SPL token based.
-///
-/// Handlers using this struct must perform the folowing checks in the `pre_process_checks` function,
-/// as these are not covered by Anchor constraints:
-/// - validate_asset (all)
-/// - validate_buy (for buys)
-/// - validate_sell (for sells)
-/// - verify_whitelist (for sells)
 #[derive(Accounts)]
 pub struct TradeShared<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
@@ -204,31 +191,17 @@ impl<'info> TradeShared<'info> {
 
     pub fn pay_seller_fees(
         &self,
-        args: PayFeeArgs,
-        creator_accounts: &[AccountInfo<'info>],
+        amm_asset: AmmAsset,
+        fees: Fees,
+        remaining_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
-        let PayFeeArgs {
-            asset,
-            user_price,
-            optional_royalty_pct,
-        } = args;
-
         let Fees {
             taker_fee: _,
             tamm_fee,
             maker_broker_fee,
             taker_broker_fee,
             creators_fee,
-        } = self.calculate_fees(
-            asset.seller_fee_basis_points,
-            user_price,
-            TakerSide::Sell,
-            if asset.royalty_enforced {
-                Some(100)
-            } else {
-                optional_royalty_pct
-            },
-        )?;
+        } = fees;
 
         let pool = &self.pool;
         let owner_pubkey = self.owner.key();
@@ -313,16 +286,18 @@ impl<'info> TradeShared<'info> {
         )?;
         left_for_seller = unwrap_int!(left_for_seller.checked_sub(taker_broker_fee));
 
+        let remaining_accounts = &mut remaining_accounts.iter();
+
         // transfer royalties
         let actual_creators_fee = transfer_creators_fee(
-            &asset
+            &amm_asset
                 .royalty_creators
                 .clone()
                 .unwrap_or_default()
                 .into_iter()
                 .map(Into::into)
                 .collect(),
-            &mut creator_accounts.iter(),
+            remaining_accounts,
             creators_fee,
             &CreatorFeeMode::Sol {
                 from: &FromAcc::Pda(&self.pool.to_account_info()),
@@ -388,12 +363,6 @@ impl<'info> TradeShared<'info> {
     }
 }
 
-pub struct PayFeeArgs {
-    pub asset: AmmAsset,
-    pub user_price: u64,
-    pub optional_royalty_pct: Option<u16>,
-}
-
 impl<'info> TradeShared<'info> {
     pub fn validate_buy(&self) -> Result<()> {
         // Ensure correct pool type
@@ -408,31 +377,17 @@ impl<'info> TradeShared<'info> {
 
     pub fn pay_buyer_fees(
         &self,
-        args: PayFeeArgs,
+        amm_asset: AmmAsset,
+        fees: Fees,
         creator_accounts: &[AccountInfo<'info>],
     ) -> Result<()> {
-        let PayFeeArgs {
-            asset,
-            user_price,
-            optional_royalty_pct,
-        } = args;
-
         let Fees {
             taker_fee: _,
             tamm_fee,
             maker_broker_fee,
             taker_broker_fee,
             creators_fee,
-        } = self.calculate_fees(
-            asset.seller_fee_basis_points,
-            user_price,
-            TakerSide::Buy,
-            if asset.royalty_enforced {
-                Some(100)
-            } else {
-                optional_royalty_pct
-            },
-        )?;
+        } = fees;
 
         let pool = &self.pool;
         let current_price = pool.current_price(TakerSide::Buy)?;
@@ -505,7 +460,7 @@ impl<'info> TradeShared<'info> {
         // transfer royalties (on top of current price)
         // Buyer pays the royalty fee.
         transfer_creators_fee(
-            &asset
+            &amm_asset
                 .royalty_creators
                 .clone()
                 .unwrap_or_default()
