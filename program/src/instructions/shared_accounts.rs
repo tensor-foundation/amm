@@ -26,6 +26,12 @@ use crate::{error::ErrorCode, *};
 /// Shared accounts for transfer instructions: deposit & withdraw
 /// Mint and token accounts are not included here as the AMM program supports multiple types of
 /// NFTs, not all of which are SPL token based.
+///
+/// Handlers using this struct must perform the folowing checks in the `pre_process_checks` function,
+/// as these are not covered by Anchor constraints:
+/// - validate_asset (all)
+/// - verify_whitelist (for deposits)
+/// - pool expiration (for deposits)
 #[derive(Accounts)]
 pub struct TransferShared<'info> {
     /// The owner of the pool and the NFT.
@@ -65,6 +71,13 @@ pub struct TransferShared<'info> {
 /// Shared accounts for trade instructions: buy & sell
 /// Mint and token accounts are not included here as the AMM program supports multiple types of
 /// NFTs, not all of which are SPL token based.
+///
+/// Handlers using this struct must perform the folowing checks in the `pre_process_checks` function,
+/// as these are not covered by Anchor constraints:
+/// - validate_asset (all)
+/// - validate_buy (for buys)
+/// - validate_sell (for sells)
+/// - verify_whitelist (for sells)
 #[derive(Accounts)]
 pub struct TradeShared<'info> {
     /// The owner of the pool and the buyer/recipient of the NFT.
