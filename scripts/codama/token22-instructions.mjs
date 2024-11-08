@@ -1,36 +1,36 @@
-import * as k from "kinobi";
+import * as c from "codama";
 
 export default function visitor(options) {
-  return k.rootNodeVisitor((currentRoot) => {
+  return c.rootNodeVisitor((currentRoot) => {
     let root = currentRoot;
     const updateRoot = (visitor) => {
-      const newRoot = k.visit(root, visitor);
-      k.assertIsNode(newRoot, "rootNode");
+      const newRoot = c.visit(root, visitor);
+      c.assertIsNode(newRoot, "rootNode");
       root = newRoot;
     };
 
     updateRoot(
-      k.updateInstructionsVisitor({
+      c.updateInstructionsVisitor({
         buyNftT22: {
           accounts: {
             tokenProgram: {
-              defaultValue: k.publicKeyValueNode(
+              defaultValue: c.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
                 "tokenProgram"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
                 isWritable: true
               }
             ),
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("transferHookAccounts"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("transferHookAccounts"),
               {
                 isOptional: false,
                 isSigner: false,
@@ -45,15 +45,15 @@ export default function visitor(options) {
               isOptional: false
             },
             tokenProgram: {
-              defaultValue: k.publicKeyValueNode(
+              defaultValue: c.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
                 "tokenProgram"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("transferHookAccounts"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("transferHookAccounts"),
               {
                 isOptional: false,
                 isSigner: false,
@@ -68,23 +68,23 @@ export default function visitor(options) {
               isOptional: false
             },
             tokenProgram: {
-              defaultValue: k.publicKeyValueNode(
+              defaultValue: c.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
                 "tokenProgram"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
                 isWritable: true
               }
             ),
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("transferHookAccounts"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("transferHookAccounts"),
               {
                 isOptional: false,
                 isSigner: false,
@@ -99,23 +99,23 @@ export default function visitor(options) {
               isOptional: false
             },
             tokenProgram: {
-              defaultValue: k.publicKeyValueNode(
+              defaultValue: c.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
                 "tokenProgram"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
                 isWritable: true
               }
             ),
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("transferHookAccounts"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("transferHookAccounts"),
               {
                 isOptional: false,
                 isSigner: false,
@@ -127,15 +127,15 @@ export default function visitor(options) {
         withdrawNftT22: {
           accounts: {
             tokenProgram: {
-              defaultValue: k.publicKeyValueNode(
+              defaultValue: c.publicKeyValueNode(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
                 "tokenProgram"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("transferHookAccounts"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("transferHookAccounts"),
               {
                 isOptional: false,
                 isSigner: false,

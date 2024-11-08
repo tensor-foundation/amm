@@ -1,96 +1,96 @@
 #!/usr/bin/env zx
-import { rootNodeFromAnchor } from "@kinobi-so/nodes-from-anchor";
-import { renderVisitor as renderJavaScriptVisitor } from "@kinobi-so/renderers-js";
-import { renderVisitor as renderRustVisitor } from "@kinobi-so/renderers-rust";
-import * as k from "kinobi";
+import { rootNodeFromAnchor } from "@codama/nodes-from-anchor";
+import { renderVisitor as renderJavaScriptVisitor } from "@codama/renderers-js";
+import { renderVisitor as renderRustVisitor } from "@codama/renderers-rust";
+import * as c from "codama";
 import "zx/globals";
 import { getAllProgramIdls } from "./utils.mjs";
 
-import coreInstructions from "./kinobi/core-instructions.mjs";
-import legacyInstructions from "./kinobi/legacy-instructions.mjs";
-import token22Instructions from "./kinobi/token22-instructions.mjs";
+import coreInstructions from "./codama/core-instructions.mjs";
+import legacyInstructions from "./codama/legacy-instructions.mjs";
+import token22Instructions from "./codama/token22-instructions.mjs";
 
-// Instanciate Kinobi.
+// Instanciate codama.
 const [idl, ...additionalIdls] = getAllProgramIdls().map((idl) =>
   rootNodeFromAnchor(require(idl))
 );
-const kinobi = k.createFromRoot(idl, additionalIdls);
+const codama = c.createFromRoot(idl, additionalIdls);
 
 // Update programs.
-kinobi.update(
-  new k.updateProgramsVisitor({
+codama.update(
+  new c.updateProgramsVisitor({
     ammProgram: { name: "tensorAmm" }
   })
 );
 
 // Update accounts.
-kinobi.update(
-  k.updateAccountsVisitor({
+codama.update(
+  c.updateAccountsVisitor({
     pool: {
       seeds: [
-        k.constantPdaSeedNodeFromString("utf8", "pool"),
-        k.variablePdaSeedNode(
+        c.constantPdaSeedNodeFromString("utf8", "pool"),
+        c.variablePdaSeedNode(
           "owner",
-          k.publicKeyTypeNode(),
+          c.publicKeyTypeNode(),
           "The address of the pool owner"
         ),
-        k.variablePdaSeedNode(
+        c.variablePdaSeedNode(
           "pool_id",
-          k.fixedSizeTypeNode(k.bytesTypeNode(), 32),
+          c.fixedSizeTypeNode(c.bytesTypeNode(), 32),
           "Pool unique ID"
         )
       ]
     },
     nftDepositReceipt: {
       seeds: [
-        k.constantPdaSeedNodeFromString("utf8", "nft_receipt"),
-        k.variablePdaSeedNode(
+        c.constantPdaSeedNodeFromString("utf8", "nft_receipt"),
+        c.variablePdaSeedNode(
           "mint",
-          k.publicKeyTypeNode(),
+          c.publicKeyTypeNode(),
           "The nft mint address"
         ),
-        k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
+        c.variablePdaSeedNode("pool", c.publicKeyTypeNode(), "The pool address")
       ]
     },
     assetDepositReceipt: {
       seeds: [
-        k.constantPdaSeedNodeFromString("utf8", "nft_receipt"),
-        k.variablePdaSeedNode(
+        c.constantPdaSeedNodeFromString("utf8", "nft_receipt"),
+        c.variablePdaSeedNode(
           "asset",
-          k.publicKeyTypeNode(),
+          c.publicKeyTypeNode(),
           "The asset address"
         ),
-        k.variablePdaSeedNode("pool", k.publicKeyTypeNode(), "The pool address")
+        c.variablePdaSeedNode("pool", c.publicKeyTypeNode(), "The pool address")
       ]
     }
   })
 );
 
 // Update instructions.
-kinobi.update(
-  k.updateInstructionsVisitor({
+codama.update(
+  c.updateInstructionsVisitor({
     createPool: {
       accounts: {
         pool: {
-          defaultValue: k.pdaValueNode("pool", [
-            k.pdaSeedValueNode("owner", k.accountValueNode("owner")),
-            k.pdaSeedValueNode("poolId", k.argumentValueNode("poolId"))
+          defaultValue: c.pdaValueNode("pool", [
+            c.pdaSeedValueNode("owner", c.accountValueNode("owner")),
+            c.pdaSeedValueNode("poolId", c.argumentValueNode("poolId"))
           ])
         }
       },
       arguments: {
         poolId: {
-          defaultValue: k.resolverValueNode("resolvePoolIdOnCreate")
+          defaultValue: c.resolverValueNode("resolvePoolIdOnCreate")
         },
         maxTakerSellCount: {
-          defaultValue: k.noneValueNode()
+          defaultValue: c.noneValueNode()
         }
       }
     },
     editPool: {
       arguments: {
         maxTakerSellCount: {
-          defaultValue: k.noneValueNode()
+          defaultValue: c.noneValueNode()
         }
       }
     }
@@ -98,16 +98,16 @@ kinobi.update(
 );
 
 // Add missing types from the IDL.
-kinobi.update(
-  k.bottomUpTransformerVisitor([
+codama.update(
+  c.bottomUpTransformerVisitor([
     {
       select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]sharedEscrow",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress", "hooked")
         };
       }
     },
@@ -115,10 +115,10 @@ kinobi.update(
       select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]cosigner",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress", "hooked")
         };
       }
     },
@@ -126,10 +126,10 @@ kinobi.update(
       select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]makerBroker",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress", "hooked")
         };
       }
     },
@@ -137,10 +137,10 @@ kinobi.update(
       select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]takerBroker",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress", "hooked")
         };
       }
     },
@@ -148,10 +148,10 @@ kinobi.update(
       select:
         "[accountNode]pool.[structTypeNode].[structFieldTypeNode]currency",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("currency", "hooked")
+          type: c.definedTypeLinkNode("currency", "hooked")
         };
       }
     },
@@ -159,10 +159,10 @@ kinobi.update(
       select:
         "[definedTypeNode]poolConfig.[structTypeNode].[structFieldTypeNode]mmFeeBps",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableU16", "hooked")
+          type: c.definedTypeLinkNode("nullableU16", "hooked")
         };
       }
     },
@@ -170,10 +170,10 @@ kinobi.update(
       select:
         "[definedTypeNode]editPoolConfig.[structTypeNode].[structFieldTypeNode]mmFeeBps",
       transform: (node) => {
-        k.assertIsNode(node, "structFieldTypeNode");
+        c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: k.definedTypeLinkNode("nullableU16", "hooked")
+          type: c.definedTypeLinkNode("nullableU16", "hooked")
         };
       }
     }
@@ -181,13 +181,13 @@ kinobi.update(
 );
 
 // Set default account values accross multiple instructions.
-kinobi.update(
-  k.setInstructionAccountDefaultValuesVisitor([
+codama.update(
+  c.setInstructionAccountDefaultValuesVisitor([
     // default programs
     {
       account: "tokenProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
         "tokenProgram"
       )
@@ -195,7 +195,7 @@ kinobi.update(
     {
       account: "associatedTokenProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
         "associatedTokenProgram"
       )
@@ -203,7 +203,7 @@ kinobi.update(
     {
       account: "ammProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "TAMM6ub33ij1mbetoMyVBLeKY5iP41i4UPUJQGkhfsg",
         "ammProgram"
       )
@@ -211,7 +211,7 @@ kinobi.update(
     {
       account: "systemProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "11111111111111111111111111111111",
         "systemProgram"
       )
@@ -219,7 +219,7 @@ kinobi.update(
     {
       account: "sysProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "11111111111111111111111111111111",
         "systemProgram"
       )
@@ -227,7 +227,7 @@ kinobi.update(
     {
       account: "nativeProgram",
       ignoreIfOptional: true,
-      defaultValue: k.publicKeyValueNode(
+      defaultValue: c.publicKeyValueNode(
         "11111111111111111111111111111111",
         "systemProgram"
       )
@@ -235,42 +235,38 @@ kinobi.update(
     {
       account: "escrowProgram",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveEscrowProgramFromSharedEscrow",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.accountValueNode("sharedEscrow")]
+          dependsOn: [c.accountValueNode("sharedEscrow")]
         }
       )
     },
     // pNFT specific accounts
     {
       account: "tokenMetadataProgram",
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveTokenMetadataProgramFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")]
+          dependsOn: [c.argumentValueNode("tokenStandard")]
         }
       )
     },
     {
       account: "authorizationRulesProgram",
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveAuthorizationRulesProgramFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")]
+          dependsOn: [c.argumentValueNode("tokenStandard")]
         }
       )
     },
     {
       account: "sysvarInstructions",
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveSysvarInstructionsFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.argumentValueNode("tokenStandard")]
+          dependsOn: [c.argumentValueNode("tokenStandard")]
         }
       )
     },
@@ -278,19 +274,18 @@ kinobi.update(
     {
       account: "feeVault",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-        dependsOn: [k.accountValueNode("pool")]
+      defaultValue: c.resolverValueNode("resolveFeeVaultPdaFromPool", {
+        dependsOn: [c.accountValueNode("pool")]
       })
     },
     {
       account: "sourceTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveSourceAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolveSourceAta", {
         dependsOn: [
-          k.accountValueNode("source"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("source"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
@@ -298,84 +293,78 @@ kinobi.update(
     {
       account: "destinationTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveDestinationAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolveDestinationAta", {
         dependsOn: [
-          k.accountValueNode("destination"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("destination"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "ownerTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveOwnerAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolveOwnerAta", {
         dependsOn: [
-          k.accountValueNode("owner"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("owner"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "buyerTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveBuyerAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolveBuyerAta", {
         dependsOn: [
-          k.accountValueNode("buyer"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("buyer"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "sellerTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveSellerAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolveSellerAta", {
         dependsOn: [
-          k.accountValueNode("seller"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("seller"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "takerTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveTakerAta", {
+      defaultValue: c.resolverValueNode("resolveTakerAta", {
         dependsOn: [
-          k.accountValueNode("taker"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("taker"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "poolTa",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolvePoolAta", {
-        importFrom: "resolvers",
+      defaultValue: c.resolverValueNode("resolvePoolAta", {
         dependsOn: [
-          k.accountValueNode("pool"),
-          k.accountValueNode("mint"),
-          k.accountValueNode("tokenProgram")
+          c.accountValueNode("pool"),
+          c.accountValueNode("mint"),
+          c.accountValueNode("tokenProgram")
         ]
       })
     },
     {
       account: "sourceTokenRecord ",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveSourceTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
           dependsOn: [
-            k.accountValueNode("mint"),
-            k.accountValueNode("sourceTa")
+            c.accountValueNode("mint"),
+            c.accountValueNode("sourceTa")
           ]
         }
       )
@@ -383,13 +372,12 @@ kinobi.update(
     {
       account: "destinationTokenRecord",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveDestinationTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
           dependsOn: [
-            k.accountValueNode("mint"),
-            k.accountValueNode("destinationTa")
+            c.accountValueNode("mint"),
+            c.accountValueNode("destinationTa")
           ]
         }
       )
@@ -397,35 +385,32 @@ kinobi.update(
     {
       account: "ownerTokenRecord",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveOwnerTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("ownerTa")]
+          dependsOn: [c.accountValueNode("mint"), c.accountValueNode("ownerTa")]
         }
       )
     },
     {
       account: "buyerTokenRecord",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveBuyerTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("buyerTa")]
+          dependsOn: [c.accountValueNode("mint"), c.accountValueNode("buyerTa")]
         }
       )
     },
     {
       account: "sellerTokenRecord",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolveSellerTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
           dependsOn: [
-            k.accountValueNode("mint"),
-            k.accountValueNode("sellerTa")
+            c.accountValueNode("mint"),
+            c.accountValueNode("sellerTa")
           ]
         }
       )
@@ -433,46 +418,43 @@ kinobi.update(
     {
       account: "poolTokenRecord",
       ignoreIfOptional: false,
-      defaultValue: k.resolverValueNode(
+      defaultValue: c.resolverValueNode(
         "resolvePoolTokenRecordFromTokenStandard",
         {
-          importFrom: "resolvers",
-          dependsOn: [k.accountValueNode("mint"), k.accountValueNode("poolTa")]
+          dependsOn: [c.accountValueNode("mint"), c.accountValueNode("poolTa")]
         }
       )
     },
     {
       account: "nftReceipt",
       ignoreIfOptional: true,
-      defaultValue: k.pdaValueNode("nftDepositReceipt")
+      defaultValue: c.pdaValueNode("nftDepositReceipt")
     },
     {
       account: "metadata",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveMetadata", {
-        importFrom: "resolvers",
-        dependsOn: [k.accountValueNode("mint")]
+      defaultValue: c.resolverValueNode("resolveMetadata", {
+        dependsOn: [c.accountValueNode("mint")]
       })
     },
     {
       account: "edition",
       ignoreIfOptional: true,
-      defaultValue: k.resolverValueNode("resolveEditionFromTokenStandard", {
-        importFrom: "resolvers",
-        dependsOn: [k.accountValueNode("mint")]
+      defaultValue: c.resolverValueNode("resolveEditionFromTokenStandard", {
+        dependsOn: [c.accountValueNode("mint")]
       })
     },
     {
       account: "rentPayer",
       ignoreIfOptional: true,
-      defaultValue: k.accountValueNode("owner")
+      defaultValue: c.accountValueNode("owner")
     }
   ])
 );
 
 // Set more struct default values dynamically.
-kinobi.update(
-  k.bottomUpTransformerVisitor([
+codama.update(
+  c.bottomUpTransformerVisitor([
     {
       select: (node) => {
         const names = [
@@ -486,17 +468,17 @@ kinobi.update(
           "optionalRoyaltyPct"
         ];
         return (
-          k.isNode(node, ["instructionNode", "instructionArgumentNode"]) &&
-          k.isNode(node.type, "optionTypeNode") &&
+          c.isNode(node, ["instructionNode", "instructionArgumentNode"]) &&
+          c.isNode(node.type, "optionTypeNode") &&
           names.includes(node.name)
         );
       },
       transform: (node) => {
-        k.assertIsNode(node, ["instructionNode", "instructionArgumentNode"]);
+        c.assertIsNode(node, ["instructionNode", "instructionArgumentNode"]);
         return {
           ...node,
           defaultValueStrategy: "optional",
-          defaultValue: k.noneValueNode()
+          defaultValue: c.noneValueNode()
         };
       }
     }
@@ -504,20 +486,48 @@ kinobi.update(
 );
 
 // Update instructions using additional visitors.
-kinobi.update(legacyInstructions());
-kinobi.update(token22Instructions());
-kinobi.update(coreInstructions());
+codama.update(legacyInstructions());
+codama.update(token22Instructions());
+codama.update(coreInstructions());
 
 // Debug: print the AST.
-// kinobi.accept(k.consoleLogVisitor(k.getDebugStringVisitor({ indent: true })));
+// codama.accept(c.consoleLogVisitor(c.getDebugStringVisitor({ indent: true })));
 
 // Render JavaScript.
 const jsClient = path.join(__dirname, "..", "clients", "js");
-kinobi.accept(
+codama.accept(
   renderJavaScriptVisitor(path.join(jsClient, "src", "generated"), {
     prettier: require(path.join(jsClient, ".prettierrc.json")),
     dependencyMap: {
       resolvers: "@tensor-foundation/resolvers"
+    },
+    linkOverrides: {
+      resolvers: {
+        resolveSourceAta: '@tensor-foundation/resolvers',
+        resolveDestinationAta: '@tensor-foundation/resolvers',
+        resolveOwnerAta: '@tensor-foundation/resolvers', 
+        resolveBuyerAta: '@tensor-foundation/resolvers',
+        resolveSellerAta: '@tensor-foundation/resolvers',
+        resolvePoolAta: '@tensor-foundation/resolvers',
+        resolveSourceTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveDestinationTokenRecordFromTokenStandard: '@tensor-foundation/resolvers', 
+        resolveOwnerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveBuyerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveSellerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
+        resolvePoolTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveMetadata: '@tensor-foundation/resolvers',
+        resolveEditionFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveAuthorizationRulesProgramFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveTokenMetadataProgramFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveSysvarInstructionsFromTokenStandard: '@tensor-foundation/resolvers',
+        resolveEscrowProgramFromSharedEscrow: '@tensor-foundation/resolvers'
+      },
+      definedTypes: {
+        tokenStandard: '@tensor-foundation/mpl-token-metadata',
+        nullableAddress: '../../hooked',
+        currency: '../../hooked',
+        nullableU16: '../../hooked'
+      }
     },
     asyncResolvers: [
       "resolveFeeVaultPdaFromPool",
@@ -544,7 +554,7 @@ kinobi.accept(
 
 // Render Rust.
 const rustClient = path.join(__dirname, "..", "clients", "rust");
-kinobi.accept(
+codama.accept(
   renderRustVisitor(path.join(rustClient, "src", "generated"), {
     formatCode: true,
     crateFolder: rustClient

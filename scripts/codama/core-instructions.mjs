@@ -1,33 +1,33 @@
-import * as k from "kinobi";
+import * as c from "codama";
 
 export default function visitor(options) {
-  return k.rootNodeVisitor((currentRoot) => {
+  return c.rootNodeVisitor((currentRoot) => {
     let root = currentRoot;
     const updateRoot = (visitor) => {
-      const newRoot = k.visit(root, visitor);
-      k.assertIsNode(newRoot, "rootNode");
+      const newRoot = c.visit(root, visitor);
+      c.assertIsNode(newRoot, "rootNode");
       root = newRoot;
     };
 
     updateRoot(
-      k.updateInstructionsVisitor({
+      c.updateInstructionsVisitor({
         buyNftCore: {
           accounts: {
             feeVault: {
-              defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-                dependsOn: [k.accountValueNode("pool")]
+              defaultValue: c.resolverValueNode("resolveFeeVaultPdaFromPool", {
+                dependsOn: [c.accountValueNode("pool")]
               })
             },
             rentPayer: {
-              defaultValue: k.accountValueNode("owner")
+              defaultValue: c.accountValueNode("owner")
             },
             nftReceipt: {
-              defaultValue: k.pdaValueNode("assetDepositReceipt")
+              defaultValue: c.pdaValueNode("assetDepositReceipt")
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
@@ -42,14 +42,14 @@ export default function visitor(options) {
               isOptional: false
             },
             nftReceipt: {
-              defaultValue: k.pdaValueNode("assetDepositReceipt")
+              defaultValue: c.pdaValueNode("assetDepositReceipt")
             }
           }
         },
         withdrawNftCore: {
           accounts: {
             nftReceipt: {
-              defaultValue: k.pdaValueNode("assetDepositReceipt")
+              defaultValue: c.pdaValueNode("assetDepositReceipt")
             }
           }
         },
@@ -59,20 +59,20 @@ export default function visitor(options) {
               isOptional: false
             },
             feeVault: {
-              defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-                dependsOn: [k.accountValueNode("pool")]
+              defaultValue: c.resolverValueNode("resolveFeeVaultPdaFromPool", {
+                dependsOn: [c.accountValueNode("pool")]
               })
             },
             rentPayer: {
-              defaultValue: k.accountValueNode("owner")
+              defaultValue: c.accountValueNode("owner")
             },
             nftReceipt: {
-              defaultValue: k.pdaValueNode("assetDepositReceipt")
+              defaultValue: c.pdaValueNode("assetDepositReceipt")
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
@@ -87,20 +87,20 @@ export default function visitor(options) {
               isOptional: false
             },
             feeVault: {
-              defaultValue: k.resolverValueNode("resolveFeeVaultPdaFromPool", {
-                dependsOn: [k.accountValueNode("pool")]
+              defaultValue: c.resolverValueNode("resolveFeeVaultPdaFromPool", {
+                dependsOn: [c.accountValueNode("pool")]
               })
             },
             rentPayer: {
-              defaultValue: k.accountValueNode("owner")
+              defaultValue: c.accountValueNode("owner")
             },
             nftReceipt: {
-              defaultValue: k.pdaValueNode("assetDepositReceipt")
+              defaultValue: c.pdaValueNode("assetDepositReceipt")
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
