@@ -5,10 +5,10 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::generated::types::Currency;
-use crate::generated::types::NullableAddress;
 use crate::generated::types::PoolConfig;
 use crate::generated::types::PoolStats;
+use crate::hooked::Currency;
+use crate::hooked::NullableAddress;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_program::pubkey::Pubkey;

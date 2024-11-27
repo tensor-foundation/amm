@@ -6,7 +6,7 @@
 //!
 
 use crate::generated::types::CurveType;
-use crate::generated::types::NullableU16;
+use crate::hooked::NullableU16;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 

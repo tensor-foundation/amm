@@ -107,7 +107,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress")
         };
       }
     },
@@ -118,7 +118,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress")
         };
       }
     },
@@ -129,7 +129,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress")
         };
       }
     },
@@ -140,7 +140,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableAddress", "hooked")
+          type: c.definedTypeLinkNode("nullableAddress")
         };
       }
     },
@@ -151,7 +151,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("currency", "hooked")
+          type: c.definedTypeLinkNode("currency")
         };
       }
     },
@@ -162,7 +162,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableU16", "hooked")
+          type: c.definedTypeLinkNode("nullableU16")
         };
       }
     },
@@ -173,7 +173,7 @@ codama.update(
         c.assertIsNode(node, "structFieldTypeNode");
         return {
           ...node,
-          type: c.definedTypeLinkNode("nullableU16", "hooked")
+          type: c.definedTypeLinkNode("nullableU16")
         };
       }
     }
@@ -557,6 +557,13 @@ const rustClient = path.join(__dirname, "..", "clients", "rust");
 codama.accept(
   renderRustVisitor(path.join(rustClient, "src", "generated"), {
     formatCode: true,
-    crateFolder: rustClient
+    crateFolder: rustClient,
+    linkOverrides: {
+      definedTypes: {
+        nullableAddress: 'crate::hooked',
+        currency: 'crate::hooked',
+        nullableU16: 'crate::hooked'
+      }
+    }
   })
 );
