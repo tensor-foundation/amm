@@ -727,10 +727,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
-
-  // Need one assertion directly in test.
-  t.pass();
+  await assertTammNoop(t, client, sig);
 });
 
 test('sell NFT for FVC whitelist succeeds', async (t) => {

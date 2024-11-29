@@ -1,26 +1,26 @@
-import * as k from "kinobi";
+import * as c from "codama";
 
 export default function visitor(options) {
-  return k.rootNodeVisitor((currentRoot) => {
+  return c.rootNodeVisitor((currentRoot) => {
     let root = currentRoot;
     const updateRoot = (visitor) => {
-      const newRoot = k.visit(root, visitor);
-      k.assertIsNode(newRoot, "rootNode");
+      const newRoot = c.visit(root, visitor);
+      c.assertIsNode(newRoot, "rootNode");
       root = newRoot;
     };
 
     updateRoot(
-      k.updateInstructionsVisitor({
+      c.updateInstructionsVisitor({
         buyNft: {
           accounts: {
             userTokenRecord: {
               isOptional: true,
-              defaultValue: k.resolverValueNode(
+              defaultValue: c.resolverValueNode(
                 "resolveUserTokenRecordFromTokenStandard",
                 {
                   dependsOn: [
-                    k.accountValueNode("mint"),
-                    k.accountValueNode("takerTa")
+                    c.accountValueNode("mint"),
+                    c.accountValueNode("takerTa")
                   ]
                 }
               )
@@ -28,16 +28,16 @@ export default function visitor(options) {
           },
           arguments: {
             tokenStandard: {
-              type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
-              defaultValue: k.enumValueNode(
-                k.definedTypeLinkNode("TokenStandard", "resolvers"),
+              type: c.definedTypeLinkNode("TokenStandard", "resolvers"),
+              defaultValue: c.enumValueNode(
+                c.definedTypeLinkNode("TokenStandard", "resolvers"),
                 "ProgrammableNonFungible"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
@@ -53,12 +53,12 @@ export default function visitor(options) {
             },
             userTokenRecord: {
               isOptional: true,
-              defaultValue: k.resolverValueNode(
+              defaultValue: c.resolverValueNode(
                 "resolveUserTokenRecordFromTokenStandard",
                 {
                   dependsOn: [
-                    k.accountValueNode("mint"),
-                    k.accountValueNode("ownerTa")
+                    c.accountValueNode("mint"),
+                    c.accountValueNode("ownerTa")
                   ]
                 }
               )
@@ -66,9 +66,9 @@ export default function visitor(options) {
           },
           arguments: {
             tokenStandard: {
-              type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
-              defaultValue: k.enumValueNode(
-                k.definedTypeLinkNode("TokenStandard", "resolvers"),
+              type: c.definedTypeLinkNode("TokenStandard", "resolvers"),
+              defaultValue: c.enumValueNode(
+                c.definedTypeLinkNode("TokenStandard", "resolvers"),
                 "ProgrammableNonFungible"
               )
             }
@@ -81,12 +81,12 @@ export default function visitor(options) {
             },
             userTokenRecord: {
               isOptional: true,
-              defaultValue: k.resolverValueNode(
+              defaultValue: c.resolverValueNode(
                 "resolveUserTokenRecordFromTokenStandard",
                 {
                   dependsOn: [
-                    k.accountValueNode("mint"),
-                    k.accountValueNode("takerTa")
+                    c.accountValueNode("mint"),
+                    c.accountValueNode("takerTa")
                   ]
                 }
               )
@@ -94,16 +94,16 @@ export default function visitor(options) {
           },
           arguments: {
             tokenStandard: {
-              type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
-              defaultValue: k.enumValueNode(
-                k.definedTypeLinkNode("TokenStandard", "resolvers"),
+              type: c.definedTypeLinkNode("TokenStandard", "resolvers"),
+              defaultValue: c.enumValueNode(
+                c.definedTypeLinkNode("TokenStandard", "resolvers"),
                 "ProgrammableNonFungible"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
@@ -119,12 +119,12 @@ export default function visitor(options) {
             },
             userTokenRecord: {
               isOptional: true,
-              defaultValue: k.resolverValueNode(
+              defaultValue: c.resolverValueNode(
                 "resolveUserTokenRecordFromTokenStandard",
                 {
                   dependsOn: [
-                    k.accountValueNode("mint"),
-                    k.accountValueNode("takerTa")
+                    c.accountValueNode("mint"),
+                    c.accountValueNode("takerTa")
                   ]
                 }
               )
@@ -132,16 +132,16 @@ export default function visitor(options) {
           },
           arguments: {
             tokenStandard: {
-              type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
-              defaultValue: k.enumValueNode(
-                k.definedTypeLinkNode("TokenStandard", "resolvers"),
+              type: c.definedTypeLinkNode("TokenStandard", "resolvers"),
+              defaultValue: c.enumValueNode(
+                c.definedTypeLinkNode("TokenStandard", "resolvers"),
                 "ProgrammableNonFungible"
               )
             }
           },
           remainingAccounts: [
-            k.instructionRemainingAccountsNode(
-              k.argumentValueNode("creators"),
+            c.instructionRemainingAccountsNode(
+              c.argumentValueNode("creators"),
               {
                 isOptional: true,
                 isSigner: false,
@@ -154,12 +154,12 @@ export default function visitor(options) {
           accounts: {
             userTokenRecord: {
               isOptional: true,
-              defaultValue: k.resolverValueNode(
+              defaultValue: c.resolverValueNode(
                 "resolveUserTokenRecordFromTokenStandard",
                 {
                   dependsOn: [
-                    k.accountValueNode("mint"),
-                    k.accountValueNode("ownerTa")
+                    c.accountValueNode("mint"),
+                    c.accountValueNode("ownerTa")
                   ]
                 }
               )
@@ -167,9 +167,9 @@ export default function visitor(options) {
           },
           arguments: {
             tokenStandard: {
-              type: k.definedTypeLinkNode("TokenStandard", "resolvers"),
-              defaultValue: k.enumValueNode(
-                k.definedTypeLinkNode("TokenStandard", "resolvers"),
+              type: c.definedTypeLinkNode("TokenStandard", "resolvers"),
+              defaultValue: c.enumValueNode(
+                c.definedTypeLinkNode("TokenStandard", "resolvers"),
                 "ProgrammableNonFungible"
               )
             }

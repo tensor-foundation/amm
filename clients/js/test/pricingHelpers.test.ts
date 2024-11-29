@@ -457,8 +457,7 @@ test('Exponential pool pricing speed test', async (t) => {
   t.log(
     `calculating the 1000 next exponential pool prices took ${end - start} ms.`
   );
-
-  t.pass();
+  t.assert(end - start < 10000);
 });
 
 test('Linear pool pricing after 30 buys', async (t) => {

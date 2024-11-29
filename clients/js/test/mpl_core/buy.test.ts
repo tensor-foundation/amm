@@ -1505,8 +1505,6 @@ test('alternate deposits & buys', async (t) => {
         (tx) => signAndSendTransaction(client, tx)
       );
 
-      t.pass();
-
       let poolData = await fetchPool(client.rpc, pool);
 
       // Alternate between deposits and buys

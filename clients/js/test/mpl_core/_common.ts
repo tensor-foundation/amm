@@ -124,9 +124,6 @@ export async function setupCoreTest(
     },
   });
 
-  // Reset test timeout for long-running tests.
-  t.pass();
-
   let config: PoolConfig;
   let price: bigint;
   let mmFees = 0n;

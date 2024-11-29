@@ -270,8 +270,6 @@ test('sell into token pool, pay optional royalties', async (t) => {
       optionalRoyaltyPct: royaltyPct,
       checkCreatorBalances: true,
     });
-
-    t.pass(); // reset timeout
   }
 });
 
@@ -293,8 +291,6 @@ test('sell into trade pool, pay optional royalties', async (t) => {
       optionalRoyaltyPct: royaltyPct,
       checkCreatorBalances: true,
     });
-
-    t.pass(); // reset timeout
   }
 
   // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.
@@ -449,8 +445,6 @@ test('sell pNFT into Token pool, pay full royalties', async (t) => {
     checkCreatorBalances: true,
     pNft: true,
   });
-
-  t.pass(); // reset timeout
 });
 
 test('sell pNFT into Token pool, no ruleset', async (t) => {
@@ -1277,10 +1271,7 @@ test('sellNftTradePool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
-
-  // Need one assertion directly in test.
-  t.pass();
+  await assertTammNoop(t, client, sig);
 });
 
 test('sell NFT for FVC whitelist succeeds', async (t) => {

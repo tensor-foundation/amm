@@ -100,7 +100,12 @@ test('it can deposit a NFT into a Trade pool w/ FVC mode', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  t.pass();
+  // assert pool has been updated
+  t.like(await fetchPool(client.rpc, pool), {
+    data: {
+      nftsHeld: 1,
+    },
+  });
 });
 
 test('it can deposit a NFT into a Trade pool w/ VOC mode', async (t) => {
@@ -187,7 +192,11 @@ test('it can deposit a NFT into a NFT pool w/ FVC mode', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  t.pass();
+  t.like(await fetchPool(client.rpc, pool), {
+    data: {
+      nftsHeld: 1,
+    },
+  });
 });
 
 test('it can deposit a NFT into a NFT pool w/ VOC mode', async (t) => {

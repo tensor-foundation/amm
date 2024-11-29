@@ -155,8 +155,6 @@ test('buy from NFT pool, pay optional royalties', async (t) => {
       optionalRoyaltyPct: royaltyPct,
       checkCreatorBalances: true,
     });
-
-    t.pass(); // reset timeout
   }
 
   // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.
@@ -630,8 +628,6 @@ test('buy from Trade pool, pay optional royalties', async (t) => {
       brokerPayments: true,
       optionalRoyaltyPct: royaltyPct,
     });
-
-    t.pass(); // reset timeout
   }
 
   // Now do invalid royalty percent and expect it to fail with  BadRoyaltiesPct.

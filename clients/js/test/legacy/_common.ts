@@ -146,9 +146,6 @@ export async function setupLegacyTest(
     ruleSet: ruleset,
   });
 
-  // Reset test timeout for long-running tests.
-  t.pass();
-
   const { mint, token: ownerAta } = nft;
 
   let config: PoolConfig;
