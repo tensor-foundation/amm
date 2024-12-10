@@ -106,7 +106,7 @@ export async function setupCoreTest(
     nftOwner = poolOwner;
   }
 
-  let sellerFeeBasisPoints = 500;
+  const sellerFeeBasisPoints = 500;
 
   const [asset, collection] = await createDefaultAssetWithCollection({
     client,

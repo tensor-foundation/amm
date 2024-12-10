@@ -683,7 +683,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('sellNftTradePool emits self-cpi logging event', async (t) => {
