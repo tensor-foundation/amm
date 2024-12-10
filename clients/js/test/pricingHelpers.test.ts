@@ -446,7 +446,7 @@ test('Exponential pool pricing speed test', async (t) => {
   const poolData = (await fetchPool(client.rpc, pool)).data;
   const start = performance.now();
   for (let i = 0; i <= 1000; i++) {
-    getCurrentBidPrice({
+    await getCurrentBidPrice({
       rpc: client.rpc,
       pool: poolData,
       royaltyFeeBps: 0,

@@ -456,7 +456,7 @@ test('deposit fails using FVC verification when verified creator is present but 
   });
 
   // Deposit NFT
-  let depositNftIx = await getDepositNftCoreInstructionAsync({
+  const depositNftIx = await getDepositNftCoreInstructionAsync({
     owner,
     pool,
     whitelist,
@@ -544,7 +544,7 @@ test('deposit fails using FVC verification when creators array is empty on NFT',
   });
 
   // Deposit NFT
-  let depositNftIx = await getDepositNftCoreInstructionAsync({
+  const depositNftIx = await getDepositNftCoreInstructionAsync({
     owner,
     pool,
     whitelist,
@@ -609,7 +609,7 @@ test('deposit fails VOC verification when no collection is present', async (t) =
   });
 
   // Deposit NFT
-  let depositNftIx = await getDepositNftCoreInstructionAsync({
+  const depositNftIx = await getDepositNftCoreInstructionAsync({
     owner,
     pool,
     whitelist,

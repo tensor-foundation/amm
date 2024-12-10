@@ -30,7 +30,7 @@ export const getMerkleTree = (data: MerkleTreeInput[]): MerkleTree =>
  * a given data is part of the original data set.
  */
 export const getMerkleRoot = (data: MerkleTreeInput[]): Uint8Array =>
-  getMerkleTree(data).getRoot();
+  new Uint8Array(getMerkleTree(data).getRoot());
 
 /**
  * Creates a Merkle Proof for a given data item.
@@ -45,7 +45,7 @@ export const getMerkleProof = (
 ): Uint8Array[] =>
   getMerkleTree(data)
     .getProof(Buffer.from(keccak_256(leaf)), index)
-    .map((proofItem) => proofItem.data);
+    .map((proofItem) => new Uint8Array(proofItem.data));
 
 /**
  * Creates a Merkle Proof for a data item at a given index.

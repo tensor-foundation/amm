@@ -769,7 +769,7 @@ test('sell into Token pool, skip non-rent-exempt creators', async (t) => {
   }));
 
   // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
-  let config = structuredClone(tokenPoolConfig);
+  const config = structuredClone(tokenPoolConfig);
   config.startingPrice = 10000n;
   config.delta = config.startingPrice / 10n;
 
@@ -956,8 +956,6 @@ test('it can sell an NFT into a Trade pool w/ an escrow account', async (t) => {
   const lamportsTaken = price;
 
   t.assert(postSharedEscrowBalance === preSharedEscrowBalance - lamportsTaken);
-
-  console.log('postSharedEscrowBalance', postSharedEscrowBalance);
 
   const updatedPoolAccount = await fetchPool(client.rpc, pool);
 
@@ -1192,7 +1190,7 @@ test('sellNftTokenPool emits self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('sellNftTradePool emits self-cpi logging event', async (t) => {
@@ -2374,7 +2372,7 @@ test('it can sell a NFT into a token pool w/ Merkle root whitelist', async (t) =
   );
 
   // NFT is now owned by the pool owner.
-  assertTokenNftOwnedBy({ t, client, mint, owner: poolOwner.address });
+  await assertTokenNftOwnedBy({ t, client, mint, owner: poolOwner.address });
 });
 
 test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) => {
@@ -2412,7 +2410,7 @@ test('it can sell a NFT into a trade pool w/ Merkle root whitelist', async (t) =
   );
 
   // NFT is now owned by the pool.
-  assertTokenNftOwnedBy({ t, client, mint, owner: pool });
+  await assertTokenNftOwnedBy({ t, client, mint, owner: pool });
 });
 
 test('token pool with makerBroker set requires passing the account in & fails w/ incorrect makerBroker', async (t) => {

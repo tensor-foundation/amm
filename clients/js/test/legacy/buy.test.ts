@@ -224,7 +224,7 @@ test('buy from NFT pool, skip non-rent-exempt creators', async (t) => {
   }));
 
   // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
-  let config = structuredClone(nftPoolConfig);
+  const config = structuredClone(nftPoolConfig);
   config.startingPrice = 10000n;
   config.delta = config.startingPrice / 10n;
 
@@ -838,7 +838,7 @@ test('buyNft from a Trade pool emits a self-cpi logging event', async (t) => {
     owner: buyer.address,
   });
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
@@ -879,7 +879,7 @@ test('buyNft from a NFT pool emits a self-cpi logging event', async (t) => {
     owner: buyer.address,
   });
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('buying the last NFT from a NFT pool auto-closes the pool', async (t) => {
