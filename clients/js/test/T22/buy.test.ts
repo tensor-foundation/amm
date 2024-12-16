@@ -135,7 +135,7 @@ test('buy from NFT pool, skip non-rent-exempt creator', async (t) => {
   const creator = (await generateKeyPairSigner()).address;
 
   // Set starting price low enough that the royalties don't push it above the rent exempt threshold.
-  let config = nftPoolConfig;
+  const config = nftPoolConfig;
   config.startingPrice = 10000n;
   config.delta = config.startingPrice / 10n;
 
@@ -833,8 +833,6 @@ test('it can buy a T22 NFT from a NFT pool and auto-close the pool', async (t) =
     });
 
   const expectedFeeVault = await getAndFundFeeVault(client, pool);
-  console.log('feeVault', feeVault);
-  console.log('expectedFeeVault', expectedFeeVault);
   t.is(feeVault, expectedFeeVault);
 
   const { buyer, poolOwner, nftUpdateAuthority } = signers;
@@ -937,7 +935,7 @@ test('buyNft on a trade pool emits a self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('buyNft on a NFT pool emits a self-cpi logging event', async (t) => {
@@ -973,7 +971,7 @@ test('buyNft on a NFT pool emits a self-cpi logging event', async (t) => {
     (tx) => signAndSendTransaction(client, tx)
   );
 
-  assertTammNoop(t, client, sig);
+  await assertTammNoop(t, client, sig);
 });
 
 test('it can buy an NFT from a pool w/ a set cosigner', async (t) => {
