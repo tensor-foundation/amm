@@ -436,7 +436,7 @@ test('it can create a pool w/ shared escrow', async (t) => {
   });
 });
 
-test.only('it cannot create a pool w/ shared escrow if pool type is nft', async (t) => {
+test('it cannot create a pool w/ shared escrow if pool type is nft', async (t) => {
   const client = createDefaultSolanaClient();
   const updateAuthority = await generateKeyPairSignerWithSol(
     client,
