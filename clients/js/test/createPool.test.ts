@@ -436,6 +436,57 @@ test('it can create a pool w/ shared escrow', async (t) => {
   });
 });
 
+test('it can create a pool w/ maker broker', async (t) => {
+  const client = createDefaultSolanaClient();
+  const updateAuthority = await generateKeyPairSignerWithSol(
+    client,
+    5n * LAMPORTS_PER_SOL
+  );
+  const freezeAuthority = (await generateKeyPairSigner()).address;
+  const namespace = await generateKeyPairSigner();
+  const voc = (await generateKeyPairSigner()).address;
+
+  // Setup a basic whitelist to use with the pool.
+  const conditions = [
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
+  ];
+
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    freezeAuthority,
+    conditions,
+    namespace,
+  });
+
+  // Create pool with maker broker set
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: updateAuthority,
+    makerBroker: updateAuthority.address,
+  });
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  // Then an account was created with the correct data.
+  t.like(poolAccount, <Account<Pool, Address>>{
+    address: pool,
+    data: {
+      version: CURRENT_POOL_VERSION,
+      config: {
+        poolType: 0,
+        curveType: 0,
+        startingPrice: 1n,
+        delta: 1n,
+        mmCompoundFees: false,
+        mmFeeBps: null,
+      },
+      makerBroker: updateAuthority.address,
+    },
+  });
+});
+
 test('it cannot create a pool w/ shared escrow if pool type is nft', async (t) => {
   const client = createDefaultSolanaClient();
   const updateAuthority = await generateKeyPairSignerWithSol(
