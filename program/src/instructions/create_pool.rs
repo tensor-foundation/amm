@@ -62,7 +62,7 @@ pub struct CreatePool<'info> {
 
     #[account(
         has_one = owner @ ErrorCode::WrongOwner,
-        constraint = pool.config.pool_type != PoolType::NFT @ ErrorCode::CannotUseSharedEscrow,
+        constraint = args.config.pool_type != PoolType::NFT @ ErrorCode::CannotUseSharedEscrow,
     )]
     pub shared_escrow: Option<Account<'info, MarginAccount>>,
 

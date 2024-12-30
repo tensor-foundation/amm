@@ -1,10 +1,24 @@
-import { Account, Address, generateKeyPairSigner } from '@solana/web3.js';
-import { findMarginAccountPda } from '@tensor-foundation/escrow';
+import {
+  Account,
+  Address,
+  appendTransactionMessageInstructions,
+  generateKeyPairSigner,
+  pipe,
+} from '@solana/web3.js';
+import {
+  findMarginAccountPda,
+  findTSwapPda,
+  getDepositMarginAccountInstruction,
+  getInitMarginAccountInstruction,
+  getInitUpdateTswapInstruction,
+} from '@tensor-foundation/escrow';
 import {
   LAMPORTS_PER_SOL,
   TSWAP_SINGLETON,
   createDefaultSolanaClient,
+  createDefaultTransaction,
   generateKeyPairSignerWithSol,
+  signAndSendTransaction,
 } from '@tensor-foundation/test-helpers';
 import {
   Condition,
@@ -17,6 +31,7 @@ import {
   CurveType,
   Pool,
   PoolType,
+  TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW,
   TENSOR_AMM_ERROR__DELTA_TOO_LARGE,
   TENSOR_AMM_ERROR__FEES_NOT_ALLOWED,
   TENSOR_AMM_ERROR__FEES_TOO_HIGH,
@@ -25,12 +40,14 @@ import {
 } from '../src/index.js';
 import {
   CURRENT_POOL_VERSION,
+  DEFAULT_PUBKEY,
   MAX_MM_FEES_BPS,
   createPool,
   createPoolAndFundSharedEscrow,
   createPoolThrows,
   createWhitelistV2,
   getAndFundOwner,
+  nftPoolConfig,
   tokenPoolConfig,
   tradePoolConfig,
 } from './_common.js';
@@ -416,5 +433,138 @@ test('it can create a pool w/ shared escrow', async (t) => {
       },
       sharedEscrow: margin,
     },
+  });
+});
+
+test('it can create a pool w/ maker broker', async (t) => {
+  const client = createDefaultSolanaClient();
+  const updateAuthority = await generateKeyPairSignerWithSol(
+    client,
+    5n * LAMPORTS_PER_SOL
+  );
+  const freezeAuthority = (await generateKeyPairSigner()).address;
+  const namespace = await generateKeyPairSigner();
+  const voc = (await generateKeyPairSigner()).address;
+
+  // Setup a basic whitelist to use with the pool.
+  const conditions = [
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
+  ];
+
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    freezeAuthority,
+    conditions,
+    namespace,
+  });
+
+  // Create pool with maker broker set
+  const { pool } = await createPool({
+    client,
+    whitelist,
+    owner: updateAuthority,
+    makerBroker: updateAuthority.address,
+  });
+
+  const poolAccount = await fetchPool(client.rpc, pool);
+  // Then an account was created with the correct data.
+  t.like(poolAccount, <Account<Pool, Address>>{
+    address: pool,
+    data: {
+      version: CURRENT_POOL_VERSION,
+      config: {
+        poolType: 0,
+        curveType: 0,
+        startingPrice: 1n,
+        delta: 1n,
+        mmCompoundFees: false,
+        mmFeeBps: null,
+      },
+      makerBroker: updateAuthority.address,
+    },
+  });
+});
+
+test('it cannot create a pool w/ shared escrow if pool type is nft', async (t) => {
+  const client = createDefaultSolanaClient();
+  const updateAuthority = await generateKeyPairSignerWithSol(
+    client,
+    5n * LAMPORTS_PER_SOL
+  );
+  const freezeAuthority = (await generateKeyPairSigner()).address;
+  const namespace = await generateKeyPairSigner();
+  const voc = (await generateKeyPairSigner()).address;
+
+  const config = nftPoolConfig;
+
+  // Setup a basic whitelist to use with the pool.
+  const conditions = [
+    { mode: Mode.FVC, value: updateAuthority.address },
+    { mode: Mode.VOC, value: voc },
+  ];
+
+  const { whitelist } = await createWhitelistV2({
+    client,
+    updateAuthority,
+    freezeAuthority,
+    conditions,
+    namespace,
+  });
+
+  // Create pool attached to shared escrow
+  await getAndFundOwner(client);
+  const [sharedEscrow] = await findMarginAccountPda({
+    owner: updateAuthority.address,
+    tswap: TSWAP_SINGLETON,
+    marginNr: 0,
+  });
+
+  const tswap = (await findTSwapPda())[0];
+  const tswapOwner = await getAndFundOwner(client);
+
+  const initTswapIx = getInitUpdateTswapInstruction({
+    tswap,
+    owner: tswapOwner,
+    newOwner: tswapOwner,
+    feeVault: DEFAULT_PUBKEY, // Dummy fee vault
+    cosigner: updateAuthority,
+    config: { feeBps: 0 },
+  });
+
+  const createMarginAccountIx = getInitMarginAccountInstruction({
+    owner: updateAuthority,
+    tswap: (await findTSwapPda())[0],
+    marginAccount: sharedEscrow!,
+    marginNr: 0,
+    name: Uint8Array.from([]),
+  });
+
+  const depositEscrowIx = getDepositMarginAccountInstruction({
+    tswap: (await findTSwapPda())[0],
+    marginAccount: sharedEscrow!,
+    owner: updateAuthority,
+    lamports: LAMPORTS_PER_SOL,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, updateAuthority),
+    (tx) =>
+      appendTransactionMessageInstructions(
+        [initTswapIx, createMarginAccountIx, depositEscrowIx],
+        tx
+      ),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  await createPoolThrows({
+    client,
+    whitelist,
+    owner: updateAuthority,
+    config,
+    sharedEscrow: sharedEscrow!,
+    t,
+    code: TENSOR_AMM_ERROR__CANNOT_USE_SHARED_ESCROW,
   });
 });

@@ -470,6 +470,11 @@ impl<'info> TradeShared<'info> {
             taker_broker_fee,
         )?;
 
+        // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow
+        // account. Transfer this before creator royalties in case owner is a creator and has low SOL balance to prevent
+        // them getting skipped over by the creator royalties transfer.
+        transfer_lamports(&self.taker, &destination, current_price)?;
+
         // transfer royalties (on top of current price)
         // Buyer pays the royalty fee.
         transfer_creators_fee(
@@ -489,9 +494,6 @@ impl<'info> TradeShared<'info> {
                 }),
             },
         )?;
-
-        // Price always goes to the destination: NFT pool --> owner, Trade pool --> either the pool or the escrow account.
-        transfer_lamports(&self.taker, &destination, current_price)?;
 
         // Trade pools need to check compounding fees
         if matches!(pool.config.pool_type, PoolType::Trade) {
