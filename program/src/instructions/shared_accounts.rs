@@ -655,15 +655,12 @@ impl<'info> ValidateAsset<'info> for MplxShared<'info> {
 
         // Verify edition is valid, this should be a Master Edition or Edition.
         let key = self.edition.try_borrow_data()?[0];
-        msg!("key: {}", key);
 
         match key {
             k if k == MplKey::MasterEditionV1 as u8 || k == MplKey::MasterEditionV2 as u8 => {
-                msg!("master edition");
                 assert_decode_master_edition(&self.edition)?;
             }
             k if k == MplKey::EditionV1 as u8 => {
-                msg!("edition");
                 assert_decode_edition(&self.edition)?;
             }
             _ => return Err(ErrorCode::InvalidEdition.into()),

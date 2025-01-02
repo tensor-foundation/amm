@@ -1018,7 +1018,7 @@ test('sell into shared escrow pool cannot eat into escrow account rent', async (
     action: TestAction.Sell,
     useMakerBroker: false,
     useSharedEscrow: true,
-    fundPool: true,
+    fundPool: false,
     depositAmount,
     whitelistMode: Mode.FVC,
   });
