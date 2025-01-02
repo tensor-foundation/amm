@@ -41,7 +41,6 @@ import {
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   resolveAuthorizationRulesProgramFromTokenStandard,
-  resolveEditionFromTokenStandard,
   resolveMetadata,
   resolveOwnerAta,
   resolvePoolAta,
@@ -49,7 +48,10 @@ import {
   resolveSysvarInstructionsFromTokenStandard,
   resolveTokenMetadataProgramFromTokenStandard,
 } from '@tensor-foundation/resolvers';
-import { resolveUserTokenRecordFromTokenStandard } from '../../hooked';
+import {
+  resolveEdition,
+  resolveUserTokenRecordFromTokenStandard,
+} from '../../hooked';
 import { findNftDepositReceiptPda } from '../pdas';
 import { TENSOR_AMM_PROGRAM_ADDRESS } from '../programs';
 import {
@@ -415,7 +417,7 @@ export async function getWithdrawNftInstructionAsync<
   if (!accounts.edition.value) {
     accounts.edition = {
       ...accounts.edition,
-      ...(await resolveEditionFromTokenStandard(resolverScope)),
+      ...(await resolveEdition(resolverScope)),
     };
   }
   if (!accounts.tokenProgram.value) {

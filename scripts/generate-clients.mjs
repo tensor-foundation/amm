@@ -440,7 +440,7 @@ codama.update(
     {
       account: "edition",
       ignoreIfOptional: true,
-      defaultValue: c.resolverValueNode("resolveEditionFromTokenStandard", {
+      defaultValue: c.resolverValueNode("resolveEdition", {
         dependsOn: [c.accountValueNode("mint")]
       })
     },
@@ -503,30 +503,38 @@ codama.accept(
     },
     linkOverrides: {
       resolvers: {
-        resolveSourceAta: '@tensor-foundation/resolvers',
-        resolveDestinationAta: '@tensor-foundation/resolvers',
-        resolveOwnerAta: '@tensor-foundation/resolvers', 
-        resolveBuyerAta: '@tensor-foundation/resolvers',
-        resolveSellerAta: '@tensor-foundation/resolvers',
-        resolvePoolAta: '@tensor-foundation/resolvers',
-        resolveSourceTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveDestinationTokenRecordFromTokenStandard: '@tensor-foundation/resolvers', 
-        resolveOwnerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveBuyerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveSellerTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
-        resolvePoolTokenRecordFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveMetadata: '@tensor-foundation/resolvers',
-        resolveEditionFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveAuthorizationRulesProgramFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveTokenMetadataProgramFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveSysvarInstructionsFromTokenStandard: '@tensor-foundation/resolvers',
-        resolveEscrowProgramFromSharedEscrow: '@tensor-foundation/resolvers'
+        resolveSourceAta: "@tensor-foundation/resolvers",
+        resolveDestinationAta: "@tensor-foundation/resolvers",
+        resolveOwnerAta: "@tensor-foundation/resolvers",
+        resolveBuyerAta: "@tensor-foundation/resolvers",
+        resolveSellerAta: "@tensor-foundation/resolvers",
+        resolvePoolAta: "@tensor-foundation/resolvers",
+        resolveSourceTokenRecordFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveDestinationTokenRecordFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveOwnerTokenRecordFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveBuyerTokenRecordFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveSellerTokenRecordFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolvePoolTokenRecordFromTokenStandard: "@tensor-foundation/resolvers",
+        resolveMetadata: "@tensor-foundation/resolvers",
+        resolveEditionFromTokenStandard: "@tensor-foundation/resolvers",
+        resolveAuthorizationRulesProgramFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveTokenMetadataProgramFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveSysvarInstructionsFromTokenStandard:
+          "@tensor-foundation/resolvers",
+        resolveEscrowProgramFromSharedEscrow: "@tensor-foundation/resolvers"
       },
       definedTypes: {
-        tokenStandard: '@tensor-foundation/mpl-token-metadata',
-        nullableAddress: '../../hooked',
-        currency: '../../hooked',
-        nullableU16: '../../hooked'
+        tokenStandard: "@tensor-foundation/mpl-token-metadata",
+        nullableAddress: "../../hooked",
+        currency: "../../hooked",
+        nullableU16: "../../hooked"
       }
     },
     asyncResolvers: [
@@ -547,7 +555,8 @@ codama.accept(
       "resolvePoolTokenRecordFromTokenStandard",
       "resolvePoolNftReceipt",
       "resolveMetadata",
-      "resolveEditionFromTokenStandard"
+      "resolveEditionFromTokenStandard",
+      "resolveEdition"
     ]
   })
 );
@@ -560,9 +569,9 @@ codama.accept(
     crateFolder: rustClient,
     linkOverrides: {
       definedTypes: {
-        nullableAddress: 'crate::hooked',
-        currency: 'crate::hooked',
-        nullableU16: 'crate::hooked'
+        nullableAddress: "crate::hooked",
+        currency: "crate::hooked",
+        nullableU16: "crate::hooked"
       }
     }
   })

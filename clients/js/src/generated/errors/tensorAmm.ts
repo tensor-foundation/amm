@@ -70,6 +70,8 @@ export const TENSOR_AMM_ERROR__ESCROW_PROGRAM_NOT_SET = 0x2ef9; // 12025
 export const TENSOR_AMM_ERROR__MISSING_MAKER_BROKER = 0x2efa; // 12026
 /** MissingCosigner: Missing cosigner account */
 export const TENSOR_AMM_ERROR__MISSING_COSIGNER = 0x2efb; // 12027
+/** InvalidEdition: Invalid edition */
+export const TENSOR_AMM_ERROR__INVALID_EDITION = 0x2efc; // 12028
 
 export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__ARITHMETIC_ERROR
@@ -83,6 +85,7 @@ export type TensorAmmError =
   | typeof TENSOR_AMM_ERROR__EXPIRY_TOO_LARGE
   | typeof TENSOR_AMM_ERROR__FEES_NOT_ALLOWED
   | typeof TENSOR_AMM_ERROR__FEES_TOO_HIGH
+  | typeof TENSOR_AMM_ERROR__INVALID_EDITION
   | typeof TENSOR_AMM_ERROR__INVALID_POOL_AMOUNT
   | typeof TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED
   | typeof TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL
@@ -115,6 +118,7 @@ if (process.env.NODE_ENV !== 'production') {
     [TENSOR_AMM_ERROR__EXPIRY_TOO_LARGE]: `Expiry too large`,
     [TENSOR_AMM_ERROR__FEES_NOT_ALLOWED]: `fees not allowed for non-trade pools`,
     [TENSOR_AMM_ERROR__FEES_TOO_HIGH]: `fees entered above allowed threshold`,
+    [TENSOR_AMM_ERROR__INVALID_EDITION]: `Invalid edition`,
     [TENSOR_AMM_ERROR__INVALID_POOL_AMOUNT]: `Invalid pool amount`,
     [TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_EXCEEDED]: `max taker sell count exceeded, pool cannot buy anymore NFTs`,
     [TENSOR_AMM_ERROR__MAX_TAKER_SELL_COUNT_TOO_SMALL]: `max taker sell count is too small`,

@@ -2,15 +2,21 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{CloseAccount, Mint};
 use constants::CURRENT_POOL_VERSION;
 use escrow_program::instructions::assert_decode_margin_account as assert_decode_escrow_account;
-use mpl_token_metadata::types::{Collection, Creator};
+use mpl_token_metadata::{
+    accounts::{MasterEdition, Metadata},
+    types::{Collection, Creator, Key as MplKey},
+};
 use program::AmmProgram;
 use solana_program::keccak;
 use tensor_escrow::instructions::{
     WithdrawMarginAccountCpiTammCpi, WithdrawMarginAccountCpiTammInstructionArgs,
 };
 use tensor_toolbox::{
-    calc_creators_fee, calc_fees, escrow, is_royalty_enforced, metaplex_core::validate_core_asset,
-    shard_num, token_2022::validate_mint, token_metadata::assert_decode_metadata,
+    calc_creators_fee, calc_fees, escrow, is_royalty_enforced,
+    metaplex_core::validate_core_asset,
+    shard_num,
+    token_2022::validate_mint,
+    token_metadata::{assert_decode_edition, assert_decode_master_edition, assert_decode_metadata},
     transfer_creators_fee, transfer_lamports, transfer_lamports_checked, CalcFeesArgs,
     CreatorFeeMode, FromAcc, FromExternal, BROKER_FEE_PCT, MAKER_BROKER_PCT, TAKER_FEE_BPS,
 };
@@ -520,16 +526,33 @@ pub struct MplxShared<'info> {
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The Token Metadata metadata account of the NFT.
-    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata.
-    #[account(mut)]
+    /// CHECK: ownership, structure and mint are checked in assert_decode_metadata, seeds checked here.
+    #[account(mut,
+    seeds = [
+        Metadata::PREFIX,
+        mpl_token_metadata::ID.as_ref(),
+        mint.key().as_ref(),
+    ],
+    bump,
+    seeds::program = mpl_token_metadata::ID,
+    )]
     pub metadata: UncheckedAccount<'info>,
 
-    // --------------------------------------- pNft
     /// The Token Metadata edition account of the NFT.
-    /// CHECK: seeds checked on Token Metadata CPI
-    //note that MASTER EDITION and EDITION share the same seeds, and so it's valid to check them here
+    /// CHECK: seeds checked here
+    #[account(
+        seeds = [
+            MasterEdition::PREFIX.0,
+            mpl_token_metadata::ID.as_ref(),
+            mint.key().as_ref(),
+            MasterEdition::PREFIX.1,
+            ],
+            bump,
+            seeds::program = mpl_token_metadata::ID,
+        )]
     pub edition: UncheckedAccount<'info>,
 
+    // --------------------------------------- pNft
     /// The Token Metadata source token record account of the NFT.
     /// CHECK: seeds checked on Token Metadata CPI
     #[account(mut)]
@@ -629,6 +652,23 @@ impl<'info> ValidateAsset<'info> for T22Shared<'info> {
 impl<'info> ValidateAsset<'info> for MplxShared<'info> {
     fn validate_asset(&self) -> Result<AmmAsset> {
         let metadata = assert_decode_metadata(&self.mint.key(), &self.metadata)?;
+
+        // Verify edition is valid, this should be a Master Edition or Edition.
+        let key = self.edition.try_borrow_data()?[0];
+        msg!("key: {}", key);
+
+        match key {
+            k if k == MplKey::MasterEditionV1 as u8 || k == MplKey::MasterEditionV2 as u8 => {
+                msg!("master edition");
+                assert_decode_master_edition(&self.edition)?;
+            }
+            k if k == MplKey::EditionV1 as u8 => {
+                msg!("edition");
+                assert_decode_edition(&self.edition)?;
+            }
+            _ => return Err(ErrorCode::InvalidEdition.into()),
+        }
+
         let royalty_enforced = is_royalty_enforced(metadata.token_standard);
         let verified_creators = metadata.creators.clone();
 

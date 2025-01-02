@@ -3903,6 +3903,11 @@
       "code": 12027,
       "name": "MissingCosigner",
       "msg": "Missing cosigner account"
+    },
+    {
+      "code": 12028,
+      "name": "InvalidEdition",
+      "msg": "Invalid edition"
     }
   ],
   "metadata": {

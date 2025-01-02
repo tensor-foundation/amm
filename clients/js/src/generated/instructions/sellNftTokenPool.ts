@@ -47,7 +47,6 @@ import {
 } from '@tensor-foundation/mpl-token-metadata';
 import {
   resolveAuthorizationRulesProgramFromTokenStandard,
-  resolveEditionFromTokenStandard,
   resolveEscrowProgramFromSharedEscrow,
   resolveMetadata,
   resolveOwnerAta,
@@ -58,6 +57,7 @@ import {
   resolveTokenMetadataProgramFromTokenStandard,
 } from '@tensor-foundation/resolvers';
 import {
+  resolveEdition,
   resolveFeeVaultPdaFromPool,
   resolveTakerAta,
   resolveUserTokenRecordFromTokenStandard,
@@ -594,7 +594,7 @@ export async function getSellNftTokenPoolInstructionAsync<
   if (!accounts.edition.value) {
     accounts.edition = {
       ...accounts.edition,
-      ...(await resolveEditionFromTokenStandard(resolverScope)),
+      ...(await resolveEdition(resolverScope)),
     };
   }
   if (!accounts.tokenProgram.value) {
