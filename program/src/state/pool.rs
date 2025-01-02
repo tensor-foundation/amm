@@ -192,7 +192,7 @@ impl Pool {
             return Ok(());
         }
 
-        //if the pool has made more sells than buys, by defn it can buy more to get to initial state
+        //if the pool has made more buys than sells, by definition it can sell more to get to initial state.
         if self.stats.taker_buy_count > self.stats.taker_sell_count {
             return Ok(());
         }

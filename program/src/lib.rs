@@ -134,21 +134,21 @@ pub mod amm_program {
     // MPL Core instructions         //
     //-------------------------------//
 
-    /// Deposit a Token22 NFT into a NFT or Trade pool.
+    /// Deposit a MPL Core asset into a NFT or Trade pool.
     pub fn deposit_nft_core<'info>(
         ctx: Context<'_, '_, '_, 'info, DepositNftCore<'info>>,
     ) -> Result<()> {
         instructions::mplx_core::process_deposit_nft_core(ctx)
     }
 
-    /// Withdraw a Token22 NFT from a NFT or Trade pool.
+    /// Withdraw a MPL Core asset from a NFT or Trade pool.
     pub fn withdraw_nft_core<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
     ) -> Result<()> {
         instructions::mplx_core::process_withdraw_nft_core(ctx)
     }
 
-    /// Buy a Token22 NFT from a NFT or Trade pool.
+    /// Buy a MPL Core asset from a NFT or Trade pool.
     pub fn buy_nft_core<'info>(
         ctx: Context<'_, '_, '_, 'info, BuyNftCore<'info>>,
         max_amount: u64,
@@ -156,7 +156,7 @@ pub mod amm_program {
         instructions::mplx_core::process_buy_nft_core(ctx, max_amount)
     }
 
-    /// Sell a Token22 NFT into a Token pool.
+    /// Sell a MPL Core asset into a Token pool.
     pub fn sell_nft_token_pool_core<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTokenPoolCore<'info>>,
         min_price: u64,
@@ -166,7 +166,7 @@ pub mod amm_program {
         )
     }
 
-    /// Sell a Token22 NFT into a Trade pool.
+    /// Sell a MPL Core asset into a Trade pool.
     pub fn sell_nft_trade_pool_core<'info>(
         ctx: Context<'_, '_, '_, 'info, SellNftTradePoolCore<'info>>,
         min_price: u64,

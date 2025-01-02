@@ -31,7 +31,7 @@ impl<'info> WithdrawNftCore<'info> {
     }
 }
 
-/// Withdraw a Token22 NFT from a NFT or Trade pool.
+/// Withdraw a MPL Core Asset from a NFT or Trade pool.
 pub fn process_withdraw_nft_core<'info>(
     ctx: Context<'_, '_, '_, 'info, WithdrawNftCore<'info>>,
 ) -> Result<()> {
