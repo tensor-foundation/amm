@@ -86,7 +86,7 @@ dependencies = [
  "static_assertions",
  "tensor-escrow",
  "tensor-toolbox 0.8.0",
- "tensor-vipers 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tensor-vipers",
  "whitelist-program",
 ]
 
@@ -1013,7 +1013,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "tensor-toolbox 0.1.0",
- "tensor-vipers 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tensor-vipers",
 ]
 
 [[package]]
@@ -2614,12 +2614,14 @@ dependencies = [
  "spl-account-compression",
  "spl-noop",
  "spl-token-metadata-interface",
- "tensor-vipers 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tensor-vipers",
 ]
 
 [[package]]
 name = "tensor-toolbox"
 version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "515659dd8e1a324f23ced4d99d6a150ac8fac4d78c2cc0252b5dd5c39213192b"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -2630,16 +2632,7 @@ dependencies = [
  "spl-account-compression",
  "spl-noop",
  "spl-token-metadata-interface",
- "tensor-vipers 1.0.1",
-]
-
-[[package]]
-name = "tensor-vipers"
-version = "1.0.1"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "num-traits",
+ "tensor-vipers",
 ]
 
 [[package]]
