@@ -133,5 +133,11 @@ pub fn process_buy_nft_t22<'info>(
         &ctx.accounts.trade.pool,
         ctx.accounts.trade.rent_payer.to_account_info(),
         ctx.accounts.trade.owner.to_account_info(),
+        ctx.accounts
+            .trade
+            .shared_escrow
+            .as_ref()
+            .map(|escrow| escrow.to_account_info())
+            .as_ref(),
     )
 }

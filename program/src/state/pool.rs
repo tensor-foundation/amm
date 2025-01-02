@@ -342,14 +342,19 @@ pub fn try_autoclose_pool<'info>(
     pool: &Account<'info, Pool>,
     rent_payer: AccountInfo<'info>,
     owner: AccountInfo<'info>,
+    shared_escrow: Option<&AccountInfo<'info>>,
 ) -> Result<()> {
     match pool.config.pool_type {
         PoolType::Trade => (), // Cannot be auto-closed
         PoolType::Token => {
+            let amount = if pool.shared_escrow == Pubkey::default() {
+                pool.amount
+            } else {
+                shared_escrow.unwrap().lamports()
+            };
+
             // Not enough SOL to purchase another NFT, so we can close the pool.
-            if pool.currency == Pubkey::default()
-                && pool.amount < pool.current_price(TakerSide::Sell)?
-            {
+            if pool.currency == Pubkey::default() && amount < pool.current_price(TakerSide::Sell)? {
                 close_pool(pool, rent_payer, owner)?;
             }
         }
