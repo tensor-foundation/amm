@@ -87,4 +87,7 @@ pub enum ErrorCode {
 
     #[msg("Missing cosigner account")]
     MissingCosigner,
+
+    #[msg("Invalid edition")]
+    InvalidEdition,
 }

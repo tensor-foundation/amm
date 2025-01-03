@@ -167,7 +167,12 @@ export async function setupCoreTest(
 
   if (useSharedEscrow) {
     // Create a shared escrow account.
-    sharedEscrow = await createAndFundEscrow(client, poolOwner, 1);
+    sharedEscrow = await createAndFundEscrow(
+      client,
+      poolOwner,
+      1,
+      depositAmount
+    );
   }
 
   let conditions: Condition[] = [];

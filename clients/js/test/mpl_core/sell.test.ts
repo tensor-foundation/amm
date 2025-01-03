@@ -641,6 +641,157 @@ test('token pool autocloses when currency amount drops below current price', asy
   );
 });
 
+test('token pool with shared escrow autocloses when shared escrow amount drops below current price', async (t) => {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    sharedEscrow,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useSharedEscrow: true,
+    useMakerBroker: true,
+    useCosigner: true,
+    compoundFees: false,
+    fundPool: false,
+    depositAmount: (tokenPoolConfig.startingPrice * 3n) / 2n, // 1.5x the starting price
+  });
+
+  const {
+    cosigner,
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { price: minPrice } = testConfig;
+
+  const startingPoolOwnerBalance = (
+    await client.rpc.getBalance(poolOwner.address).send()
+  ).value;
+  const poolBalance = (await client.rpc.getBalance(pool).send()).value;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    rentPayer: poolOwner.address, // rent payer
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
+    cosigner,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+    sharedEscrow,
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // The amount left in the shared escrow should be less than the current price so the pool should be auto-closed.
+  const maybePool = await fetchMaybePool(client.rpc, pool);
+  t.assert(maybePool.exists === false);
+
+  // Pool rent should be returned to the pool owner.
+  const endingPoolOwnerBalance = (
+    await client.rpc.getBalance(poolOwner.address).send()
+  ).value;
+  t.assert(startingPoolOwnerBalance <= endingPoolOwnerBalance + poolBalance);
+});
+
+test('token pool with shared escrow does not autoclose if shared escrow amount is above current price', async (t) => {
+  const {
+    client,
+    signers,
+    asset,
+    collection,
+    testConfig,
+    pool,
+    whitelist,
+    sharedEscrow,
+  } = await setupCoreTest({
+    t,
+    poolType: PoolType.Token,
+    action: TestAction.Sell,
+    useSharedEscrow: true,
+    useMakerBroker: true,
+    useCosigner: true,
+    compoundFees: false,
+    fundPool: false,
+    depositAmount: tokenPoolConfig.startingPrice * 3n, // 3x the starting price
+  });
+
+  const {
+    cosigner,
+    poolOwner,
+    nftOwner,
+    nftUpdateAuthority,
+    makerBroker,
+    takerBroker,
+  } = signers;
+  const { poolConfig, price: minPrice } = testConfig;
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTokenPoolCoreInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    rentPayer: poolOwner.address, // rent payer
+    pool,
+    whitelist,
+    asset: asset.address,
+    collection: collection.address,
+    makerBroker: makerBroker.address,
+    takerBroker: takerBroker.address,
+    cosigner,
+    minPrice,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+    sharedEscrow,
+  });
+
+  const computeIx = getSetComputeUnitLimitInstruction({
+    units: 400_000,
+  });
+
+  await pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(computeIx, tx),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // The amount left in the shared escrow is more than the current price so the pool should not be auto-closed.
+  const maybePool = await fetchMaybePool(client.rpc, pool);
+  t.assert(maybePool.exists === true);
+
+  // Check that the shared escrow has more than the current price.
+  const sharedEscrowBalance = (
+    await client.rpc.getBalance(sharedEscrow!).send()
+  ).value;
+  t.assert(sharedEscrowBalance > poolConfig.startingPrice);
+});
+
 test('sellNftTokenPool emits self-cpi logging event', async (t) => {
   const { client, signers, asset, collection, testConfig, pool, whitelist } =
     await setupCoreTest({
@@ -1320,7 +1471,7 @@ test('it cannot sell an NFT into a trade pool w/ incorrect whitelist', async (t)
     asset: asset.address,
     collection: collection.address,
     whitelist: poolWhitelist,
-    minPrice: minPrice,
+    minPrice,
     creators: [mintWhitelistAuthority.address],
   });
 

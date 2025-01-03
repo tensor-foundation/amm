@@ -1,14 +1,15 @@
 import { address, ProgramDerivedAddress } from '@solana/web3.js';
 import {
-  findAssociatedTokenAccountPda,
-  findFeeVaultPda,
-  findNftReceiptPda,
-} from '@tensor-foundation/resolvers';
-import { ResolvedAccount, expectAddress } from '../generated/shared';
-import {
   findTokenRecordPda,
   TokenStandard,
 } from '@tensor-foundation/mpl-token-metadata';
+import {
+  findAssociatedTokenAccountPda,
+  findEditionPda,
+  findFeeVaultPda,
+  findNftReceiptPda,
+} from '@tensor-foundation/resolvers';
+import { expectAddress, ResolvedAccount } from '../generated/shared';
 
 // Satisfy linter
 type ArgsAny = {
@@ -97,4 +98,16 @@ export const resolveUserTokenRecordFromTokenStandard = async ({
         }),
       }
     : { value: null };
+};
+
+export const resolveEdition = async ({
+  accounts,
+}: {
+  accounts: Record<string, ResolvedAccount>;
+}): Promise<Partial<{ value: ProgramDerivedAddress | null }>> => {
+  return {
+    value: await findEditionPda({
+      mint: expectAddress(accounts.mint?.value),
+    }),
+  };
 };

@@ -94,6 +94,9 @@ pub enum TensorAmmError {
     /// 12027 - Missing cosigner account
     #[error("Missing cosigner account")]
     MissingCosigner = 0x2EFB,
+    /// 12028 - Invalid edition
+    #[error("Invalid edition")]
+    InvalidEdition = 0x2EFC,
 }
 
 impl solana_program::program_error::PrintProgramError for TensorAmmError {

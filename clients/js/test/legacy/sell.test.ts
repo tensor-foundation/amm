@@ -164,6 +164,48 @@ test('sell NFT into Trade pool, wrong owner fails', async (t) => {
   });
 });
 
+test('sell NFT into Trade pool, wrong edition fails', async (t) => {
+  const { client, signers, nft, testConfig, pool, whitelist } =
+    await setupLegacyTest({
+      t,
+      poolType: PoolType.Trade,
+      action: TestAction.Sell,
+      useMakerBroker: false,
+      useSharedEscrow: false,
+      useCosigner: false,
+      fundPool: true,
+    });
+
+  const { poolOwner, nftOwner, nftUpdateAuthority } = signers;
+  const { mint } = nft;
+  const { price: minPrice } = testConfig;
+
+  const wrongEdition = await generateKeyPairSigner();
+
+  // Sell NFT into pool
+  const sellNftIx = await getSellNftTradePoolInstructionAsync({
+    owner: poolOwner.address, // pool owner
+    taker: nftOwner, // nft owner--the seller
+    pool,
+    whitelist,
+    mint,
+    minPrice,
+    edition: wrongEdition.address,
+    // Remaining accounts
+    creators: [nftUpdateAuthority.address],
+    escrowProgram: TSWAP_PROGRAM_ID,
+  });
+
+  const promise = pipe(
+    await createDefaultTransaction(client, nftOwner),
+    (tx) => appendTransactionMessageInstruction(sellNftIx, tx),
+    (tx) => signAndSendTransaction(client, tx)
+  );
+
+  // Edition fails on Anchor seeds check.
+  await expectCustomError(t, promise, ANCHOR_ERROR__CONSTRAINT_SEEDS);
+});
+
 test('sell NFT into NFT pool fails', async (t) => {
   // Setup a NFT pool, with a NFT deposited.
   const legacyTest = await setupLegacyTest({
@@ -976,7 +1018,7 @@ test('sell into shared escrow pool cannot eat into escrow account rent', async (
     action: TestAction.Sell,
     useMakerBroker: false,
     useSharedEscrow: true,
-    fundPool: true,
+    fundPool: false,
     depositAmount,
     whitelistMode: Mode.FVC,
   });

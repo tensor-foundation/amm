@@ -1,5 +1,5 @@
 {
-  "version": "0.8.1",
+  "version": "1.0.0",
   "name": "amm_program",
   "docs": [
     "Program entrypoint"
@@ -1552,7 +1552,7 @@
     {
       "name": "depositNftCore",
       "docs": [
-        "Deposit a Token22 NFT into a NFT or Trade pool."
+        "Deposit a MPL Core asset into a NFT or Trade pool."
       ],
       "accounts": [
         {
@@ -1645,7 +1645,7 @@
     {
       "name": "withdrawNftCore",
       "docs": [
-        "Withdraw a Token22 NFT from a NFT or Trade pool."
+        "Withdraw a MPL Core asset from a NFT or Trade pool."
       ],
       "accounts": [
         {
@@ -1730,7 +1730,7 @@
     {
       "name": "buyNftCore",
       "docs": [
-        "Buy a Token22 NFT from a NFT or Trade pool."
+        "Buy a MPL Core asset from a NFT or Trade pool."
       ],
       "accounts": [
         {
@@ -1913,7 +1913,7 @@
     {
       "name": "sellNftTokenPoolCore",
       "docs": [
-        "Sell a Token22 NFT into a Token pool."
+        "Sell a MPL Core asset into a Token pool."
       ],
       "accounts": [
         {
@@ -2080,7 +2080,7 @@
     {
       "name": "sellNftTradePoolCore",
       "docs": [
-        "Sell a Token22 NFT into a Trade pool."
+        "Sell a MPL Core asset into a Trade pool."
       ],
       "accounts": [
         {
@@ -3903,6 +3903,11 @@
       "code": 12027,
       "name": "MissingCosigner",
       "msg": "Missing cosigner account"
+    },
+    {
+      "code": 12028,
+      "name": "InvalidEdition",
+      "msg": "Invalid edition"
     }
   ],
   "metadata": {

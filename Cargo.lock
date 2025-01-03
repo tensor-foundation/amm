@@ -73,7 +73,7 @@ dependencies = [
 
 [[package]]
 name = "amm-program"
-version = "0.8.1"
+version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -85,7 +85,7 @@ dependencies = [
  "spl-token-metadata-interface",
  "static_assertions",
  "tensor-escrow",
- "tensor-toolbox 0.6.0",
+ "tensor-toolbox 0.8.0",
  "tensor-vipers",
  "whitelist-program",
 ]
@@ -2619,9 +2619,9 @@ dependencies = [
 
 [[package]]
 name = "tensor-toolbox"
-version = "0.6.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be9cad383562b37eae13c0b7444782c3d6e02e5529707480a4a68769ba4849a1"
+checksum = "515659dd8e1a324f23ced4d99d6a150ac8fac4d78c2cc0252b5dd5c39213192b"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

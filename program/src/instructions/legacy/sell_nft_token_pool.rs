@@ -201,5 +201,11 @@ pub fn process_sell_nft_token_pool<'info>(
         &ctx.accounts.trade.pool,
         ctx.accounts.trade.rent_payer.to_account_info(),
         owner,
+        ctx.accounts
+            .trade
+            .shared_escrow
+            .as_ref()
+            .map(|escrow| escrow.to_account_info())
+            .as_ref(),
     )
 }
