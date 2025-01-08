@@ -120,7 +120,7 @@ export function getAmountOfBids({
   availableLamports: number | bigint;
 }): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
-  if (pool.config.startingPrice === 0n) return 0;
+  if (pool.config.startingPrice <= 0n) return 0;
 
   let amountOfBidsWithoutMaxCount: number;
   // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
