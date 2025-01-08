@@ -120,6 +120,7 @@ export function getAmountOfBids({
   availableLamports: number | bigint;
 }): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
+  if (pool.config.startingPrice <= 0n) return 0;
 
   let amountOfBidsWithoutMaxCount: number;
   // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
@@ -135,7 +136,7 @@ export function getAmountOfBids({
       extraOffset: 0,
       excludeMMFee,
     });
-    if (currentPrice < 0) return 0;
+    if (currentPrice <= 0) return 0;
     let maxPossibleBidsBeforeZero =
       pool.config.delta <= 0n
         ? BID_AMOUNT_LIMIT
@@ -147,8 +148,8 @@ export function getAmountOfBids({
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (
-      accumulatedPrice < BigInt(availableLamports) &&
-      bidCount < maxPossibleBidsBeforeZero + 1
+      accumulatedPrice <= BigInt(availableLamports) &&
+      bidCount <= maxPossibleBidsBeforeZero
     ) {
       const price = calculatePrice({
         pool,
@@ -172,8 +173,8 @@ export function getAmountOfBids({
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (
-      accumulatedPrice < BigInt(availableLamports) &&
-      bidCount < BID_AMOUNT_LIMIT + 1
+      accumulatedPrice <= BigInt(availableLamports) &&
+      bidCount <= BID_AMOUNT_LIMIT
     ) {
       const price = calculatePrice({
         pool,
