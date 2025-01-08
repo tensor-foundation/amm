@@ -147,8 +147,8 @@ export function getAmountOfBids({
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (
-      accumulatedPrice < BigInt(availableLamports) &&
-      bidCount < maxPossibleBidsBeforeZero + 1
+      accumulatedPrice <= BigInt(availableLamports) &&
+      bidCount <= maxPossibleBidsBeforeZero
     ) {
       const price = calculatePrice({
         pool,
@@ -172,8 +172,8 @@ export function getAmountOfBids({
     let bidCount = 0;
     let accumulatedPrice = 0n;
     while (
-      accumulatedPrice < BigInt(availableLamports) &&
-      bidCount < BID_AMOUNT_LIMIT + 1
+      accumulatedPrice <= BigInt(availableLamports) &&
+      bidCount <= BID_AMOUNT_LIMIT
     ) {
       const price = calculatePrice({
         pool,

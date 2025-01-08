@@ -595,6 +595,38 @@ test('getAmountOfBids returns a max of 1000 bids for "indefinite" amounts', asyn
   t.true(amountOfBids === 1000);
 });
 
+test('getAmountOfBids base case exponential', (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Exponential,
+    startingPrice: 1n * ONE_SOL,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: 0,
+  };
+  const amountOfBids = getAmountOfBids({
+    pool: { config, priceOffset: 0, maxTakerSellCount: 0, sharedEscrow: null },
+    availableLamports: 1n * ONE_SOL,
+  });
+  t.true(amountOfBids === 1);
+});
+
+test('getAmountOfBids base case linear', (t) => {
+  const config: PoolConfig = {
+    poolType: PoolType.Token,
+    curveType: CurveType.Linear,
+    startingPrice: 1n * ONE_SOL,
+    delta: 0n,
+    mmCompoundFees: false,
+    mmFeeBps: null,
+  };
+  const amountOfBids = getAmountOfBids({
+    pool: { config, priceOffset: 0, maxTakerSellCount: 0, sharedEscrow: null },
+    availableLamports: 1n * ONE_SOL,
+  });
+  t.true(amountOfBids === 1);
+});
+
 test('getAmountOfBids returns correct values for exponential pools', async (t) => {
   const config: PoolConfig = {
     poolType: PoolType.Trade,
