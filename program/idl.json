@@ -19,6 +19,11 @@
       "name": "MAX_DELTA_BPS",
       "type": "u16",
       "value": "9999"
+    },
+    {
+      "name": "MAX_EXPIRY_SEC",
+      "type": "i64",
+      "value": "365 * 24 * 60 * 60"
     }
   ],
   "instructions": [

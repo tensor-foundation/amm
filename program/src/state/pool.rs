@@ -57,6 +57,10 @@ pub struct PoolConfig {
 
 impl PoolConfig {
     pub fn validate(&self) -> Result<()> {
+        if self.starting_price < 1 {
+            throw_err!(ErrorCode::StartingPriceTooSmall);
+        }
+
         match self.pool_type {
             PoolType::NFT | PoolType::Token => {
                 if self.mm_fee_bps > 0 {
