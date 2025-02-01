@@ -7,11 +7,11 @@ Fees are split between the Tensor Protocol and brokers facilitating the transact
 
 ## Status
 
-The new AMM program is currently deployed to devnet.
+The new AMM program is currently deployed to devnet and mainnet.
 
 | Devnet | Mainnet |
 | ------ | ------- |
-| v0.3.1 | -       |
+| v1.0.0 | v1.0.0  |
 
 ## Programs
 
