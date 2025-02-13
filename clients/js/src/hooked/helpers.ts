@@ -121,6 +121,7 @@ export function getAmountOfBids({
 }): number {
   if (pool.config.poolType === PoolType.NFT) return 0;
   if (pool.config.startingPrice <= 0n) return 0;
+  if (isMaxTakerSellCountReached(pool)) return 0;
 
   let amountOfBidsWithoutMaxCount: number;
   // Trade pool that compounds fees ==> include mm fee (goes back into available balance)
@@ -188,7 +189,7 @@ export function getAmountOfBids({
     }
     amountOfBidsWithoutMaxCount = bidCount - 1;
   }
-  return isMaxTakerSellCountReached(pool)
+  return isMaxTakerSellCountRelevant(pool)
     ? Math.min(
         amountOfBidsWithoutMaxCount,
         pool.maxTakerSellCount + pool.priceOffset
@@ -485,14 +486,22 @@ const cutTo12MantissaDecimals = (
   return [adjustedNum, adjustedOffset];
 };
 
+const isMaxTakerSellCountRelevant = (
+  pool: Pick<Pool, 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'>
+): boolean => {
+  return (
+    pool.maxTakerSellCount !== 0 &&
+    !!pool.sharedEscrow &&
+    pool.sharedEscrow !== DEFAULT_ADDRESS
+  );
+};
+
 function isMaxTakerSellCountReached(
   pool: Pick<Pool, 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'>
 ): boolean {
   return (
     pool.priceOffset * -1 === pool.maxTakerSellCount &&
-    pool.maxTakerSellCount !== 0 &&
-    !!pool.sharedEscrow &&
-    pool.sharedEscrow !== DEFAULT_ADDRESS
+    isMaxTakerSellCountRelevant(pool)
   );
 }
 
