@@ -1,7 +1,6 @@
 //! Create a new pool.
 use anchor_lang::prelude::*;
 use escrow_program::state::MarginAccount;
-use tensor_vipers::throw_err;
 use whitelist_program::{self, WhitelistV2};
 
 use crate::{
@@ -79,10 +78,6 @@ impl<'info> CreatePool<'info> {
 /// Create a new pool.
 #[access_control(ctx.accounts.validate(args.config))]
 pub fn process_create_pool(ctx: Context<CreatePool>, args: CreatePoolArgs) -> Result<()> {
-    if args.config.starting_price < 1 {
-        throw_err!(ErrorCode::StartingPriceTooSmall);
-    }
-
     let timestamp = Clock::get()?.unix_timestamp;
 
     let expiry = assert_expiry(args.expire_in_sec.unwrap_or(MAX_EXPIRY_SEC as u64))?;

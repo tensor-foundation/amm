@@ -1,6 +1,6 @@
 #!/usr/bin/env zx
-import "zx/globals";
 import { generateIdl } from "@metaplex-foundation/shank-js";
+import "zx/globals";
 import { getCargo, getProgramFolders } from "./utils.mjs";
 
 const binaryInstallDir = path.join(__dirname, "..", ".cargo");

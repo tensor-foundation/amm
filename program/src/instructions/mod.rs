@@ -12,7 +12,6 @@ pub mod t22;
 pub mod withdraw_sol;
 
 pub use admin::*;
-use anchor_spl::token::Mint;
 pub use close_expired_pool::*;
 pub use close_pool::*;
 pub use create_pool::*;
@@ -28,36 +27,9 @@ use crate::{error::ErrorCode, *};
 use anchor_lang::prelude::*;
 use solana_program::pubkey;
 use tensor_vipers::throw_err;
-use whitelist_program::{self, MintProof, MintProofV2, Whitelist, WhitelistV2};
+use whitelist_program::{self, MintProofV2, WhitelistV2};
 
 pub static MPL_TOKEN_AUTH_RULES_ID: Pubkey = pubkey!("auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg");
-
-#[inline(never)]
-pub fn assert_decode_mint_proof(
-    whitelist: &Account<Whitelist>,
-    nft_mint: &InterfaceAccount<Mint>,
-    mint_proof: &UncheckedAccount,
-) -> Result<Box<MintProof>> {
-    let (key, _) = Pubkey::find_program_address(
-        &[
-            b"mint_proof".as_ref(),
-            nft_mint.key().as_ref(),
-            whitelist.key().as_ref(),
-        ],
-        &whitelist_program::ID,
-    );
-    if key != *mint_proof.key {
-        throw_err!(ErrorCode::BadMintProof);
-    }
-    // Check program owner (redundant because of find_program_address above, but why not).
-    if *mint_proof.owner != whitelist_program::ID {
-        throw_err!(ErrorCode::BadMintProof);
-    }
-
-    let mut data: &[u8] = &mint_proof.try_borrow_data()?;
-    let mint_proof: Box<MintProof> = Box::new(AccountDeserialize::try_deserialize(&mut data)?);
-    Ok(mint_proof)
-}
 
 #[inline(never)]
 pub fn assert_decode_mint_proof_v2(
