@@ -3,7 +3,7 @@ import {
   GetMinimumBalanceForRentExemptionApi,
   Rpc,
 } from '@solana/web3.js';
-import { CurveType, Pool, PoolType, TakerSide } from '../generated';
+import { CurveType, Pool, PoolConfig, PoolType, TakerSide } from '../generated';
 import { DEFAULT_ADDRESS } from './nullableAddress';
 
 const BASIS_POINTS = 100_00n;
@@ -27,6 +27,12 @@ export function calculateAmountForQuantity({
   quantity: number;
   side: TakerSide;
 }): number {
+  if (!isValidTakerSide(side)) throw new Error('Invalid TakerSide');
+  if (!isValidPoolType(pool.config.poolType))
+    throw new Error('Invalid PoolType');
+  if (!isValidCurveType(pool.config.curveType))
+    throw new Error('Invalid CurveType');
+  if (!isValidPoolConfig(pool.config)) throw new Error('Invalid PoolConfig');
   if (quantity < 1) return 0;
 
   // Retrieve the amount of needed lamports for "quantity" amount of bids
@@ -119,6 +125,11 @@ export function getAmountOfBids({
   >;
   availableLamports: number | bigint;
 }): number {
+  if (!isValidPoolType(pool.config.poolType))
+    throw new Error('Invalid PoolType');
+  if (!isValidCurveType(pool.config.curveType))
+    throw new Error('Invalid CurveType');
+  if (!isValidPoolConfig(pool.config)) throw new Error('Invalid PoolConfig');
   if (pool.config.poolType === PoolType.NFT) return 0;
   if (pool.config.startingPrice <= 0n) return 0;
   if (isMaxTakerSellCountReached(pool)) return 0;
@@ -218,6 +229,11 @@ export function getCurrentAskPrice({
   extraOffset?: number;
   excludeMMFee?: boolean;
 }): number | null {
+  if (!isValidPoolType(pool.config.poolType))
+    throw new Error('Invalid PoolType');
+  if (!isValidCurveType(pool.config.curveType))
+    throw new Error('Invalid CurveType');
+  if (!isValidPoolConfig(pool.config)) throw new Error('Invalid PoolConfig');
   if (pool.nftsHeld < 1) return null;
   if (isNotFulfillable({ pool, side: TakerSide.Buy })) return null;
   return calculatePrice({
@@ -295,6 +311,11 @@ export async function getCurrentBidPrice({
   extraOffset?: number;
   excludeMMFee?: boolean;
 }): Promise<number | null> {
+  if (!isValidPoolType(pool.config.poolType))
+    throw new Error('Invalid PoolType');
+  if (!isValidCurveType(pool.config.curveType))
+    throw new Error('Invalid CurveType');
+  if (!isValidPoolConfig(pool.config)) throw new Error('Invalid PoolConfig');
   if (isNotFulfillable({ pool, side: TakerSide.Sell })) return null;
   const bidPrice = calculatePrice({
     pool,
@@ -347,6 +368,12 @@ export function calculatePrice({
   extraOffset?: number;
   excludeMMFee?: boolean;
 }): number {
+  if (!isValidTakerSide(side)) throw new Error('Invalid TakerSide');
+  if (!isValidPoolType(pool.config.poolType))
+    throw new Error('Invalid PoolType');
+  if (!isValidCurveType(pool.config.curveType))
+    throw new Error('Invalid CurveType');
+  if (!isValidPoolConfig(pool.config)) throw new Error('Invalid PoolConfig');
   // prevents input var misunderstanding (thinking that extraOffset needs to be negative for TakerSide.Sell)
   const extraOffsetNormalized = Math.abs(extraOffset);
 
@@ -523,5 +550,31 @@ const isNotFulfillable = ({
     // if maxTakerSellCount is reached when pool is attached to margin acc,
     // pool can't fulfill more bids
     (isMaxTakerSellCountReached(pool) && side === TakerSide.Sell)
+  );
+};
+
+const isValidTakerSide = (side: TakerSide) => {
+  return side === TakerSide.Buy || side === TakerSide.Sell;
+};
+
+const isValidPoolType = (poolType: PoolType) => {
+  return (
+    poolType === PoolType.NFT ||
+    poolType === PoolType.Token ||
+    poolType === PoolType.Trade
+  );
+};
+
+const isValidCurveType = (curveType: CurveType) => {
+  return curveType === CurveType.Linear || curveType === CurveType.Exponential;
+};
+
+const isValidPoolConfig = (poolConfig: PoolConfig) => {
+  return (
+    isValidPoolType(poolConfig.poolType) &&
+    isValidCurveType(poolConfig.curveType) &&
+    poolConfig.startingPrice >= 0n &&
+    poolConfig.delta >= 0n &&
+    (poolConfig.mmFeeBps ?? 0) >= 0
   );
 };
