@@ -121,7 +121,7 @@ export function getAmountOfBids({
 }: {
   pool: Pick<
     Pool,
-    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow' | 'stats'
   >;
   availableLamports: number | bigint;
 }): number {
@@ -203,7 +203,8 @@ export function getAmountOfBids({
   return isMaxTakerSellCountRelevant(pool)
     ? Math.min(
         amountOfBidsWithoutMaxCount,
-        pool.maxTakerSellCount + pool.priceOffset
+        pool.maxTakerSellCount -
+          (pool.stats.takerSellCount - pool.stats.takerBuyCount)
       )
     : amountOfBidsWithoutMaxCount;
 }
@@ -223,7 +224,12 @@ export function getCurrentAskPrice({
 }: {
   pool: Pick<
     Pool,
-    'config' | 'nftsHeld' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+    | 'config'
+    | 'nftsHeld'
+    | 'priceOffset'
+    | 'maxTakerSellCount'
+    | 'sharedEscrow'
+    | 'stats'
   >;
   royaltyFeeBps: number;
   extraOffset?: number;
@@ -262,7 +268,7 @@ export function getCurrentBidPriceSync({
 }: {
   pool: Pick<
     Pool,
-    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
+    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow' | 'stats'
   >;
   availableLamports: number | bigint;
   royaltyFeeBps: number;
@@ -306,6 +312,7 @@ export async function getCurrentBidPrice({
     | 'priceOffset'
     | 'maxTakerSellCount'
     | 'sharedEscrow'
+    | 'stats'
   >;
   royaltyFeeBps: number;
   extraOffset?: number;
@@ -514,7 +521,7 @@ const cutTo12MantissaDecimals = (
 };
 
 const isMaxTakerSellCountRelevant = (
-  pool: Pick<Pool, 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'>
+  pool: Pick<Pool, 'maxTakerSellCount' | 'sharedEscrow'>
 ): boolean => {
   return (
     pool.maxTakerSellCount !== 0 &&
@@ -524,11 +531,11 @@ const isMaxTakerSellCountRelevant = (
 };
 
 function isMaxTakerSellCountReached(
-  pool: Pick<Pool, 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'>
+  pool: Pick<Pool, 'maxTakerSellCount' | 'sharedEscrow' | 'stats'>
 ): boolean {
   return (
-    pool.priceOffset * -1 === pool.maxTakerSellCount &&
-    isMaxTakerSellCountRelevant(pool)
+    pool.stats.takerSellCount - pool.stats.takerBuyCount ===
+      pool.maxTakerSellCount && isMaxTakerSellCountRelevant(pool)
   );
 }
 
@@ -536,10 +543,7 @@ const isNotFulfillable = ({
   pool,
   side,
 }: {
-  pool: Pick<
-    Pool,
-    'config' | 'priceOffset' | 'maxTakerSellCount' | 'sharedEscrow'
-  >;
+  pool: Pick<Pool, 'config' | 'maxTakerSellCount' | 'sharedEscrow' | 'stats'>;
   side: TakerSide;
 }) => {
   return (
