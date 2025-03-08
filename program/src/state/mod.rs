@@ -14,6 +14,7 @@ use mpl_token_metadata::types::{AuthorizationData, Payload, PayloadType, ProofIn
 use std::collections::HashMap;
 
 /// Maximum expiration time for a pool--one year.
+#[constant]
 pub const MAX_EXPIRY_SEC: i64 = 365 * 24 * 60 * 60;
 
 // --------------------------------------- replicating mplex type for anchor IDL export
