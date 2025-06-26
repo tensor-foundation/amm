@@ -31,14 +31,14 @@ env:
   CACHE: true
 
 jobs:
-  build_programs:
+  build_verify_programs:
     name: Programs
-    uses: ./.github/workflows/build-programs.yml
+    uses: ./.github/workflows/build-verify-programs.yml
     secrets: inherit
 
   test_js:
     name: JS client
-    needs: build_programs
+    needs: build_verify_programs
     uses: ./.github/workflows/test-js-client.yml
     secrets: inherit
 
