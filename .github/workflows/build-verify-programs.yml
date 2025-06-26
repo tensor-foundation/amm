@@ -1,4 +1,4 @@
-name: Build Programs
+name: Build Verify Programs
 
 on:
   workflow_call:
@@ -13,12 +13,12 @@ on:
     inputs:
       rust:
         description: Rust version
-        default: 1.78.0
+        default: 1.75.0
         required: true
         type: string
       solana:
         description: Solana version
-        default: 1.17.34
+        default: 1.17.22
         required: true
         type: string
       node:
@@ -26,15 +26,20 @@ on:
         default: 20.x
         required: true
         type: string
+      verify:
+        description: Verify build version
+        default: 0.2.11
+        required: true
+        type: string
 
 env:
   CACHE: true
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
-  ARTIFACTS_TOKEN: ${{ secrets.ARTIFACTS_TOKEN }}
   RPC: ${{ secrets.SOLANA_MAINNET_RPC_URL }}
+  ARTIFACTS_TOKEN: ${{ secrets.ARTIFACTS_TOKEN }}
 
 jobs:
-  build_programs:
+  build_verify_programs:
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -42,12 +47,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup SSH agent
-        uses: tensor-foundation/actions/ssh-agent@v1
+        uses: tensor-foundation/actions/ssh-agent@v2
         with:
           key: |
+            ${{ secrets.ESCROW_KEY }}
             ${{ secrets.TOOLBOX_KEY }}
             ${{ secrets.WHITELIST_KEY }}
-            ${{ secrets.ESCROW_KEY }}
 
       - name: Load environment variables
         run: cat .github/.env >> $GITHUB_ENV
@@ -58,7 +63,7 @@ jobs:
           toolchain: ${{ inputs.rust || env.RUST_VERSION }}
 
       - name: Install Solana
-        uses: tensor-foundation/actions/install-solana@v2.1
+        uses: tensor-foundation/actions/install-solana@v3
         with:
           version: ${{ inputs.solana || env.SOLANA_VERSION }}
           cache: ${{ env.CACHE }}
@@ -76,10 +81,25 @@ jobs:
         with:
           folder: "."
           key: programs
+    
+      - name: Dump mainnet binaries
+        run: pnpm programs:dump_binaries:mainnet
 
-      - name: Build programs
+      - name: Cache solana-verify
+        uses: actions/cache@v4
+        id: cache-verify
+        with:
+          path: /home/runner/.cargo-install/solana-verify
+          key: solana-verify-${{ inputs.verify || env.VERIFY_BUILD_VERSION }}-${{ runner.os }}
+
+      - name: Install verify build
+        if: steps.cache-verify.outputs.cache-hit != 'true'
+        run: cargo install solana-verify --force --root /home/runner/.cargo-install/solana-verify --version ${{ inputs.verify || env.VERIFY_BUILD_VERSION }} --locked
+
+      - name: Verify build program
         shell: bash
-        run: pnpm programs:build
+        run: |
+          /home/runner/.cargo-install/solana-verify/bin/solana-verify build --library-name amm_program | tee >(tail -n 1 > build_hash.txt)
 
       - name: Upload programs build
         uses: actions/upload-artifact@v4
@@ -88,5 +108,7 @@ jobs:
           # First wildcard ensures exported paths are consistently under the programs folder.
           path: |
             ./targe*/deploy/*.so
+            build_hash.txt
             ./targe*/deploy/*.json
+            !./targe*/deploy/*keypair*.json
           if-no-files-found: error
