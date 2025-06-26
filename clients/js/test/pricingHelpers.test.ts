@@ -605,7 +605,13 @@ test('getAmountOfBids base case exponential', (t) => {
     mmFeeBps: 0,
   };
   const amountOfBids = getAmountOfBids({
-    pool: { config, priceOffset: 0, maxTakerSellCount: 0, sharedEscrow: null },
+    pool: {
+      config,
+      priceOffset: 0,
+      maxTakerSellCount: 0,
+      sharedEscrow: null,
+      stats: { takerSellCount: 0, takerBuyCount: 0, accumulatedMmProfit: 0n },
+    },
     availableLamports: 1n * ONE_SOL,
   });
   t.true(amountOfBids === 1);
@@ -621,7 +627,13 @@ test('getAmountOfBids base case linear', (t) => {
     mmFeeBps: null,
   };
   const amountOfBids = getAmountOfBids({
-    pool: { config, priceOffset: 0, maxTakerSellCount: 0, sharedEscrow: null },
+    pool: {
+      config,
+      priceOffset: 0,
+      maxTakerSellCount: 0,
+      sharedEscrow: null,
+      stats: { takerSellCount: 0, takerBuyCount: 0, accumulatedMmProfit: 0n },
+    },
     availableLamports: 1n * ONE_SOL,
   });
   t.true(amountOfBids === 1);
